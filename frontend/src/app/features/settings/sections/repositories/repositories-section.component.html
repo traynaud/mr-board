@@ -1,0 +1,81 @@
+@if (store.loading()) {
+  <p class="status">{{ 'common.loading' | translate }}</p>
+} @else if (store.loadError(); as errorKey) {
+  <div class="status error" role="alert">
+    <span>{{ 'settings.projects.loadError' | translate }} {{ errorKey | translate }}</span>
+    <button mat-stroked-button type="button" (click)="retry()">
+      {{ 'common.retry' | translate }}
+    </button>
+  </div>
+} @else {
+  <table class="repos-table">
+    <thead>
+      <tr>
+        <th>{{ 'settings.projects.pathHeader' | translate }}</th>
+        <th class="alias-col">{{ 'settings.projects.aliasHeader' | translate }}</th>
+        <th class="delete-col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.project.id) {
+        <tr [formGroup]="row.group">
+          <td>{{ row.project.pathWithNamespace }}</td>
+          <td class="alias-col">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <input matInput formControlName="alias" autocomplete="off" spellcheck="false" />
+            </mat-form-field>
+          </td>
+          <td class="delete-col">
+            <button
+              mat-icon-button
+              type="button"
+              (click)="removeRepo(row.project)"
+              [attr.aria-label]="'settings.projects.remove' | translate: { alias: row.project.alias }"
+            >
+              <mat-icon svgIcon="x" />
+            </button>
+          </td>
+        </tr>
+      }
+      <tr class="add-row" [formGroup]="addForm">
+        <td colspan="3">
+          <div class="add-fields">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="path-field">
+              <input
+                matInput
+                formControlName="path"
+                [placeholder]="'settings.projects.pathPlaceholder' | translate"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              @if (addForm.controls.path.hasError('server')) {
+                <mat-error>{{ addForm.controls.path.getError('server') | translate }}</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="alias-field">
+              <input
+                matInput
+                formControlName="alias"
+                [placeholder]="'settings.projects.aliasPlaceholder' | translate"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              @if (addForm.controls.alias.hasError('server')) {
+                <mat-error>{{ addForm.controls.alias.getError('server') | translate }}</mat-error>
+              }
+            </mat-form-field>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="addForm.invalid || store.adding()"
+              (click)="addRepo()"
+            >
+              <mat-icon svgIcon="plus" />
+              {{ 'settings.projects.add' | translate }}
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+}

@@ -64,6 +64,39 @@ describe('GitlabClientService', () => {
     await expect(service.getTokenInfo(BASE, TOKEN)).resolves.toBeNull();
   });
 
+  it('should_get_project_by_url_encoded_path', async () => {
+    const project = {
+      id: 42,
+      path_with_namespace: 'equipe/backend-api',
+      web_url: `${BASE}/equipe/backend-api`,
+    };
+    fetchSpy.mockResolvedValue(jsonResponse(200, project));
+
+    await expect(
+      service.getProject(BASE, TOKEN, 'equipe/backend-api'),
+    ).resolves.toEqual(project);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `${BASE}/api/v4/projects/equipe%2Fbackend-api`,
+      expect.anything(),
+    );
+  });
+
+  it('should_return_null_when_project_is_not_found', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(404, {}));
+
+    await expect(
+      service.getProject(BASE, TOKEN, 'equipe/inexistant'),
+    ).resolves.toBeNull();
+  });
+
+  it('should_throw_auth_exception_on_forbidden_project', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(403, {}));
+
+    await expect(
+      service.getProject(BASE, TOKEN, 'equipe/prive'),
+    ).rejects.toBeInstanceOf(GitlabAuthException);
+  });
+
   it.each([401, 403])('should_throw_auth_exception_on_%i', async (status) => {
     fetchSpy.mockResolvedValue(jsonResponse(status, { message: 'nope' }));
 

@@ -7,7 +7,8 @@
     "cancel": "Annuler",
     "back": "Retour",
     "ok": "OK",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "loading": "Chargement…"
   },
   "board": {
     "title": "MR Board",
@@ -62,6 +63,26 @@
         "noExpiry": "sans expiration",
         "unknownExpiry": "expiration inconnue"
       }
+    },
+    "projects": {
+      "number": "03",
+      "title": "Repos à scanner",
+      "description": "L'alias est ce qui s'affiche dans la colonne Projet et le filtre.",
+      "pathHeader": "Chemin du projet",
+      "aliasHeader": "Alias",
+      "pathPlaceholder": "groupe/projet ou URL GitLab",
+      "aliasPlaceholder": "alias",
+      "add": "Ajouter",
+      "remove": "Supprimer {{alias}}",
+      "added": "Repo ajouté",
+      "removed": "Repo supprimé",
+      "loadError": "Impossible de charger les repos.",
+      "deleteConfirm": {
+        "title": "Supprimer ce repo ?",
+        "message": "Ses MRs ne seront plus affichées.",
+        "confirm": "Supprimer",
+        "cancel": "Rester"
+      }
     }
   },
   "errors": {
@@ -73,8 +94,13 @@
       "scope": "Échec : scope insuffisant (read_api requis)"
     },
     "settings": {
-      "tokenMissing": "Aucun jeton à tester : saisissez un jeton.",
+      "tokenMissing": "Configurez d'abord un jeton GitLab dans les paramètres.",
       "invalidUrl": "URL d'instance invalide."
+    },
+    "projects": {
+      "notFound": "Projet introuvable ou inaccessible avec ce jeton.",
+      "alreadyConfigured": "Ce projet est déjà configuré.",
+      "aliasDuplicate": "Cet alias est déjà utilisé."
     }
   }
 }

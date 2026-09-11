@@ -1,4 +1,5 @@
 import { FormControl } from '@angular/forms';
+import { buildRepoAliasGroup } from './repos-form';
 import {
   buildSettingsForm,
   gitlabUrlValidator,
@@ -72,6 +73,7 @@ describe('settings form helpers', () => {
       gitlabToken: '',
       meUsername: 'mdupont',
       meEmail: 'marie@exemple.fr',
+      repos: [],
     });
     expect(form.pristine).toBe(true);
     expect(form.valid).toBe(true);
@@ -88,7 +90,7 @@ describe('settings form helpers', () => {
 
   it('should_omit_empty_token_but_always_include_identity_fields', () => {
     const form = buildSettingsForm();
-    form.setValue({
+    form.patchValue({
       gitlabUrl: ' https://gitlab.com ',
       gitlabToken: '',
       meUsername: ' mdupont ',
@@ -104,7 +106,7 @@ describe('settings form helpers', () => {
 
   it('should_include_token_when_given', () => {
     const form = buildSettingsForm();
-    form.setValue({
+    form.patchValue({
       gitlabUrl: 'https://gitlab.com',
       gitlabToken: 'glpat-abcdwxyz',
       meUsername: '',
@@ -117,5 +119,28 @@ describe('settings form helpers', () => {
       meUsername: '',
       meEmail: '',
     });
+  });
+
+  it('should_not_include_repos_in_the_update_request', () => {
+    const form = buildSettingsForm();
+
+    expect(toUpdateRequest(form)).not.toHaveProperty('repos');
+  });
+
+  it('should_never_touch_the_repos_form_array', () => {
+    const form = buildSettingsForm();
+    form.controls.repos.push(
+      buildRepoAliasGroup({
+        id: 1,
+        pathWithNamespace: 'equipe/backend-api',
+        alias: 'api',
+        gitlabProjectId: 42,
+      }),
+    );
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.repos.length).toBe(1);
+    expect(form.controls.repos.at(0).getRawValue()).toEqual({ id: 1, alias: 'api' });
   });
 });

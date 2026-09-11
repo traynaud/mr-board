@@ -1,0 +1,165 @@
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  BusinessException,
+  BusinessValidationException,
+  EntityNotFoundException,
+  GitlabAuthException,
+  MissingConfigurationException,
+} from '../../common/exceptions';
+import { GitlabClientService } from '../gitlab/gitlab-client.service';
+import { SettingsService } from '../settings/settings.service';
+import { deriveDefaultAlias } from './domain/derive-default-alias';
+import { normalizeProjectPath } from './domain/normalize-project-path';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { ProjectResponseDto } from './dto/project-response.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { Project } from './entities/project.entity';
+
+/** Manages the list of GitLab repositories configured to be scanned. */
+@Injectable()
+export class ProjectsService {
+  constructor(
+    @InjectRepository(Project)
+    private readonly repository: Repository<Project>,
+    private readonly settings: SettingsService,
+    private readonly gitlab: GitlabClientService,
+  ) {}
+
+  /** Configured repositories, in the order they were added (RG-003-09). */
+  async list(): Promise<ProjectResponseDto[]> {
+    const projects = await this.repository.find({ order: { id: 'ASC' } });
+    return projects.map(toResponse);
+  }
+
+  /**
+   * Resolves and adds a repository (RG-003-01 to RG-003-06).
+   * @throws MissingConfigurationException when no GitLab token is configured (409).
+   * @throws BusinessValidationException for an unresolvable path, a duplicate
+   * alias, or a normalisation failure (400).
+   * @throws BusinessException (409) when the GitLab project is already configured.
+   */
+  async add(dto: CreateProjectDto): Promise<ProjectResponseDto> {
+    const path = normalizeProjectPath(dto.path);
+    if (!path) {
+      throw new BusinessValidationException(
+        'projects.notFound',
+        'Path could not be resolved',
+      );
+    }
+    const url = await this.settings.getGitlabUrl();
+    const token = await this.settings.getToken();
+    if (!token) {
+      throw new MissingConfigurationException(
+        'settings.tokenMissing',
+        'No GitLab token configured',
+      );
+    }
+
+    let gitlabProject: Awaited<ReturnType<GitlabClientService['getProject']>>;
+    try {
+      gitlabProject = await this.gitlab.getProject(url, token, path);
+    } catch (error) {
+      if (error instanceof GitlabAuthException) {
+        throw new BusinessValidationException(
+          'projects.notFound',
+          'GitLab denied access to this project',
+        );
+      }
+      throw error;
+    }
+    if (!gitlabProject) {
+      throw new BusinessValidationException(
+        'projects.notFound',
+        'Project not found on GitLab',
+      );
+    }
+
+    await this.assertProjectNotConfigured(gitlabProject.id);
+    const alias =
+      dto.alias ?? deriveDefaultAlias(gitlabProject.path_with_namespace);
+    await this.assertAliasAvailable(alias);
+
+    const project = await this.repository.save(
+      this.repository.create({
+        gitlabProjectId: gitlabProject.id,
+        pathWithNamespace: gitlabProject.path_with_namespace,
+        webUrl: gitlabProject.web_url,
+        alias,
+        enabled: true,
+        createdAt: new Date().toISOString(),
+      }),
+    );
+    return toResponse(project);
+  }
+
+  /**
+   * Renames a repository's alias (RG-003-07).
+   * @throws EntityNotFoundException when `id` is unknown (404).
+   * @throws BusinessValidationException when the alias is already used by another repo (400).
+   */
+  async rename(id: number, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
+    const project = await this.findOrThrow(id);
+    await this.assertAliasAvailable(dto.alias, id);
+    project.alias = dto.alias;
+    return toResponse(await this.repository.save(project));
+  }
+
+  /**
+   * Removes a repository (RG-003-08). Cascading deletion of its merge
+   * requests is a structural guarantee introduced by US-004's foreign key,
+   * not something this method needs to do (no `merge_requests` table exists yet).
+   * @throws EntityNotFoundException when `id` is unknown (404).
+   */
+  async remove(id: number): Promise<void> {
+    const project = await this.findOrThrow(id);
+    await this.repository.remove(project);
+  }
+
+  private async findOrThrow(id: number): Promise<Project> {
+    const project = await this.repository.findOneBy({ id });
+    if (!project) {
+      throw new EntityNotFoundException('Project', id);
+    }
+    return project;
+  }
+
+  private async assertProjectNotConfigured(
+    gitlabProjectId: number,
+  ): Promise<void> {
+    const existing = await this.repository.findOneBy({ gitlabProjectId });
+    if (existing) {
+      throw new BusinessException(
+        'projects.alreadyConfigured',
+        `Project ${gitlabProjectId} is already configured`,
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  private async assertAliasAvailable(
+    alias: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const clash = (await this.repository.find()).find(
+      (p) =>
+        p.id !== excludeId && p.alias.toLowerCase() === alias.toLowerCase(),
+    );
+    if (clash) {
+      throw new BusinessValidationException(
+        'projects.aliasDuplicate',
+        `Alias "${alias}" is already used`,
+      );
+    }
+  }
+}
+
+function toResponse(project: Project): ProjectResponseDto {
+  return {
+    id: project.id,
+    pathWithNamespace: project.pathWithNamespace,
+    alias: project.alias,
+    gitlabProjectId: project.gitlabProjectId,
+  };
+}

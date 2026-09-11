@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-003",
+    "title": "Paramètres : gestion des repos GitLab à scanner (ajout, alias, suppression)."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-002",
     "title": "Paramètres : identité « Moi » (username, email, aperçu avatar résolu depuis le test de connexion)."
   },

@@ -3,6 +3,7 @@ import {
   GitlabAuthException,
   GitlabUnavailableException,
 } from '../../common/exceptions';
+import { GitlabProject } from './types/gitlab-project';
 import { GitlabTokenInfo } from './types/gitlab-token-info';
 import { GitlabUser } from './types/gitlab-user';
 
@@ -44,6 +45,25 @@ export class GitlabClientService {
     return this.get<GitlabTokenInfo>(
       baseUrl,
       '/api/v4/personal_access_tokens/self',
+      token,
+      { allowNotFound: true },
+    );
+  }
+
+  /**
+   * `GET /api/v4/projects/:id` — resolves a project by its full path
+   * (`groupe/sous-groupe/projet`), URL-encoded as a single path segment.
+   * @returns `null` on 404 (project not found or not visible with this token).
+   * @throws GitlabAuthException on 401/403 (up to the caller to retranslate, RG-003-03).
+   */
+  getProject(
+    baseUrl: string,
+    token: string,
+    pathWithNamespace: string,
+  ): Promise<GitlabProject | null> {
+    return this.get<GitlabProject>(
+      baseUrl,
+      `/api/v4/projects/${encodeURIComponent(pathWithNamespace)}`,
       token,
       { allowNotFound: true },
     );

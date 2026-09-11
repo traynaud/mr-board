@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { ApiError } from '../core/api/api-error';
+import { ApiError, errorKeyOf } from '../core/api/api-error';
 import { SettingsService } from '../core/api/settings.service';
 import { Settings } from '../models/settings.model';
-import { SettingsStore, errorKeyOf } from './settings.store';
+import { SettingsStore } from './settings.store';
 
 describe('SettingsStore', () => {
   const settings: Settings = {

@@ -22,3 +22,8 @@ export class ApiError extends Error {
     return this.code ? `errors.${this.code}` : 'errors.unexpected';
   }
 }
+
+/** Clé i18n d'une erreur quelconque remontée par la couche HTTP, pour les stores. */
+export function errorKeyOf(error: unknown): string {
+  return error instanceof ApiError ? error.i18nKey : 'errors.unexpected';
+}

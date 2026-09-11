@@ -6,6 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
+import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
 import { SettingsPageComponent } from './settings-page.component';
@@ -17,6 +18,18 @@ describe('SettingsPageComponent', () => {
     tokenHint: null,
     meUsername: null,
     meEmail: null,
+  };
+  const projectApi: Project = {
+    id: 1,
+    pathWithNamespace: 'equipe/backend-api',
+    alias: 'api',
+    gitlabProjectId: 42,
+  };
+  const projectWeb: Project = {
+    id: 2,
+    pathWithNamespace: 'equipe/front-web',
+    alias: 'web',
+    gitlabProjectId: 7,
   };
   let fixture: ComponentFixture<SettingsPageComponent>;
   let el: HTMLElement;
@@ -57,6 +70,8 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLInputElement>('input[formControlName="gitlabToken"]')!;
   const usernameInput = () =>
     el.querySelector<HTMLInputElement>('input[formControlName="meUsername"]')!;
+  const repoAliasInputs = () =>
+    el.querySelectorAll<HTMLInputElement>('.repos-table tbody tr:not(.add-row) input[formControlName="alias"]');
   const saveButton = () => el.querySelector<HTMLButtonElement>('button.save')!;
   const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
   const type = async (input: HTMLInputElement, value: string) => {
@@ -64,8 +79,10 @@ describe('SettingsPageComponent', () => {
     input.dispatchEvent(new Event('input'));
     await settle();
   };
-  const loadSettings = async (value: Settings = settings) => {
+  const loadSettings = async (value: Settings = settings, projects: Project[] = []) => {
     http.expectOne('/api/v1/settings').flush(value);
+    await settle();
+    http.expectOne('/api/v1/projects').flush(projects);
     await settle();
   };
   const succeedTestConnection = async (username = 'mdupont', name = 'Marie Dupont') => {
@@ -272,5 +289,100 @@ describe('SettingsPageComponent', () => {
 
     await type(usernameInput(), '');
     expect(el.querySelector('.identity-preview')).toBeNull();
+  });
+
+  it('should_render_repo_rows_from_the_projects_store', async () => {
+    await loadSettings(settings, [projectApi, projectWeb]);
+
+    expect(el.textContent).toContain('equipe/backend-api');
+    expect(el.textContent).toContain('equipe/front-web');
+    expect(repoAliasInputs()).toHaveLength(2);
+    expect(repoAliasInputs()[0].value).toBe('api');
+    expect(repoAliasInputs()[1].value).toBe('web');
+  });
+
+  it('should_activate_save_when_an_alias_is_edited_and_include_it_on_save', async () => {
+    await loadSettings(settings, [projectApi]);
+    expect(saveButton().disabled).toBe(true);
+
+    await type(repoAliasInputs()[0], 'back');
+    expect(saveButton().disabled).toBe(false);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    saveButton().click();
+    const settingsReq = http.expectOne('/api/v1/settings');
+    settingsReq.flush(settings);
+    await settle();
+
+    const renameReq = http.expectOne('/api/v1/projects/1');
+    expect(renameReq.request.method).toBe('PUT');
+    expect(renameReq.request.body).toEqual({ alias: 'back' });
+    renameReq.flush({ ...projectApi, alias: 'back' });
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('settings.saved'),
+      t('common.ok'),
+      expect.anything(),
+    );
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    expect(repoAliasInputs()[0].value).toBe('back');
+  });
+
+  it('should_not_send_a_rename_request_when_no_alias_was_touched', async () => {
+    await loadSettings(settings, [projectApi]);
+    await type(urlInput(), 'https://autre.exemple.fr');
+
+    saveButton().click();
+    http
+      .expectOne('/api/v1/settings')
+      .flush({ ...settings, gitlabUrl: 'https://autre.exemple.fr' });
+    await settle();
+
+    http.expectNone('/api/v1/projects/1');
+  });
+
+  it('should_keep_form_dirty_and_not_navigate_when_a_rename_fails', async () => {
+    await loadSettings(settings, [projectApi, projectWeb]);
+    await type(repoAliasInputs()[1], 'API');
+
+    saveButton().click();
+    http.expectOne('/api/v1/settings').flush(settings);
+    await settle();
+
+    http
+      .expectOne('/api/v1/projects/2')
+      .flush(
+        { statusCode: 400, code: 'projects.aliasDuplicate', message: 'x' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(t('settings.saveError'), t('common.ok'), expect.anything());
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    expect(repoAliasInputs()[1].value).toBe('API');
+  });
+
+  it('should_discard_unsaved_alias_edit_when_another_repo_is_added_immediately', async () => {
+    await loadSettings(settings, [projectApi]);
+    await type(repoAliasInputs()[0], 'back');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    const pathInput = el.querySelector<HTMLInputElement>(
+      '.add-fields input[formControlName="path"]',
+    )!;
+    pathInput.value = 'equipe/front-web';
+    pathInput.dispatchEvent(new Event('input'));
+    await settle();
+    el.querySelector<HTMLButtonElement>('.add-fields button')!.click();
+    await settle();
+    http.expectOne('/api/v1/projects').flush(projectWeb);
+    await settle();
+
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    expect(repoAliasInputs()).toHaveLength(2);
+    expect(repoAliasInputs()[0].value).toBe('api');
   });
 });

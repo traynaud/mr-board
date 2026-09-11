@@ -5,6 +5,7 @@ import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     DatabaseModule,
     HealthModule,
     SettingsModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}

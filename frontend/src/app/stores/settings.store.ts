@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
-import { ApiError } from '../core/api/api-error';
+import { errorKeyOf } from '../core/api/api-error';
 import { SettingsService } from '../core/api/settings.service';
 import {
   Settings,
@@ -36,11 +36,6 @@ const initialState: SettingsState = {
   saving: false,
   test: IDLE_TEST,
 };
-
-/** Clé i18n d'une erreur quelconque remontée par la couche HTTP. */
-export function errorKeyOf(error: unknown): string {
-  return error instanceof ApiError ? error.i18nKey : 'errors.unexpected';
-}
 
 /** État des paramètres de l'application et actions associées. */
 export const SettingsStore = signalStore(

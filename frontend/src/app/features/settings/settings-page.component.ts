@@ -6,10 +6,10 @@ import {
   computed,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
-import { merge } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -17,13 +17,20 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
+import { merge } from 'rxjs';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
+import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { resolveMeIdentity } from './me-identity';
+import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
 import { GitlabConnectionSectionComponent } from './sections/gitlab-connection/gitlab-connection-section.component';
 import { MeSectionComponent } from './sections/me/me-section.component';
+import {
+  RepoRow,
+  RepositoriesSectionComponent,
+} from './sections/repositories/repositories-section.component';
 import { buildSettingsForm, resetSettingsForm, toUpdateRequest } from './settings-form';
 import { HasUnsavedChanges } from './unsaved-changes.guard';
 
@@ -48,6 +55,7 @@ export const TOAST_DURATION_MS = 3500;
     SettingsSectionComponent,
     GitlabConnectionSectionComponent,
     MeSectionComponent,
+    RepositoriesSectionComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
@@ -55,6 +63,7 @@ export const TOAST_DURATION_MS = 3500;
 })
 export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly store = inject(SettingsStore);
+  protected readonly projectsStore = inject(ProjectsStore);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
@@ -63,6 +72,14 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly form = buildSettingsForm();
   /** Signal réémis à chaque événement du formulaire (valeur, statut, pristine). */
   private readonly formEvents = toSignal(this.form.events);
+
+  /**
+   * Repos existants appariés à leur groupe de formulaire, par index
+   * (RG-003-07). Publié par l'effect ci-dessous, qui reconstruit aussi
+   * `form.controls.repos` dans le même mouvement : les deux restent toujours
+   * en phase, sans dépendre de l'ordre d'exécution entre effects et computed.
+   */
+  protected readonly repoRows = signal<RepoRow[]>([]);
 
   protected readonly canSave = computed(() => {
     this.formEvents();
@@ -103,14 +120,26 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       }
     });
     // Le résultat du test n'est effacé que par un changement d'URL ou de
-    // jeton (RG-001-05) — pas par la saisie de l'identité (US-002), qui
-    // partage désormais le même formulaire.
+    // jeton (RG-001-05) — pas par la saisie de l'identité (US-002) ni des
+    // alias de repos (US-003), qui partagent désormais le même formulaire.
     merge(
       this.form.controls.gitlabUrl.valueChanges,
       this.form.controls.gitlabToken.valueChanges,
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.store.resetTest());
+    // Reconstruit inconditionnellement le FormArray des alias à chaque
+    // changement de la liste des repos (ajout/suppression immédiats,
+    // renommage sauvegardé) — RG-003-07 : une modification d'alias non
+    // enregistrée sur une autre ligne est perdue si la liste change entre
+    // temps (cas rare, assumé).
+    effect(() => {
+      const projects = this.projectsStore.projects();
+      syncReposFormArray(this.form.controls.repos, projects);
+      this.repoRows.set(
+        projects.map((project, i) => ({ project, group: this.form.controls.repos.at(i) })),
+      );
+    });
   }
 
   ngOnInit(): void {
@@ -138,11 +167,27 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     if (!this.canSave()) {
       return;
     }
-    const errorKey = await this.store.save(toUpdateRequest(this.form));
-    if (errorKey) {
+    const settingsError = await this.store.save(toUpdateRequest(this.form));
+    if (settingsError) {
       this.toast('settings.saveError');
       return;
     }
+    const aliasChanges = collectDirtyAliasChanges(this.form.controls.repos);
+    const renameErrors = await Promise.all(
+      aliasChanges.map((change) => this.projectsStore.rename(change.id, { alias: change.alias })),
+    );
+    if (renameErrors.some((error) => error !== null)) {
+      // Les paramètres sont déjà enregistrés côté serveur ; le formulaire
+      // reste modifié pour ne perdre aucune saisie (spec §6, « Modifier un
+      // alias vers un doublon »). Un nouveau clic sur Enregistrer relance
+      // les deux étapes ; renvoyer PUT /settings est sans effet indésirable.
+      this.toast('settings.saveError');
+      return;
+    }
+    // Explicite (en plus de l'effect) pour que le formulaire soit
+    // immédiatement pristine avant la navigation, sans dépendre du moment où
+    // l'effect sera exécuté.
+    syncReposFormArray(this.form.controls.repos, this.projectsStore.projects());
     const settings = this.store.settings();
     if (settings) {
       resetSettingsForm(this.form, settings);

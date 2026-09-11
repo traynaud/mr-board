@@ -43,7 +43,6 @@
         [number]="'settings.connection.number' | translate"
         titleKey="settings.connection.title"
         descriptionKey="settings.connection.description"
-        [last]="true"
       >
         <app-gitlab-connection-section
           [form]="form"
@@ -53,6 +52,14 @@
           [canTest]="canTest()"
           (testRequested)="testConnection()"
         />
+      </app-settings-section>
+      <app-settings-section
+        [number]="'settings.projects.number' | translate"
+        titleKey="settings.projects.title"
+        descriptionKey="settings.projects.description"
+        [last]="true"
+      >
+        <app-repositories-section [rows]="repoRows()" />
       </app-settings-section>
     </form>
   }

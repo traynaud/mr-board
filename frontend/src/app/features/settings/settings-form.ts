@@ -1,5 +1,6 @@
 import {
   AbstractControl,
+  FormArray,
   FormControl,
   FormGroup,
   ValidationErrors,
@@ -7,6 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Settings, UpdateSettingsRequest } from '../../models/settings.model';
+import { RepoAliasForm } from './repos-form';
 
 /** Longueur minimale d'un jeton saisi (RG-001-02, identique au backend). */
 export const TOKEN_MIN_LENGTH = 8;
@@ -16,6 +18,8 @@ export interface SettingsFormControls {
   gitlabToken: FormControl<string>;
   meUsername: FormControl<string>;
   meEmail: FormControl<string>;
+  /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
+  repos: FormArray<RepoAliasForm>;
 }
 
 export type SettingsForm = FormGroup<SettingsFormControls>;
@@ -69,23 +73,32 @@ export function buildSettingsForm(): SettingsForm {
       nonNullable: true,
       validators: [Validators.email],
     }),
+    // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
+    // touché par resetSettingsForm (voir ci-dessous).
+    repos: new FormArray<RepoAliasForm>([]),
   });
 }
 
-/** Réinitialise le formulaire depuis les paramètres chargés (état pristine). */
+/**
+ * Réinitialise les champs URL/jeton/identité depuis les paramètres chargés
+ * (état pristine). Ne touche **jamais** `repos` : ce sous-formulaire a son
+ * propre cycle de synchronisation (`syncReposFormArray`, piloté par
+ * `ProjectsStore`) — un `form.reset()` global écraserait ses contrôles avec
+ * des valeurs `null` (FormArray n'a pas de valeur de repli sensée ici).
+ */
 export function resetSettingsForm(form: SettingsForm, settings: Settings): void {
-  form.reset({
-    gitlabUrl: settings.gitlabUrl,
-    gitlabToken: '',
-    meUsername: settings.meUsername ?? '',
-    meEmail: settings.meEmail ?? '',
-  });
+  form.controls.gitlabUrl.reset(settings.gitlabUrl);
+  form.controls.gitlabToken.reset('');
+  form.controls.meUsername.reset(settings.meUsername ?? '');
+  form.controls.meEmail.reset(settings.meEmail ?? '');
 }
 
 /**
  * Convertit le formulaire en corps de `PUT /settings`. `gitlabToken` est omis
  * si vide (jeton inchangé) ; `meUsername`/`meEmail` sont **toujours** envoyés,
- * y compris vides, pour permettre leur effacement (RG-002-02).
+ * y compris vides, pour permettre leur effacement (RG-002-02). `repos` n'en
+ * fait pas partie : les renommages d'alias suivent leur propre appel
+ * `PUT /projects/:id` (voir `collectDirtyAliasChanges`).
  */
 export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
   const { gitlabUrl, gitlabToken, meUsername, meEmail } = form.getRawValue();

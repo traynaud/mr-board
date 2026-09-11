@@ -147,7 +147,7 @@ une fois ses dépendances réalisées.
 |--------|----------------------------------------------------------|----------|------------|------------------------|--------|
 | US-001 | Paramètres — Connexion GitLab (URL, jeton, test)         | Must     | M          | TECH-001, TECH-002     | ✅ |
 | US-002 | Paramètres — Identité « Moi »                            | Must     | S          | US-001                 | ✅ |
-| US-003 | Paramètres — Repos à scanner avec alias                  | Must     | M          | US-001                 | ☐ |
+| US-003 | Paramètres — Repos à scanner avec alias                  | Must     | M          | US-001                 | ✅ |
 | US-004 | Synchronisation des MRs depuis GitLab                    | Must     | L          | US-001, US-003         | ☐ |
 | US-005 | Tableau des MRs — colonnes de base                       | Must     | L          | US-004                 | ☐ |
 | US-006 | Difficulté de la MR                                      | Must     | S          | US-005                 | ☐ |
