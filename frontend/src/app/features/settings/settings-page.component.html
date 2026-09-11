@@ -1,0 +1,20 @@
+<div class="settings-page">
+  <mat-toolbar class="settings-toolbar">
+    <a
+      mat-icon-button
+      routerLink="/"
+      [attr.aria-label]="'common.back' | translate"
+      [matTooltip]="'common.back' | translate"
+    >
+      <mat-icon svgIcon="arrow-left" />
+    </a>
+    <span class="nav-brand">{{ 'settings.title' | translate }}</span>
+    <span class="spacer"></span>
+    <a mat-button routerLink="/">{{ 'common.cancel' | translate }}</a>
+    <button mat-flat-button type="button" disabled>{{ 'common.save' | translate }}</button>
+  </mat-toolbar>
+
+  <main class="settings-content">
+    <p class="placeholder">{{ 'settings.placeholder' | translate }}</p>
+  </main>
+</div>

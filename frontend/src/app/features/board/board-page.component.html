@@ -1,0 +1,16 @@
+<mat-toolbar class="board-toolbar">
+  <span class="nav-brand">{{ 'board.title' | translate }}</span>
+  <span class="spacer"></span>
+  <a
+    mat-icon-button
+    routerLink="/settings"
+    [attr.aria-label]="'board.toolbar.settings' | translate"
+    [matTooltip]="'board.toolbar.settings' | translate"
+  >
+    <mat-icon svgIcon="settings" />
+  </a>
+</mat-toolbar>
+
+<main class="board-content">
+  <p class="placeholder">{{ 'board.placeholder' | translate }}</p>
+</main>

@@ -87,7 +87,8 @@ Les workflows (`feature.md`, `bugfix.md`, `refacto.md`) incluent cette étape en
 
 ## Environnement local (Windows)
 
-- Node.js 22 LTS, npm 10. Aucune CLI globale : utiliser `npx nest` / `npx ng`.
+- Node.js 22 LTS. Aucune CLI globale : utiliser `npx nest` / `npx ng`.
+- npm 10.9 échoue sur `npm install` du frontend (bug Arborist avec Vitest 4) : utiliser `npx npm@11 install` (ou `npm i -g npm@11`).
 - **Toujours** préfixer les commandes shell avec `rtk` (voir `~/.claude/CLAUDE.md`).
 
 ```bash

@@ -138,7 +138,7 @@ une fois ses dépendances réalisées.
 | ID       | Tâche                                                                                                           | Statut |
 |----------|-----------------------------------------------------------------------------------------------------------------|--------|
 | TECH-001 | Initialiser `backend/` : NestJS 11, TypeORM + better-sqlite3, config/env, migrations, Jest unit + e2e, ESLint, `.env.example`, préfixe `/api/v1`, endpoint `GET /health` | ✅ (voir `docs/tech/TECH-001-init-backend.md`) |
-| TECH-002 | Initialiser `frontend/` : Angular 20, Angular Material (thème Modernist, Archivo, radius 0), `@ngrx/signals`, i18n custom, routing (`/`, `/settings`), proxy API, Vitest, ESLint, `changelog.json` | ☐ |
+| TECH-002 | Initialiser `frontend/` : Angular 21, Angular Material (thème Modernist, Archivo, radius 0), `@ngrx/signals`, i18n custom, routing (`/`, `/settings`), proxy API, Vitest, ESLint, `changelog.json` | ✅ (voir `docs/tech/TECH-002-init-frontend.md`) |
 | TECH-003 | Docker : `Dockerfile` backend et frontend, `docker-compose.yml` (volume SQLite)                                 | ☐ |
 
 ### User Stories

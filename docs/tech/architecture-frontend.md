@@ -9,8 +9,8 @@ Ce document décrit l'architecture cible du frontend et les bonnes pratiques à 
 
 | Brique            | Choix                                        | Justification                                                   |
 |-------------------|----------------------------------------------|-----------------------------------------------------------------|
-| Framework         | Angular 20+ (standalone, signals, zoneless-ready) | Modernité, performance, API signals stable                 |
-| UI                | Angular Material 20+ (+ CDK)                 | Exigence projet : composants Material en priorité               |
+| Framework         | Angular 21 (standalone, signals) — 22 dès Node ≥ 22.22 | Modernité, performance, API signals stable            |
+| UI                | Angular Material 21 (+ CDK)                  | Exigence projet : composants Material en priorité               |
 | État              | `@ngrx/signals` (SignalStore)                | Stores réactifs légers, sans boilerplate NgRx classique         |
 | HTTP              | `HttpClient` + `provideHttpClient(withInterceptors)` | Interceptors d'erreur et de base URL                    |
 | Styles            | SCSS + thème Material M3 personnalisé        | Tokens du design system Modernist                               |

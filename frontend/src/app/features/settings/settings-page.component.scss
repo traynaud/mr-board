@@ -1,0 +1,34 @@
+.settings-page {
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-8);
+  box-sizing: border-box;
+}
+
+.settings-toolbar {
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-divider);
+  padding: 0;
+  gap: var(--space-3);
+}
+
+.nav-brand {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.settings-content {
+  padding: var(--space-6) 0;
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--color-neutral-600);
+}

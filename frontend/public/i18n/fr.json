@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "MR Board"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "ok": "OK"
+  },
+  "board": {
+    "title": "MR Board",
+    "toolbar": {
+      "settings": "Paramètres"
+    },
+    "placeholder": "Le tableau des MRs arrive avec US-005."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "placeholder": "Les sections de paramètres arrivent avec US-001."
+  },
+  "errors": {
+    "network": "Le serveur est injoignable.",
+    "unexpected": "Une erreur inattendue est survenue."
+  }
+}
