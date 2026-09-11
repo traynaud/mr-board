@@ -1,40 +1,33 @@
 # =============================================
-# BACKEND - Java / Spring Boot (IntelliJ IDEA)
+# BACKEND - NestJS / SQLite
 # =============================================
 
-# --- Fichiers compilés Java ---
-backend/target/
-backend/build/
-backend/*.class
+# --- Dépendances & build ---
+backend/node_modules/
+backend/dist/
+backend/coverage/
 
-# --- IntelliJ IDEA ---
-backend/.idea/
-backend/*.iml
-backend/*.iws
-backend/*.ipr
-backend/out/
+# --- Base de données SQLite locale ---
+backend/data/
+backend/*.sqlite
+backend/*.sqlite-journal
+backend/*.sqlite-wal
+backend/*.sqlite-shm
+backend/*.db
 
-# --- Maven ---
-backend/.mvn/timing.properties
-backend/.mvn/wrapper/maven-wrapper.jar
-
-# --- Gradle (si utilisé) ---
-backend/.gradle/
-backend/bin/
+# --- Variables d'environnement (contient le jeton GitLab) ---
+backend/.env
+backend/.env.local
+backend/.env.*.local
 
 # --- Logs & fichiers temporaires ---
 backend/*.log
 backend/logs/
-
-# --- Properties sensibles ---
-backend/src/main/resources/application-local.properties
-backend/src/main/resources/application-local.yml
-backend/src/main/resources/application-prod.yml
-backend/src/main/resources/application-prod.properties
+backend/.eslintcache
 
 
 # =============================================
-# FRONTEND - Angular (WebStorm)
+# FRONTEND - Angular
 # =============================================
 
 # --- Dépendances Node ---
@@ -44,17 +37,15 @@ frontend/node_modules/
 frontend/dist/
 frontend/.angular/
 
-# --- WebStorm / JetBrains ---
-frontend/.idea/
-frontend/*.iml
-
 # --- Cache & fichiers temporaires ---
 frontend/.sass-cache/
 frontend/tmp/
 frontend/.eslintcache
 
-# --- Couverture de tests ---
+# --- Couverture de tests & Playwright ---
 frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
 
 # --- Variables d'environnement locales ---
 frontend/.env
@@ -65,10 +56,14 @@ frontend/.env.local
 # RACINE - Général
 # =============================================
 
-# --- IDE JetBrains (racine) ---
+# --- IDE JetBrains ---
 .idea/
 *.iml
-docker-compose-prod.yml
+*.iws
+*.ipr
+
+# --- VS Code ---
+.vscode/
 
 # --- OS ---
 .DS_Store
@@ -86,6 +81,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# --- Docker (surcharges locales) ---
+docker-compose.override.yml
+docker-compose-prod.yml
+
 
 # =============================================
 # CLAUDE CODE
@@ -101,3 +100,4 @@ yarn-error.log*
 # Note : NE PAS ignorer ces fichiers (ils doivent être versionnés) :
 #   - CLAUDE.md (instructions projet pour Claude)
 #   - .claude/settings.json (configuration partagée)
+#   - .claude/commands/*.md (workflows et agents)

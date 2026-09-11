@@ -13,7 +13,7 @@ Analyse le code concerné et produis un rapport :
 ### 1.1 État des lieux
 - Fichiers concernés (liste exhaustive avec chemins)
 - Nombre de lignes impactées (estimation)
-- Couplages identifiés (qui dépend de quoi)
+- Couplages identifiés (qui dépend de quoi : modules NestJS, providers, stores Angular, composants)
 
 ### 1.2 Problèmes identifiés
 Pour chaque problème :
@@ -26,7 +26,7 @@ Pour chaque problème :
 - Ce qui pourrait casser
 - Les zones à tester en priorité après refacto
 
-Écris le diagnostic dans `docs/refacto/<nom-refacto>/diagnostic.md`.
+Écris le diagnostic dans `docs/tech/refacto/<nom-refacto>/diagnostic.md`.
 
 **STOP** → Demande validation avant de toucher au code.
 
@@ -45,7 +45,7 @@ Format :
 Étape 2 : [description] → fichiers touchés : [liste]
 ```
 
-Écris le plan dans `docs/refacto/<nom-refacto>/plan.md`.
+Écris le plan dans `docs/tech/refacto/<nom-refacto>/plan.md`.
 
 **STOP** → Demande validation du plan.
 
@@ -54,7 +54,11 @@ Format :
 ## Phase 3 : Filet de sécurité
 
 Avant de refactorer :
-1. Lance les tests existants (`mvn test` + `ng test`)
+1. Lance les tests existants :
+   ```bash
+   cd backend && rtk npm test && rtk npm run test:e2e
+   cd frontend && rtk npx ng test --no-watch
+   ```
 2. Note le nombre de tests passants (c'est la baseline)
 3. Si la couverture est faible sur la zone à refactorer,
    ÉCRIS D'ABORD des tests de non-régression
@@ -68,7 +72,7 @@ Avant de refactorer :
 
 Pour CHAQUE étape du plan :
 1. Applique la modification
-2. Lance `mvn clean verify` (ou `ng test` si frontend)
+2. Lance `rtk npm run lint && rtk npm test` (backend) ou `rtk npx tsc --noEmit && rtk npx ng test --no-watch` (frontend)
 3. Si un test casse → corrige IMMÉDIATEMENT ou rollback
 4. Affiche : "Étape X/Y ✅ - tests : XX passés / 0 échoués"
 
@@ -77,12 +81,13 @@ Règles strictes :
 - JAMAIS modifier le comportement fonctionnel
 - JAMAIS ajouter de feature "en passant"
 - Un seul pattern de refacto par étape (Extract Method OU Rename OU Move, pas les 3)
+- Si le schéma SQLite change → migration TypeORM dédiée, jamais de modification d'une migration existante
 
 ---
 
 ## Phase 5 : Vérification finale
 
-1. Lance TOUS les tests (backend + frontend)
+1. Lance TOUS les tests (backend unit + e2e, frontend)
 2. Compare avec la baseline de la Phase 3
 3. Vérifie que le nombre de tests est >= à la baseline
 4. Génère un résumé :
@@ -106,13 +111,13 @@ Règles strictes :
 - Le comportement fonctionnel (garanti par les tests)
 ```
 
-Écris dans docs/refacto/<nom-refacto>/report.md.
+Écris dans `docs/tech/refacto/<nom-refacto>/report.md`.
 
 ## Phase 6 : Finalisation
 
-**Mets à jour `frontend/public/changelog.json`** : ajoute une entrée `{ "date": "<YYYY-MM-DD>", "type": "refacto", "title": "<description courte en une phrase>" }` en tête du tableau (ordre décroissant).
+**Mets à jour `frontend/public/changelog.json`** : ajoute une entrée `{ "date": "<YYYY-MM-DD>", "type": "refacto", "user-story": "", "title": "<description courte en une phrase>" }` en tête du tableau (ordre décroissant).
 
-Crée un commit : refactor: <description courte>
+Crée un commit : `refactor: <description courte>`
 
 Refactoring demandé : $ARGUMENTS
 
