@@ -10,11 +10,43 @@
     </a>
     <span class="nav-brand">{{ 'settings.title' | translate }}</span>
     <span class="spacer"></span>
-    <a mat-button routerLink="/">{{ 'common.cancel' | translate }}</a>
-    <button mat-flat-button type="button" disabled>{{ 'common.save' | translate }}</button>
+    <button mat-button type="button" class="cancel" (click)="cancel()">
+      {{ 'common.cancel' | translate }}
+    </button>
+    @if (!store.loadError()) {
+      <button mat-flat-button type="button" class="save" [disabled]="!canSave()" (click)="save()">
+        {{ 'common.save' | translate }}
+      </button>
+    }
   </mat-toolbar>
 
-  <main class="settings-content">
-    <p class="placeholder">{{ 'settings.placeholder' | translate }}</p>
-  </main>
+  @if (store.loading()) {
+    <mat-progress-bar mode="indeterminate" class="loading" />
+  } @else if (store.loadError(); as errorKey) {
+    <div class="load-error" role="alert">
+      <mat-icon svgIcon="alert-circle" />
+      <span>{{ 'settings.loadError' | translate }} {{ errorKey | translate }}</span>
+      <button mat-stroked-button type="button" class="retry" (click)="retry()">
+        {{ 'common.retry' | translate }}
+      </button>
+    </div>
+  } @else if (store.settings(); as settings) {
+    <form class="settings-grid" [formGroup]="form">
+      <app-settings-section
+        [number]="'settings.connection.number' | translate"
+        titleKey="settings.connection.title"
+        descriptionKey="settings.connection.description"
+        [last]="true"
+      >
+        <app-gitlab-connection-section
+          [form]="form"
+          [tokenConfigured]="settings.tokenConfigured"
+          [tokenHint]="settings.tokenHint"
+          [test]="store.test()"
+          [canTest]="canTest()"
+          (testRequested)="testConnection()"
+        />
+      </app-settings-section>
+    </form>
+  }
 </div>

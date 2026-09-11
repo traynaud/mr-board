@@ -1,9 +1,12 @@
+@use '@angular/material' as mat;
+
 .settings-page {
   max-width: 920px;
   width: 100%;
   margin: 0 auto;
   padding: 0 var(--space-4) var(--space-8);
   box-sizing: border-box;
+  @include mat.form-field-density(-1);
 }
 
 .settings-toolbar {
@@ -24,11 +27,32 @@
   flex: 1;
 }
 
-.settings-content {
-  padding: var(--space-6) 0;
+.loading {
+  height: 2px;
 }
 
-.placeholder {
-  margin: 0;
-  color: var(--color-neutral-600);
+.load-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+  color: var(--color-accent-700);
+  font-size: 13px;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 0 var(--space-8);
+}
+
+@media (max-width: 640px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
 }

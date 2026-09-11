@@ -144,3 +144,11 @@ a {
 .mat-mdc-button-base .mdc-button__label {
   text-align: left;
 }
+
+// Toast (MatSnackBar) — bas gauche, fond sombre, action accent
+.mrb-toast {
+  --mat-snack-bar-container-color: var(--color-neutral-900);
+  --mat-snack-bar-supporting-text-color: #fff;
+  --mat-snack-bar-button-color: var(--color-accent-400);
+  --mat-snack-bar-container-shape: 0px;
+}

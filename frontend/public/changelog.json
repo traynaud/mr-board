@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "date": "2026-09-12",
+    "type": "feat",
+    "user-story": "US-001",
+    "title": "Paramètres : connexion GitLab (URL, jeton chiffré, test de connexion) et écran Paramètres."
+  }
+]

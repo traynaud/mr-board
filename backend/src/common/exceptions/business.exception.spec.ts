@@ -21,8 +21,8 @@ describe('Business exceptions', () => {
   ])('should_expose_status_and_code (%#)', (exception, status, code) => {
     expect(exception.getStatus()).toBe(status);
     expect(exception.code).toBe(code);
-    expect(exception.getResponse()).toEqual(
-      expect.objectContaining({ code, error: HttpStatus[status] }),
-    );
+    expect(exception.getResponse()).toEqual(expect.objectContaining({ code }));
+    expect(exception.getResponse()).not.toHaveProperty('error');
+    expect(HttpStatus[status]).toBeDefined();
   });
 });

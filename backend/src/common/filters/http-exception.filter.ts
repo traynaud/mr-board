@@ -62,7 +62,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } = typeof res === 'string' ? { message: res } : res;
       return {
         statusCode: status,
-        error: details.error ?? HttpStatus[status],
+        error: details.error ?? reasonPhrase(status),
         message: details.message ?? exception.message,
         ...(details.code ? { code: details.code } : {}),
         timestamp,
@@ -77,4 +77,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path,
     };
   }
+}
+
+/**
+ * Standard HTTP reason phrase for a status code (`502` → `Bad Gateway`),
+ * matching the `error` label produced by Nest's built-in exceptions.
+ * @param status HTTP status code.
+ */
+export function reasonPhrase(status: number): string {
+  const name = HttpStatus[status];
+  if (!name) {
+    return `Error ${status}`;
+  }
+  return name
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }

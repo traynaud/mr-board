@@ -10,7 +10,7 @@ export class BusinessException extends HttpException {
     message: string,
     status: HttpStatus = HttpStatus.BAD_REQUEST,
   ) {
-    super({ code, message, error: HttpStatus[status] }, status);
+    super({ code, message }, status);
   }
 }
 
@@ -39,6 +39,13 @@ export class MissingConfigurationException extends BusinessException {
 export class GitlabAuthException extends BusinessException {
   constructor(message = 'GitLab rejected the token') {
     super('gitlab.auth', message, HttpStatus.BAD_GATEWAY);
+  }
+}
+
+/** The GitLab token lacks the `read_api` scope (400). */
+export class GitlabScopeException extends BusinessValidationException {
+  constructor(message = 'GitLab token requires the read_api scope') {
+    super('gitlab.scope', message);
   }
 }
 

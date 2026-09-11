@@ -6,7 +6,8 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "back": "Retour",
-    "ok": "OK"
+    "ok": "OK",
+    "retry": "Réessayer"
   },
   "board": {
     "title": "MR Board",
@@ -17,10 +18,50 @@
   },
   "settings": {
     "title": "Paramètres",
-    "placeholder": "Les sections de paramètres arrivent avec US-001."
+    "loadError": "Impossible de charger les paramètres.",
+    "saved": "Paramètres enregistrés",
+    "saveError": "L'enregistrement a échoué.",
+    "unsaved": {
+      "title": "Abandonner les modifications ?",
+      "message": "Les modifications non enregistrées seront perdues.",
+      "stay": "Rester",
+      "discard": "Abandonner"
+    },
+    "connection": {
+      "number": "02",
+      "title": "Connexion GitLab",
+      "description": "Jeton personnel avec le scope read_api. Stocké chiffré côté serveur, jamais renvoyé au navigateur.",
+      "url": "URL de l'instance",
+      "urlRequired": "L'URL est obligatoire.",
+      "urlInvalid": "Saisir une URL http(s) valide, par ex. https://gitlab.exemple.fr",
+      "token": "Jeton d'accès personnel",
+      "tokenKeepPlaceholder": "Laisser vide pour conserver le jeton actuel",
+      "tokenTooShort": "Le jeton doit contenir au moins {{min}} caractères.",
+      "tokenConfigured": "Jeton configuré (…{{hint}})",
+      "tokenNone": "Aucun jeton",
+      "showToken": "Afficher le jeton",
+      "hideToken": "Masquer le jeton",
+      "test": "Tester la connexion",
+      "testing": "Connexion…",
+      "result": {
+        "connected": "Connecté · {{name}} (@{{username}})",
+        "expires": "expire le {{date}}",
+        "noExpiry": "sans expiration",
+        "unknownExpiry": "expiration inconnue"
+      }
+    }
   },
   "errors": {
     "network": "Le serveur est injoignable.",
-    "unexpected": "Une erreur inattendue est survenue."
+    "unexpected": "Une erreur inattendue est survenue.",
+    "gitlab": {
+      "auth": "Échec : jeton refusé (401)",
+      "unavailable": "Échec : instance injoignable",
+      "scope": "Échec : scope insuffisant (read_api requis)"
+    },
+    "settings": {
+      "tokenMissing": "Aucun jeton à tester : saisissez un jeton.",
+      "invalidUrl": "URL d'instance invalide."
+    }
   }
 }

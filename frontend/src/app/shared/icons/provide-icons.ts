@@ -14,6 +14,7 @@ export const ICONS: Record<string, string> = {
     '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>',
   check: '<path d="M5 12l5 5L20 7"/>',
   x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  'alert-circle': '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',

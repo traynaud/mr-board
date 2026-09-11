@@ -1,6 +1,10 @@
 import { ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
 import { EntityNotFoundException } from '../exceptions';
-import { ErrorResponse, HttpExceptionFilter } from './http-exception.filter';
+import {
+  ErrorResponse,
+  HttpExceptionFilter,
+  reasonPhrase,
+} from './http-exception.filter';
 
 describe('HttpExceptionFilter', () => {
   const json = jest.fn<void, [ErrorResponse]>();
@@ -29,7 +33,7 @@ describe('HttpExceptionFilter', () => {
     expect(json).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: 404,
-        error: 'NOT_FOUND',
+        error: 'Not Found',
         code: 'entity.notFound',
         message: 'Project 7 not found',
         path: '/api/v1/test',
@@ -82,5 +86,20 @@ describe('HttpExceptionFilter', () => {
       expect.stringContaining('500'),
       'oops',
     );
+  });
+});
+
+describe('reasonPhrase', () => {
+  it.each([
+    [400, 'Bad Request'],
+    [409, 'Conflict'],
+    [502, 'Bad Gateway'],
+    [500, 'Internal Server Error'],
+  ])('should_format_%i', (status, expected) => {
+    expect(reasonPhrase(status)).toBe(expected);
+  });
+
+  it('should_fallback_for_unknown_status', () => {
+    expect(reasonPhrase(799)).toBe('Error 799');
   });
 });

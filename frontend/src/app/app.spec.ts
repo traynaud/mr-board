@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -37,6 +37,7 @@ describe('App', () => {
     const harness = await RouterTestingHarness.create('/settings');
 
     expect(harness.routeNativeElement?.textContent).toContain(t('settings.title'));
+    TestBed.inject(HttpTestingController).expectOne('api://settings');
   });
 
   it('should_redirect_unknown_routes_to_board', async () => {
