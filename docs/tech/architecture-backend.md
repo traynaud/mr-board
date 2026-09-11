@@ -12,13 +12,13 @@ Ce document décrit l'architecture cible du backend et les bonnes pratiques à r
 | Runtime             | Node.js 22 LTS                          | Support long terme, `fetch` natif                                     |
 | Framework           | NestJS 11                               | Modules, DI, pipes, décorateurs, écosystème de test                    |
 | Langage             | TypeScript 5, `strict: true`            | Sécurité de typage partagée avec le frontend                          |
-| ORM                 | TypeORM 0.3 + driver `better-sqlite3`   | Intégration `@nestjs/typeorm`, migrations versionnées, driver synchrone et rapide |
+| ORM                 | TypeORM 1.x + driver `better-sqlite3`   | Intégration `@nestjs/typeorm`, migrations versionnées, driver synchrone et rapide |
 | Base de données     | SQLite (fichier `backend/data/mr-board.sqlite`) | Zéro infrastructure, une seule instance, volume faible         |
 | Validation          | `class-validator` + `class-transformer` | DTOs déclaratifs, `ValidationPipe` global                              |
-| Config              | `@nestjs/config` + schéma Joi           | Variables d'environnement validées au démarrage                       |
-| Planification       | `@nestjs/schedule`                      | Synchronisation périodique avec GitLab                                |
+| Config              | `@nestjs/config` 4.x (CJS) + schéma Joi | Variables d'environnement validées au démarrage                       |
+| Planification       | `@nestjs/schedule` 6.x (CJS)            | Synchronisation périodique avec GitLab                                |
 | HTTP sortant        | `fetch` natif (ou `@nestjs/axios`)      | Appels API GitLab, avec timeout                                       |
-| Tests               | Jest 29 + `@nestjs/testing` + `supertest` | Unitaires et e2e                                                    |
+| Tests               | Jest 30 + `@nestjs/testing` + `supertest` | Unitaires et e2e                                                    |
 | Qualité             | ESLint (typescript-eslint) + Prettier   | Config générée par `nest new`, renforcée (`no-explicit-any: error`)   |
 
 Initialisation : `npx @nestjs/cli new backend --package-manager npm --strict`.
