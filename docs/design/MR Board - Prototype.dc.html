@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-9cba37da-d357-42ca-b8e9-4f5b8e0165f6/styles.css">
+<script src="_ds/modernist-9cba37da-d357-42ca-b8e9-4f5b8e0165f6/_ds_bundle.js"></script>
+<script type="module">import 'https://esm.run/@material/web/all.js';</script>
+<style>
+body{margin:0;background:var(--color-bg);font-family:var(--font-body);color:var(--color-text)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+:root{
+--md-sys-color-primary:#ec3013;--md-sys-color-on-primary:#fff;--md-sys-color-primary-container:#ffe0d9;--md-sys-color-on-primary-container:#7c1405;
+--md-sys-color-secondary:#444141;--md-sys-color-on-secondary:#fff;--md-sys-color-secondary-container:#ffe0d9;--md-sys-color-on-secondary-container:#7c1405;
+--md-sys-color-surface:#f3f2f2;--md-sys-color-on-surface:#201e1d;--md-sys-color-on-surface-variant:#605d5d;
+--md-sys-color-surface-container-lowest:#fff;--md-sys-color-surface-container-low:#f3f2f2;--md-sys-color-surface-container:#eae9e9;--md-sys-color-surface-container-high:#e2e0e0;--md-sys-color-surface-container-highest:#d7d3d3;
+--md-sys-color-outline:#7d7979;--md-sys-color-outline-variant:#bab6b6;--md-sys-color-error:#ec3013;
+--md-sys-shape-corner-none:0px;--md-sys-shape-corner-extra-small:0px;--md-sys-shape-corner-small:0px;--md-sys-shape-corner-medium:0px;--md-sys-shape-corner-large:0px;--md-sys-shape-corner-extra-large:0px;--md-sys-shape-corner-full:0px;
+--md-ref-typeface-brand:"Archivo",system-ui,sans-serif;--md-ref-typeface-plain:"Archivo",system-ui,sans-serif;
+--md-menu-container-shape:0px;--md-switch-track-shape:0px;--md-switch-handle-shape:0px;--md-checkbox-container-shape:0px;--md-outlined-text-field-container-shape:0px;--md-filled-button-container-shape:0px;--md-outlined-button-container-shape:0px;--md-text-button-container-shape:0px;--md-filter-chip-container-shape:0px;--md-input-chip-container-shape:0px;--md-assist-chip-container-shape:0px;
+}
+md-icon{--md-icon-size:18px;display:inline-flex}md-icon svg{width:18px;height:18px}
+md-filled-button,md-outlined-button,md-text-button{--md-filled-button-label-text-font:"Archivo";--md-outlined-button-label-text-font:"Archivo";--md-text-button-label-text-font:"Archivo"}
+.table th{white-space:nowrap;user-select:none}.table th[data-act]{cursor:pointer}.table th[data-act]:hover{color:var(--color-accent)}
+.table td{vertical-align:middle;padding:6px 8px;font-size:13px}
+.table tbody tr:hover td{background:var(--color-neutral-100)}
+md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
+@keyframes toastin{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh;display:flex;flex-direction:column">
+
+<sc-if value="{{ isBoard }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Tableau" style="display:flex;flex-direction:column;flex:1">
+    <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:2px solid var(--color-divider)">
+      <span class="nav-brand">MR Board</span>
+      <span style="font-size:12px;color:var(--color-neutral-600)">{{ syncLabel }}</span>
+      <span style="flex:1"></span>
+      <md-outlined-button data-act="refresh" disabled="{{ refreshDisabled }}"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"></path></svg></md-icon>Rafraîchir</md-outlined-button>
+      <md-icon-button data-act="goto" data-view="settings" aria-label="Paramètres"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></md-icon></md-icon-button>
+    </div>
+    <sc-if value="{{ syncing }}" hint-placeholder-val="{{ false }}"><md-linear-progress indeterminate style="--md-linear-progress-track-height:2px;--md-linear-progress-active-indicator-height:2px;margin-top:-2px"></md-linear-progress></sc-if>
+
+    <sc-if value="{{ noToken }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--color-accent-100);border-bottom:2px solid var(--color-accent);font-size:13px;color:var(--color-accent-800)">
+        <span style="font-weight:600">Aucun jeton GitLab configuré.</span><span>Les données affichées sont celles du dernier cache.</span><span style="flex:1"></span>
+        <md-text-button data-act="goto" data-view="settings">Configurer</md-text-button>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:2px solid var(--color-divider);flex-wrap:wrap">
+      <md-filter-chip label="Drafts" selected="{{ draftsSel }}" data-act="toggle" data-key="drafts"></md-filter-chip>
+      <md-filter-chip label="Mes MRs" selected="{{ mineSel }}" data-act="toggle" data-key="mine"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></md-icon></md-filter-chip>
+      <span style="width:1px;height:24px;background:var(--color-divider);margin:0 4px"></span>
+      <sc-for list="{{ pills }}" as="p" hint-placeholder-count="2">
+        <span style="position:relative;display:inline-flex" data-menu-root>
+          <md-input-chip data-anchor="{{ p.f }}" label="{{ p.label }}" selected="{{ p.sel }}" data-act="menu" data-f="{{ p.f }}"></md-input-chip>
+          <md-menu data-menu="{{ p.f }}" stay-open-on-outside-click stay-open-on-focusout y-offset="4" style="min-width:250px">
+            <div style="padding:8px 14px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-600);border-bottom:1px solid var(--color-divider)">{{ p.title }}</div>
+            <sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3">
+              <md-menu-item keep-open data-act="opt" data-f="{{ p.f }}" data-v="{{ o.v }}">
+                <md-checkbox slot="start" touch-target="none" checked="{{ o.on }}" style="pointer-events:none"></md-checkbox>
+                <div slot="headline" style="font-size:13px">{{ o.label }}</div>
+                <span slot="end" style="font-size:11px;color:var(--color-neutral-600)">{{ o.count }}</span>
+              </md-menu-item>
+            </sc-for>
+          </md-menu>
+        </span>
+      </sc-for>
+      <span style="position:relative;display:inline-flex" data-menu-root>
+        <md-assist-chip data-anchor="add" label="Ajouter un filtre" data-act="menu" data-f="add" disabled="{{ addDisabled }}"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></md-icon></md-assist-chip>
+        <md-menu data-menu="add" stay-open-on-outside-click stay-open-on-focusout y-offset="4" style="min-width:200px">
+          <sc-for list="{{ addOpts }}" as="o" hint-placeholder-count="3">
+            <md-menu-item keep-open data-act="add-filter" data-f="{{ o.f }}"><div slot="headline" style="font-size:13px">{{ o.label }}</div></md-menu-item>
+          </sc-for>
+        </md-menu>
+      </span>
+      <span style="flex:1"></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><span style="font-size:12px;color:var(--color-neutral-600)">{{ countLabel }}</span><md-text-button data-act="clear">Effacer</md-text-button></span>
+    </div>
+
+    <div style="overflow-x:auto"><table class="table" style="min-width:860px">
+      <thead><tr>
+        <th style="width:64px">Projet</th><th style="width:52px">Auteur</th><th>Titre</th>
+        <th style="width:150px;color:{{ diffHeadColor }}" data-act="sort" data-key="diff">Difficulté <span style="opacity:.7">{{ diffArrow }}</span></th>
+        <th style="width:44px" title="Commentaires"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></th>
+        <th style="width:72px">Reviewer</th><th style="width:72px">Affecté</th><th style="width:76px">Approved</th>
+        <th style="width:118px;color:{{ readyHeadColor }}" data-act="sort" data-key="ready">Depuis Ready <span style="opacity:.7">{{ readyArrow }}</span></th>
+        <sc-if value="{{ showOpened }}" hint-placeholder-val="{{ false }}"><th style="width:120px">Ouverte</th></sc-if>
+        <th style="width:36px;padding:0 2px">
+          <span style="position:relative;display:inline-flex" data-menu-root>
+            <md-icon-button data-anchor="cols" data-act="menu" data-f="cols" touch-target="none" aria-label="Colonnes" style="--md-icon-button-icon-size:16px;width:32px;height:32px"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16"></rect><path d="M9 4v16M15 4v16"></path></svg></md-icon></md-icon-button>
+            <md-menu data-menu="cols" stay-open-on-outside-click stay-open-on-focusout anchor-corner="end-end" menu-corner="start-end" style="min-width:220px">
+              <div style="padding:8px 14px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-600);border-bottom:1px solid var(--color-divider)">Colonnes</div>
+              <md-menu-item keep-open data-act="col"><md-checkbox slot="start" touch-target="none" checked="{{ showOpenedChk }}" style="pointer-events:none"></md-checkbox><div slot="headline" style="font-size:13px">Date d'ouverture</div></md-menu-item>
+            </md-menu>
+          </span>
+        </th>
+      </tr></thead>
+      <tbody>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+        <tr style="opacity:{{ r.opacity }}">
+          <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
+          <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600">{{ r.author.ini }}</span></td>
+          <td style="max-width:0"><span style="display:flex;align-items:center;gap:8px;min-width:0"><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="font-weight:600;flex:none">Draft</span></sc-if><a href="{{ r.url }}" target="{{ linkTarget }}" title="{{ r.title }}" style="text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></span></td>
+          <td><span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
+          <td>{{ r.comments }}</td>
+          <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+          <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+          <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2f8f4e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
+          <td><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-neutral-600)">ouverte {{ r.openedLabel }}</span></sc-if><sc-if value="{{ r.notDraft }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></sc-if></td>
+          <sc-if value="{{ showOpened }}" hint-placeholder-val="{{ false }}"><td style="font-size:12px;color:var(--color-neutral-600)">{{ r.openedDate }}</td></sc-if>
+          <td></td>
+        </tr>
+        </sc-for>
+        <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+          <tr><td colspan="11" style="padding:48px 20px;text-align:left"><div style="display:flex;align-items:center;gap:16px"><span style="font-size:15px">Aucune MR ne correspond aux filtres.</span><md-text-button data-act="clear">Effacer les filtres</md-text-button></div></td></tr>
+        </sc-if>
+      </tbody>
+    </table></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 20px;padding:10px 20px 24px;font-size:11px;color:var(--color-neutral-600);margin-top:auto">
+      <span>Drafts après les MRs ready, triés par date d'ouverture · « Mes MRs » = auteur, reviewer ou affecté</span>
+      <sc-if value="{{ showUrl }}" hint-placeholder-val="{{ true }}"><span style="font-family:ui-monospace,Menlo,monospace">?{{ query }}</span></sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Paramètres" style="max-width:920px;width:100%;margin:0 auto;padding:0 20px 40px;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:2px solid var(--color-divider)">
+      <md-icon-button data-act="cancel" aria-label="Retour"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></md-icon></md-icon-button>
+      <span class="nav-brand">Paramètres</span>
+      <span style="flex:1"></span>
+      <md-text-button data-act="cancel">Annuler</md-text-button>
+      <md-filled-button data-act="save">Enregistrer</md-filled-button>
+    </div>
+    <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 32px">
+
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">01 · Moi</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Utilisé par « Mes MRs » et pour repérer mes rôles.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <md-outlined-text-field label="Nom d'utilisateur GitLab" value="{{ d.user }}" data-in="user"></md-outlined-text-field>
+        <md-outlined-text-field label="Email (optionnel)" value="{{ d.email }}" data-in="email" placeholder="marie@exemple.fr"></md-outlined-text-field>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600">{{ meIni }}</span><span>{{ meName }}</span><span class="tag tag-neutral">{{ meStatus }}</span></div>
+      </div>
+
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexion GitLab</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Jeton personnel avec le scope <code>read_api</code>. Stocké localement dans le navigateur.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <md-outlined-text-field label="URL de l'instance" value="{{ d.url }}" data-in="url"></md-outlined-text-field>
+        <md-outlined-text-field label="Jeton d'accès personnel" type="{{ tokenType }}" value="{{ d.token }}" data-in="token">
+          <md-icon-button slot="trailing-icon" toggle data-act="show-token" aria-label="Afficher le jeton"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></md-icon><md-icon slot="selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path></svg></md-icon></md-icon-button>
+        </md-outlined-text-field>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px"><md-outlined-button data-act="test" disabled="{{ testDisabled }}">Tester la connexion</md-outlined-button><span style="font-size:13px;color:{{ testColor }}">{{ testLabel }}</span></div>
+      </div>
+
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">03 · Repos à scanner</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">L'alias est ce qui s'affiche dans la colonne Projet et le filtre.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)">
+        <table class="table" style="font-size:13px">
+          <thead><tr><th>Chemin du projet</th><th style="width:150px">Alias</th><th style="width:48px"></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ repos }}" as="rp" hint-placeholder-count="3">
+              <tr><td>{{ rp.path }}</td><td><md-outlined-text-field value="{{ rp.alias }}" data-in="alias" data-i="{{ rp.i }}" style="--md-outlined-field-top-space:6px;--md-outlined-field-bottom-space:6px"></md-outlined-text-field></td><td><md-icon-button data-act="del-repo" data-i="{{ rp.i }}" touch-target="none" aria-label="Supprimer" style="--md-icon-button-icon-size:16px;width:32px;height:32px"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></md-icon></md-icon-button></td></tr>
+            </sc-for>
+            <tr><td colspan="3" style="border-bottom:0;padding-top:12px"><div style="display:flex;gap:8px;align-items:center"><md-outlined-text-field placeholder="groupe/projet ou URL GitLab" value="{{ newRepo }}" data-in="newRepo" style="flex:1;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-text-field placeholder="alias" value="{{ newAlias }}" data-in="newAlias" style="width:150px;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-button data-act="add-repo" disabled="{{ addRepoDisabled }}" style="flex:none"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></md-icon>Ajouter</md-outlined-button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">04 · Actualisation</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Synchro automatique ; le bouton Rafraîchir force toujours.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:flex;flex-direction:column;gap:16px">
+        <div><div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Fréquence</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px 20px;font-size:13px">
+            <sc-for list="{{ freqOpts }}" as="f" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:6px;cursor:pointer" data-act="freq" data-v="{{ f.v }}"><md-radio name="freq" value="{{ f.v }}" checked="{{ f.on }}" touch-target="none" style="pointer-events:none"></md-radio>{{ f.label }}</span></sc-for>
+          </div></div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px"><md-switch selected="{{ d.pauseHidden }}" data-act="chk" data-key="pauseHidden"></md-switch><span>Mettre en pause quand l'onglet est inactif</span></div>
+      </div>
+
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">05 · Seuils</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Règles de calcul de la difficulté et du délai Ready.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px 24px">
+        <div><div style="font-size:12px;margin-bottom:8px;color:var(--color-neutral-700)">Difficulté</div>
+          <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px 10px;align-items:center;font-size:13px">
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:#2f8f4e;display:block"></i>Easy</span><md-outlined-text-field type="number" prefix-text="&lt;" suffix-text="fich." value="{{ d.easyFiles }}" data-in="easyFiles"></md-outlined-text-field><md-outlined-text-field type="number" prefix-text="&lt;" suffix-text="l." value="{{ d.easyLines }}" data-in="easyLines"></md-outlined-text-field>
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:#d98a1f;display:block"></i>Medium</span><span style="font-size:12px;color:var(--color-neutral-600);grid-column:span 2">entre les deux</span>
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--color-accent);display:block"></i>Hard</span><md-outlined-text-field type="number" prefix-text="&gt;" suffix-text="fich." value="{{ d.hardFiles }}" data-in="hardFiles"></md-outlined-text-field><md-outlined-text-field type="number" prefix-text="&gt;" suffix-text="l." value="{{ d.hardLines }}" data-in="hardLines"></md-outlined-text-field>
+          </div></div>
+        <div><div style="font-size:12px;margin-bottom:8px;color:var(--color-neutral-700)">Temps depuis Ready</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:13px">
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:#2f8f4e;display:block"></i>Vert</span><md-outlined-text-field type="number" prefix-text="≤" suffix-text="jours" value="{{ d.readyGreen }}" data-in="readyGreen"></md-outlined-text-field>
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:#d98a1f;display:block"></i>Orange</span><md-outlined-text-field type="number" prefix-text="≤" suffix-text="jours" value="{{ d.readyOrange }}" data-in="readyOrange"></md-outlined-text-field>
+            <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--color-accent);display:block"></i>Rouge</span><span style="font-size:12px;color:var(--color-neutral-600)">au-delà</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13px;margin-top:14px"><md-switch selected="{{ d.workdays }}" data-act="chk" data-key="workdays"></md-switch><span>Compter uniquement les jours ouvrés</span></div></div>
+      </div>
+
+      <div style="padding:22px 0"><h6 style="color:var(--color-accent);margin:0 0 4px">06 · Divers</h6></div>
+      <div style="padding:22px 0;display:flex;flex-direction:column;gap:12px;font-size:13px">
+        <div style="display:flex;align-items:center;gap:12px"><md-checkbox touch-target="wrapper" checked="{{ d.notify }}" data-act="chk" data-key="notify"></md-checkbox><span>Notification navigateur quand une MR m'est affectée</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><md-checkbox touch-target="wrapper" checked="{{ d.badge }}" data-act="chk" data-key="badge"></md-checkbox><span>Badge de compteur sur l'onglet (MRs en rouge)</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><md-checkbox touch-target="wrapper" checked="{{ d.newTab }}" data-act="chk" data-key="newTab"></md-checkbox><span>Ouvrir les MRs dans un nouvel onglet</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><md-checkbox touch-target="wrapper" checked="{{ d.ignoreWip }}" data-act="chk" data-key="ignoreWip"></md-checkbox><span>Ignorer les MRs avec le label <code>wip</code> / <code>on-hold</code></span></div>
+        <div style="display:flex;gap:8px;margin-top:6px"><md-outlined-button data-act="export">Exporter la config (JSON)</md-outlined-button><md-outlined-button data-act="reset">Réinitialiser</md-outlined-button></div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:20px;bottom:20px;background:var(--color-neutral-900);color:#fff;font-size:13px;padding:10px 14px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-lg);animation:toastin .2s ease-out;z-index:50">{{ toast }}<md-text-button data-act="toast-close" style="--md-text-button-label-text-color:#ff9783;--md-text-button-hover-label-text-color:#fff">OK</md-text-button></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showUrl&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+const USERS = {
+  mdupont: { ini: 'MD', name: 'Marie Dupont' }, kbenali: { ini: 'KB', name: 'Karim Benali' },
+  lrousseau: { ini: 'LR', name: 'Léa Rousseau' }, tgirard: { ini: 'TG', name: 'Tom Girard' }, apereira: { ini: 'AP', name: 'Ana Pereira' },
+};
+const DEFAULT_SETTINGS = {
+  user: 'mdupont', email: '', url: 'https://gitlab.exemple.fr', token: 'glpat-xxxxxxxxxxxxxxxxxxxx',
+  repos: [{ path: 'equipe/backend-api', alias: 'api' }, { path: 'equipe/front-web', alias: 'web' }, { path: 'plateforme/infra-terraform', alias: 'infra' }],
+  freq: '5', pauseHidden: true, easyFiles: 5, easyLines: 100, hardFiles: 20, hardLines: 800, readyGreen: 1, readyOrange: 3, workdays: false,
+  notify: true, badge: true, newTab: false, ignoreWip: false,
+};
+// proj = repo path; author/reviewer/assignee = usernames; readyDays = days since Ready; openedDays = days since opened
+const MRS = [
+  { id: 412, proj: 'equipe/backend-api', author: 'kbenali', title: 'Refonte complète du module de facturation et migration des schémas Prisma vers la v5', files: 34, lines: 1240, comments: 12, reviewer: 'mdupont', assignee: 'mdupont', approved: false, readyDays: 6, openedDays: 9 },
+  { id: 388, proj: 'equipe/front-web', author: 'lrousseau', title: 'Corrige le flash blanc au chargement du dashboard', files: 2, lines: 38, comments: 0, reviewer: null, assignee: null, approved: false, readyDays: 5, openedDays: 5 },
+  { id: 409, proj: 'equipe/backend-api', author: 'tgirard', title: 'Pagination curseur sur /merge_requests', files: 9, lines: 310, comments: 4, reviewer: 'apereira', assignee: 'apereira', approved: true, readyDays: 3, openedDays: 4 },
+  { id: 77, proj: 'plateforme/infra-terraform', author: 'apereira', title: 'Bump Terraform provider gitlab 16.x → 17.x', files: 12, lines: 420, comments: 2, reviewer: 'kbenali', assignee: null, approved: false, readyDays: 2, openedDays: 2 },
+  { id: 391, proj: 'equipe/front-web', author: 'mdupont', title: 'Ajout du filtre « Affecté à » avec option Nobody', files: 4, lines: 96, comments: 7, reviewer: 'lrousseau', assignee: 'lrousseau', approved: true, readyDays: 1, openedDays: 3 },
+  { id: 415, proj: 'equipe/backend-api', author: 'lrousseau', title: 'Ajoute un index composite sur (project_id, ready_at)', files: 1, lines: 14, comments: 1, reviewer: null, assignee: 'tgirard', approved: false, readyDays: 1, openedDays: 1 },
+  { id: 393, proj: 'equipe/front-web', author: 'kbenali', title: 'Colonnes redimensionnables et persistance des largeurs', files: 7, lines: 260, comments: 3, reviewer: 'mdupont', assignee: null, approved: false, readyDays: 0, openedDays: 1 },
+  { id: 79, proj: 'plateforme/infra-terraform', author: 'tgirard', title: 'WIP: cluster staging en spot instances', files: 27, lines: 900, comments: 0, reviewer: null, assignee: null, approved: false, draft: true, openedDays: 12 },
+  { id: 396, proj: 'equipe/front-web', author: 'apereira', title: 'Draft: nouveau système de notifications', files: 11, lines: 380, comments: 1, reviewer: 'mdupont', assignee: null, approved: false, draft: true, openedDays: 4 },
+];
+const FILTERS = { project: 'Projet', author: 'Auteur', assigned: 'Affecté à', approved: 'Approved', commented: 'Commenté' };
+const GREEN = '#2f8f4e', ORANGE = '#d98a1f', RED = 'var(--color-accent)';
+const STORE = 'mrboard.proto.v1';
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.rootRef = React.createRef();
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
+    this.state = Object.assign({
+      view: 'board', drafts: false, mine: false,
+      active: ['project', 'assigned'], project: ['api', 'web'], author: [], assigned: ['nobody'], approved: null, commented: null,
+      sort: { key: 'ready', dir: 'asc' }, menu: null, showOpened: false,
+      syncing: false, lastSync: Date.now() - 120000, now: Date.now(), toast: null,
+      settings: DEFAULT_SETTINGS, draft: null, showToken: false, test: null, newRepo: '', newAlias: '',
+    }, saved || {}, this.parseHash());
+  }
+  parseHash() {
+    const h = location.hash.replace(/^#\/?\??/, ''); if (!h || !h.includes('=')) return {};
+    const q = new URLSearchParams(h), o = {}, list = k => q.has(k) ? q.get(k).split(',').filter(Boolean) : null;
+    if (q.has('drafts')) o.drafts = q.get('drafts') === '1';
+    if (q.has('mine')) o.mine = q.get('mine') === '1';
+    const active = [];
+    for (const f of ['project', 'author', 'assigned']) { const v = list(f); if (v) { o[f] = v; active.push(f); } }
+    for (const f of ['approved', 'commented']) if (q.has(f)) { o[f] = q.get(f); active.push(f); }
+    if (q.has('sort')) { const [key, dir] = q.get('sort').split(':'); o.sort = { key, dir: dir || 'asc' }; }
+    if (q.has('cols')) o.showOpened = q.get('cols').includes('opened');
+    o.active = active.length ? active : ['project', 'assigned'];
+    return o;
+  }
+  query() {
+    const s = this.state, p = new URLSearchParams();
+    p.set('drafts', s.drafts ? 1 : 0); p.set('mine', s.mine ? 1 : 0);
+    for (const f of s.active) { const v = s[f]; if (Array.isArray(v) ? v.length : v) p.set(f, Array.isArray(v) ? v.join(',') : v); }
+    p.set('sort', `${s.sort.key}:${s.sort.dir}`);
+    if (s.showOpened) p.set('cols', 'opened');
+    return p.toString();
+  }
+  componentDidMount() {
+    const root = this.rootRef.current;
+    root.addEventListener('click', e => this.onClick(e));
+    root.addEventListener('input', e => this.onInput(e), true);
+    root.addEventListener('remove', e => { e.preventDefault(); const f = e.target.dataset.f; if (f) this.removeFilter(f); }, true);
+    root.addEventListener('closed', () => this.setState({ menu: null }), true);
+    document.addEventListener('mousedown', e => { if (this.state.menu && !e.target.closest('[data-menu-root]')) this.setState({ menu: null }); });
+    this.tick = setInterval(() => this.setState({ now: Date.now() }), 30000);
+    this.syncUrl(); this.syncMenus();
+  }
+  componentWillUnmount() { clearInterval(this.tick); }
+  componentDidUpdate() {
+    this.syncUrl(); this.syncMenus();
+    const s = this.state, keep = { view: s.view, drafts: s.drafts, mine: s.mine, active: s.active, project: s.project, author: s.author, assigned: s.assigned, approved: s.approved, commented: s.commented, sort: s.sort, showOpened: s.showOpened, settings: s.settings, lastSync: s.lastSync };
+    try { localStorage.setItem(STORE, JSON.stringify(keep)); } catch (e) {}
+  }
+  syncMenus() {
+    const root = this.rootRef.current; if (!root) return;
+    root.querySelectorAll('md-menu[data-menu]').forEach(m => {
+      const f = m.dataset.menu, anchor = root.querySelector('[data-anchor="' + f + '"]');
+      if (anchor && m.anchorElement !== anchor) m.anchorElement = anchor;
+      const open = this.state.menu === f; if (m.open !== open) m.open = open;
+    });
+  }
+  syncUrl() { const q = '#/?' + this.query(); if (location.hash !== q) try { history.replaceState(null, '', q); } catch (e) {} }
+
+  toggleIn(arr, v) { return arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]; }
+  removeFilter(f) { this.setState(s => ({ active: s.active.filter(x => x !== f), [f]: Array.isArray(s[f]) ? [] : null, menu: null })); }
+  toast(msg) { clearTimeout(this.toastT); this.setState({ toast: msg }); this.toastT = setTimeout(() => this.setState({ toast: null }), 3500); }
+  refresh() {
+    if (this.state.syncing) return;
+    this.setState({ syncing: true });
+    setTimeout(() => this.setState({ syncing: false, lastSync: Date.now(), now: Date.now() }), 1600);
+  }
+  onClick(e) {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    const a = el.dataset, s = this.state;
+    switch (a.act) {
+      case 'toggle': this.setState({ [a.key]: !s[a.key] }); break;
+      case 'menu': this.setState({ menu: s.menu === a.f ? null : a.f }); break;
+      case 'opt':
+        if (Array.isArray(s[a.f])) this.setState({ [a.f]: this.toggleIn(s[a.f], a.v) });
+        else this.setState({ [a.f]: s[a.f] === a.v ? null : a.v, menu: null });
+        break;
+      case 'add-filter': this.setState({ active: [...s.active, a.f], menu: a.f }); break;
+      case 'clear': this.setState({ active: [], project: [], author: [], assigned: [], approved: null, commented: null, mine: false, menu: null }); break;
+      case 'sort': this.setState({ sort: { key: a.key, dir: s.sort.key === a.key && s.sort.dir === 'asc' ? 'desc' : 'asc' } }); break;
+      case 'col': this.setState({ showOpened: !s.showOpened }); break;
+      case 'refresh': this.refresh(); break;
+      case 'goto': this.setState({ view: a.view, draft: JSON.parse(JSON.stringify(s.settings)), test: null, showToken: false, menu: null }); break;
+      case 'cancel': this.setState({ view: 'board', draft: null }); break;
+      case 'save': {
+        const d = s.draft, aliases = d.repos.map(r => r.alias);
+        this.setState({ settings: d, view: 'board', draft: null, project: s.project.filter(p => aliases.includes(p)) });
+        this.toast('Paramètres enregistrés'); this.refresh(); break;
+      }
+      case 'show-token': this.setState({ showToken: !s.showToken }); break;
+      case 'test':
+        this.setState({ test: 'pending' });
+        setTimeout(() => this.setState({ test: this.state.draft && this.state.draft.token.startsWith('glpat-') ? 'ok' : 'ko' }), 1200);
+        break;
+      case 'add-repo': {
+        const path = s.newRepo.trim().replace(/^https?:\/\/[^/]+\//, '').replace(/\/$/, '');
+        const alias = s.newAlias.trim() || path.split('/').pop();
+        this.setDraft(d => ({ repos: [...d.repos, { path, alias }] })); this.setState({ newRepo: '', newAlias: '' }); break;
+      }
+      case 'del-repo': this.setDraft(d => ({ repos: d.repos.filter((_, i) => i !== +a.i) })); break;
+      case 'freq': this.setDraft(() => ({ freq: a.v })); break;
+      case 'chk': this.setDraft(d => ({ [a.key]: !d[a.key] })); break;
+      case 'reset': this.setState({ draft: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) }); this.toast('Valeurs par défaut restaurées (non enregistrées)'); break;
+      case 'export': {
+        const blob = new Blob([JSON.stringify(s.draft || s.settings, null, 2)], { type: 'application/json' });
+        const u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = 'mrboard-config.json'; l.click(); URL.revokeObjectURL(u); break;
+      }
+      case 'toast-close': this.setState({ toast: null }); break;
+    }
+  }
+  setDraft(fn) { this.setState(s => ({ draft: Object.assign({}, s.draft, fn(s.draft)) })); }
+  onInput(e) {
+    const el = e.target.closest('[data-in]'); if (!el) return;
+    const k = el.dataset.in, v = el.value;
+    if (k === 'newRepo' || k === 'newAlias') return this.setState({ [k]: v });
+    if (k === 'alias') return this.setDraft(d => ({ repos: d.repos.map((r, i) => i === +el.dataset.i ? Object.assign({}, r, { alias: v }) : r) }));
+    const num = ['easyFiles', 'easyLines', 'hardFiles', 'hardLines', 'readyGreen', 'readyOrange'].includes(k);
+    this.setDraft(() => ({ [k]: num ? (v === '' ? '' : +v) : v }));
+  }
+
+  renderVals() {
+    const s = this.state, st = s.settings, me = st.user;
+    const alias = {}; st.repos.forEach(r => alias[r.path] = r.alias);
+    const T = v => v === null || v === undefined || v === false ? null : true;
+    const fmtDays = d => d < 1 ? "aujourd'hui" : `${d} j`;
+    const readyColor = d => d <= st.readyGreen ? GREEN : d <= st.readyOrange ? ORANGE : RED;
+    const diffOf = m => (m.files < st.easyFiles && m.lines < st.easyLines) ? 0 : (m.files > st.hardFiles || m.lines > st.hardLines) ? 2 : 1;
+    const DIFF = [[GREEN, 'Easy'], [ORANGE, 'Medium'], [RED, 'Hard']];
+
+    let base = MRS.filter(m => alias[m.proj]).filter(m => s.drafts || !m.draft);
+    if (st.ignoreWip) base = base.filter(m => !/^wip\b/i.test(m.title));
+    if (s.mine) base = base.filter(m => m.author === me || m.reviewer === me || m.assignee === me);
+    const tests = {
+      project: m => !s.project.length || s.project.includes(alias[m.proj]),
+      author: m => !s.author.length || s.author.includes(m.author),
+      assigned: m => !s.assigned.length || s.assigned.some(v => v === 'nobody' ? (!m.reviewer && !m.assignee) : (m.reviewer === v || m.assignee === v)),
+      approved: m => !s.approved || (s.approved === 'yes') === m.approved,
+      commented: m => !s.commented || (s.commented === 'yes') === (m.comments > 0),
+    };
+    const applyAllBut = skip => base.filter(m => Object.keys(tests).every(k => k === skip || !s.active.includes(k) || tests[k](m)));
+    const visible = applyAllBut(null);
+    const dirMul = s.sort.dir === 'asc' ? 1 : -1;
+    const ready = visible.filter(m => !m.draft).sort((a, b) => (s.sort.key === 'diff' ? diffOf(a) - diffOf(b) || a.readyDays - b.readyDays : a.readyDays - b.readyDays || diffOf(a) - diffOf(b)) * dirMul);
+    const drafts = visible.filter(m => m.draft).sort((a, b) => a.openedDays - b.openedDays);
+    const rows = [...ready, ...drafts].map(m => {
+      const d = diffOf(m), opened = new Date(s.now - m.openedDays * 864e5);
+      return {
+        proj: alias[m.proj], author: USERS[m.author], title: m.title, comments: m.comments, approved: m.approved,
+        reviewer: USERS[m.reviewer] || null, assignee: USERS[m.assignee] || null, noReviewer: !m.reviewer, noAssignee: !m.assignee,
+        draft: !!m.draft, notDraft: !m.draft, opacity: m.draft ? 0.72 : 1,
+        diffColor: DIFF[d][0], diffLabel: DIFF[d][1], diffMeta: `${m.files} f · ${m.lines} l`,
+        readyLabel: m.draft ? '' : fmtDays(m.readyDays), readyColor: m.draft ? '' : readyColor(m.readyDays),
+        openedLabel: m.openedDays < 1 ? "aujourd'hui" : `il y a ${m.openedDays} j`, openedDate: opened.toLocaleDateString('fr-FR'),
+        url: `${st.url}/${m.proj}/-/merge_requests/${m.id}`,
+      };
+    });
+
+    const count = (f, pred) => applyAllBut(f).filter(pred).length;
+    const optsFor = f => {
+      if (f === 'project') return st.repos.map(r => ({ v: r.alias, label: `${r.alias} · ${r.path}`, count: count(f, m => alias[m.proj] === r.alias), on: T(s.project.includes(r.alias)) }));
+      if (f === 'author') return Object.keys(USERS).map(u => ({ v: u, label: USERS[u].name, count: count(f, m => m.author === u), on: T(s.author.includes(u)) }));
+      if (f === 'assigned') return [{ v: 'nobody', label: 'Nobody', count: count(f, m => !m.reviewer && !m.assignee), on: T(s.assigned.includes('nobody')) }]
+        .concat(Object.keys(USERS).map(u => ({ v: u, label: USERS[u].name, count: count(f, m => m.reviewer === u || m.assignee === u), on: T(s.assigned.includes(u)) })));
+      if (f === 'approved') return [{ v: 'yes', label: 'Oui', count: count(f, m => m.approved), on: T(s.approved === 'yes') }, { v: 'no', label: 'Non', count: count(f, m => !m.approved), on: T(s.approved === 'no') }];
+      return [{ v: 'yes', label: 'Oui', count: count(f, m => m.comments > 0), on: T(s.commented === 'yes') }, { v: 'no', label: 'Non', count: count(f, m => !m.comments), on: T(s.commented === 'no') }];
+    };
+    const valueLabel = f => {
+      const v = s[f]; if (Array.isArray(v)) return v.length ? v.map(x => x === 'nobody' ? 'Nobody' : USERS[x] ? USERS[x].ini : x).join(', ') : 'tous';
+      return v === 'yes' ? 'Oui' : v === 'no' ? 'Non' : '—';
+    };
+    const pills = s.active.map(f => ({ id: 'pill-' + f, f, title: f === 'assigned' ? 'Affecté à (Reviewer OU Affecté)' : FILTERS[f], label: `${FILTERS[f]} : ${valueLabel(f)}`, sel: T(s.menu === f), open: T(s.menu === f), opts: optsFor(f) }));
+    const addOpts = Object.keys(FILTERS).filter(f => !s.active.includes(f)).map(f => ({ f, label: FILTERS[f] }));
+    const projects = new Set(rows.map(r => r.proj));
+
+    const ago = Math.round((s.now - s.lastSync) / 60000);
+    const syncLabel = s.syncing ? 'Synchronisation en cours…' : ago < 1 ? "Synchronisé à l'instant" : `Synchronisé il y a ${ago} min`;
+    const arrow = k => s.sort.key === k ? (s.sort.dir === 'asc' ? '↑' : '↓') : '↕';
+
+    const d = s.draft || st, meU = USERS[d.user];
+    const freqOpts = [['1', '1 min'], ['5', '5 min'], ['15', '15 min'], ['30', '30 min'], ['0', 'Manuel']].map(([v, label]) => ({ v, label, on: T(d.freq === v) }));
+    const test = s.test;
+    return {
+      rootRef: this.rootRef, isBoard: s.view === 'board', isSettings: s.view === 'settings',
+      syncLabel, syncing: s.syncing, refreshDisabled: T(s.syncing), noToken: !st.token,
+      draftsSel: T(s.drafts), mineSel: T(s.mine), pills, addOpts, addOpen: T(s.menu === 'add'), addDisabled: T(!addOpts.length),
+      countLabel: `${rows.length} MR${rows.length > 1 ? 's' : ''} · ${projects.size} projet${projects.size > 1 ? 's' : ''}`,
+      rows, noRows: !rows.length, linkTarget: st.newTab ? '_blank' : '_self',
+      diffArrow: arrow('diff'), readyArrow: arrow('ready'),
+      diffHeadColor: s.sort.key === 'diff' ? 'var(--color-accent)' : 'inherit', readyHeadColor: s.sort.key === 'ready' ? 'var(--color-accent)' : 'inherit',
+      showOpened: s.showOpened, showOpenedChk: T(s.showOpened), colsOpen: T(s.menu === 'cols'),
+      showUrl: this.props.showUrl ?? true, query: this.query(),
+      d, repos: d.repos.map((r, i) => Object.assign({ i }, r)), newRepo: s.newRepo, newAlias: s.newAlias, addRepoDisabled: T(!s.newRepo.trim()),
+      meIni: meU ? meU.ini : '?', meName: meU ? meU.name : 'Utilisateur inconnu', meStatus: meU ? 'détecté via le jeton' : 'non trouvé',
+      tokenType: s.showToken ? 'text' : 'password', testDisabled: T(test === 'pending' || !d.token),
+      testLabel: test === 'pending' ? 'Connexion…' : test === 'ok' ? '✓ Connecté · expire le 12/03/2027' : test === 'ko' ? 'Échec : jeton refusé (401)' : '',
+      testColor: test === 'ok' ? GREEN : test === 'ko' ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
+      freqOpts, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>
