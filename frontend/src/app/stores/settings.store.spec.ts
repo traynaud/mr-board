@@ -10,6 +10,8 @@ describe('SettingsStore', () => {
     gitlabUrl: 'https://gitlab.com',
     tokenConfigured: false,
     tokenHint: null,
+    meUsername: null,
+    meEmail: null,
   };
   const api = {
     getSettings: vi.fn(),

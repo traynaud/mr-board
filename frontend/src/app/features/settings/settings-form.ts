@@ -14,6 +14,8 @@ export const TOKEN_MIN_LENGTH = 8;
 export interface SettingsFormControls {
   gitlabUrl: FormControl<string>;
   gitlabToken: FormControl<string>;
+  meUsername: FormControl<string>;
+  meEmail: FormControl<string>;
 }
 
 export type SettingsForm = FormGroup<SettingsFormControls>;
@@ -60,19 +62,37 @@ export function buildSettingsForm(): SettingsForm {
       nonNullable: true,
       validators: [tokenLengthValidator],
     }),
+    meUsername: new FormControl('', { nonNullable: true }),
+    // Validators.email renvoie null pour une chaîne vide (RG-002-06) : pas
+    // besoin de validateur custom pour autoriser un email optionnel.
+    meEmail: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.email],
+    }),
   });
 }
 
 /** Réinitialise le formulaire depuis les paramètres chargés (état pristine). */
 export function resetSettingsForm(form: SettingsForm, settings: Settings): void {
-  form.reset({ gitlabUrl: settings.gitlabUrl, gitlabToken: '' });
+  form.reset({
+    gitlabUrl: settings.gitlabUrl,
+    gitlabToken: '',
+    meUsername: settings.meUsername ?? '',
+    meEmail: settings.meEmail ?? '',
+  });
 }
 
-/** Convertit le formulaire en corps de `PUT /settings` (jeton omis si vide). */
+/**
+ * Convertit le formulaire en corps de `PUT /settings`. `gitlabToken` est omis
+ * si vide (jeton inchangé) ; `meUsername`/`meEmail` sont **toujours** envoyés,
+ * y compris vides, pour permettre leur effacement (RG-002-02).
+ */
 export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
-  const { gitlabUrl, gitlabToken } = form.getRawValue();
+  const { gitlabUrl, gitlabToken, meUsername, meEmail } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
     ...(gitlabToken ? { gitlabToken } : {}),
+    meUsername: meUsername.trim(),
+    meEmail: meEmail.trim(),
   };
 }

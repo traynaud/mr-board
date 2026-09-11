@@ -56,6 +56,8 @@ describe('Settings (e2e)', () => {
       gitlabUrl: 'https://gitlab.com',
       tokenConfigured: false,
       tokenHint: null,
+      meUsername: null,
+      meEmail: null,
     });
   });
 
@@ -104,6 +106,8 @@ describe('Settings (e2e)', () => {
       gitlabUrl: 'https://gitlab.exemple.fr',
       tokenConfigured: true,
       tokenHint: 'wxyz',
+      meUsername: null,
+      meEmail: null,
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -125,6 +129,8 @@ describe('Settings (e2e)', () => {
       gitlabUrl: 'https://other.exemple.fr',
       tokenConfigured: true,
       tokenHint: 'wxyz',
+      meUsername: null,
+      meEmail: null,
     });
   });
 
@@ -210,5 +216,66 @@ describe('Settings (e2e)', () => {
     expect(res.body).toEqual(
       expect.objectContaining({ expirationKnown: false, expiresAt: null }),
     );
+  });
+
+  it('PUT /settings should_set_identity_fields_trimmed', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      meUsername: '  mdupont  ',
+      meEmail: '  marie@exemple.fr  ',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        meUsername: 'mdupont',
+        meEmail: 'marie@exemple.fr',
+      }),
+    );
+  });
+
+  it('PUT /settings should_keep_identity_fields_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        meUsername: 'mdupont',
+        meEmail: 'marie@exemple.fr',
+      }),
+    );
+  });
+
+  it('PUT /settings should_reject_invalid_email', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', meEmail: 'marie@' });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([expect.stringContaining('meEmail')]);
+  });
+
+  it('PUT /settings should_clear_identity_fields_with_empty_strings', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      meUsername: '',
+      meEmail: '',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({ meUsername: null, meEmail: null }),
+    );
+  });
+
+  it('POST /settings/test-connection should_reject_identity_fields_in_body', async () => {
+    const res = await api().post('/api/v1/settings/test-connection').send({
+      gitlabUrl: 'https://gitlab.com',
+      meUsername: 'mdupont',
+    });
+
+    expect(res.status).toBe(400);
   });
 });

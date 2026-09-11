@@ -33,6 +33,13 @@
   } @else if (store.settings(); as settings) {
     <form class="settings-grid" [formGroup]="form">
       <app-settings-section
+        [number]="'settings.me.number' | translate"
+        titleKey="settings.me.title"
+        descriptionKey="settings.me.description"
+      >
+        <app-me-section [form]="form" [identity]="meIdentity()" />
+      </app-settings-section>
+      <app-settings-section
         [number]="'settings.connection.number' | translate"
         titleKey="settings.connection.title"
         descriptionKey="settings.connection.description"

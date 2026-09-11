@@ -18,6 +18,8 @@ describe('SettingsService', () => {
     id: 1,
     gitlabUrl: 'https://gitlab.com',
     gitlabTokenEncrypted: null,
+    meUsername: null,
+    meEmail: null,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -62,6 +64,8 @@ describe('SettingsService', () => {
         gitlabUrl: 'https://gitlab.com',
         tokenConfigured: false,
         tokenHint: null,
+        meUsername: null,
+        meEmail: null,
       });
     });
 
@@ -119,6 +123,8 @@ describe('SettingsService', () => {
         gitlabUrl: 'https://gitlab.exemple.fr',
         tokenConfigured: true,
         tokenHint: 'wxyz',
+        meUsername: null,
+        meEmail: null,
       });
     });
 
@@ -153,6 +159,70 @@ describe('SettingsService', () => {
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           updatedAt: expect.not.stringMatching(/^2026-09-01/) as string,
+        }),
+      );
+    });
+
+    it('should_set_identity_fields_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        meUsername: '  mdupont  ',
+        meEmail: '  marie@exemple.fr  ',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meUsername: 'mdupont',
+          meEmail: 'marie@exemple.fr',
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          meUsername: 'mdupont',
+          meEmail: 'marie@exemple.fr',
+        }),
+      );
+    });
+
+    it('should_clear_identity_fields_when_empty_string', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        meUsername: 'kbenali',
+        meEmail: 'karim@exemple.fr',
+      });
+
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        meUsername: '',
+        meEmail: '',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ meUsername: null, meEmail: null }),
+      );
+      expect(result.meUsername).toBeNull();
+      expect(result.meEmail).toBeNull();
+    });
+
+    it('should_keep_identity_fields_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        meUsername: 'kbenali',
+        meEmail: 'karim@exemple.fr',
+      });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meUsername: 'kbenali',
+          meEmail: 'karim@exemple.fr',
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          meUsername: 'kbenali',
+          meEmail: 'karim@exemple.fr',
         }),
       );
     });

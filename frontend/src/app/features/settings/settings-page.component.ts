@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
+import { merge } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -20,7 +21,9 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
 import { SettingsStore } from '../../stores/settings.store';
+import { resolveMeIdentity } from './me-identity';
 import { GitlabConnectionSectionComponent } from './sections/gitlab-connection/gitlab-connection-section.component';
+import { MeSectionComponent } from './sections/me/me-section.component';
 import { buildSettingsForm, resetSettingsForm, toUpdateRequest } from './settings-form';
 import { HasUnsavedChanges } from './unsaved-changes.guard';
 
@@ -44,6 +47,7 @@ export const TOAST_DURATION_MS = 3500;
     TranslatePipe,
     SettingsSectionComponent,
     GitlabConnectionSectionComponent,
+    MeSectionComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
@@ -72,6 +76,12 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     return gitlabUrl.valid && gitlabToken.valid && hasToken && this.store.test().status !== 'pending';
   });
 
+  /** Identité résolue pour l'aperçu de la section « 01 · Moi » (RG-002-03). */
+  protected readonly meIdentity = computed(() => {
+    this.formEvents();
+    return resolveMeIdentity(this.form.controls.meUsername.value, this.store.test());
+  });
+
   constructor() {
     effect(() => {
       const settings = this.store.settings();
@@ -79,7 +89,26 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
         resetSettingsForm(this.form, settings);
       }
     });
-    this.form.valueChanges
+    // Pré-remplissage du username après un test de connexion réussi, si le
+    // champ est encore vide (RG-002-04). Un username déjà saisi n'est jamais
+    // écrasé ; le formulaire passe en modifié (non enregistré).
+    effect(() => {
+      const test = this.store.test();
+      if (test.status === 'success' && test.result) {
+        const control = this.form.controls.meUsername;
+        if (!control.value.trim()) {
+          control.setValue(test.result.username);
+          control.markAsDirty();
+        }
+      }
+    });
+    // Le résultat du test n'est effacé que par un changement d'URL ou de
+    // jeton (RG-001-05) — pas par la saisie de l'identité (US-002), qui
+    // partage désormais le même formulaire.
+    merge(
+      this.form.controls.gitlabUrl.valueChanges,
+      this.form.controls.gitlabToken.valueChanges,
+    )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.store.resetTest());
   }

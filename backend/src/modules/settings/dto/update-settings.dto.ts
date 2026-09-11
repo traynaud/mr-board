@@ -1,25 +1,40 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsUrl, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
+import { GitlabCredentialsDto } from './gitlab-credentials.dto';
 
-/** Minimum accepted token length (RG-001-02). */
-export const TOKEN_MIN_LENGTH = 8;
+/** Maximum length accepted for a GitLab username (RG-002-02). */
+export const ME_USERNAME_MAX_LENGTH = 255;
 
-/** Validation options shared by every GitLab URL field. */
-export const GITLAB_URL_OPTIONS = {
-  require_protocol: true,
-  require_tld: false,
-  protocols: ['http', 'https'],
-};
+const trim = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim() : value;
 
-/** Body of `PUT /api/v1/settings`. */
-export class UpdateSettingsDto {
-  @IsUrl(GITLAB_URL_OPTIONS)
-  gitlabUrl!: string;
-
-  /** Omitted or empty: the stored token is kept unchanged. */
-  @Transform(({ value }) => (value === '' ? undefined : (value as unknown)))
+/**
+ * Body of `PUT /api/v1/settings`.
+ *
+ * `meUsername`/`meEmail` follow a semantic different from `gitlabToken`
+ * (RG-002-02): omitted from the body → left unchanged; empty string →
+ * cleared (stored `null`); non-empty → stored trimmed. Trimming happens
+ * before validation so a value like `"  marie@exemple.fr  "` still passes
+ * `@IsEmail` and a value that is only whitespace is treated as empty.
+ */
+export class UpdateSettingsDto extends GitlabCredentialsDto {
+  @Transform(trim)
   @IsOptional()
   @IsString()
-  @MinLength(TOKEN_MIN_LENGTH)
-  gitlabToken?: string;
+  @MaxLength(ME_USERNAME_MAX_LENGTH)
+  meUsername?: string;
+
+  @Transform(trim)
+  @IsOptional()
+  @ValidateIf(
+    (o: UpdateSettingsDto) => o.meEmail !== undefined && o.meEmail !== '',
+  )
+  @IsEmail()
+  meEmail?: string;
 }

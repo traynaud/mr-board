@@ -15,6 +15,8 @@ describe('SettingsPageComponent', () => {
     gitlabUrl: 'https://gitlab.exemple.fr',
     tokenConfigured: false,
     tokenHint: null,
+    meUsername: null,
+    meEmail: null,
   };
   let fixture: ComponentFixture<SettingsPageComponent>;
   let el: HTMLElement;
@@ -53,7 +55,10 @@ describe('SettingsPageComponent', () => {
   const urlInput = () => el.querySelector<HTMLInputElement>('input[formControlName="gitlabUrl"]')!;
   const tokenInput = () =>
     el.querySelector<HTMLInputElement>('input[formControlName="gitlabToken"]')!;
+  const usernameInput = () =>
+    el.querySelector<HTMLInputElement>('input[formControlName="meUsername"]')!;
   const saveButton = () => el.querySelector<HTMLButtonElement>('button.save')!;
+  const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
   const type = async (input: HTMLInputElement, value: string) => {
     input.value = value;
     input.dispatchEvent(new Event('input'));
@@ -61,6 +66,17 @@ describe('SettingsPageComponent', () => {
   };
   const loadSettings = async (value: Settings = settings) => {
     http.expectOne('/api/v1/settings').flush(value);
+    await settle();
+  };
+  const succeedTestConnection = async (username = 'mdupont', name = 'Marie Dupont') => {
+    testButton().click();
+    http.expectOne('/api/v1/settings/test-connection').flush({
+      username,
+      name,
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+    });
     await settle();
   };
 
@@ -72,6 +88,7 @@ describe('SettingsPageComponent', () => {
     expect(el.querySelector('mat-progress-bar')).toBeNull();
     expect(urlInput().value).toBe('https://gitlab.exemple.fr');
     expect(tokenInput().value).toBe('');
+    expect(usernameInput().value).toBe('');
     expect(saveButton().disabled).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
@@ -111,8 +128,16 @@ describe('SettingsPageComponent', () => {
     expect(req.request.body).toEqual({
       gitlabUrl: 'https://autre.exemple.fr/',
       gitlabToken: 'glpat-abcdwxyz',
+      meUsername: '',
+      meEmail: '',
     });
-    req.flush({ gitlabUrl: 'https://autre.exemple.fr', tokenConfigured: true, tokenHint: 'wxyz' });
+    req.flush({
+      gitlabUrl: 'https://autre.exemple.fr',
+      tokenConfigured: true,
+      tokenHint: 'wxyz',
+      meUsername: null,
+      meEmail: null,
+    });
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
@@ -123,6 +148,23 @@ describe('SettingsPageComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     expect(tokenInput().value).toBe('');
+  });
+
+  it('should_save_with_trimmed_identity_fields', async () => {
+    await loadSettings();
+    await type(usernameInput(), '  mdupont  ');
+    await type(
+      el.querySelector<HTMLInputElement>('input[formControlName="meEmail"]')!,
+      'marie@exemple.fr',
+    );
+
+    saveButton().click();
+    const req = http.expectOne('/api/v1/settings');
+    expect(req.request.body).toEqual({
+      gitlabUrl: 'https://gitlab.exemple.fr',
+      meUsername: 'mdupont',
+      meEmail: 'marie@exemple.fr',
+    });
   });
 
   it('should_toast_error_and_stay_when_save_fails', async () => {
@@ -149,7 +191,6 @@ describe('SettingsPageComponent', () => {
 
   it('should_disable_test_without_token_and_enable_with_stored_token', async () => {
     await loadSettings();
-    const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
     expect(testButton().disabled).toBe(true);
 
     await type(tokenInput(), 'glpat-abcdwxyz');
@@ -159,9 +200,8 @@ describe('SettingsPageComponent', () => {
     expect(testButton().disabled).toBe(true);
   });
 
-  it('should_test_with_stored_token_and_reset_result_on_change', async () => {
+  it('should_test_with_stored_token_and_reset_result_on_url_change', async () => {
     await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
-    const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
     expect(testButton().disabled).toBe(false);
 
     testButton().click();
@@ -194,5 +234,43 @@ describe('SettingsPageComponent', () => {
     await settle();
 
     expect(el.querySelector('.test-result')?.textContent?.trim()).toBe(t('errors.gitlab.auth'));
+  });
+
+  it('should_prefill_username_after_successful_test_when_empty', async () => {
+    await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
+    expect(usernameInput().value).toBe('');
+
+    await succeedTestConnection('mdupont', 'Marie Dupont');
+
+    expect(usernameInput().value).toBe('mdupont');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('Marie Dupont');
+    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
+      t('settings.me.status.matched'),
+    );
+  });
+
+  it('should_not_overwrite_username_already_filled_after_test', async () => {
+    await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
+    await type(usernameInput(), 'kbenali');
+
+    await succeedTestConnection('mdupont', 'Marie Dupont');
+
+    expect(usernameInput().value).toBe('kbenali');
+    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
+      t('settings.me.status.mismatch'),
+    );
+  });
+
+  it('should_show_manual_status_when_no_test_has_run', async () => {
+    await loadSettings();
+    await type(usernameInput(), 'lrousseau');
+
+    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
+      t('settings.me.status.manual'),
+    );
+
+    await type(usernameInput(), '');
+    expect(el.querySelector('.identity-preview')).toBeNull();
   });
 });

@@ -27,6 +27,19 @@
       "stay": "Rester",
       "discard": "Abandonner"
     },
+    "me": {
+      "number": "01",
+      "title": "Moi",
+      "description": "Utilisé par « Mes MRs » et pour repérer mes rôles.",
+      "username": "Nom d'utilisateur GitLab",
+      "email": "Email (optionnel)",
+      "emailInvalid": "Saisir un email valide.",
+      "status": {
+        "matched": "détecté via le jeton",
+        "mismatch": "ne correspond pas au jeton",
+        "manual": "saisi manuellement"
+      }
+    },
     "connection": {
       "number": "02",
       "title": "Connexion GitLab",

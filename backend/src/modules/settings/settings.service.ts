@@ -50,6 +50,12 @@ export class SettingsService {
     if (dto.gitlabToken !== undefined) {
       settings.gitlabTokenEncrypted = this.cipher.encrypt(dto.gitlabToken);
     }
+    if (dto.meUsername !== undefined) {
+      settings.meUsername = dto.meUsername.trim() || null;
+    }
+    if (dto.meEmail !== undefined) {
+      settings.meEmail = dto.meEmail.trim() || null;
+    }
     settings.updatedAt = new Date().toISOString();
     return this.toResponse(await this.repository.save(settings));
   }
@@ -115,6 +121,8 @@ export class SettingsService {
         id: SETTINGS_ID,
         gitlabUrl: DEFAULT_GITLAB_URL,
         gitlabTokenEncrypted: null,
+        meUsername: null,
+        meEmail: null,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -139,6 +147,8 @@ export class SettingsService {
       gitlabUrl: settings.gitlabUrl,
       tokenConfigured: token !== null,
       tokenHint: token ? tokenHint(token) : null,
+      meUsername: settings.meUsername,
+      meEmail: settings.meEmail,
     };
   }
 }

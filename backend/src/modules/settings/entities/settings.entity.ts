@@ -22,6 +22,14 @@ export class Settings {
   @Column({ name: 'gitlab_token_encrypted', type: 'text', nullable: true })
   gitlabTokenEncrypted!: string | null;
 
+  /** GitLab username of the current user, used by "Mes MRs" (RG-002-01). */
+  @Column({ name: 'me_username', type: 'text', nullable: true })
+  meUsername!: string | null;
+
+  /** Fallback email for role matching (RG-002-01, RG-G09). */
+  @Column({ name: 'me_email', type: 'text', nullable: true })
+  meEmail!: string | null;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

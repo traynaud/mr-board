@@ -1,0 +1,22 @@
+<div class="fields" [formGroup]="form()">
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'settings.me.username' | translate }}</mat-label>
+    <input matInput formControlName="meUsername" autocomplete="off" spellcheck="false" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'settings.me.email' | translate }}</mat-label>
+    <input matInput type="email" formControlName="meEmail" autocomplete="off" spellcheck="false" />
+    @if (form().controls.meEmail.hasError('email')) {
+      <mat-error>{{ 'settings.me.emailInvalid' | translate }}</mat-error>
+    }
+  </mat-form-field>
+
+  @if (statusKey(); as key) {
+    <div class="identity-preview">
+      <app-avatar [name]="displayName()" [avatarUrl]="identity().avatarUrl" />
+      <span class="identity-name">{{ displayName() }}</span>
+      <span class="identity-status">{{ key | translate }}</span>
+    </div>
+  }
+</div>
