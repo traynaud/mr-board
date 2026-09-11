@@ -1,0 +1,103 @@
+# =============================================
+# BACKEND - Java / Spring Boot (IntelliJ IDEA)
+# =============================================
+
+# --- Fichiers compilés Java ---
+backend/target/
+backend/build/
+backend/*.class
+
+# --- IntelliJ IDEA ---
+backend/.idea/
+backend/*.iml
+backend/*.iws
+backend/*.ipr
+backend/out/
+
+# --- Maven ---
+backend/.mvn/timing.properties
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# --- Gradle (si utilisé) ---
+backend/.gradle/
+backend/bin/
+
+# --- Logs & fichiers temporaires ---
+backend/*.log
+backend/logs/
+
+# --- Properties sensibles ---
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-prod.yml
+backend/src/main/resources/application-prod.properties
+
+
+# =============================================
+# FRONTEND - Angular (WebStorm)
+# =============================================
+
+# --- Dépendances Node ---
+frontend/node_modules/
+
+# --- Build Angular ---
+frontend/dist/
+frontend/.angular/
+
+# --- WebStorm / JetBrains ---
+frontend/.idea/
+frontend/*.iml
+
+# --- Cache & fichiers temporaires ---
+frontend/.sass-cache/
+frontend/tmp/
+frontend/.eslintcache
+
+# --- Couverture de tests ---
+frontend/coverage/
+
+# --- Variables d'environnement locales ---
+frontend/.env
+frontend/.env.local
+
+
+# =============================================
+# RACINE - Général
+# =============================================
+
+# --- IDE JetBrains (racine) ---
+.idea/
+*.iml
+docker-compose-prod.yml
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Variables d'environnement ---
+.env
+.env.local
+.env.*.local
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# =============================================
+# CLAUDE CODE
+# =============================================
+
+# On GARDE le fichier de config Claude (.claude/ ou CLAUDE.md)
+# mais on ignore les fichiers de session/cache générés
+.claude/tmp/
+.claude/logs/
+.claude/.session*
+.claude/*.local.json
+
+# Note : NE PAS ignorer ces fichiers (ils doivent être versionnés) :
+#   - CLAUDE.md (instructions projet pour Claude)
+#   - .claude/settings.json (configuration partagée)
