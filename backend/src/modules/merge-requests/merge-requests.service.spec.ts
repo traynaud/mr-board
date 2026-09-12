@@ -347,7 +347,7 @@ describe('MergeRequestsService', () => {
       expect(usersService.findByIds).not.toHaveBeenCalled();
     });
 
-    it('should_query_non_draft_merge_requests_sorted_by_ready_at_ascending', async () => {
+    it('should_query_only_non_draft_merge_requests', async () => {
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
       projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
       usersService.findByIds.mockResolvedValue([
@@ -358,7 +358,6 @@ describe('MergeRequestsService', () => {
 
       expect(mergeRequestsRepo.find).toHaveBeenCalledWith({
         where: { draft: false },
-        order: { readyAt: 'ASC' },
       });
     });
 
@@ -585,6 +584,57 @@ describe('MergeRequestsService', () => {
       expect(view.readyDays).toBeNull();
       expect(view.readyLevel).toBeNull();
       expect(view.openedDays).toBe(12);
+    });
+
+    it('should_default_to_ready_asc_when_no_sort_is_given', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 1,
+          readyAt: '2026-09-05T00:00:00.000Z',
+        }),
+        persistedMergeRequest({
+          id: 2,
+          iid: 2,
+          readyAt: '2026-09-01T00:00:00.000Z',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const result = await service.listOpen();
+
+      expect(result.map((v) => v.iid)).toEqual([2, 1]);
+    });
+
+    it('should_sort_by_difficulty_when_sort_is_diff_asc', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 1,
+          changedFiles: 34,
+          additions: 900,
+          deletions: 340,
+        }),
+        persistedMergeRequest({
+          id: 2,
+          iid: 2,
+          changedFiles: 1,
+          additions: 1,
+          deletions: 0,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const result = await service.listOpen('diff:asc');
+
+      expect(result.map((v) => v.difficulty)).toEqual(['easy', 'hard']);
+      expect(result.map((v) => v.iid)).toEqual([2, 1]);
     });
   });
 });

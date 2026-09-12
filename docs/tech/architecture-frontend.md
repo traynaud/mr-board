@@ -108,7 +108,7 @@ Composant ──lit──▶ Store (signals) ──appelle──▶ Service HTTP
 | Chips Drafts / Mes MRs                 | `mat-chip-listbox` + `mat-chip-option`           |
 | Pastilles de filtre + menu             | `mat-chip` (removable) + `mat-menu` + `mat-checkbox` |
 | Menu « Ajouter un filtre »             | `mat-menu` + `mat-menu-item`                     |
-| Tableau                                | `mat-table` + `mat-sort` (tri contrôlé) + CDK `cdkDrag` ou directive custom pour le resize |
+| Tableau                                | `mat-table` + en-tête `<th>` custom cliquable/clavier pour le tri contrôlé (US-008 : le rendu natif de `mat-sort-header` ne permet pas l'indicateur `↑`/`↓`/`↕` toujours visible exigé par le design) + CDK `cdkDrag` ou directive custom pour le resize |
 | Tooltip nom complet, titre coupé       | `matTooltip`                                     |
 | Coche Approved                         | `mat-icon` (SVG Lucide `check`)                  |
 | Menu colonnes                          | `mat-menu` + `mat-checkbox`                      |

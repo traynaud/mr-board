@@ -9,6 +9,15 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type ReadyLevel = 'green' | 'orange' | 'red';
 
+export type SortKey = 'ready' | 'diff';
+export type SortDirection = 'asc' | 'desc';
+
+/** État de tri du tableau (RG-008-*). Toujours une colonne active, jamais d'état « sans tri » (RG-008-03). */
+export interface MergeRequestSort {
+  key: SortKey;
+  direction: SortDirection;
+}
+
 /**
  * Miroir de `MergeRequestViewDto` (backend). Volontairement minimal :
  * ni `labels` — ajouté par l'US qui l'affiche (US-015).

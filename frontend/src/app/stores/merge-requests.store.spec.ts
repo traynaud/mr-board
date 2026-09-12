@@ -72,4 +72,43 @@ describe('MergeRequestsStore', () => {
     expect(store.mergeRequests()).toEqual([MR]);
     expect(store.loadError()).toBe('errors.unexpected');
   });
+
+  it('should_default_to_ready_ascending_and_pass_it_to_the_api', async () => {
+    api.getMergeRequests.mockReturnValue(of([MR]));
+
+    expect(store.sort()).toEqual({ key: 'ready', direction: 'asc' });
+    await store.load();
+
+    expect(api.getMergeRequests).toHaveBeenCalledWith({ key: 'ready', direction: 'asc' });
+  });
+
+  it('should_switch_to_ascending_when_a_different_column_is_selected', async () => {
+    api.getMergeRequests.mockReturnValue(of([MR]));
+
+    store.setSort('diff');
+    await Promise.resolve();
+
+    expect(store.sort()).toEqual({ key: 'diff', direction: 'asc' });
+  });
+
+  it('should_toggle_the_direction_when_the_same_column_is_selected_again', async () => {
+    api.getMergeRequests.mockReturnValue(of([MR]));
+
+    store.setSort('ready'); // already 'ready', asc → desc
+    await Promise.resolve();
+    expect(store.sort()).toEqual({ key: 'ready', direction: 'desc' });
+
+    store.setSort('ready'); // desc → asc
+    await Promise.resolve();
+    expect(store.sort()).toEqual({ key: 'ready', direction: 'asc' });
+  });
+
+  it('should_reload_the_merge_requests_when_the_sort_changes', () => {
+    api.getMergeRequests.mockReturnValue(of([MR]));
+    api.getMergeRequests.mockClear();
+
+    store.setSort('diff');
+
+    expect(api.getMergeRequests).toHaveBeenCalledWith({ key: 'diff', direction: 'asc' });
+  });
 });

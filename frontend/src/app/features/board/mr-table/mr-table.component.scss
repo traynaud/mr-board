@@ -70,3 +70,21 @@
 .approved-icon {
   color: var(--color-success);
 }
+
+th.sortable {
+  cursor: pointer;
+  outline-offset: -2px;
+
+  &.active {
+    color: var(--color-accent);
+  }
+}
+
+.sort-arrow {
+  opacity: 0.5;
+  margin-left: 2px;
+}
+
+th.sortable.active .sort-arrow {
+  opacity: 1;
+}

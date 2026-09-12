@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
-import { MergeRequestView } from '../../../models/merge-request.model';
+import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
 import { provideIcons } from '../../../shared/icons/provide-icons';
 import { MrTableComponent } from './mr-table.component';
 
@@ -36,11 +36,13 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
 
 @Component({
   imports: [MrTableComponent],
-  template: `<app-mr-table [rows]="rows()" />`,
+  template: `<app-mr-table [rows]="rows()" [sort]="sort()" (sortChange)="lastSortChange = $event" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
+  readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
+  lastSortChange: SortKey | null = null;
 }
 
 describe('MrTableComponent', () => {
@@ -129,13 +131,103 @@ describe('MrTableComponent', () => {
       t('board.mergeRequests.columns.project'),
       t('board.mergeRequests.columns.author'),
       t('board.mergeRequests.columns.title'),
-      t('board.mergeRequests.columns.difficulty'),
+      `${t('board.mergeRequests.columns.difficulty')} ↕`,
       '',
       t('board.mergeRequests.columns.reviewer'),
       t('board.mergeRequests.columns.assignee'),
       t('board.mergeRequests.columns.approved'),
-      t('board.mergeRequests.columns.ready'),
+      `${t('board.mergeRequests.columns.ready')} ↑`,
     ]);
+  });
+
+  it('should_mark_the_active_sort_column_with_an_arrow_accent_color_and_aria_sort', async () => {
+    const { el } = await setup();
+
+    const readyHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.ready')),
+    );
+    const diffHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.difficulty')),
+    );
+
+    expect(readyHeader?.classList.contains('active')).toBe(true);
+    expect(readyHeader?.getAttribute('aria-sort')).toBe('ascending');
+    expect(diffHeader?.classList.contains('active')).toBe(false);
+    expect(diffHeader?.getAttribute('aria-sort')).toBeNull();
+  });
+
+  it('should_show_the_descending_arrow_when_the_active_column_is_desc', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.sort.set({ key: 'ready', direction: 'desc' });
+    await fixture.whenStable();
+
+    const readyHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.ready')),
+    );
+    expect(readyHeader?.textContent?.trim().endsWith('↓')).toBe(true);
+    expect(readyHeader?.getAttribute('aria-sort')).toBe('descending');
+  });
+
+  it('should_emit_sort_change_on_click_of_a_sortable_header', async () => {
+    const { fixture, el } = await setup();
+    const diffHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.difficulty')),
+    );
+
+    diffHeader?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.lastSortChange).toBe('diff');
+  });
+
+  it('should_emit_sort_change_on_enter_keydown_of_a_sortable_header', async () => {
+    const { fixture, el } = await setup();
+    const readyHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.ready')),
+    );
+
+    readyHeader?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.lastSortChange).toBe('ready');
+  });
+
+  it('should_emit_sort_change_and_prevent_scroll_on_space_keydown_of_a_sortable_header', async () => {
+    const { fixture, el } = await setup();
+    const diffHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.difficulty')),
+    );
+    const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+
+    diffHeader?.dispatchEvent(event);
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.lastSortChange).toBe('diff');
+    expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('should_emit_sort_change_on_space_keydown_of_the_ready_header', async () => {
+    const { fixture, el } = await setup();
+    const readyHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes(t('board.mergeRequests.columns.ready')),
+    );
+
+    readyHeader?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.lastSortChange).toBe('ready');
+  });
+
+  it('should_not_be_clickable_or_marked_sortable_for_a_non_sortable_header', async () => {
+    const { el } = await setup();
+
+    const authorHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.trim() === t('board.mergeRequests.columns.author'),
+    );
+
+    expect(authorHeader?.classList.contains('sortable')).toBe(false);
+    expect(authorHeader?.getAttribute('tabindex')).toBeNull();
   });
 
   it('should_render_the_difficulty_badge_for_each_row', async () => {

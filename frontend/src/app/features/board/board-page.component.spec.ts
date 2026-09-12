@@ -118,7 +118,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(options.settings);
     http.expectOne('/api/v1/projects').flush(options.projects);
-    http.expectOne('/api/v1/merge-requests').flush(options.mergeRequests ?? []);
+    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush(options.mergeRequests ?? []);
     http.expectOne('/api/v1/sync/status').flush(options.status);
     await settle();
   }
@@ -182,7 +182,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
-    http.expectOne('/api/v1/merge-requests').flush('down', { status: 500, statusText: 'KO' });
+    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush('down', { status: 500, statusText: 'KO' });
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 
@@ -207,7 +207,7 @@ describe('BoardPageComponent', () => {
     await settle();
     // Rechargement automatique des MRs à la fin de cette (deuxième) transition
     // de statut, non-baseline cette fois (RG-005-06).
-    http.expectOne('/api/v1/merge-requests').flush([]);
+    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
     await settle();
   });
 
@@ -235,7 +235,7 @@ describe('BoardPageComponent', () => {
         nextRunAt: null,
       });
     await settle();
-    http.expectOne('/api/v1/merge-requests').flush([]);
+    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
@@ -255,7 +255,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
-    http.expectOne('/api/v1/merge-requests').flush([]);
+    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 

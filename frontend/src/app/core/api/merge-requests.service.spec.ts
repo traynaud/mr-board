@@ -22,9 +22,13 @@ describe('MergeRequestsService', () => {
 
   afterEach(() => ctrl.verify());
 
-  it('should_get_merge_requests', async () => {
-    const pending = firstValueFrom(service.getMergeRequests());
-    const req = ctrl.expectOne('/api/v1/merge-requests');
+  it('should_get_merge_requests_with_the_sort_query_param', async () => {
+    const pending = firstValueFrom(
+      service.getMergeRequests({ key: 'ready', direction: 'asc' }),
+    );
+    const req = ctrl.expectOne(
+      (r) => r.url === '/api/v1/merge-requests' && r.params.get('sort') === 'ready:asc',
+    );
     expect(req.request.method).toBe('GET');
     req.flush([
       {
@@ -44,5 +48,14 @@ describe('MergeRequestsService', () => {
     await expect(pending).resolves.toEqual([
       expect.objectContaining({ projectAlias: 'api', iid: 7 }),
     ]);
+  });
+
+  it('should_combine_the_key_and_direction_into_a_single_sort_value', () => {
+    service.getMergeRequests({ key: 'diff', direction: 'desc' }).subscribe();
+
+    const req = ctrl.expectOne(
+      (r) => r.url === '/api/v1/merge-requests' && r.params.get('sort') === 'diff:desc',
+    );
+    req.flush([]);
   });
 });

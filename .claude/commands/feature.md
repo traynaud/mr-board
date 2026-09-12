@@ -82,7 +82,7 @@ Si des corrections sont nécessaires :
 
 1. Lance les tests complets → tout doit être vert :
    ```bash
-   cd backend && rtk npm run lint && rtk npm test && rtk npm run test:e2e
+   cd backend && rtk npm run lint && rtk npm test && rtk npm run test:e2e && rtk npm run build
    cd frontend && rtk npx tsc --noEmit && rtk npx ng test --no-watch
    ```
 2. **Mets à jour `frontend/public/changelog.json`** : ajoute une entrée `{ "date": "<YYYY-MM-DD>", "type": "feat", "user-story": "<id-us>", "title": "<description courte en une phrase>" }` en tête du tableau (ordre décroissant).

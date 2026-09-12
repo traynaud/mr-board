@@ -1,5 +1,6 @@
 import {
   DEFAULT_DIFFICULTY_THRESHOLDS,
+  DIFFICULTY_ORDER,
   calculateDifficulty,
 } from './calculate-difficulty';
 
@@ -106,5 +107,12 @@ describe('calculateDifficulty', () => {
       hardFiles: 20,
       hardLines: 800,
     });
+  });
+});
+
+describe('DIFFICULTY_ORDER', () => {
+  it('should_rank_easy_below_medium_below_hard', () => {
+    expect(DIFFICULTY_ORDER.easy).toBeLessThan(DIFFICULTY_ORDER.medium);
+    expect(DIFFICULTY_ORDER.medium).toBeLessThan(DIFFICULTY_ORDER.hard);
   });
 });

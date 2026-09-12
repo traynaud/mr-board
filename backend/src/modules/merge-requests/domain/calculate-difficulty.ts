@@ -38,3 +38,10 @@ export function calculateDifficulty(
   }
   return 'medium';
 }
+
+/** Numeric rank of each difficulty (RG-008-04), used to sort by `diff`. */
+export const DIFFICULTY_ORDER: Record<Difficulty, number> = {
+  easy: 0,
+  medium: 1,
+  hard: 2,
+};

@@ -56,7 +56,7 @@ Format :
 Avant de refactorer :
 1. Lance les tests existants :
    ```bash
-   cd backend && rtk npm test && rtk npm run test:e2e
+   cd backend && rtk npm test && rtk npm run test:e2e && rtk npm run build
    cd frontend && rtk npx ng test --no-watch
    ```
 2. Note le nombre de tests passants (c'est la baseline)

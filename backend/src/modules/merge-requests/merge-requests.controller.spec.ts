@@ -15,11 +15,19 @@ describe('MergeRequestsController', () => {
     controller = module.get(MergeRequestsController);
   });
 
-  it('should_delegate_to_the_service', async () => {
+  it('should_delegate_to_the_service_without_a_sort_query_param', async () => {
     const views = [{ id: 1 }];
     service.listOpen.mockResolvedValue(views);
 
-    await expect(controller.list()).resolves.toBe(views);
-    expect(service.listOpen).toHaveBeenCalledTimes(1);
+    await expect(controller.list({})).resolves.toBe(views);
+    expect(service.listOpen).toHaveBeenCalledWith(undefined);
+  });
+
+  it('should_pass_the_sort_query_param_through_to_the_service', async () => {
+    const views = [{ id: 1 }];
+    service.listOpen.mockResolvedValue(views);
+
+    await expect(controller.list({ sort: 'diff:desc' })).resolves.toBe(views);
+    expect(service.listOpen).toHaveBeenCalledWith('diff:desc');
   });
 });

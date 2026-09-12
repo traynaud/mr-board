@@ -32,7 +32,7 @@ Adapte selon le contexte : test unitaire (`*.spec.ts`), test e2e backend (`backe
 
 1. Lance tous les tests backend + frontend :
    ```bash
-   cd backend && rtk npm test && rtk npm run test:e2e
+   cd backend && rtk npm test && rtk npm run test:e2e && rtk npm run build
    cd frontend && rtk npx ng test --no-watch
    ```
 2. Si le bug est lié à une API, teste avec curl (`rtk curl http://localhost:3000/api/v1/...`)

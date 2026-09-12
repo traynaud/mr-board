@@ -321,4 +321,68 @@ describe('MergeRequests (e2e)', () => {
     const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
     expect(iids).toEqual([1, 3, 5]);
   });
+
+  it('GET /merge-requests?sort=ready:desc should_reverse_the_default_order', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(10, { createdAt: '2026-09-01T10:00:00Z' }),
+      rawNode(11, { createdAt: '2026-09-03T10:00:00Z' }),
+      rawNode(12, { createdAt: '2026-09-05T10:00:00Z' }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?sort=ready:desc');
+    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    expect(iids).toEqual([12, 11, 10]);
+  });
+
+  it('GET /merge-requests?sort=diff:asc should_sort_easy_to_hard', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(1, {
+        diffStatsSummary: { fileCount: 34, additions: 900, deletions: 340 },
+      }),
+      rawNode(2, {
+        diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+      }),
+      rawNode(3, {
+        diffStatsSummary: { fileCount: 9, additions: 300, deletions: 10 },
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?sort=diff:asc');
+    const body = res.body as MergeRequestViewBody[];
+    expect(body.map((v) => v.iid)).toEqual([2, 3, 1]);
+    expect(body.map((v) => v.difficulty)).toEqual(['easy', 'medium', 'hard']);
+  });
+
+  it('GET /merge-requests?sort=diff:desc should_sort_hard_to_easy', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(1, {
+        diffStatsSummary: { fileCount: 34, additions: 900, deletions: 340 },
+      }),
+      rawNode(2, {
+        diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+      }),
+      rawNode(3, {
+        diffStatsSummary: { fileCount: 9, additions: 300, deletions: 10 },
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?sort=diff:desc');
+    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    expect(iids).toEqual([1, 3, 2]);
+  });
+
+  it('GET /merge-requests?sort=title:asc should_respond_400_for_an_invalid_sort_value', async () => {
+    const res = await api().get('/api/v1/merge-requests?sort=title:asc');
+
+    expect(res.status).toBe(400);
+  });
 });

@@ -75,7 +75,7 @@ rtk npm run lint
 ### Règles
 
 - Un `*.spec.ts` par composant, store, service, pipe, directive
-- Composants : `TestBed` + **Component Harnesses Angular Material** (`MatChipListboxHarness`, `MatMenuHarness`, `MatTableHarness`, `MatSortHarness`…) plutôt que des sélecteurs DOM fragiles
+- Composants : `TestBed` + **Component Harnesses Angular Material** (`MatChipListboxHarness`, `MatMenuHarness`, `MatTableHarness`…) plutôt que des sélecteurs DOM fragiles quand le composant Material est réellement utilisé ; sélecteurs DOM directs acceptés pour les rendus custom (ex : en-têtes triables US-008, sans `mat-sort-header`)
 - Services HTTP : `provideHttpClientTesting()` + `HttpTestingController`, vérification des URL, méthodes et corps
 - Stores : tests des `computed` (tri, filtrage, compteurs) et des transitions `loading/error` avec services mockés
 - Fonctions pures partagées avec le backend (ex : construction du query string) testées exhaustivement

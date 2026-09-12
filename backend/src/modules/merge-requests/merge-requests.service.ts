@@ -16,6 +16,11 @@ import {
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
 import { resolveReadyAt } from './domain/resolve-ready-at';
+import {
+  DEFAULT_SORT,
+  SortParam,
+  sortMergeRequests,
+} from './domain/sort-merge-requests';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
@@ -42,14 +47,18 @@ export class MergeRequestsService {
   ) {}
 
   /**
-   * Open (non-draft) merge requests, sorted by `ready_at` ascending
-   * (RG-005-01, RG-G10's Ready block). The `draft: false` filter guarantees
-   * `ready_at` is never null for the returned rows (see `resolveReadyAt`).
+   * Open (non-draft) merge requests, ordered per `sort` (RG-008-01/04,
+   * default `ready:asc`). The `draft: false` filter guarantees `ready_at`
+   * is never null for the returned rows (see `resolveReadyAt`); sorting
+   * happens in memory, once the view fields (`difficulty`, `readyAt`) are
+   * assembled, since `diff` ordering depends on a computed value with no
+   * SQL equivalent (see archi.md).
    */
-  async listOpen(): Promise<MergeRequestViewDto[]> {
+  async listOpen(
+    sort: SortParam = DEFAULT_SORT,
+  ): Promise<MergeRequestViewDto[]> {
     const mergeRequests = await this.mergeRequests.find({
       where: { draft: false },
-      order: { readyAt: 'ASC' },
     });
     if (mergeRequests.length === 0) {
       return [];
@@ -79,7 +88,7 @@ export class MergeRequestsService {
     const projectsById = indexById(projectRows);
     const usersById = indexById(userRows);
 
-    return mergeRequests.map((mr) =>
+    const views = mergeRequests.map((mr) =>
       toMergeRequestView(
         mr,
         projectsById,
@@ -89,6 +98,7 @@ export class MergeRequestsService {
         now,
       ),
     );
+    return sortMergeRequests(views, sort);
   }
 
   /**

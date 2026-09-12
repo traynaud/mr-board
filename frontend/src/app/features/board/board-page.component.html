@@ -28,6 +28,10 @@
       <p>{{ 'board.mergeRequests.empty' | translate }}</p>
     </div>
   } @else {
-    <app-mr-table [rows]="mrStore.mergeRequests()" />
+    <app-mr-table
+      [rows]="mrStore.mergeRequests()"
+      [sort]="mrStore.sort()"
+      (sortChange)="mrStore.setSort($event)"
+    />
   }
 </main>
