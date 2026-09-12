@@ -6,6 +6,11 @@
 .mr-table {
   width: 100%;
   min-width: 860px;
+  // RG-012-02 : nécessaire pour que les largeurs posées sur les <th>
+  // soient respectées strictement (au lieu d'un ajustement automatique au
+  // contenu) ; « Titre » reste sans largeur explicite et absorbe donc tout
+  // l'espace restant.
+  table-layout: fixed;
 
   th.mat-mdc-header-cell,
   td.mat-mdc-cell {
@@ -15,6 +20,7 @@
   }
 
   th.mat-mdc-header-cell {
+    position: relative;
     font-weight: 600;
     color: var(--color-neutral-700);
   }
@@ -122,4 +128,42 @@ th.sortable.active .sort-arrow {
 
 .option-label {
   font-size: 13px;
+}
+
+// RG-012-01 : zone de préhension de 6px sur le bord droit de l'en-tête,
+// trait 1px visible seulement au survol de l'en-tête (pas au repos).
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 2px;
+    width: 1px;
+    height: 100%;
+    background: var(--color-divider);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      background: var(--color-accent);
+      opacity: 1;
+    }
+  }
+}
+
+th.mat-mdc-header-cell:hover .resize-handle::after {
+  opacity: 1;
 }

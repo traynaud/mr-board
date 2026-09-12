@@ -7,7 +7,9 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
+import { formatDateTime } from '../../../shared/format/format-date';
 import { provideIcons } from '../../../shared/icons/provide-icons';
+import { DEFAULT_COLUMN_WIDTHS, ResizableColumnKey } from '../../../stores/column-widths.store';
 import { MrTableComponent } from './mr-table.component';
 
 function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
@@ -45,8 +47,12 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       [rows]="rows()"
       [sort]="sort()"
       [showOpened]="showOpened()"
+      [columnWidths]="columnWidths()"
       (sortChange)="lastSortChange = $event"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
+      (widthChange)="lastWidthChange = $event"
+      (resetColumnWidth)="lastResetColumn = $event"
+      (resetAllWidths)="resetAllWidthsCount = resetAllWidthsCount + 1"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,11 +61,24 @@ class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
   readonly showOpened = signal(false);
+  readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   lastSortChange: SortKey | null = null;
   toggleOpenedColumnCount = 0;
+  lastWidthChange: { key: ResizableColumnKey; width: number } | null = null;
+  lastResetColumn: ResizableColumnKey | null = null;
+  resetAllWidthsCount = 0;
 }
 
 describe('MrTableComponent', () => {
+  // jsdom n'implémente pas la Pointer Capture API (voir
+  // resizable-column.directive.spec.ts) — stubbée ici aussi pour les tests
+  // d'intégration du glisser au niveau du tableau.
+  beforeEach(() => {
+    Element.prototype.setPointerCapture = vi.fn();
+    Element.prototype.hasPointerCapture = vi.fn(() => true);
+    Element.prototype.releasePointerCapture = vi.fn();
+  });
+
   const setup = async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
@@ -343,5 +362,114 @@ describe('MrTableComponent', () => {
     const readyDelay = el.querySelector('app-ready-delay');
     expect(readyDelay?.querySelector('.opened')).not.toBeNull();
     expect(readyDelay?.querySelector('.ready')).toBeNull();
+  });
+
+  describe('column resizing (US-012)', () => {
+    it('should_apply_the_column_width_to_each_resizable_header', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.columnWidths.set({
+        ...DEFAULT_COLUMN_WIDTHS,
+        project: 120,
+      });
+      await fixture.whenStable();
+
+      const projectHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+        th.textContent?.includes(t('board.mergeRequests.columns.project')),
+      );
+      expect(projectHeader?.style.width).toBe('120px');
+    });
+
+    it('should_not_set_a_width_on_the_title_header', async () => {
+      const { el } = await setup();
+
+      const titleHeader = Array.from(el.querySelectorAll('th')).find(
+        (th) => th.textContent?.trim() === t('board.mergeRequests.columns.title'),
+      );
+      expect(titleHeader?.style.width).toBe('');
+    });
+
+    it('should_set_an_aria_label_naming_the_column_on_each_resize_handle', async () => {
+      const { el } = await setup();
+
+      const projectHandle = el.querySelector('[appResizableColumn]');
+      expect(projectHandle?.getAttribute('aria-label')).toBe(
+        t('board.columns.resizeAriaLabel', { name: t('board.mergeRequests.columns.project') }),
+      );
+    });
+
+    it('should_emit_widthChange_with_the_column_key_while_dragging_its_handle', async () => {
+      const { fixture, el } = await setup();
+      const authorHandle = Array.from(el.querySelectorAll('[appResizableColumn]')).find((handle) =>
+        handle.getAttribute('aria-label')?.includes(t('board.mergeRequests.columns.author')),
+      ) as HTMLElement;
+
+      authorHandle.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, pointerId: 1, bubbles: true }));
+      authorHandle.dispatchEvent(new PointerEvent('pointermove', { clientX: 130, pointerId: 1, bubbles: true }));
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.lastWidthChange).toEqual({
+        key: 'author',
+        width: DEFAULT_COLUMN_WIDTHS.author + 30,
+      });
+    });
+
+    it('should_emit_resetColumnWidth_with_the_column_key_on_double_click', async () => {
+      const { fixture, el } = await setup();
+      const projectHandle = el.querySelector<HTMLElement>('[appResizableColumn]');
+
+      projectHandle?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.lastResetColumn).toBe('project');
+    });
+
+    it('should_not_trigger_sort_when_the_resize_handle_of_a_sortable_column_is_clicked', async () => {
+      const { fixture, el } = await setup();
+      const diffHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+        th.textContent?.includes(t('board.mergeRequests.columns.difficulty')),
+      );
+      const diffHandle = diffHeader?.querySelector<HTMLElement>('[appResizableColumn]');
+
+      diffHandle?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.lastSortChange).toBeNull();
+    });
+
+    it('should_show_a_tooltip_with_the_exact_date_and_time_on_the_opened_column', async () => {
+      const { fixture } = await setup();
+      fixture.componentInstance.showOpened.set(true);
+      fixture.componentInstance.rows.set([
+        mergeRequest({ createdAt: '2026-09-01T14:30:00.000Z' }),
+      ]);
+      await fixture.whenStable();
+
+      const cell = fixture.debugElement.query(By.css('.opened-cell')).injector.get(MatTooltip);
+      expect(cell.message).toBe(
+        t('board.mergeRequests.opened.tooltip', {
+          date: formatDateTime('2026-09-01T14:30:00.000Z'),
+        }),
+      );
+    });
+
+    it('should_show_a_reset_all_widths_item_in_the_columns_menu', async () => {
+      const { loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+      const items = await menu.getItems();
+
+      expect(await items[0].getText()).toBe(t('board.columns.resetWidths'));
+    });
+
+    it('should_emit_resetAllWidths_when_the_menu_item_is_clicked', async () => {
+      const { fixture, loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+      const items = await menu.getItems();
+
+      await items[0].click();
+
+      expect(fixture.componentInstance.resetAllWidthsCount).toBe(1);
+    });
   });
 });

@@ -156,7 +156,7 @@ une fois ses dépendances réalisées.
 | US-009 | Filtres rapides « Drafts » et « Mes MRs »                | Must     | S          | US-002, US-008         | ✅ |
 | US-010 | Filtres composables (Projet, Auteur, Affecté à, Approved, Commenté) | Must | L      | US-009                 | ✅ |
 | US-011 | Filtres, tri et colonnes propagés dans l'URL             | Must     | M          | US-010                 | ✅ |
-| US-012 | Colonnes redimensionnables                               | Should   | M          | US-005, US-011         | ☐ |
+| US-012 | Colonnes redimensionnables                               | Should   | M          | US-005, US-011         | ✅ |
 | US-013 | Actualisation automatique                                | Should   | M          | US-004                 | ☐ |
 | US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ☐ |
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ☐ |

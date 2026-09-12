@@ -1,13 +1,31 @@
 <table mat-table [dataSource]="rows()" [trackBy]="trackById" class="mr-table">
   <ng-container matColumnDef="project">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.project' | translate }}</th>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().project">
+      {{ 'board.mergeRequests.columns.project' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().project"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.project')"
+        (widthChange)="widthChange.emit({ key: 'project', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('project')"
+      ></span>
+    </th>
     <td mat-cell *matCellDef="let row">
       <span class="tag tag-neutral">{{ row.projectAlias }}</span>
     </td>
   </ng-container>
 
   <ng-container matColumnDef="author">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.author' | translate }}</th>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().author">
+      {{ 'board.mergeRequests.columns.author' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().author"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.author')"
+        (widthChange)="widthChange.emit({ key: 'author', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('author')"
+      ></span>
+    </th>
     <td mat-cell *matCellDef="let row">
       <app-avatar [name]="row.author.name" [avatarUrl]="row.author.avatarUrl" />
     </td>
@@ -28,6 +46,7 @@
       *matHeaderCellDef
       class="sortable"
       [class.active]="isSortActive('diff')"
+      [style.width.px]="columnWidths().difficulty"
       tabindex="0"
       [attr.aria-sort]="sortAriaValue('diff')"
       (click)="sortChange.emit('diff')"
@@ -36,6 +55,13 @@
     >
       {{ 'board.mergeRequests.columns.difficulty' | translate }}
       <span class="sort-arrow">{{ sortArrow('diff') }}</span>
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().difficulty"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.difficulty')"
+        (widthChange)="widthChange.emit({ key: 'difficulty', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('difficulty')"
+      ></span>
     </th>
     <td mat-cell *matCellDef="let row">
       <app-difficulty-badge
@@ -52,15 +78,32 @@
     <th
       mat-header-cell
       *matHeaderCellDef
+      [style.width.px]="columnWidths().comments"
       [matTooltip]="'board.mergeRequests.columns.comments' | translate"
     >
       <mat-icon svgIcon="message-square" />
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().comments"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.comments')"
+        (widthChange)="widthChange.emit({ key: 'comments', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('comments')"
+      ></span>
     </th>
     <td mat-cell *matCellDef="let row">{{ row.commentsCount }}</td>
   </ng-container>
 
   <ng-container matColumnDef="reviewer">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.reviewer' | translate }}</th>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().reviewer">
+      {{ 'board.mergeRequests.columns.reviewer' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().reviewer"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.reviewer')"
+        (widthChange)="widthChange.emit({ key: 'reviewer', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('reviewer')"
+      ></span>
+    </th>
     <td mat-cell *matCellDef="let row">
       @let reviewerSummary = summarizeUsers(row.reviewers);
       @if (reviewerSummary.first; as first) {
@@ -77,7 +120,16 @@
   </ng-container>
 
   <ng-container matColumnDef="assignee">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.assignee' | translate }}</th>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().assignee">
+      {{ 'board.mergeRequests.columns.assignee' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().assignee"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.assignee')"
+        (widthChange)="widthChange.emit({ key: 'assignee', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('assignee')"
+      ></span>
+    </th>
     <td mat-cell *matCellDef="let row">
       @let assigneeSummary = summarizeUsers(row.assignees);
       @if (assigneeSummary.first; as first) {
@@ -94,7 +146,16 @@
   </ng-container>
 
   <ng-container matColumnDef="approved">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.approved' | translate }}</th>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().approved">
+      {{ 'board.mergeRequests.columns.approved' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().approved"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.approved')"
+        (widthChange)="widthChange.emit({ key: 'approved', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('approved')"
+      ></span>
+    </th>
     <td mat-cell *matCellDef="let row">
       @if (row.approved) {
         <mat-icon svgIcon="check" class="approved-icon" />
@@ -108,6 +169,7 @@
       *matHeaderCellDef
       class="sortable"
       [class.active]="isSortActive('ready')"
+      [style.width.px]="columnWidths().ready"
       tabindex="0"
       [attr.aria-sort]="sortAriaValue('ready')"
       (click)="sortChange.emit('ready')"
@@ -116,6 +178,13 @@
     >
       {{ 'board.mergeRequests.columns.ready' | translate }}
       <span class="sort-arrow">{{ sortArrow('ready') }}</span>
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().ready"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.ready')"
+        (widthChange)="widthChange.emit({ key: 'ready', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('ready')"
+      ></span>
     </th>
     <td mat-cell *matCellDef="let row">
       <app-ready-delay
@@ -129,8 +198,24 @@
   </ng-container>
 
   <ng-container matColumnDef="opened">
-    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.opened' | translate }}</th>
-    <td mat-cell *matCellDef="let row" class="opened-cell">{{ formatShortDate(row.createdAt) }}</td>
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().opened">
+      {{ 'board.mergeRequests.columns.opened' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().opened"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.opened')"
+        (widthChange)="widthChange.emit({ key: 'opened', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('opened')"
+      ></span>
+    </th>
+    <td
+      mat-cell
+      *matCellDef="let row"
+      class="opened-cell"
+      [matTooltip]="'board.mergeRequests.opened.tooltip' | translate: { date: formatDateTime(row.createdAt) }"
+    >
+      {{ formatShortDate(row.createdAt) }}
+    </td>
   </ng-container>
 
   <ng-container matColumnDef="columnsMenu">
@@ -165,4 +250,8 @@
     <mat-checkbox [checked]="showOpened()" [disableRipple]="true" tabindex="-1" (click)="$event.preventDefault()" />
     <span class="option-label">{{ 'board.columns.opened' | translate }}</span>
   </div>
+  <mat-divider />
+  <button mat-menu-item type="button" (click)="resetAllWidths.emit()">
+    {{ 'board.columns.resetWidths' | translate }}
+  </button>
 </mat-menu>

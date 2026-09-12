@@ -12,6 +12,7 @@ import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { SyncRun, SyncStatus } from '../../models/sync-status.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
+import { ColumnWidthsStore, DEFAULT_COLUMN_WIDTHS } from '../../stores/column-widths.store';
 import { ColumnsStore } from '../../stores/columns.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { SyncStore } from '../../stores/sync.store';
@@ -547,6 +548,109 @@ describe('BoardPageComponent', () => {
 
       expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
       expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toContain('cols=opened');
+    });
+  });
+
+  describe('column widths (US-012)', () => {
+    beforeEach(() => {
+      // `ColumnWidthsStore` persiste dans le vrai `localStorage` de
+      // l'environnement jsdom, partagé entre les tests d'un même fichier.
+      localStorage.clear();
+    });
+
+    it('should_pass_the_effective_column_widths_to_the_mr_table', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+      TestBed.inject(ColumnWidthsStore).setWidth('project', 120);
+      await settle();
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      expect(mrTable.columnWidths().project).toBe(120);
+    });
+
+    it('should_widen_by_24px_after_3_cumulative_arrow_right_presses_on_a_handle', async () => {
+      // Bout en bout via le vrai DOM et le vrai `ColumnWidthsStore` (pas de
+      // simulation isolée) : `columnWidths` vient d'un `computed()` relu à
+      // chaque re-rendu, donc chaque pression part bien de la largeur mise à
+      // jour par la précédente (RG-012-07 : « 3 fois » → +24px cumulés).
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+      const reviewerAriaLabel = t('board.columns.resizeAriaLabel', {
+        name: t('board.mergeRequests.columns.reviewer'),
+      });
+      const handle = el.querySelector<HTMLElement>(`[aria-label="${reviewerAriaLabel}"]`);
+
+      for (let i = 0; i < 3; i += 1) {
+        handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        await settle();
+      }
+
+      expect(TestBed.inject(ColumnWidthsStore).widths().reviewer).toBe(
+        DEFAULT_COLUMN_WIDTHS.reviewer + 24,
+      );
+    });
+
+    it('should_forward_widthChange_from_the_mr_table_to_the_store', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      mrTable.widthChange.emit({ key: 'author', width: 90 });
+      await settle();
+
+      expect(TestBed.inject(ColumnWidthsStore).widths().author).toBe(90);
+    });
+
+    it('should_forward_resetColumnWidth_from_the_mr_table_to_the_store', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+      TestBed.inject(ColumnWidthsStore).setWidth('author', 90);
+      await settle();
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      mrTable.resetColumnWidth.emit('author');
+      await settle();
+
+      expect(TestBed.inject(ColumnWidthsStore).widths().author).toBe(
+        DEFAULT_COLUMN_WIDTHS.author,
+      );
+    });
+
+    it('should_forward_resetAllWidths_from_the_mr_table_to_the_store', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+      TestBed.inject(ColumnWidthsStore).setWidth('author', 90);
+      await settle();
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      mrTable.resetAllWidths.emit();
+      await settle();
+
+      expect(TestBed.inject(ColumnWidthsStore).widths()).toEqual(DEFAULT_COLUMN_WIDTHS);
     });
   });
 

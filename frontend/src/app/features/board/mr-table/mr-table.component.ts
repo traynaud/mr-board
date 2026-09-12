@@ -1,15 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslateService } from '../../../core/i18n/translate.service';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
-import { formatShortDate } from '../../../shared/format/format-date';
+import { formatDateTime, formatShortDate } from '../../../shared/format/format-date';
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
+import { ResizableColumnDirective } from '../../../shared/resizable-column/resizable-column.directive';
+import type { ResizableColumnKey } from '../../../stores/column-widths.store';
 import { summarizeUsers } from './summarize-users';
 
 /** Colonnes toujours affichées, dans l'ordre (RG-005-02, RG-007-*). */
@@ -26,24 +30,28 @@ const BASE_COLUMNS = [
 ];
 
 /**
- * Tableau des MRs ouvertes — 8 colonnes (RG-005-02, RG-007-*). Purement
- * présentationnel : reçoit les lignes déjà triées par le backend
- * (RG-005-01, RG-008-07) et ne recalcule rien (RG-005-11). Les en-têtes
- * « Difficulté » et « Depuis Ready » sont cliquables/activables au clavier
- * et se contentent d'émettre `sortChange` — aucun re-tri local (RG-008-03).
- * Le redimensionnement arrive avec US-012.
+ * Tableau des MRs ouvertes — 8 colonnes (RG-005-02, RG-007-*), largeurs
+ * ajustables (RG-012-*). Purement présentationnel : reçoit les lignes déjà
+ * triées par le backend (RG-005-01, RG-008-07) et ne recalcule rien
+ * (RG-005-11), ne connaît ni `ColumnsStore` ni `ColumnWidthsStore` — tout
+ * est reçu en entrée / émis en sortie, câblé par `BoardPageComponent`. Les
+ * en-têtes « Difficulté » et « Depuis Ready » sont cliquables/activables au
+ * clavier et se contentent d'émettre `sortChange` — aucun re-tri local
+ * (RG-008-03).
  */
 @Component({
   selector: 'app-mr-table',
   imports: [
     MatTableModule,
     MatCheckboxModule,
+    MatDividerModule,
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
     AvatarComponent,
     DifficultyBadgeComponent,
     ReadyDelayComponent,
+    ResizableColumnDirective,
     TranslatePipe,
   ],
   templateUrl: './mr-table.component.html',
@@ -51,14 +59,24 @@ const BASE_COLUMNS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MrTableComponent {
+  private readonly i18n = inject(TranslateService);
+
   readonly rows = input.required<MergeRequestView[]>();
   readonly sort = input.required<MergeRequestSort>();
   /** RG-011-09 : visibilité de la colonne optionnelle « Date d'ouverture ». */
   readonly showOpened = input.required<boolean>();
+  /** RG-012-01/02/03 : largeurs effectives (défauts + overrides), déjà résolues par l'appelant. */
+  readonly columnWidths = input.required<Record<ResizableColumnKey, number>>();
 
   readonly sortChange = output<SortKey>();
   /** RG-011-09 : bascule la visibilité de la colonne « Date d'ouverture ». */
   readonly toggleOpenedColumn = output<void>();
+  /** RG-012-01/07 : nouvelle largeur (glisser ou clavier), déjà bornée. */
+  readonly widthChange = output<{ key: ResizableColumnKey; width: number }>();
+  /** RG-012-04 : double-clic sur une poignée, une seule colonne. */
+  readonly resetColumnWidth = output<ResizableColumnKey>();
+  /** RG-012-04/05 : item de menu « Réinitialiser les largeurs », toutes colonnes. */
+  readonly resetAllWidths = output<void>();
 
   protected readonly displayedColumns = computed(() => [
     ...BASE_COLUMNS,
@@ -68,8 +86,16 @@ export class MrTableComponent {
 
   protected readonly summarizeUsers = summarizeUsers;
   protected readonly formatShortDate = formatShortDate;
+  protected readonly formatDateTime = formatDateTime;
 
   protected readonly trackById = (_index: number, row: MergeRequestView): number => row.id;
+
+  /** RG-012-07 : `aria-label` traduit de la poignée d'une colonne. */
+  protected resizeAriaLabel(columnNameKey: string): string {
+    return this.i18n.translate('board.columns.resizeAriaLabel', {
+      name: this.i18n.translate(columnNameKey),
+    });
+  }
 
   /** `true` si `key` est la colonne actuellement triée (RG-008-06). */
   protected isSortActive(key: SortKey): boolean {

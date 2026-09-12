@@ -56,8 +56,12 @@
         [rows]="mrStore.mergeRequests()"
         [sort]="mrStore.sort()"
         [showOpened]="columnsStore.showOpened()"
+        [columnWidths]="columnWidthsStore.widths()"
         (sortChange)="mrStore.setSort($event)"
         (toggleOpenedColumn)="onToggleOpenedColumn()"
+        (widthChange)="onWidthChange($event)"
+        (resetColumnWidth)="onResetColumnWidth($event)"
+        (resetAllWidths)="onResetAllWidths()"
       />
     }
     @if (showFooter()) {

@@ -46,7 +46,9 @@
     },
     "columns": {
       "menuLabel": "Colonnes",
-      "opened": "Date d'ouverture"
+      "opened": "Date d'ouverture",
+      "resetWidths": "Réinitialiser les largeurs",
+      "resizeAriaLabel": "Redimensionner la colonne {{name}}"
     },
     "mergeRequests": {
       "loadError": "Impossible de charger les MRs.",
@@ -81,6 +83,9 @@
         "tooltip": "Prête depuis le {{date}}",
         "openedToday": "ouverte aujourd'hui",
         "openedDays": "ouverte il y a {{days}} j"
+      },
+      "opened": {
+        "tooltip": "Ouverte le {{date}}"
       }
     },
     "footer": {

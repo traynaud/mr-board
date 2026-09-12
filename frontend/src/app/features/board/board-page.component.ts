@@ -20,6 +20,7 @@ import {
   normalizeParams,
 } from '../../core/url-state/query-params.mapper';
 import { FilterKey } from '../../models/merge-request.model';
+import { ColumnWidthsStore, ResizableColumnKey } from '../../stores/column-widths.store';
 import { ColumnsStore } from '../../stores/columns.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
@@ -61,6 +62,7 @@ export class BoardPageComponent implements OnInit {
   protected readonly mrStore = inject(MergeRequestsStore);
   protected readonly filtersStore = inject(FiltersStore);
   protected readonly columnsStore = inject(ColumnsStore);
+  protected readonly columnWidthsStore = inject(ColumnWidthsStore);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -255,6 +257,21 @@ export class BoardPageComponent implements OnInit {
    */
   protected onToggleOpenedColumn(): void {
     this.columnsStore.toggleOpened();
+  }
+
+  /** RG-012-01/07 : nouvelle largeur (glisser ou clavier) pour une colonne. */
+  protected onWidthChange(event: { key: ResizableColumnKey; width: number }): void {
+    this.columnWidthsStore.setWidth(event.key, event.width);
+  }
+
+  /** RG-012-04 : double-clic sur une poignée, une seule colonne. */
+  protected onResetColumnWidth(key: ResizableColumnKey): void {
+    this.columnWidthsStore.resetOne(key);
+  }
+
+  /** RG-012-04/05 : item de menu « Réinitialiser les largeurs ». */
+  protected onResetAllWidths(): void {
+    this.columnWidthsStore.resetAll();
   }
 
   /**
