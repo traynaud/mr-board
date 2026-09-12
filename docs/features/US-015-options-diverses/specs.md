@@ -20,13 +20,21 @@ tous les paramètres.
 - **RG-015-02** : `ignoredLabels` (défaut `[]`, présenté par la case « Ignorer les MRs avec le label `wip` / `on-hold` » qui positionne `["wip", "on-hold"]`) : les MRs portant au moins un de ces labels (comparaison insensible à la casse) sont exclues de `GET /merge-requests` et des facets, mais restent synchronisées en base. Stocké en JSON.
 - **RG-015-03** : « Exporter la config (JSON) » : télécharge `mrboard-config.json` contenant tous les paramètres **sauf le jeton** et la liste des repos (`{ version: 1, settings: {…}, projects: [{ pathWithNamespace, alias }] }`). Endpoint `GET /settings/export`.
 - **RG-015-04** : « Importer » : sélection d'un fichier JSON, validation du schéma (`version`, champs connus), puis `POST /settings/import`. Les paramètres sont remplacés, les repos sont fusionnés (ajout des manquants par chemin, mise à jour des alias, aucun repo supprimé). Le jeton n'est jamais importé. Un dialog de confirmation résume « N paramètres, M repos (K nouveaux) ». Fichier invalide → message d'erreur, rien n'est modifié.
-- **RG-015-05** : « Réinitialiser » : remet dans le formulaire toutes les valeurs par défaut de toutes les sections (identité vide, URL `https://gitlab.com`, fréquence 5, seuils par défaut, options désactivées) **sans toucher au jeton ni aux repos** ; toast « Valeurs par défaut restaurées (non enregistrées) ». Rien n'est persisté avant « Enregistrer ».
+- **RG-015-05** : « Réinitialiser » : remet dans le formulaire toutes les valeurs par défaut de toutes les sections (identité vide, URL `https://gitlab.com`, fréquence 5, seuils par défaut, options désactivées) **sans toucher au jeton ni aux repos** ; toast « Valeurs par défaut restaurées (non enregistrées) ». Rien n'est persisté avant « Enregistrer ». Remplace le lien texte « Valeurs par défaut » de la section Seuils (US-014, RG-014-05), qui ne réinitialisait que ce bloc : ce bouton global doit produire le même résultat sur les 7 seuils, en plus des autres sections.
 - **RG-015-06** : Les options `notifyAssigned` et `tabBadge` sont affichées dans cette section mais spécifiées par US-016 ; en attendant elles sont désactivées avec le tooltip « Bientôt disponible ».
 
 ## 4. Maquettes de référence
 
-- Wireframe **1c** — section `06 · Divers` (cases, boutons « Exporter la config (JSON) » et « Importer »)
-- Prototype — `newTab`, `ignoreWip`, actions `export`, `reset`, `linkTarget`
+- Wireframe **1c** — section `06 · Divers`
+- Prototype — `newTab`, `ignoreWip`, actions `export`, `reset`, `linkTarget` (`MR Board - Prototype.dc.html`, section
+  06, ligne ~199-206)
+
+> ⚠️ **Écart avec le prototype** : ce dernier n'affiche que les boutons « Exporter la config (JSON) » et
+> « Réinitialiser » — aucun bouton « Importer » n'y figure. L'import est néanmoins explicitement prévu par la
+> roadmap (`docs/features/README.md`, US-015 : « export/import/reset ») : à concevoir en Phase Architecte sans
+> maquette dédiée, en réutilisant les patterns visuels existants (bouton `mat-stroked-button` comme Export,
+> `ConfirmDialogComponent` partagé — déjà utilisé par `repositories-section` — pour la confirmation résumant
+> « N paramètres, M repos (K nouveaux) »).
 
 ## 5. Critères d'acceptation
 

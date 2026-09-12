@@ -48,6 +48,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       [sort]="sort()"
       [showOpened]="showOpened()"
       [columnWidths]="columnWidths()"
+      [openInNewTab]="openInNewTab()"
       (sortChange)="lastSortChange = $event"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
       (widthChange)="lastWidthChange = $event"
@@ -62,6 +63,7 @@ class HostComponent {
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
   readonly showOpened = signal(false);
   readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
+  readonly openInNewTab = signal(false);
   lastSortChange: SortKey | null = null;
   toggleOpenedColumnCount = 0;
   lastWidthChange: { key: ResizableColumnKey; width: number } | null = null;
@@ -104,10 +106,20 @@ describe('MrTableComponent', () => {
     const link = el.querySelector<HTMLAnchorElement>('.title-link');
     expect(link?.getAttribute('href')).toBe('https://gitlab.com/equipe/api/-/merge_requests/7');
     expect(link?.getAttribute('rel')).toBe('noopener');
+    expect(link?.getAttribute('target')).toBe('_self');
     const tooltip = fixture.debugElement
       .query(By.css('.title-link'))
       .injector.get(MatTooltip);
     expect(tooltip.message).toBe('Refonte facturation');
+  });
+
+  it('should_open_the_title_link_in_a_new_tab_when_open_in_new_tab_is_enabled', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.openInNewTab.set(true);
+    await fixture.whenStable();
+
+    const link = el.querySelector<HTMLAnchorElement>('.title-link');
+    expect(link?.getAttribute('target')).toBe('_blank');
   });
 
   it('should_show_a_dash_when_there_is_no_reviewer_or_assignee', async () => {

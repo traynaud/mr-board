@@ -35,6 +35,8 @@ const NO_TOKEN_SETTINGS: Settings = {
   readyGreenDays: 1,
   readyOrangeDays: 3,
   workdaysOnly: false,
+  openInNewTab: false,
+  ignoredLabels: [],
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
@@ -225,6 +227,19 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector('app-filter-bar')).not.toBeNull();
     expect(el.querySelector('app-mr-table')).not.toBeNull();
     expect(el.querySelector('.title-link')?.textContent?.trim()).toBe('Refonte facturation');
+  });
+
+  it('should_open_the_title_link_in_a_new_tab_when_configured', async () => {
+    await bootstrap({
+      settings: { ...WITH_TOKEN_SETTINGS, openInNewTab: true },
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [mergeRequest()],
+    });
+
+    expect(
+      el.querySelector<HTMLAnchorElement>('.title-link')?.getAttribute('target'),
+    ).toBe('_blank');
   });
 
   it('should_show_the_no_merge_requests_empty_state_without_a_clear_button_when_no_filter_is_active', async () => {

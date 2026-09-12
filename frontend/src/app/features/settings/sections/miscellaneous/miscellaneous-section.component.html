@@ -1,0 +1,35 @@
+<div class="fields" [formGroup]="form()">
+  <mat-checkbox disabled [matTooltip]="'settings.misc.comingSoon' | translate">
+    {{ 'settings.misc.notifyAssigned' | translate }}
+  </mat-checkbox>
+  <mat-checkbox disabled [matTooltip]="'settings.misc.comingSoon' | translate">
+    {{ 'settings.misc.tabBadge' | translate }}
+  </mat-checkbox>
+  <mat-checkbox formControlName="openInNewTab">
+    {{ 'settings.misc.openInNewTab' | translate }}
+  </mat-checkbox>
+  <mat-checkbox formControlName="ignoreWip">
+    {{ 'settings.misc.ignoreWip' | translate }}
+  </mat-checkbox>
+
+  <div class="actions">
+    <button mat-stroked-button type="button" (click)="exportConfig()">
+      {{ 'settings.misc.export' | translate }}
+    </button>
+    <input
+      #fileInput
+      type="file"
+      accept=".json,application/json"
+      hidden
+      (change)="onFileSelected(fileInput.files); fileInput.value = ''"
+    />
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="importing()"
+      (click)="fileInput.click()"
+    >
+      {{ 'settings.misc.import' | translate }}
+    </button>
+  </div>
+</div>

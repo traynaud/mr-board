@@ -13,7 +13,7 @@ import { RepoAliasForm } from './repos-form';
 /** Longueur minimale d'un jeton saisi (RG-001-02, identique au backend). */
 export const TOKEN_MIN_LENGTH = 8;
 
-/** Valeurs par défaut des seuils (RG-G03, RG-G04, RG-014-01), reprises par le lien « Valeurs par défaut ». */
+/** Valeurs par défaut des seuils (RG-G03, RG-G04, RG-014-01), reprises par « Réinitialiser » (RG-015-05). */
 export const DEFAULT_THRESHOLDS = {
   easyFiles: 5,
   easyLines: 100,
@@ -23,6 +23,12 @@ export const DEFAULT_THRESHOLDS = {
   readyOrangeDays: 3,
   workdaysOnly: false,
 } as const;
+
+/** URL GitLab par défaut (miroir de `DEFAULT_GITLAB_URL` côté backend), reprise par « Réinitialiser ». */
+export const DEFAULT_GITLAB_URL = 'https://gitlab.com';
+
+/** Labels positionnés par la case « Ignorer les MRs avec le label wip / on-hold » (RG-015-02). */
+export const DEFAULT_IGNORED_LABELS = ['wip', 'on-hold'] as const;
 
 export interface SettingsFormControls {
   gitlabUrl: FormControl<string>;
@@ -43,6 +49,10 @@ export interface SettingsFormControls {
   readyOrangeDays: FormControl<number>;
   /** Ne compter que les jours ouvrés pour le délai Ready (RG-G04, RG-014-01). */
   workdaysOnly: FormControl<boolean>;
+  /** Ouvre les MRs dans un nouvel onglet (RG-G11, RG-015-01). */
+  openInNewTab: FormControl<boolean>;
+  /** Case « Ignorer les MRs avec le label wip / on-hold » (RG-015-02) ; converti vers/depuis `ignoredLabels`. */
+  ignoreWip: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -168,6 +178,8 @@ export function buildSettingsForm(): SettingsForm {
         validators: [Validators.required, Validators.min(0), integerValidator],
       }),
       workdaysOnly: new FormControl(DEFAULT_THRESHOLDS.workdaysOnly, { nonNullable: true }),
+      openInNewTab: new FormControl(false, { nonNullable: true }),
+      ignoreWip: new FormControl(false, { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
       // touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -197,6 +209,38 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.readyGreenDays.reset(settings.readyGreenDays);
   form.controls.readyOrangeDays.reset(settings.readyOrangeDays);
   form.controls.workdaysOnly.reset(settings.workdaysOnly);
+  form.controls.openInNewTab.reset(settings.openInNewTab);
+  form.controls.ignoreWip.reset(settings.ignoredLabels.length > 0);
+}
+
+/**
+ * Remet le formulaire aux valeurs par défaut de toutes les sections
+ * (RG-015-05), sans rien enregistrer. Ne touche **jamais** `gitlabToken`
+ * (le jeton n'est jamais effacé par cette action) ni `repos` (même raison
+ * que `resetSettingsForm`). Marque les champs concernés comme modifiés,
+ * pour que « Enregistrer » se réactive.
+ */
+export function resetSettingsFormToDefaults(form: SettingsForm): void {
+  const { controls } = form;
+  controls.gitlabUrl.setValue(DEFAULT_GITLAB_URL);
+  controls.meUsername.setValue('');
+  controls.meEmail.setValue('');
+  controls.refreshIntervalMin.setValue(5);
+  controls.pauseWhenHidden.setValue(true);
+  controls.easyFiles.setValue(DEFAULT_THRESHOLDS.easyFiles);
+  controls.easyLines.setValue(DEFAULT_THRESHOLDS.easyLines);
+  controls.hardFiles.setValue(DEFAULT_THRESHOLDS.hardFiles);
+  controls.hardLines.setValue(DEFAULT_THRESHOLDS.hardLines);
+  controls.readyGreenDays.setValue(DEFAULT_THRESHOLDS.readyGreenDays);
+  controls.readyOrangeDays.setValue(DEFAULT_THRESHOLDS.readyOrangeDays);
+  controls.workdaysOnly.setValue(DEFAULT_THRESHOLDS.workdaysOnly);
+  controls.openInNewTab.setValue(false);
+  controls.ignoreWip.setValue(false);
+  for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
+    if (name !== 'gitlabToken' && name !== 'repos') {
+      controls[name].markAsDirty();
+    }
+  }
 }
 
 /**
@@ -221,6 +265,8 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     readyGreenDays,
     readyOrangeDays,
     workdaysOnly,
+    openInNewTab,
+    ignoreWip,
   } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
@@ -236,5 +282,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     readyGreenDays,
     readyOrangeDays,
     workdaysOnly,
+    openInNewTab,
+    ignoredLabels: ignoreWip ? [...DEFAULT_IGNORED_LABELS] : [],
   };
 }

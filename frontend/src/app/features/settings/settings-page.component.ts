@@ -37,8 +37,14 @@ import {
   RepoRow,
   RepositoriesSectionComponent,
 } from './sections/repositories/repositories-section.component';
+import { MiscellaneousSectionComponent } from './sections/miscellaneous/miscellaneous-section.component';
 import { ThresholdsSectionComponent } from './sections/thresholds/thresholds-section.component';
-import { buildSettingsForm, resetSettingsForm, toUpdateRequest } from './settings-form';
+import {
+  buildSettingsForm,
+  resetSettingsForm,
+  resetSettingsFormToDefaults,
+  toUpdateRequest,
+} from './settings-form';
 import { HasUnsavedChanges } from './unsaved-changes.guard';
 
 /** Durée d'affichage des toasts (ms). */
@@ -65,6 +71,7 @@ export const TOAST_DURATION_MS = 3500;
     RefreshSectionComponent,
     RepositoriesSectionComponent,
     ThresholdsSectionComponent,
+    MiscellaneousSectionComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
@@ -214,6 +221,12 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
 
   protected cancel(): void {
     void this.router.navigate(['/'], { queryParams: this.boardQueryParams() });
+  }
+
+  /** RG-015-05 : remet tout le formulaire aux valeurs par défaut, sans rien enregistrer. */
+  protected resetToDefaults(): void {
+    resetSettingsFormToDefaults(this.form);
+    this.toast('settings.reset.done');
   }
 
   /**

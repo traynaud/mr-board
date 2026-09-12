@@ -43,3 +43,34 @@ describe('ConfirmDialogComponent', () => {
     expect(dialogRef.close).toHaveBeenCalledWith(false);
   });
 });
+
+describe('ConfirmDialogComponent with messageParams', () => {
+  const data: ConfirmDialogData = {
+    titleKey: 'settings.misc.importConfirm.title',
+    messageKey: 'settings.misc.importConfirm.message',
+    confirmKey: 'settings.misc.importConfirm.confirm',
+    cancelKey: 'settings.misc.importConfirm.cancel',
+    messageParams: { settingsCount: 12, totalRepos: 2, newRepos: 1 },
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ConfirmDialogComponent],
+      providers: [
+        provideI18nTesting(),
+        { provide: MAT_DIALOG_DATA, useValue: data },
+        { provide: MatDialogRef, useValue: { close: vi.fn() } },
+      ],
+    }).compileComponents();
+  });
+
+  it('should_interpolate_the_message_params', async () => {
+    const fixture = TestBed.createComponent(ConfirmDialogComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('mat-dialog-content')?.textContent?.trim()).toBe(
+      t('settings.misc.importConfirm.message', { settingsCount: 12, totalRepos: 2, newRepos: 1 }),
+    );
+  });
+});

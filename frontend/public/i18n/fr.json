@@ -212,7 +212,6 @@
         "beyond": "au-delà"
       },
       "workdaysOnly": "Compter uniquement les jours ouvrés",
-      "resetDefaults": "Valeurs par défaut",
       "errors": {
         "required": "Ce champ est obligatoire.",
         "min": "Doit être un entier ≥ {{min}}.",
@@ -220,6 +219,31 @@
         "mustExceedEasy": "Doit être supérieur à Easy",
         "mustExceedReadyGreen": "Doit être supérieur à Vert"
       }
+    },
+    "misc": {
+      "number": "06",
+      "title": "Divers",
+      "description": "Options de confort et sauvegarde de la configuration.",
+      "openInNewTab": "Ouvrir les MRs dans un nouvel onglet",
+      "ignoreWip": "Ignorer les MRs avec le label wip / on-hold",
+      "notifyAssigned": "Notification navigateur quand une MR m'est affectée",
+      "tabBadge": "Badge de compteur sur l'onglet (MRs en rouge)",
+      "comingSoon": "Bientôt disponible",
+      "export": "Exporter la config (JSON)",
+      "import": "Importer",
+      "importInvalid": "Fichier de configuration invalide.",
+      "importConfirm": {
+        "title": "Importer la configuration ?",
+        "message": "{{settingsCount}} paramètres, {{totalRepos}} repos ({{newRepos}} nouveaux)",
+        "confirm": "Importer",
+        "cancel": "Annuler"
+      },
+      "importSuccess": "Configuration importée.",
+      "importSkipped": "Repos ignorés : {{paths}}"
+    },
+    "reset": {
+      "button": "Réinitialiser",
+      "done": "Valeurs par défaut restaurées (non enregistrées)"
     }
   },
   "errors": {

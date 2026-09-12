@@ -69,6 +69,8 @@ describe('Settings (e2e)', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
   });
 
@@ -128,6 +130,8 @@ describe('Settings (e2e)', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -160,6 +164,8 @@ describe('Settings (e2e)', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
   });
 
@@ -428,5 +434,52 @@ describe('Settings (e2e)', () => {
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('easyLines')]);
+  });
+
+  it('PUT /settings should_store_the_new_tab_and_ignored_labels_options', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({
+        gitlabUrl: 'https://gitlab.com',
+        openInNewTab: true,
+        ignoredLabels: ['wip', 'on-hold'],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        openInNewTab: true,
+        ignoredLabels: ['wip', 'on-hold'],
+      }),
+    );
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_keep_the_new_tab_and_ignored_labels_options_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        openInNewTab: true,
+        ignoredLabels: ['wip', 'on-hold'],
+      }),
+    );
+  });
+
+  it('PUT /settings should_reject_a_non_array_ignored_labels', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      ignoredLabels: 'wip',
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([
+      expect.stringContaining('ignoredLabels'),
+    ]);
   });
 });

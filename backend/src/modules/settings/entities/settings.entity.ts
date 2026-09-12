@@ -62,6 +62,14 @@ export class Settings {
   @Column({ name: 'workdays_only', type: 'boolean', default: false })
   workdaysOnly!: boolean;
 
+  /** Open MR titles in a new tab (RG-G11, RG-015-01). */
+  @Column({ name: 'open_in_new_tab', type: 'boolean', default: false })
+  openInNewTab!: boolean;
+
+  /** JSON-encoded `string[]` of labels that hide a merge request (RG-015-02). */
+  @Column({ name: 'ignored_labels', type: 'text', default: '[]' })
+  ignoredLabels!: string;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

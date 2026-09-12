@@ -15,6 +15,9 @@
       {{ 'common.cancel' | translate }}
     </button>
     @if (!store.loadError()) {
+      <button mat-button type="button" class="reset" (click)="resetToDefaults()">
+        {{ 'settings.reset.button' | translate }}
+      </button>
       <button mat-flat-button type="button" class="save" [disabled]="!canSave()" (click)="save()">
         {{ 'common.save' | translate }}
       </button>
@@ -72,9 +75,16 @@
         [number]="'settings.thresholds.number' | translate"
         titleKey="settings.thresholds.title"
         descriptionKey="settings.thresholds.description"
-        [last]="true"
       >
         <app-thresholds-section [form]="form" />
+      </app-settings-section>
+      <app-settings-section
+        [number]="'settings.misc.number' | translate"
+        titleKey="settings.misc.title"
+        descriptionKey="settings.misc.description"
+        [last]="true"
+      >
+        <app-miscellaneous-section [form]="form" />
       </app-settings-section>
     </form>
   }

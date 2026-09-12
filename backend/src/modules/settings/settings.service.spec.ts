@@ -29,6 +29,8 @@ describe('SettingsService', () => {
     readyGreenDays: 1,
     readyOrangeDays: 3,
     workdaysOnly: false,
+    openInNewTab: false,
+    ignoredLabels: '[]',
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -84,6 +86,8 @@ describe('SettingsService', () => {
         readyGreenDays: 1,
         readyOrangeDays: 3,
         workdaysOnly: false,
+        openInNewTab: false,
+        ignoredLabels: [],
       });
     });
 
@@ -152,6 +156,8 @@ describe('SettingsService', () => {
         readyGreenDays: 1,
         readyOrangeDays: 3,
         workdaysOnly: false,
+        openInNewTab: false,
+        ignoredLabels: [],
       });
     });
 
@@ -374,6 +380,110 @@ describe('SettingsService', () => {
       ).rejects.toMatchObject({ code: 'settings.readyOrangeTooLow' });
       expect(repository.save).not.toHaveBeenCalled();
     });
+
+    it('should_set_the_new_tab_and_ignored_labels_options_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        openInNewTab: true,
+        ignoredLabels: ['wip', 'on-hold'],
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          openInNewTab: true,
+          ignoredLabels: JSON.stringify(['wip', 'on-hold']),
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          openInNewTab: true,
+          ignoredLabels: ['wip', 'on-hold'],
+        }),
+      );
+    });
+
+    it('should_keep_the_new_tab_and_ignored_labels_options_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        openInNewTab: true,
+        ignoredLabels: JSON.stringify(['wip']),
+      });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(
+        expect.objectContaining({ openInNewTab: true, ignoredLabels: ['wip'] }),
+      );
+    });
+  });
+
+  describe('applyImportedSettings', () => {
+    it('should_replace_settings_without_touching_the_token', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        gitlabTokenEncrypted: 'enc(untouched-token)',
+      });
+
+      const result = await service.applyImportedSettings({
+        gitlabUrl: 'https://gitlab.exemple.fr/',
+        easyFiles: 12,
+        openInNewTab: true,
+        ignoredLabels: ['wip'],
+      });
+
+      expect(cipher.encrypt).not.toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gitlabUrl: 'https://gitlab.exemple.fr',
+          gitlabTokenEncrypted: 'enc(untouched-token)',
+          easyFiles: 12,
+          openInNewTab: true,
+          ignoredLabels: JSON.stringify(['wip']),
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          gitlabUrl: 'https://gitlab.exemple.fr',
+          tokenConfigured: true,
+          easyFiles: 12,
+          openInNewTab: true,
+          ignoredLabels: ['wip'],
+        }),
+      );
+    });
+
+    it('should_keep_omitted_fields_unchanged', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        meUsername: 'kbenali',
+      });
+
+      const result = await service.applyImportedSettings({
+        gitlabUrl: 'https://gitlab.com',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({ meUsername: 'kbenali' }),
+      );
+    });
+
+    it('should_reject_an_invalid_url', async () => {
+      await expect(
+        service.applyImportedSettings({ gitlabUrl: 'not-a-url' }),
+      ).rejects.toBeInstanceOf(BusinessValidationException);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('should_reject_incoherent_thresholds', async () => {
+      await expect(
+        service.applyImportedSettings({
+          gitlabUrl: 'https://gitlab.com',
+          easyFiles: 5,
+          hardFiles: 5,
+        }),
+      ).rejects.toMatchObject({ code: 'settings.hardFilesTooLow' });
+      expect(repository.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('testConnection', () => {
@@ -575,6 +685,53 @@ describe('SettingsService', () => {
         readyDelay: { greenDays: 2, orangeDays: 5 },
         workdaysOnly: true,
       });
+    });
+
+    it('should_default_ignored_labels_to_an_empty_array', async () => {
+      await expect(service.getIgnoredLabels()).resolves.toEqual([]);
+    });
+
+    it('should_expose_the_configured_ignored_labels', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        ignoredLabels: JSON.stringify(['wip', 'on-hold']),
+      });
+
+      await expect(service.getIgnoredLabels()).resolves.toEqual([
+        'wip',
+        'on-hold',
+      ]);
+    });
+
+    it('should_expose_every_exportable_setting_without_the_token', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        gitlabTokenEncrypted: 'enc(should-not-appear)',
+        meUsername: 'mdupont',
+        openInNewTab: true,
+        ignoredLabels: JSON.stringify(['wip']),
+      });
+
+      const result = await service.getExportableSettings();
+
+      expect(result).toEqual({
+        gitlabUrl: 'https://gitlab.com',
+        meUsername: 'mdupont',
+        meEmail: null,
+        refreshIntervalMin: 5,
+        pauseWhenHidden: true,
+        easyFiles: 5,
+        easyLines: 100,
+        hardFiles: 20,
+        hardLines: 800,
+        readyGreenDays: 1,
+        readyOrangeDays: 3,
+        workdaysOnly: false,
+        openInNewTab: true,
+        ignoredLabels: ['wip'],
+      });
+      expect(result).not.toHaveProperty('gitlabTokenEncrypted');
+      expect(JSON.stringify(result)).not.toContain('should-not-appear');
     });
   });
 });

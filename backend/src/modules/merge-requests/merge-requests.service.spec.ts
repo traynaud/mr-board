@@ -62,7 +62,11 @@ describe('MergeRequestsService', () => {
   let assigneesRepo: AssociationRepoMock;
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock; list: jest.Mock };
-  let settingsService: { getIdentity: jest.Mock; getThresholds: jest.Mock };
+  let settingsService: {
+    getIdentity: jest.Mock;
+    getThresholds: jest.Mock;
+    getIgnoredLabels: jest.Mock;
+  };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -142,6 +146,7 @@ describe('MergeRequestsService', () => {
               readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
               workdaysOnly: false,
             }),
+            getIgnoredLabels: jest.fn().mockResolvedValue([]),
           },
         },
       ],
@@ -874,6 +879,53 @@ describe('MergeRequestsService', () => {
 
       expect(result.map((v) => v.iid)).toEqual([2]);
     });
+
+    it('should_hide_merge_requests_carrying_an_ignored_label', async () => {
+      settingsService.getIgnoredLabels.mockResolvedValue(['wip', 'on-hold']);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 1,
+          labels: JSON.stringify(['WIP']),
+        }),
+        persistedMergeRequest({
+          id: 2,
+          iid: 2,
+          labels: JSON.stringify(['on-hold']),
+        }),
+        persistedMergeRequest({
+          id: 3,
+          iid: 3,
+          labels: JSON.stringify(['backend']),
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({});
+
+      expect(result.map((v) => v.iid)).toEqual([3]);
+    });
+
+    it('should_not_hide_anything_when_no_label_is_ignored', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 1,
+          labels: JSON.stringify(['wip']),
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({});
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+    });
   });
 
   describe('getFacets', () => {
@@ -933,6 +985,26 @@ describe('MergeRequestsService', () => {
       });
 
       const facets = await service.getFacets({ mineOnly: true });
+
+      expect(facets.project).toEqual([
+        { value: 'api', label: 'api · equipe/api', count: 0 },
+      ]);
+    });
+
+    it('should_exclude_merge_requests_carrying_an_ignored_label_from_facet_counts', async () => {
+      settingsService.getIgnoredLabels.mockResolvedValue(['wip']);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, labels: JSON.stringify(['wip']) }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.list.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const facets = await service.getFacets({});
 
       expect(facets.project).toEqual([
         { value: 'api', label: 'api · equipe/api', count: 0 },

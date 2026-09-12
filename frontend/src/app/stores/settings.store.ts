@@ -4,6 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import { errorKeyOf } from '../core/api/api-error';
 import { SettingsService } from '../core/api/settings.service';
 import {
+  ExportConfig,
+  ImportConfig,
+  ImportResult,
   Settings,
   TestConnectionRequest,
   TestConnectionResult,
@@ -86,6 +89,37 @@ export const SettingsStore = signalStore(
     resetTest(): void {
       if (store.test().status !== 'idle') {
         patchState(store, { test: IDLE_TEST });
+      }
+    },
+
+    /**
+     * Récupère la configuration exportable (RG-015-03).
+     * @returns la configuration, ou la clé i18n de l'erreur en cas d'échec.
+     */
+    async exportConfig(): Promise<{ data: ExportConfig | null; errorKey: string | null }> {
+      try {
+        const data = await firstValueFrom(api.getExportConfig());
+        return { data, errorKey: null };
+      } catch (error) {
+        return { data: null, errorKey: errorKeyOf(error) };
+      }
+    },
+
+    /**
+     * Importe une configuration (RG-015-04). Met à jour `settings` avec le
+     * résultat en cas de succès, pour que la page puisse réinitialiser le
+     * formulaire depuis l'état serveur à jour.
+     * @returns le résultat, ou la clé i18n de l'erreur en cas d'échec.
+     */
+    async importConfig(
+      request: ImportConfig,
+    ): Promise<{ result: ImportResult | null; errorKey: string | null }> {
+      try {
+        const result = await firstValueFrom(api.postImportConfig(request));
+        patchState(store, { settings: result.settings });
+        return { result, errorKey: null };
+      } catch (error) {
+        return { result: null, errorKey: errorKeyOf(error) };
       }
     },
   })),

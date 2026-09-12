@@ -8,6 +8,7 @@ import { HealthModule } from './modules/health/health.module';
 import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SettingsTransferModule } from './modules/settings-transfer/settings-transfer.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { UsersModule } from './modules/users/users.module';
 import { StaticModule } from './static/static.module';
@@ -25,6 +26,7 @@ import { StaticModule } from './static/static.module';
     StaticModule,
     HealthModule,
     SettingsModule,
+    SettingsTransferModule,
     ProjectsModule,
     UsersModule,
     MergeRequestsModule,

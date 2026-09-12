@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -91,4 +92,15 @@ export class UpdateSettingsDto extends GitlabCredentialsDto {
   @IsOptional()
   @IsBoolean()
   workdaysOnly?: boolean;
+
+  /** Open MR titles in a new tab (RG-G11, RG-015-01). */
+  @IsOptional()
+  @IsBoolean()
+  openInNewTab?: boolean;
+
+  /** Labels that hide a merge request, compared case-insensitively (RG-015-02). */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  ignoredLabels?: string[];
 }

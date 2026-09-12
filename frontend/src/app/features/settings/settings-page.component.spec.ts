@@ -29,6 +29,8 @@ describe('SettingsPageComponent', () => {
     readyGreenDays: 1,
     readyOrangeDays: 3,
     workdaysOnly: false,
+    openInNewTab: false,
+    ignoredLabels: [],
   };
   const projectApi: Project = {
     id: 1,
@@ -91,6 +93,7 @@ describe('SettingsPageComponent', () => {
   const repoAliasInputs = () =>
     el.querySelectorAll<HTMLInputElement>('.repos-table tbody tr:not(.add-row) input[formControlName="alias"]');
   const saveButton = () => el.querySelector<HTMLButtonElement>('button.save')!;
+  const resetButton = () => el.querySelector<HTMLButtonElement>('button.reset')!;
   const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
   const type = async (input: HTMLInputElement, value: string) => {
     input.value = value;
@@ -174,6 +177,8 @@ describe('SettingsPageComponent', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -190,6 +195,8 @@ describe('SettingsPageComponent', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
     await settle();
     await flushSync();
@@ -229,6 +236,8 @@ describe('SettingsPageComponent', () => {
       readyGreenDays: 1,
       readyOrangeDays: 3,
       workdaysOnly: false,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
   });
 
@@ -244,6 +253,28 @@ describe('SettingsPageComponent', () => {
     expect(router.navigate).not.toHaveBeenCalled();
     expect(urlInput().value).toBe('https://autre.exemple.fr');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  it('should_reset_the_whole_form_to_defaults_without_touching_the_token_or_repos', async () => {
+    await loadSettings(
+      { ...settings, gitlabUrl: 'https://autre.exemple.fr', easyFiles: 12, openInNewTab: true },
+      [projectApi],
+    );
+    await type(tokenInput(), 'glpat-should-survive');
+
+    resetButton().click();
+    await settle();
+
+    expect(urlInput().value).toBe('https://gitlab.com');
+    expect(tokenInput().value).toBe('glpat-should-survive');
+    expect(repoAliasInputs()).toHaveLength(1);
+    expect(repoAliasInputs()[0].value).toBe('api');
+    expect(saveButton().disabled).toBe(false);
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('settings.reset.done'),
+      t('common.ok'),
+      expect.anything(),
+    );
   });
 
   it('should_navigate_home_on_cancel', async () => {

@@ -21,11 +21,15 @@ describe('SettingsStore', () => {
     readyGreenDays: 1,
     readyOrangeDays: 3,
     workdaysOnly: false,
+    openInNewTab: false,
+    ignoredLabels: [],
   };
   const api = {
     getSettings: vi.fn(),
     putSettings: vi.fn(),
     postTestConnection: vi.fn(),
+    getExportConfig: vi.fn(),
+    postImportConfig: vi.fn(),
   };
   let store: InstanceType<typeof SettingsStore>;
 
@@ -113,6 +117,60 @@ describe('SettingsStore', () => {
     store.resetTest();
 
     expect(store.test().status).toBe('idle');
+  });
+
+  it('should_export_config', async () => {
+    const config = { version: 1 as const, settings: { gitlabUrl: 'https://gitlab.com' }, projects: [] };
+    api.getExportConfig.mockReturnValue(of(config));
+
+    const { data, errorKey } = await store.exportConfig();
+
+    expect(data).toEqual(config);
+    expect(errorKey).toBeNull();
+  });
+
+  it('should_return_error_key_when_export_fails', async () => {
+    api.getExportConfig.mockReturnValue(throwError(() => new ApiError(0, undefined, 'down')));
+
+    const { data, errorKey } = await store.exportConfig();
+
+    expect(data).toBeNull();
+    expect(errorKey).toBe('errors.network');
+  });
+
+  it('should_import_config_and_update_settings', async () => {
+    const result = {
+      settings: { ...settings, easyFiles: 10 },
+      projectsAdded: 1,
+      projectsUpdated: 0,
+      projectsSkipped: [],
+    };
+    api.postImportConfig.mockReturnValue(of(result));
+
+    const { result: resolved, errorKey } = await store.importConfig({
+      version: 1,
+      settings: { gitlabUrl: 'https://gitlab.com' },
+      projects: [],
+    });
+
+    expect(resolved).toEqual(result);
+    expect(errorKey).toBeNull();
+    expect(store.settings()).toEqual(result.settings);
+  });
+
+  it('should_return_error_key_when_import_fails', async () => {
+    api.postImportConfig.mockReturnValue(
+      throwError(() => new ApiError(400, 'settings.importInvalid', 'bad')),
+    );
+
+    const { result, errorKey } = await store.importConfig({
+      version: 1,
+      settings: { gitlabUrl: 'https://gitlab.com' },
+      projects: [],
+    });
+
+    expect(result).toBeNull();
+    expect(errorKey).toBe('errors.settings.importInvalid');
   });
 
   it('should_map_unknown_errors_to_unexpected', () => {

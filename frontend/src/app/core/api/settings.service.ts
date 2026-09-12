@@ -2,6 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  ExportConfig,
+  ImportConfig,
+  ImportResult,
   Settings,
   TestConnectionRequest,
   TestConnectionResult,
@@ -26,5 +29,15 @@ export class SettingsService {
   /** `POST /api/v1/settings/test-connection` */
   postTestConnection(request: TestConnectionRequest): Observable<TestConnectionResult> {
     return this.http.post<TestConnectionResult>('api://settings/test-connection', request);
+  }
+
+  /** `GET /api/v1/settings/export` */
+  getExportConfig(): Observable<ExportConfig> {
+    return this.http.get<ExportConfig>('api://settings/export');
+  }
+
+  /** `POST /api/v1/settings/import` */
+  postImportConfig(request: ImportConfig): Observable<ImportResult> {
+    return this.http.post<ImportResult>('api://settings/import', request);
   }
 }

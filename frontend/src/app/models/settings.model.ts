@@ -21,6 +21,10 @@ export interface Settings {
   readyOrangeDays: number;
   /** Ne compter que les jours ouvrés pour le délai Ready (RG-G04, RG-014-01). */
   workdaysOnly: boolean;
+  /** Ouvre les MRs dans un nouvel onglet (RG-G11, RG-015-01). */
+  openInNewTab: boolean;
+  /** Labels masquant une MR, comparaison insensible à la casse (RG-015-02). */
+  ignoredLabels: string[];
 }
 
 /**
@@ -42,6 +46,8 @@ export interface UpdateSettingsRequest {
   readyGreenDays?: number;
   readyOrangeDays?: number;
   workdaysOnly?: boolean;
+  openInNewTab?: boolean;
+  ignoredLabels?: string[];
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */
@@ -57,4 +63,37 @@ export interface TestConnectionResult {
   avatarUrl: string | null;
   expiresAt: string | null;
   expirationKnown: boolean;
+}
+
+/** Un repo tel qu'exporté/importé (RG-015-03/04) : jamais son id interne. */
+export interface TransferProject {
+  pathWithNamespace: string;
+  alias: string;
+}
+
+/** Réponse de `GET /settings/export`. Ne contient jamais le jeton (RG-015-03). */
+export interface ExportConfig {
+  version: 1;
+  settings: Omit<Settings, 'tokenConfigured' | 'tokenHint'>;
+  projects: TransferProject[];
+}
+
+/**
+ * Corps de `POST /settings/import` (RG-015-04). `settings` reprend la forme
+ * de `UpdateSettingsRequest` sans `gitlabToken` (jamais importé) : tout le
+ * reste est optionnel, un fichier importé n'étant pas garanti d'être un
+ * export complet.
+ */
+export interface ImportConfig {
+  version: number;
+  settings: Omit<UpdateSettingsRequest, 'gitlabToken'>;
+  projects: TransferProject[];
+}
+
+/** Réponse de `POST /settings/import`. */
+export interface ImportResult {
+  settings: Settings;
+  projectsAdded: number;
+  projectsUpdated: number;
+  projectsSkipped: { pathWithNamespace: string; reason: string }[];
 }

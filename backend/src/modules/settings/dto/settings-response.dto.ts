@@ -23,4 +23,8 @@ export class SettingsResponseDto {
   readyOrangeDays!: number;
   /** Count only Monday-Friday for the Ready delay (RG-G04, RG-014-01). */
   workdaysOnly!: boolean;
+  /** Open MR titles in a new tab (RG-G11, RG-015-01). */
+  openInNewTab!: boolean;
+  /** Labels that hide a merge request, compared case-insensitively (RG-015-02). */
+  ignoredLabels!: string[];
 }

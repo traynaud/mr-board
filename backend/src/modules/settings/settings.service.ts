@@ -23,6 +23,41 @@ import {
   Settings,
 } from './entities/settings.entity';
 
+/** Fields shared by a full update (`UpdateSettingsDto`) and a config import — never the GitLab token. */
+export interface MergeableSettingsFields {
+  meUsername?: string;
+  meEmail?: string;
+  refreshIntervalMin?: number;
+  pauseWhenHidden?: boolean;
+  easyFiles?: number;
+  easyLines?: number;
+  hardFiles?: number;
+  hardLines?: number;
+  readyGreenDays?: number;
+  readyOrangeDays?: number;
+  workdaysOnly?: boolean;
+  openInNewTab?: boolean;
+  ignoredLabels?: string[];
+}
+
+/** Every setting except the GitLab token, as exported/imported by US-015. */
+export interface ExportableSettings {
+  gitlabUrl: string;
+  meUsername: string | null;
+  meEmail: string | null;
+  refreshIntervalMin: number;
+  pauseWhenHidden: boolean;
+  easyFiles: number;
+  easyLines: number;
+  hardFiles: number;
+  hardLines: number;
+  readyGreenDays: number;
+  readyOrangeDays: number;
+  workdaysOnly: boolean;
+  openInNewTab: boolean;
+  ignoredLabels: string[];
+}
+
 /** Manages the settings singleton and the GitLab connection test. */
 @Injectable()
 export class SettingsService {
@@ -54,39 +89,24 @@ export class SettingsService {
     if (dto.gitlabToken !== undefined) {
       settings.gitlabTokenEncrypted = this.cipher.encrypt(dto.gitlabToken);
     }
-    if (dto.meUsername !== undefined) {
-      settings.meUsername = dto.meUsername.trim() || null;
-    }
-    if (dto.meEmail !== undefined) {
-      settings.meEmail = dto.meEmail.trim() || null;
-    }
-    if (dto.refreshIntervalMin !== undefined) {
-      settings.refreshIntervalMin = dto.refreshIntervalMin;
-    }
-    if (dto.pauseWhenHidden !== undefined) {
-      settings.pauseWhenHidden = dto.pauseWhenHidden;
-    }
-    if (dto.easyFiles !== undefined) {
-      settings.easyFiles = dto.easyFiles;
-    }
-    if (dto.easyLines !== undefined) {
-      settings.easyLines = dto.easyLines;
-    }
-    if (dto.hardFiles !== undefined) {
-      settings.hardFiles = dto.hardFiles;
-    }
-    if (dto.hardLines !== undefined) {
-      settings.hardLines = dto.hardLines;
-    }
-    if (dto.readyGreenDays !== undefined) {
-      settings.readyGreenDays = dto.readyGreenDays;
-    }
-    if (dto.readyOrangeDays !== undefined) {
-      settings.readyOrangeDays = dto.readyOrangeDays;
-    }
-    if (dto.workdaysOnly !== undefined) {
-      settings.workdaysOnly = dto.workdaysOnly;
-    }
+    this.mergeCommonFields(settings, dto);
+    this.requireCoherentThresholds(settings);
+    settings.updatedAt = new Date().toISOString();
+    return this.toResponse(await this.repository.save(settings));
+  }
+
+  /**
+   * Replaces every importable setting (RG-015-04) — never the GitLab token,
+   * which `ImportSettingsDto` never declares.
+   * @throws BusinessValidationException when the URL cannot be normalised, or
+   * when the merged thresholds are incoherent.
+   */
+  async applyImportedSettings(
+    dto: { gitlabUrl: string } & MergeableSettingsFields,
+  ): Promise<SettingsResponseDto> {
+    const settings = await this.load();
+    settings.gitlabUrl = this.requireUrl(dto.gitlabUrl);
+    this.mergeCommonFields(settings, dto);
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
     return this.toResponse(await this.repository.save(settings));
@@ -187,6 +207,86 @@ export class SettingsService {
     };
   }
 
+  /**
+   * Labels that hide a merge request (RG-015-02), read fresh on every call
+   * (same pattern as `getThresholds()`).
+   */
+  async getIgnoredLabels(): Promise<string[]> {
+    const { ignoredLabels } = await this.load();
+    return JSON.parse(ignoredLabels) as string[];
+  }
+
+  /** Every setting except the GitLab token, for `GET /settings/export` (RG-015-03). */
+  async getExportableSettings(): Promise<ExportableSettings> {
+    const settings = await this.load();
+    return {
+      gitlabUrl: settings.gitlabUrl,
+      meUsername: settings.meUsername,
+      meEmail: settings.meEmail,
+      refreshIntervalMin: settings.refreshIntervalMin,
+      pauseWhenHidden: settings.pauseWhenHidden,
+      easyFiles: settings.easyFiles,
+      easyLines: settings.easyLines,
+      hardFiles: settings.hardFiles,
+      hardLines: settings.hardLines,
+      readyGreenDays: settings.readyGreenDays,
+      readyOrangeDays: settings.readyOrangeDays,
+      workdaysOnly: settings.workdaysOnly,
+      openInNewTab: settings.openInNewTab,
+      ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
+    };
+  }
+
+  /**
+   * Merges every field shared by `update()` and `applyImportedSettings()` —
+   * everything except `gitlabUrl` (validated separately by each caller) and
+   * the GitLab token (never part of an import).
+   */
+  private mergeCommonFields(
+    settings: Settings,
+    dto: MergeableSettingsFields,
+  ): void {
+    if (dto.meUsername !== undefined) {
+      settings.meUsername = dto.meUsername.trim() || null;
+    }
+    if (dto.meEmail !== undefined) {
+      settings.meEmail = dto.meEmail.trim() || null;
+    }
+    if (dto.refreshIntervalMin !== undefined) {
+      settings.refreshIntervalMin = dto.refreshIntervalMin;
+    }
+    if (dto.pauseWhenHidden !== undefined) {
+      settings.pauseWhenHidden = dto.pauseWhenHidden;
+    }
+    if (dto.easyFiles !== undefined) {
+      settings.easyFiles = dto.easyFiles;
+    }
+    if (dto.easyLines !== undefined) {
+      settings.easyLines = dto.easyLines;
+    }
+    if (dto.hardFiles !== undefined) {
+      settings.hardFiles = dto.hardFiles;
+    }
+    if (dto.hardLines !== undefined) {
+      settings.hardLines = dto.hardLines;
+    }
+    if (dto.readyGreenDays !== undefined) {
+      settings.readyGreenDays = dto.readyGreenDays;
+    }
+    if (dto.readyOrangeDays !== undefined) {
+      settings.readyOrangeDays = dto.readyOrangeDays;
+    }
+    if (dto.workdaysOnly !== undefined) {
+      settings.workdaysOnly = dto.workdaysOnly;
+    }
+    if (dto.openInNewTab !== undefined) {
+      settings.openInNewTab = dto.openInNewTab;
+    }
+    if (dto.ignoredLabels !== undefined) {
+      settings.ignoredLabels = JSON.stringify(dto.ignoredLabels);
+    }
+  }
+
   private async load(): Promise<Settings> {
     const existing = await this.repository.findOneBy({ id: SETTINGS_ID });
     if (existing) {
@@ -209,6 +309,8 @@ export class SettingsService {
         readyGreenDays: 1,
         readyOrangeDays: 3,
         workdaysOnly: false,
+        openInNewTab: false,
+        ignoredLabels: '[]',
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -271,6 +373,8 @@ export class SettingsService {
       readyGreenDays: settings.readyGreenDays,
       readyOrangeDays: settings.readyOrangeDays,
       workdaysOnly: settings.workdaysOnly,
+      openInNewTab: settings.openInNewTab,
+      ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
     };
   }
 }

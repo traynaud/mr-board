@@ -74,4 +74,33 @@ describe('SettingsService', () => {
 
     await expect(pending).resolves.toEqual(expect.objectContaining({ username: 'mdupont' }));
   });
+
+  it('should_get_export_config', async () => {
+    const pending = firstValueFrom(service.getExportConfig());
+    const req = ctrl.expectOne('/api/v1/settings/export');
+    expect(req.request.method).toBe('GET');
+    req.flush({ version: 1, settings: { gitlabUrl: 'https://gitlab.com' }, projects: [] });
+
+    await expect(pending).resolves.toEqual(expect.objectContaining({ version: 1 }));
+  });
+
+  it('should_post_import_config', async () => {
+    const body = {
+      version: 1,
+      settings: { gitlabUrl: 'https://gitlab.com' },
+      projects: [],
+    };
+    const pending = firstValueFrom(service.postImportConfig(body));
+    const req = ctrl.expectOne('/api/v1/settings/import');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(body);
+    req.flush({
+      settings: { gitlabUrl: 'https://gitlab.com' },
+      projectsAdded: 1,
+      projectsUpdated: 0,
+      projectsSkipped: [],
+    });
+
+    await expect(pending).resolves.toEqual(expect.objectContaining({ projectsAdded: 1 }));
+  });
 });

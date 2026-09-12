@@ -17,6 +17,13 @@ import { ProjectResponseDto } from './dto/project-response.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Project } from './entities/project.entity';
 
+/** Outcome of `importMany` (RG-015-04). */
+export interface ImportProjectsResult {
+  added: number;
+  updated: number;
+  skipped: { pathWithNamespace: string; reason: string }[];
+}
+
 /** Manages the list of GitLab repositories configured to be scanned. */
 @Injectable()
 export class ProjectsService {
@@ -147,6 +154,52 @@ export class ProjectsService {
   async remove(id: number): Promise<void> {
     const project = await this.findOrThrow(id);
     await this.repository.remove(project);
+  }
+
+  /**
+   * Merges an imported repo list additively (RG-015-04): a repo already
+   * configured (matched by `pathWithNamespace`, case-insensitive) only has
+   * its alias updated ; an unmatched one is resolved against GitLab exactly
+   * like `add()`. Never removes a repo. A failure on one entry (GitLab
+   * 404, alias clash…) is collected in `skipped` instead of aborting the
+   * whole import.
+   */
+  async importMany(
+    entries: { pathWithNamespace: string; alias: string }[],
+  ): Promise<ImportProjectsResult> {
+    const existing = await this.repository.find();
+    const byPath = new Map(
+      existing.map((project) => [
+        project.pathWithNamespace.toLowerCase(),
+        project,
+      ]),
+    );
+    let added = 0;
+    let updated = 0;
+    const skipped: { pathWithNamespace: string; reason: string }[] = [];
+
+    for (const entry of entries) {
+      const match = byPath.get(entry.pathWithNamespace.toLowerCase());
+      try {
+        if (match) {
+          await this.rename(match.id, { alias: entry.alias });
+          updated += 1;
+        } else {
+          await this.add({
+            path: entry.pathWithNamespace,
+            alias: entry.alias,
+          });
+          added += 1;
+        }
+      } catch (error) {
+        skipped.push({
+          pathWithNamespace: entry.pathWithNamespace,
+          reason: error instanceof BusinessException ? error.code : 'unknown',
+        });
+      }
+    }
+
+    return { added, updated, skipped };
   }
 
   private async findOrThrow(id: number): Promise<Project> {

@@ -22,6 +22,7 @@ import {
   EMPTY_COMPOSABLE_FILTERS,
   applyComposableFilters,
 } from './domain/filter-merge-requests';
+import { isIgnoredByLabel } from './domain/is-ignored-by-label';
 import { Identity, isMine } from './domain/is-mine';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import {
@@ -120,15 +121,21 @@ export class MergeRequestsService {
    * shared by `listOpen` and `getFacets` before the 5 composable filters
    * (RG-010) diverge their outcome (rows vs. facet counts). The
    * `draft: false` filter, when applied, guarantees `ready_at` is never
-   * null for the returned rows (see `resolveReadyAt`).
+   * null for the returned rows (see `resolveReadyAt`). Merge requests
+   * carrying an ignored label (RG-015-02) are dropped first, so both
+   * `listOpen` and `getFacets` (and their counts) never see them.
    */
   private async loadBase(
     includeDrafts: boolean,
     mineOnly: boolean,
   ): Promise<{ views: MergeRequestViewDto[]; warnings: string[] }> {
-    const mergeRequests = await this.mergeRequests.find({
+    const allMergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
     });
+    const ignoredLabels = await this.settings.getIgnoredLabels();
+    const mergeRequests = allMergeRequests.filter(
+      (mr) => !isIgnoredByLabel(mr.labels, ignoredLabels),
+    );
     const identity = await this.settings.getIdentity();
     const identityMissing =
       identity.username === null && identity.email === null;

@@ -1,11 +1,14 @@
 import { FormControl } from '@angular/forms';
 import { buildRepoAliasGroup } from './repos-form';
 import {
+  DEFAULT_GITLAB_URL,
+  DEFAULT_IGNORED_LABELS,
   DEFAULT_THRESHOLDS,
   buildSettingsForm,
   gitlabUrlValidator,
   integerValidator,
   resetSettingsForm,
+  resetSettingsFormToDefaults,
   toUpdateRequest,
   tokenLengthValidator,
 } from './settings-form';
@@ -81,6 +84,8 @@ describe('settings form helpers', () => {
     readyGreenDays: 2,
     readyOrangeDays: 5,
     workdaysOnly: true,
+    openInNewTab: true,
+    ignoredLabels: ['wip', 'on-hold'],
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -104,10 +109,20 @@ describe('settings form helpers', () => {
       readyGreenDays: 2,
       readyOrangeDays: 5,
       workdaysOnly: true,
+      openInNewTab: true,
+      ignoreWip: true,
       repos: [],
     });
     expect(form.pristine).toBe(true);
     expect(form.valid).toBe(true);
+  });
+
+  it('should_reset_ignore_wip_to_false_when_ignored_labels_is_empty', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, { ...settings, ignoredLabels: [] });
+
+    expect(form.controls.ignoreWip.value).toBe(false);
   });
 
   it('should_reset_identity_fields_to_empty_string_when_null', () => {
@@ -135,6 +150,8 @@ describe('settings form helpers', () => {
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
       ...DEFAULT_THRESHOLDS,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
   });
 
@@ -155,6 +172,8 @@ describe('settings form helpers', () => {
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
       ...DEFAULT_THRESHOLDS,
+      openInNewTab: false,
+      ignoredLabels: [],
     });
   });
 
@@ -201,6 +220,78 @@ describe('settings form helpers', () => {
 
     expect(form.controls.repos.length).toBe(1);
     expect(form.controls.repos.at(0).getRawValue()).toEqual({ id: 1, alias: 'api' });
+  });
+
+  it('should_send_the_default_ignored_labels_when_ignore_wip_is_checked', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ gitlabUrl: 'https://gitlab.com', ignoreWip: true, openInNewTab: true });
+
+    expect(toUpdateRequest(form)).toEqual(
+      expect.objectContaining({
+        openInNewTab: true,
+        ignoredLabels: [...DEFAULT_IGNORED_LABELS],
+      }),
+    );
+  });
+
+  it('should_send_an_empty_ignored_labels_array_when_ignore_wip_is_unchecked', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ gitlabUrl: 'https://gitlab.com', ignoreWip: false });
+
+    expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ ignoredLabels: [] }));
+  });
+});
+
+describe('resetSettingsFormToDefaults', () => {
+  it('should_reset_every_section_to_its_default_value', () => {
+    const form = buildSettingsForm();
+    form.patchValue({
+      gitlabUrl: 'https://autre.exemple.fr',
+      meUsername: 'mdupont',
+      meEmail: 'marie@exemple.fr',
+      refreshIntervalMin: 30,
+      pauseWhenHidden: false,
+      easyFiles: 1,
+      openInNewTab: true,
+      ignoreWip: true,
+    });
+
+    resetSettingsFormToDefaults(form);
+
+    expect(form.getRawValue()).toEqual(
+      expect.objectContaining({
+        gitlabUrl: DEFAULT_GITLAB_URL,
+        meUsername: '',
+        meEmail: '',
+        refreshIntervalMin: 5,
+        pauseWhenHidden: true,
+        ...DEFAULT_THRESHOLDS,
+        openInNewTab: false,
+        ignoreWip: false,
+      }),
+    );
+  });
+
+  it('should_mark_the_form_dirty_without_touching_the_token_or_the_repos', () => {
+    const form = buildSettingsForm();
+    form.controls.gitlabToken.setValue('glpat-should-survive');
+    form.controls.repos.push(
+      buildRepoAliasGroup({
+        id: 1,
+        pathWithNamespace: 'equipe/backend-api',
+        alias: 'api',
+        gitlabProjectId: 42,
+      }),
+    );
+    form.markAsPristine();
+
+    resetSettingsFormToDefaults(form);
+
+    expect(form.dirty).toBe(true);
+    expect(form.controls.gitlabToken.value).toBe('glpat-should-survive');
+    expect(form.controls.gitlabToken.dirty).toBe(false);
+    expect(form.controls.repos.length).toBe(1);
+    expect(form.controls.repos.dirty).toBe(false);
   });
 });
 

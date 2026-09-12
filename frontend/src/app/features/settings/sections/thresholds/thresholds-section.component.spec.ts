@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
-import { DEFAULT_THRESHOLDS, SettingsForm, buildSettingsForm } from '../../settings-form';
+import { SettingsForm, buildSettingsForm } from '../../settings-form';
 import { ThresholdsSectionComponent } from './thresholds-section.component';
 
 @Component({
@@ -78,25 +78,6 @@ describe('ThresholdsSectionComponent', () => {
     expect(el.textContent).toContain(t('settings.thresholds.errors.mustExceedReadyGreen'));
   });
 
-  it('should_reset_to_default_thresholds_and_mark_the_form_dirty', async () => {
-    host.form.controls.easyFiles.setValue(1);
-    host.form.controls.workdaysOnly.setValue(true);
-    host.form.markAsPristine();
-
-    el.querySelector<HTMLButtonElement>('.reset-defaults')!.click();
-    await fixture.whenStable();
-
-    expect(host.form.controls.easyFiles.value).toBe(DEFAULT_THRESHOLDS.easyFiles);
-    expect(host.form.controls.workdaysOnly.value).toBe(DEFAULT_THRESHOLDS.workdaysOnly);
-    expect(host.form.controls.easyFiles.dirty).toBe(true);
-    expect(host.form.dirty).toBe(true);
-  });
-
-  it('should_not_save_the_reset_automatically', () => {
-    const button = el.querySelector<HTMLButtonElement>('.reset-defaults');
-
-    expect(button?.textContent?.trim()).toBe(t('settings.thresholds.resetDefaults'));
-  });
 
   describe.each([
     ['easyFiles', 1],

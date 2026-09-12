@@ -67,6 +67,8 @@ export class MrTableComponent {
   readonly showOpened = input.required<boolean>();
   /** RG-012-01/02/03 : largeurs effectives (défauts + overrides), déjà résolues par l'appelant. */
   readonly columnWidths = input.required<Record<ResizableColumnKey, number>>();
+  /** RG-G11, RG-015-01 : ouvre le titre dans un nouvel onglet plutôt que le même. */
+  readonly openInNewTab = input(false);
 
   readonly sortChange = output<SortKey>();
   /** RG-011-09 : bascule la visibilité de la colonne « Date d'ouverture ». */

@@ -282,6 +282,118 @@ describe('ProjectsService', () => {
     });
   });
 
+  describe('importMany', () => {
+    it('should_add_a_new_repo_resolved_against_gitlab', async () => {
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/backend-api', alias: 'api' },
+      ]);
+
+      expect(gitlab.getProject).toHaveBeenCalledWith(
+        'https://gitlab.com',
+        'glpat-token-value',
+        'equipe/backend-api',
+      );
+      expect(result).toEqual({ added: 1, updated: 0, skipped: [] });
+    });
+
+    it('should_update_the_alias_of_an_existing_repo_matched_by_path', async () => {
+      const existing = row({
+        id: 5,
+        pathWithNamespace: 'equipe/backend-api',
+        alias: 'old-alias',
+      });
+      repository.find.mockResolvedValue([existing]);
+      repository.findOneBy.mockResolvedValue(existing);
+
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/backend-api', alias: 'new-alias' },
+      ]);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 5, alias: 'new-alias' }),
+      );
+      expect(gitlab.getProject).not.toHaveBeenCalled();
+      expect(result).toEqual({ added: 0, updated: 1, skipped: [] });
+    });
+
+    it('should_match_paths_case_insensitively', async () => {
+      const existing = row({
+        id: 5,
+        pathWithNamespace: 'Equipe/Backend-API',
+        alias: 'old-alias',
+      });
+      repository.find.mockResolvedValue([existing]);
+      repository.findOneBy.mockResolvedValue(existing);
+
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/backend-api', alias: 'new-alias' },
+      ]);
+
+      expect(result.updated).toBe(1);
+    });
+
+    it('should_collect_a_repo_not_found_on_gitlab_in_skipped_without_aborting_the_import', async () => {
+      gitlab.getProject.mockImplementation(
+        (_url: string, _token: string, path: string) =>
+          Promise.resolve(path === 'equipe/backend-api' ? gitlabProject : null),
+      );
+
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/introuvable', alias: 'x' },
+        { pathWithNamespace: 'equipe/backend-api', alias: 'api' },
+      ]);
+
+      expect(result.added).toBe(1);
+      expect(result.skipped).toEqual([
+        {
+          pathWithNamespace: 'equipe/introuvable',
+          reason: 'projects.notFound',
+        },
+      ]);
+    });
+
+    it('should_collect_an_alias_duplicate_in_skipped', async () => {
+      repository.find.mockResolvedValue([
+        row({ id: 9, alias: 'api', pathWithNamespace: 'other/project' }),
+      ]);
+
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/backend-api', alias: 'api' },
+      ]);
+
+      expect(result.added).toBe(0);
+      expect(result.skipped).toEqual([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          reason: 'projects.aliasDuplicate',
+        },
+      ]);
+    });
+
+    it('should_collect_a_missing_token_failure_in_skipped', async () => {
+      settings.getToken.mockResolvedValue(null);
+
+      const result = await service.importMany([
+        { pathWithNamespace: 'equipe/backend-api', alias: 'api' },
+      ]);
+
+      expect(result.skipped).toEqual([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          reason: 'settings.tokenMissing',
+        },
+      ]);
+    });
+
+    it('should_never_remove_a_repo_absent_from_the_entries', async () => {
+      repository.find.mockResolvedValue([row()]);
+
+      await service.importMany([]);
+
+      expect(repository.remove).not.toHaveBeenCalled();
+    });
+  });
+
   describe('remove', () => {
     it('should_remove_existing_project', async () => {
       const project = row();
