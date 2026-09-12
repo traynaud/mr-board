@@ -9,26 +9,37 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardToolbarComponent } from './board-toolbar/board-toolbar.component';
+import { MrTableComponent } from './mr-table/mr-table.component';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'application. */
 const TOAST_DURATION_MS = 3500;
 
 /**
- * Écran Tableau (route `/`). En US-004 : toolbar de synchronisation, bandeau
- * sans-jeton (RG-004-10), état vide sans-repo (RG-004-11) ; le tableau des
- * MRs lui-même arrive avec US-005.
+ * Écran Tableau (route `/`) : toolbar de synchronisation (US-004), bandeau
+ * sans-jeton (RG-004-10), état vide sans-repo (RG-004-11), et tableau des
+ * MRs ouvertes (US-005, RG-005-*).
  */
 @Component({
   selector: 'app-board-page',
-  imports: [MatButtonModule, MatIconModule, RouterLink, TranslatePipe, BoardToolbarComponent],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    RouterLink,
+    TranslatePipe,
+    BoardToolbarComponent,
+    MrTableComponent,
+  ],
   templateUrl: './board-page.component.html',
   styleUrl: './board-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +48,7 @@ export class BoardPageComponent implements OnInit {
   protected readonly settingsStore = inject(SettingsStore);
   protected readonly projectsStore = inject(ProjectsStore);
   protected readonly syncStore = inject(SyncStore);
+  protected readonly mrStore = inject(MergeRequestsStore);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -64,6 +76,15 @@ export class BoardPageComponent implements OnInit {
     () => this.noToken() || this.syncStore.running(),
   );
 
+  /** Jeton et repo configurés mais aucune MR ouverte (RG-005-08). */
+  protected readonly noMergeRequests = computed(
+    () =>
+      !this.noToken() &&
+      !this.noRepos() &&
+      this.mrStore.mergeRequests().length === 0 &&
+      !this.mrStore.loading(),
+  );
+
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
     // re-déclencher au montage pour un échec déjà présent avant l'ouverture.
@@ -86,19 +107,20 @@ export class BoardPageComponent implements OnInit {
       if (lastRun && lastRun.startedAt !== this.lastToastedStartedAt) {
         this.lastToastedStartedAt = lastRun.startedAt;
         if (lastRun.status === 'partial' || lastRun.status === 'error') {
-          this.snackBar.open(
-            this.i18n.translate('board.sync.toastError'),
-            this.i18n.translate('common.ok'),
-            { duration: TOAST_DURATION_MS, horizontalPosition: 'start', panelClass: 'mrb-toast' },
-          );
+          this.toast('board.sync.toastError');
         }
       }
+      // Rechargement automatique des MRs à chaque fin de synchronisation,
+      // quel que soit son statut (RG-005-06) — même transition que le toast
+      // ci-dessus, sans polling dédié aux MRs elles-mêmes.
+      void this.loadMergeRequests();
     });
   }
 
   ngOnInit(): void {
     void this.settingsStore.load();
     void this.projectsStore.load();
+    void this.loadMergeRequests();
     this.syncStore.startPolling();
     this.destroyRef.onDestroy(() => this.syncStore.stopPolling());
   }
@@ -106,5 +128,27 @@ export class BoardPageComponent implements OnInit {
   /** Déclenché par le bouton Rafraîchir de la toolbar (RG-004-09). */
   protected refresh(): void {
     void this.syncStore.trigger();
+  }
+
+  /**
+   * Charge les MRs et affiche un toast en cas d'échec (RG-005-07).
+   * Contrairement au toast de synchro, pas de logique de "première fois" :
+   * `load()` n'est appelé qu'à des points de déclenchement discrets
+   * (ouverture de l'écran, fin de synchronisation), jamais par un polling
+   * continu — un échec au tout premier appel doit légitimement toaster.
+   */
+  private async loadMergeRequests(): Promise<void> {
+    await this.mrStore.load();
+    if (this.mrStore.loadError()) {
+      this.toast('board.mergeRequests.loadError');
+    }
+  }
+
+  private toast(key: string): void {
+    this.snackBar.open(this.i18n.translate(key), this.i18n.translate('common.ok'), {
+      duration: TOAST_DURATION_MS,
+      horizontalPosition: 'start',
+      panelClass: 'mrb-toast',
+    });
   }
 }

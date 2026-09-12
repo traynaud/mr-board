@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import { MappedGitlabUser } from '../gitlab/mappers/map-graphql-merge-request';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
@@ -19,6 +20,7 @@ function mappedUser(
 
 interface UserRepoMock {
   findOneBy: jest.Mock;
+  findBy: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
 }
@@ -35,6 +37,7 @@ describe('UsersService', () => {
           provide: getRepositoryToken(User),
           useValue: {
             findOneBy: jest.fn(),
+            findBy: jest.fn(),
             create: jest.fn(
               (partial: Partial<User>) => ({ ...partial }) as User,
             ),
@@ -80,5 +83,27 @@ describe('UsersService', () => {
     expect(repository.save).toHaveBeenCalledWith(
       expect.objectContaining({ id: 7, username: 'mdupont-new' }),
     );
+  });
+
+  describe('findByIds', () => {
+    it('should_return_matching_entities', async () => {
+      const user: User = {
+        id: 1,
+        gitlabUserId: 42,
+        username: 'mdupont',
+        name: 'Marie Dupont',
+        avatarUrl: null,
+        webUrl: 'https://gitlab.example.com/mdupont',
+      };
+      repository.findBy.mockResolvedValue([user]);
+
+      await expect(service.findByIds([1])).resolves.toEqual([user]);
+      expect(repository.findBy).toHaveBeenCalledWith({ id: In([1]) });
+    });
+
+    it('should_not_query_when_the_id_list_is_empty', async () => {
+      await expect(service.findByIds([])).resolves.toEqual([]);
+      expect(repository.findBy).not.toHaveBeenCalled();
+    });
   });
 });

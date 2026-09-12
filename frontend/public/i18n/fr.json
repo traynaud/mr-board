@@ -16,7 +16,20 @@
       "settings": "Paramètres",
       "refresh": "Rafraîchir"
     },
-    "placeholder": "Le tableau des MRs arrive avec US-005.",
+    "mergeRequests": {
+      "loadError": "Impossible de charger les MRs.",
+      "empty": "Aucune MR ouverte.",
+      "none": "—",
+      "columns": {
+        "project": "Projet",
+        "author": "Auteur",
+        "title": "Titre",
+        "comments": "Commentaires",
+        "reviewer": "Reviewer",
+        "assignee": "Affecté",
+        "approved": "Approved"
+      }
+    },
     "sync": {
       "never": "Jamais synchronisé",
       "syncing": "Synchronisation en cours…",

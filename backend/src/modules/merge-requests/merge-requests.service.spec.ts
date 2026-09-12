@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
+import { ProjectsService } from '../projects/projects.service';
 import { UsersService } from '../users/users.service';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
@@ -38,12 +39,14 @@ function mappedMergeRequest(
 }
 
 interface MergeRequestRepoMock {
+  find: jest.Mock;
   findOneBy: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
   createQueryBuilder: jest.Mock;
 }
 interface AssociationRepoMock {
+  findBy: jest.Mock;
   delete: jest.Mock;
   insert: jest.Mock;
 }
@@ -53,7 +56,8 @@ describe('MergeRequestsService', () => {
   let mergeRequestsRepo: MergeRequestRepoMock;
   let reviewersRepo: AssociationRepoMock;
   let assigneesRepo: AssociationRepoMock;
-  let usersService: { upsert: jest.Mock };
+  let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
+  let projectsService: { findByIds: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -75,6 +79,7 @@ describe('MergeRequestsService', () => {
         {
           provide: getRepositoryToken(MergeRequest),
           useValue: {
+            find: jest.fn().mockResolvedValue([]),
             findOneBy: jest.fn().mockResolvedValue(null),
             create: jest.fn(
               (partial: Partial<MergeRequest>) => partial as MergeRequest,
@@ -91,11 +96,19 @@ describe('MergeRequestsService', () => {
         },
         {
           provide: getRepositoryToken(MergeRequestReviewer),
-          useValue: { delete: jest.fn(), insert: jest.fn() },
+          useValue: {
+            findBy: jest.fn().mockResolvedValue([]),
+            delete: jest.fn(),
+            insert: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(MergeRequestAssignee),
-          useValue: { delete: jest.fn(), insert: jest.fn() },
+          useValue: {
+            findBy: jest.fn().mockResolvedValue([]),
+            delete: jest.fn(),
+            insert: jest.fn(),
+          },
         },
         {
           provide: UsersService,
@@ -103,7 +116,12 @@ describe('MergeRequestsService', () => {
             upsert: jest.fn((user: { gitlabUserId: number }) =>
               Promise.resolve({ id: user.gitlabUserId * 10 }),
             ),
+            findByIds: jest.fn().mockResolvedValue([]),
           },
+        },
+        {
+          provide: ProjectsService,
+          useValue: { findByIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();
@@ -113,6 +131,7 @@ describe('MergeRequestsService', () => {
     reviewersRepo = module.get(getRepositoryToken(MergeRequestReviewer));
     assigneesRepo = module.get(getRepositoryToken(MergeRequestAssignee));
     usersService = module.get(UsersService);
+    projectsService = module.get(ProjectsService);
   });
 
   describe('upsertForProject', () => {
@@ -265,6 +284,152 @@ describe('MergeRequestsService', () => {
         'iid NOT IN (:...keepIids)',
         { keepIids: [7, 8] },
       );
+    });
+  });
+
+  describe('listOpen', () => {
+    function persistedMergeRequest(
+      overrides: Partial<MergeRequest> = {},
+    ): MergeRequest {
+      return {
+        id: 1,
+        gitlabMrId: 123,
+        iid: 7,
+        projectId: 1,
+        title: 'Refonte facturation',
+        webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
+        draft: false,
+        authorId: 10,
+        approved: true,
+        commentsCount: 3,
+        changedFiles: 12,
+        additions: 340,
+        deletions: 58,
+        labels: '[]',
+        createdAtGitlab: '2026-09-01T10:00:00.000Z',
+        readyAt: '2026-09-01T10:00:00.000Z',
+        updatedAtGitlab: '2026-09-01T10:00:00.000Z',
+        syncedAt: '2026-09-11T08:00:00.000Z',
+        ...overrides,
+      };
+    }
+
+    it('should_return_an_empty_array_and_skip_further_queries_when_there_is_no_open_merge_request', async () => {
+      await expect(service.listOpen()).resolves.toEqual([]);
+
+      expect(reviewersRepo.findBy).not.toHaveBeenCalled();
+      expect(assigneesRepo.findBy).not.toHaveBeenCalled();
+      expect(projectsService.findByIds).not.toHaveBeenCalled();
+      expect(usersService.findByIds).not.toHaveBeenCalled();
+    });
+
+    it('should_query_non_draft_merge_requests_sorted_by_ready_at_ascending', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      await service.listOpen();
+
+      expect(mergeRequestsRepo.find).toHaveBeenCalledWith({
+        where: { draft: false },
+        order: { readyAt: 'ASC' },
+      });
+    });
+
+    it('should_assemble_the_view_with_project_alias_and_author', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        {
+          id: 10,
+          username: 'mdupont',
+          name: 'Marie Dupont',
+          avatarUrl: 'https://gitlab.example.com/mdupont.png',
+        },
+      ]);
+
+      const result = await service.listOpen();
+
+      expect(result).toEqual([
+        {
+          id: 1,
+          projectAlias: 'api',
+          iid: 7,
+          title: 'Refonte facturation',
+          webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
+          author: {
+            username: 'mdupont',
+            name: 'Marie Dupont',
+            avatarUrl: 'https://gitlab.example.com/mdupont.png',
+          },
+          reviewers: [],
+          assignees: [],
+          approved: true,
+          commentsCount: 3,
+        },
+      ]);
+      expect(projectsService.findByIds).toHaveBeenCalledWith([1]);
+      expect(usersService.findByIds).toHaveBeenCalledWith([10]);
+    });
+
+    it('should_group_reviewers_and_assignees_by_merge_request', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, authorId: 10 }),
+        persistedMergeRequest({ id: 2, iid: 8, authorId: 10 }),
+      ]);
+      reviewersRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 20 },
+        { mergeRequestId: 1, userId: 30 },
+      ]);
+      assigneesRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 2, userId: 20 },
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        { id: 20, username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
+        {
+          id: 30,
+          username: 'lrousseau',
+          name: 'Léa Rousseau',
+          avatarUrl: null,
+        },
+      ]);
+
+      const result = await service.listOpen();
+
+      expect(result[0].reviewers.map((u) => u.username)).toEqual([
+        'kbenali',
+        'lrousseau',
+      ]);
+      expect(result[0].assignees).toEqual([]);
+      expect(result[1].reviewers).toEqual([]);
+      expect(result[1].assignees.map((u) => u.username)).toEqual(['kbenali']);
+      expect(usersService.findByIds).toHaveBeenCalledWith(
+        expect.arrayContaining([10, 20, 30]),
+      );
+    });
+
+    it('should_throw_when_a_referenced_project_is_missing', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      await expect(service.listOpen()).rejects.toThrow(/Project 1/);
+    });
+
+    it('should_throw_when_a_referenced_author_is_missing', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([]);
+
+      await expect(service.listOpen()).rejects.toThrow(/User 10/);
     });
   });
 });

@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
+import { MergeRequestView } from '../../models/merge-request.model';
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { SyncRun, SyncStatus } from '../../models/sync-status.model';
@@ -41,6 +42,22 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
     mrCount: 3,
     errorMessage: null,
     trigger: 'manual',
+    ...overrides,
+  };
+}
+
+function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
+  return {
+    id: 1,
+    projectAlias: 'api',
+    iid: 7,
+    title: 'Refonte facturation',
+    webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
+    author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+    reviewers: [],
+    assignees: [],
+    approved: false,
+    commentsCount: 0,
     ...overrides,
   };
 }
@@ -82,6 +99,7 @@ describe('BoardPageComponent', () => {
     settings: Settings;
     projects: Project[];
     status: SyncStatus;
+    mergeRequests?: MergeRequestView[];
   }): Promise<void> {
     fixture = TestBed.createComponent(BoardPageComponent);
     el = fixture.nativeElement as HTMLElement;
@@ -89,6 +107,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(options.settings);
     http.expectOne('/api/v1/projects').flush(options.projects);
+    http.expectOne('/api/v1/merge-requests').flush(options.mergeRequests ?? []);
     http.expectOne('/api/v1/sync/status').flush(options.status);
     await settle();
   }
@@ -103,7 +122,7 @@ describe('BoardPageComponent', () => {
     ).toBe(true);
   });
 
-  it('should_show_the_empty_state_when_a_token_is_configured_but_no_repo_exists', async () => {
+  it('should_show_the_no_repos_empty_state_when_a_token_is_configured_but_no_repo_exists', async () => {
     await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
 
     expect(el.querySelector('.no-token-banner')).toBeNull();
@@ -116,15 +135,54 @@ describe('BoardPageComponent', () => {
     ).toBe(false);
   });
 
-  it('should_show_the_placeholder_when_a_token_and_at_least_one_repo_exist', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+  it('should_show_the_mr_table_when_merge_requests_are_returned', async () => {
+    await bootstrap({
+      settings: WITH_TOKEN_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [mergeRequest()],
+    });
 
     expect(el.querySelector('.no-token-banner')).toBeNull();
     expect(el.querySelector('.empty-state')).toBeNull();
-    expect(el.querySelector('.placeholder')?.textContent?.trim()).toBe(t('board.placeholder'));
+    expect(el.querySelector('app-mr-table')).not.toBeNull();
+    expect(el.querySelector('.title-link')?.textContent?.trim()).toBe('Refonte facturation');
   });
 
-  it('should_trigger_an_unscoped_sync_and_refresh_status_when_clicking_refresh', async () => {
+  it('should_show_the_no_merge_requests_empty_state_when_the_list_is_empty', async () => {
+    await bootstrap({
+      settings: WITH_TOKEN_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [],
+    });
+
+    expect(el.querySelector('.no-token-banner')).toBeNull();
+    expect(el.querySelector('app-mr-table table')).toBeNull();
+    expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.empty'),
+    );
+  });
+
+  it('should_toast_when_loading_merge_requests_fails', async () => {
+    fixture = TestBed.createComponent(BoardPageComponent);
+    el = fixture.nativeElement as HTMLElement;
+    fixture.detectChanges();
+    await settle();
+    http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+    http.expectOne('/api/v1/projects').flush([PROJECT]);
+    http.expectOne('/api/v1/merge-requests').flush('down', { status: 500, statusText: 'KO' });
+    http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('board.mergeRequests.loadError'),
+      t('common.ok'),
+      expect.anything(),
+    );
+  });
+
+  it('should_trigger_an_unscoped_sync_and_reload_status_and_merge_requests_when_clicking_refresh', async () => {
     await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     el.querySelector<HTMLButtonElement>('button[mat-stroked-button]')?.click();
@@ -135,6 +193,10 @@ describe('BoardPageComponent', () => {
     syncReq.flush({ running: true }, { status: 202, statusText: 'Accepted' });
     await settle();
     http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
+    await settle();
+    // Rechargement automatique des MRs à la fin de cette (deuxième) transition
+    // de statut, non-baseline cette fois (RG-005-06).
+    http.expectOne('/api/v1/merge-requests').flush([]);
     await settle();
   });
 
@@ -148,7 +210,7 @@ describe('BoardPageComponent', () => {
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 
-  it('should_toast_when_a_new_run_finishes_as_partial_or_error_while_the_page_is_open', async () => {
+  it('should_toast_and_reload_merge_requests_when_a_new_run_finishes_as_partial_or_error', async () => {
     await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     const syncStore = TestBed.inject(SyncStore);
@@ -162,8 +224,14 @@ describe('BoardPageComponent', () => {
         nextRunAt: null,
       });
     await settle();
+    http.expectOne('/api/v1/merge-requests').flush([]);
+    await settle();
 
-    expect(snackBar.open).toHaveBeenCalledTimes(1);
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('board.sync.toastError'),
+      t('common.ok'),
+      expect.anything(),
+    );
   });
 
   it('should_start_polling_on_init_and_stop_it_on_destroy', async () => {
@@ -176,6 +244,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
+    http.expectOne('/api/v1/merge-requests').flush([]);
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 

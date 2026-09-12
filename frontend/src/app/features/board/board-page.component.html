@@ -21,7 +21,13 @@
       <p>{{ 'board.noRepos.title' | translate }}</p>
       <a mat-stroked-button routerLink="/settings">{{ 'board.noRepos.add' | translate }}</a>
     </div>
+  } @else if (mrStore.loading() && mrStore.mergeRequests().length === 0) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (noMergeRequests()) {
+    <div class="empty-state">
+      <p>{{ 'board.mergeRequests.empty' | translate }}</p>
+    </div>
   } @else {
-    <p class="placeholder">{{ 'board.placeholder' | translate }}</p>
+    <app-mr-table [rows]="mrStore.mergeRequests()" />
   }
 </main>

@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import {
   BusinessException,
   BusinessValidationException,
@@ -52,6 +52,18 @@ export class ProjectsService {
    */
   async findById(id: number): Promise<Project | null> {
     return this.repository.findOneBy({ id });
+  }
+
+  /**
+   * Raw entities for internal, server-side use only — used by
+   * `MergeRequestsService.listOpen` to resolve `projectAlias` in bulk.
+   * @returns entities in no particular order; missing ids are silently omitted.
+   */
+  async findByIds(ids: number[]): Promise<Project[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.repository.findBy({ id: In(ids) });
   }
 
   /**

@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
+import { Project } from '../projects/entities/project.entity';
+import { ProjectsService } from '../projects/projects.service';
+import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { resolveReadyAt } from './domain/resolve-ready-at';
+import { MergeRequestUserDto } from './dto/merge-request-user.dto';
+import { MergeRequestViewDto } from './dto/merge-request-view.dto';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
@@ -24,7 +29,56 @@ export class MergeRequestsService {
     @InjectRepository(MergeRequestAssignee)
     private readonly assignees: Repository<MergeRequestAssignee>,
     private readonly users: UsersService,
+    private readonly projects: ProjectsService,
   ) {}
+
+  /**
+   * Open (non-draft) merge requests, sorted by `ready_at` ascending
+   * (RG-005-01, RG-G10's Ready block). The `draft: false` filter guarantees
+   * `ready_at` is never null for the returned rows (see `resolveReadyAt`).
+   */
+  async listOpen(): Promise<MergeRequestViewDto[]> {
+    const mergeRequests = await this.mergeRequests.find({
+      where: { draft: false },
+      order: { readyAt: 'ASC' },
+    });
+    if (mergeRequests.length === 0) {
+      return [];
+    }
+
+    const mergeRequestIds = mergeRequests.map((mr) => mr.id);
+    const [reviewerRows, assigneeRows] = await Promise.all([
+      this.reviewers.findBy({ mergeRequestId: In(mergeRequestIds) }),
+      this.assignees.findBy({ mergeRequestId: In(mergeRequestIds) }),
+    ]);
+    const reviewerIdsByMr = groupUserIds(reviewerRows);
+    const assigneeIdsByMr = groupUserIds(assigneeRows);
+
+    const projectIds = [...new Set(mergeRequests.map((mr) => mr.projectId))];
+    const userIds = [
+      ...new Set([
+        ...mergeRequests.map((mr) => mr.authorId),
+        ...reviewerRows.map((row) => row.userId),
+        ...assigneeRows.map((row) => row.userId),
+      ]),
+    ];
+    const [projectRows, userRows] = await Promise.all([
+      this.projects.findByIds(projectIds),
+      this.users.findByIds(userIds),
+    ]);
+    const projectsById = indexById(projectRows);
+    const usersById = indexById(userRows);
+
+    return mergeRequests.map((mr) =>
+      toMergeRequestView(
+        mr,
+        projectsById,
+        usersById,
+        reviewerIdsByMr.get(mr.id) ?? [],
+        assigneeIdsByMr.get(mr.id) ?? [],
+      ),
+    );
+  }
 
   /**
    * Upserts every merge request of a project synchronisation batch.
@@ -124,4 +178,70 @@ export class MergeRequestsService {
       );
     }
   }
+}
+
+/** Groups association rows (reviewers or assignees) by `mergeRequestId`. */
+function groupUserIds(
+  rows: { mergeRequestId: number; userId: number }[],
+): Map<number, number[]> {
+  const grouped = new Map<number, number[]>();
+  for (const row of rows) {
+    const ids = grouped.get(row.mergeRequestId) ?? [];
+    ids.push(row.userId);
+    grouped.set(row.mergeRequestId, ids);
+  }
+  return grouped;
+}
+
+function indexById<T extends { id: number }>(rows: T[]): Map<number, T> {
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+/**
+ * @throws Error when `id` is absent from `byId` — an invariant violation
+ * (a foreign key referencing a row that vanished), never a business error.
+ */
+function mustGet<T>(byId: Map<number, T>, id: number, label: string): T {
+  const value = byId.get(id);
+  if (!value) {
+    throw new Error(
+      `${label} ${id} not found while assembling a merge request view`,
+    );
+  }
+  return value;
+}
+
+function toMergeRequestUser(user: User): MergeRequestUserDto {
+  return {
+    username: user.username,
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+  };
+}
+
+function toMergeRequestView(
+  mergeRequest: MergeRequest,
+  projectsById: Map<number, Project>,
+  usersById: Map<number, User>,
+  reviewerIds: number[],
+  assigneeIds: number[],
+): MergeRequestViewDto {
+  const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
+  const author = mustGet(usersById, mergeRequest.authorId, 'User');
+  return {
+    id: mergeRequest.id,
+    projectAlias: project.alias,
+    iid: mergeRequest.iid,
+    title: mergeRequest.title,
+    webUrl: mergeRequest.webUrl,
+    author: toMergeRequestUser(author),
+    reviewers: reviewerIds.map((id) =>
+      toMergeRequestUser(mustGet(usersById, id, 'User')),
+    ),
+    assignees: assigneeIds.map((id) =>
+      toMergeRequestUser(mustGet(usersById, id, 'User')),
+    ),
+    approved: mergeRequest.approved,
+    commentsCount: mergeRequest.commentsCount,
+  };
 }

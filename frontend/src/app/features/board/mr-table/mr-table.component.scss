@@ -1,0 +1,72 @@
+:host {
+  display: block;
+  overflow-x: auto;
+}
+
+.mr-table {
+  width: 100%;
+  min-width: 860px;
+
+  th.mat-mdc-header-cell,
+  td.mat-mdc-cell {
+    padding: 6px 8px;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+
+  th.mat-mdc-header-cell {
+    font-weight: 600;
+    color: var(--color-neutral-700);
+  }
+
+  tr.mat-mdc-row:hover {
+    background: var(--color-neutral-100);
+  }
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 0;
+}
+
+.tag-neutral {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+}
+
+.title-cell {
+  max-width: 0;
+  width: 100%;
+}
+
+.title-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
+}
+
+.user-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.extra {
+  font-size: 11px;
+  color: var(--color-neutral-600);
+}
+
+.none {
+  color: var(--color-neutral-600);
+}
+
+.approved-icon {
+  color: var(--color-success);
+}

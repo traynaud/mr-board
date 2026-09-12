@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import {
   BusinessException,
   BusinessValidationException,
@@ -27,6 +28,7 @@ describe('ProjectsService', () => {
   });
   const repository = {
     find: jest.fn(),
+    findBy: jest.fn(),
     findOneBy: jest.fn(),
     save: jest.fn(),
     create: jest.fn(),
@@ -43,6 +45,7 @@ describe('ProjectsService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     repository.find.mockResolvedValue([]);
+    repository.findBy.mockResolvedValue([]);
     repository.findOneBy.mockResolvedValue(null);
     repository.save.mockImplementation((p: Project) => Promise.resolve(p));
     repository.create.mockImplementation(
@@ -107,6 +110,26 @@ describe('ProjectsService', () => {
 
     it('should_return_null_for_an_unknown_id', async () => {
       await expect(service.findById(99)).resolves.toBeNull();
+    });
+  });
+
+  describe('findByIds', () => {
+    it('should_return_matching_entities', async () => {
+      repository.findBy.mockResolvedValue([
+        row(),
+        row({ id: 2, alias: 'web' }),
+      ]);
+
+      await expect(service.findByIds([1, 2])).resolves.toEqual([
+        row(),
+        row({ id: 2, alias: 'web' }),
+      ]);
+      expect(repository.findBy).toHaveBeenCalledWith({ id: In([1, 2]) });
+    });
+
+    it('should_not_query_when_the_id_list_is_empty', async () => {
+      await expect(service.findByIds([])).resolves.toEqual([]);
+      expect(repository.findBy).not.toHaveBeenCalled();
     });
   });
 

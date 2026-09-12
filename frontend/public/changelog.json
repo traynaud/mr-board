@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-005",
+    "title": "Tableau des MRs : colonnes Projet, Auteur, Titre, Commentaires, Reviewer, Affecté, Approved."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-004",
     "title": "Synchronisation des MRs depuis GitLab (GraphQL), toolbar de statut, bandeau sans jeton et état vide."
   },

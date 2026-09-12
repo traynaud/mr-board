@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProjectsModule } from '../projects/projects.module';
 import { UsersModule } from '../users/users.module';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
+import { MergeRequestsController } from './merge-requests.controller';
 import { MergeRequestsService } from './merge-requests.service';
 
 @Module({
@@ -14,7 +16,9 @@ import { MergeRequestsService } from './merge-requests.service';
       MergeRequestAssignee,
     ]),
     UsersModule,
+    ProjectsModule,
   ],
+  controllers: [MergeRequestsController],
   providers: [MergeRequestsService],
   exports: [MergeRequestsService],
 })
