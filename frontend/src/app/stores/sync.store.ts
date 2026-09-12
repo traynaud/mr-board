@@ -7,12 +7,15 @@ import { SyncRun } from '../models/sync-status.model';
 export interface SyncState {
   running: boolean;
   lastRun: SyncRun | null;
+  /** Prochaine échéance de synchro planifiée, `null` en mode manuel (RG-013-07). */
+  nextRunAt: string | null;
   loading: boolean;
 }
 
 const initialState: SyncState = {
   running: false,
   lastRun: null,
+  nextRunAt: null,
   loading: false,
 };
 
@@ -40,6 +43,7 @@ export const SyncStore = signalStore(
         patchState(store, {
           running: status.running,
           lastRun: status.lastRun,
+          nextRunAt: status.nextRunAt,
           loading: false,
         });
       } catch {

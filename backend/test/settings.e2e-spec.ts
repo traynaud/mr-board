@@ -14,6 +14,8 @@ interface Body {
   code?: string;
   message?: string[];
   tokenConfigured?: boolean;
+  refreshIntervalMin?: number;
+  pauseWhenHidden?: boolean;
 }
 const body = (res: request.Response): Body => res.body as Body;
 
@@ -58,6 +60,8 @@ describe('Settings (e2e)', () => {
       tokenHint: null,
       meUsername: null,
       meEmail: null,
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
   });
 
@@ -108,6 +112,8 @@ describe('Settings (e2e)', () => {
       tokenHint: 'wxyz',
       meUsername: null,
       meEmail: null,
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -131,6 +137,8 @@ describe('Settings (e2e)', () => {
       tokenHint: 'wxyz',
       meUsername: null,
       meEmail: null,
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
   });
 
@@ -277,5 +285,55 @@ describe('Settings (e2e)', () => {
     });
 
     expect(res.status).toBe(400);
+  });
+
+  it('PUT /settings should_store_refresh_settings', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      refreshIntervalMin: 15,
+      pauseWhenHidden: false,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        refreshIntervalMin: 15,
+        pauseWhenHidden: false,
+      }),
+    );
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(
+      expect.objectContaining({
+        refreshIntervalMin: 15,
+        pauseWhenHidden: false,
+      }),
+    );
+  });
+
+  it('PUT /settings should_keep_refresh_settings_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        refreshIntervalMin: 15,
+        pauseWhenHidden: false,
+      }),
+    );
+  });
+
+  it('PUT /settings should_reject_an_out_of_enum_refresh_interval', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      refreshIntervalMin: 7,
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([
+      expect.stringContaining('refreshIntervalMin'),
+    ]);
   });
 });

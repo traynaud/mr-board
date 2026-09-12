@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
 import { provideIcons } from '../../../shared/icons/provide-icons';
@@ -24,6 +26,7 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
     <app-board-toolbar
       [running]="running()"
       [lastRun]="lastRun()"
+      [nextRunAt]="nextRunAt()"
       [refreshDisabled]="refreshDisabled()"
       (refresh)="refreshCount.set(refreshCount() + 1)"
     />
@@ -33,6 +36,7 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
 class HostComponent {
   readonly running = signal(false);
   readonly lastRun = signal<SyncRun | null>(null);
+  readonly nextRunAt = signal<string | null>(null);
   readonly refreshDisabled = signal(false);
   readonly refreshCount = signal(0);
 }
@@ -93,6 +97,23 @@ describe('BoardToolbarComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.refreshCount()).toBe(1);
+  });
+
+  it('should_show_the_manual_tooltip_by_default', async () => {
+    const { fixture } = await setup();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe(t('board.sync.manualTooltip'));
+  });
+
+  it('should_show_the_next_run_time_in_the_tooltip', async () => {
+    const { fixture } = await setup();
+    const local = new Date(2026, 8, 12, 14, 5);
+    fixture.componentInstance.nextRunAt.set(local.toISOString());
+    await fixture.whenStable();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe(t('board.sync.nextRunTooltip', { time: '14:05' }));
   });
 
   it('should_link_the_settings_button_to_settings', async () => {

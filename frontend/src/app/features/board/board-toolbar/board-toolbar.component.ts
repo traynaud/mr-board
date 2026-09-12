@@ -15,7 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { SyncRun } from '../../../models/sync-status.model';
-import { computeSyncStatusLabel } from '../sync-status-label';
+import { computeNextRunTooltip, computeSyncStatusLabel } from '../sync-status-label';
 
 /** Fréquence de recalcul du libellé relatif (« il y a N min »), RG-004-08. */
 const LABEL_TICK_MS = 30_000;
@@ -44,6 +44,8 @@ const LABEL_TICK_MS = 30_000;
 export class BoardToolbarComponent implements OnDestroy {
   readonly running = input.required<boolean>();
   readonly lastRun = input.required<SyncRun | null>();
+  /** Prochaine échéance planifiée, `null` en mode manuel (RG-013-07). */
+  readonly nextRunAt = input<string | null>(null);
   /** Désactivé sans jeton configuré ou pendant une synchronisation (RG-004-09, RG-004-10). */
   readonly refreshDisabled = input<boolean>(false);
   readonly refresh = output<void>();
@@ -60,6 +62,8 @@ export class BoardToolbarComponent implements OnDestroy {
       this.nowTick(),
     ),
   );
+
+  protected readonly nextRunTooltip = computed(() => computeNextRunTooltip(this.nextRunAt()));
 
   ngOnDestroy(): void {
     clearInterval(this.tickHandle);

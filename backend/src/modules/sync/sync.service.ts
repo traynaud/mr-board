@@ -8,6 +8,7 @@ import { MergeRequestsService } from '../merge-requests/merge-requests.service';
 import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
+import { computeNextRunAt } from './domain/compute-next-run-at';
 import {
   ProjectSyncOutcome,
   summarizeSyncRun,
@@ -65,16 +66,21 @@ export class SyncService {
     return { running: true };
   }
 
-  /** `GET /api/v1/sync/status` — current lock state and last completed run. */
+  /** `GET /api/v1/sync/status` — current lock state, last run and next due date. */
   async getStatus(): Promise<SyncStatusResponseDto> {
     const lastRun = await this.syncRuns.findOne({
       where: {},
       order: { startedAt: 'DESC' },
     });
+    const refreshIntervalMin = await this.settings.getRefreshIntervalMin();
     return {
       running: this.running,
       lastRun: lastRun ? toDto(lastRun) : null,
-      nextRunAt: null,
+      nextRunAt: computeNextRunAt(
+        refreshIntervalMin,
+        lastRun?.startedAt ?? null,
+        new Date().toISOString(),
+      ),
     };
   }
 

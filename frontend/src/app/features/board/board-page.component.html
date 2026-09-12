@@ -1,6 +1,7 @@
 <app-board-toolbar
   [running]="syncStore.running()"
   [lastRun]="syncStore.lastRun()"
+  [nextRunAt]="syncStore.nextRunAt()"
   [refreshDisabled]="refreshDisabled()"
   (refresh)="refresh()"
 />

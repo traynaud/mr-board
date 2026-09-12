@@ -59,6 +59,8 @@ describe('settings form helpers', () => {
     tokenHint: 'wxyz',
     meUsername: 'mdupont',
     meEmail: 'marie@exemple.fr',
+    refreshIntervalMin: 15,
+    pauseWhenHidden: false,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -73,6 +75,8 @@ describe('settings form helpers', () => {
       gitlabToken: '',
       meUsername: 'mdupont',
       meEmail: 'marie@exemple.fr',
+      refreshIntervalMin: 15,
+      pauseWhenHidden: false,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -101,6 +105,8 @@ describe('settings form helpers', () => {
       gitlabUrl: 'https://gitlab.com',
       meUsername: 'mdupont',
       meEmail: '',
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
   });
 
@@ -118,7 +124,31 @@ describe('settings form helpers', () => {
       gitlabToken: 'glpat-abcdwxyz',
       meUsername: '',
       meEmail: '',
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
+  });
+
+  it('should_include_the_refresh_settings_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({
+      gitlabUrl: 'https://gitlab.com',
+      refreshIntervalMin: 30,
+      pauseWhenHidden: false,
+    });
+
+    expect(toUpdateRequest(form)).toEqual(
+      expect.objectContaining({ refreshIntervalMin: 30, pauseWhenHidden: false }),
+    );
+  });
+
+  it('should_reset_the_refresh_settings_from_settings', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.refreshIntervalMin.value).toBe(15);
+    expect(form.controls.pauseWhenHidden.value).toBe(false);
   });
 
   it('should_not_include_repos_in_the_update_request', () => {

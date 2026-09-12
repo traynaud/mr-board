@@ -6,6 +6,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { SettingsModule } from '../settings/settings.module';
 import { SyncRun } from './entities/sync-run.entity';
 import { SyncController } from './sync.controller';
+import { SyncScheduler } from './sync-scheduler.service';
 import { SyncService } from './sync.service';
 
 @Module({
@@ -17,7 +18,7 @@ import { SyncService } from './sync.service';
     MergeRequestsModule,
   ],
   controllers: [SyncController],
-  providers: [SyncService],
+  providers: [SyncService, SyncScheduler],
   exports: [SyncService],
 })
 export class SyncModule {}

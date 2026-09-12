@@ -10,11 +10,12 @@ interface SyncRunBody {
   mrCount?: number;
   errorMessage?: string | null;
   trigger?: string;
+  startedAt?: string;
 }
 interface StatusBody {
   running: boolean;
   lastRun: SyncRunBody | null;
-  nextRunAt: null;
+  nextRunAt: string | null;
 }
 interface ProjectBody {
   id: number;
@@ -95,14 +96,21 @@ describe('Sync (e2e)', () => {
   });
 
   it('GET /sync/status should_report_never_synced_initially', async () => {
+    const before = Date.now();
     const res = await api().get('/api/v1/sync/status');
+    const after = Date.now();
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      running: false,
-      lastRun: null,
-      nextRunAt: null,
-    });
+    expect(res.body).toEqual(
+      expect.objectContaining({ running: false, lastRun: null }),
+    );
+    // Default refreshIntervalMin is 5 (non-manual) and nothing has ever
+    // synced yet: a scheduled sync is immediately due (RG-013-02/07).
+    const status = res.body as StatusBody;
+    expect(status.nextRunAt).not.toBeNull();
+    const nextRunAtTime = new Date(status.nextRunAt as string).getTime();
+    expect(nextRunAtTime).toBeGreaterThanOrEqual(before);
+    expect(nextRunAtTime).toBeLessThanOrEqual(after);
   });
 
   it('POST /sync should_report_an_error_run_when_no_token_is_configured', async () => {
@@ -249,5 +257,32 @@ describe('Sync (e2e)', () => {
     expect(status.lastRun).toEqual(
       expect.objectContaining({ status: 'error', mrCount: 0 }),
     );
+  });
+
+  it('GET /sync/status should_compute_nextRunAt_from_the_configured_interval', async () => {
+    await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      refreshIntervalMin: 30,
+    });
+    gitlab.getOpenMergeRequests.mockResolvedValue([]);
+
+    await api().post('/api/v1/sync');
+    const status = await waitUntilIdle();
+
+    expect(status.nextRunAt).toBe(
+      new Date(
+        new Date(status.lastRun?.startedAt as string).getTime() + 30 * 60_000,
+      ).toISOString(),
+    );
+  });
+
+  it('GET /sync/status should_report_no_next_run_in_manual_mode', async () => {
+    await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', refreshIntervalMin: 0 });
+
+    const res = await api().get('/api/v1/sync/status');
+
+    expect(res.body).toEqual(expect.objectContaining({ nextRunAt: null }));
   });
 });

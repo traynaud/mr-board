@@ -6,6 +6,24 @@ Le backend synchronise périodiquement les MRs selon une fréquence choisie dans
 manuel). Le tableau se met à jour automatiquement après chaque synchronisation. Une option permet de suspendre le
 rafraîchissement du tableau quand l'onglet n'est pas visible.
 
+> ℹ️ **Validation Phase 1** : le code existant anticipe déjà cette US, sans conflit à trancher (contrairement à
+> US-011/US-012) :
+> - `SyncStatusResponseDto.nextRunAt` et `SyncTrigger = 'manual' | 'scheduled'` **existent déjà**, avec un
+>   commentaire explicite « toujours `null`/jamais `'scheduled'` jusqu'à US-013 » — seule leur alimentation réelle
+>   manque.
+> - **RG-013-04 est déjà implémentée** : l'effet de `BoardPageComponent` qui recharge les MRs à la fin d'une
+>   synchronisation ne distingue pas manuel/planifié (RG-005-06, déjà en place depuis US-005). Aucun code
+>   frontend nouveau nécessaire pour ce point précis — seulement le vérifier avec un déclenchement `'scheduled'`
+>   réel une fois le planificateur backend en place.
+> - `docs/tech/architecture-backend.md` §7 anticipe déjà la conception cible : un `SyncScheduler` utilisant un
+>   intervalle **dynamique** de `@nestjs/schedule`, reprogrammé à chaque sauvegarde des paramètres — repris tel
+>   quel en Phase 2.
+> - La numérotation « 04 · Actualisation » (RG-013-06) est confirmée libre (sections existantes : 01 Moi,
+>   02 Connexion GitLab, 03 Repos à scanner) ; le flag `[last]="true"` actuellement sur la section Repos devra
+>   migrer vers la nouvelle section.
+> - L'entité `Settings` ne porte aujourd'hui aucun champ de rafraîchissement — migration TypeORM nécessaire pour
+>   `refresh_interval_min` et `pause_when_hidden` (RG-013-01/05).
+
 ## 2. User Stories
 
 - **US-013** : En tant qu'utilisateur, je veux que le tableau se mette à jour automatiquement à la fréquence de mon choix,

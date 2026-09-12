@@ -97,7 +97,9 @@
       "justNow": "Synchronisé à l'instant",
       "minutesAgo": "Synchronisé il y a {{minutes}} min",
       "failedMinutesAgo": "Dernière synchro en échec il y a {{minutes}} min",
-      "toastError": "La synchronisation a rencontré une erreur."
+      "toastError": "La synchronisation a rencontré une erreur.",
+      "nextRunTooltip": "Prochaine synchro à {{time}}",
+      "manualTooltip": "Synchronisation manuelle"
     },
     "noToken": {
       "title": "Aucun jeton GitLab configuré.",
@@ -175,6 +177,18 @@
         "confirm": "Supprimer",
         "cancel": "Rester"
       }
+    },
+    "refresh": {
+      "number": "04",
+      "title": "Actualisation",
+      "description": "Fréquence de synchronisation automatique avec GitLab.",
+      "frequency": "Fréquence de synchronisation",
+      "options": {
+        "minutes": "{{minutes}} min",
+        "manual": "Manuel"
+      },
+      "pauseWhenHidden": "Mettre en pause quand l'onglet est inactif",
+      "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
     }
   },
   "errors": {

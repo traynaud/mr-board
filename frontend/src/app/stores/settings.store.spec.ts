@@ -12,6 +12,8 @@ describe('SettingsStore', () => {
     tokenHint: null,
     meUsername: null,
     meEmail: null,
+    refreshIntervalMin: 5,
+    pauseWhenHidden: true,
   };
   const api = {
     getSettings: vi.fn(),

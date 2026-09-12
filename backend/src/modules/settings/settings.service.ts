@@ -56,6 +56,12 @@ export class SettingsService {
     if (dto.meEmail !== undefined) {
       settings.meEmail = dto.meEmail.trim() || null;
     }
+    if (dto.refreshIntervalMin !== undefined) {
+      settings.refreshIntervalMin = dto.refreshIntervalMin;
+    }
+    if (dto.pauseWhenHidden !== undefined) {
+      settings.pauseWhenHidden = dto.pauseWhenHidden;
+    }
     settings.updatedAt = new Date().toISOString();
     return this.toResponse(await this.repository.save(settings));
   }
@@ -122,6 +128,13 @@ export class SettingsService {
       : null;
   }
 
+  /**
+   * Scheduled sync cadence in minutes ; `0` = manual (RG-013-01).
+   */
+  async getRefreshIntervalMin(): Promise<number> {
+    return (await this.load()).refreshIntervalMin;
+  }
+
   private async load(): Promise<Settings> {
     const existing = await this.repository.findOneBy({ id: SETTINGS_ID });
     if (existing) {
@@ -135,6 +148,8 @@ export class SettingsService {
         gitlabTokenEncrypted: null,
         meUsername: null,
         meEmail: null,
+        refreshIntervalMin: 5,
+        pauseWhenHidden: true,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -161,6 +176,8 @@ export class SettingsService {
       tokenHint: token ? tokenHint(token) : null,
       meUsername: settings.meUsername,
       meEmail: settings.meEmail,
+      refreshIntervalMin: settings.refreshIntervalMin,
+      pauseWhenHidden: settings.pauseWhenHidden,
     };
   }
 }

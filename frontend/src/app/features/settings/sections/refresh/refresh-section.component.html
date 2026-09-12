@@ -1,0 +1,19 @@
+<div class="fields" [formGroup]="form()">
+  <mat-radio-group
+    class="interval-group"
+    formControlName="refreshIntervalMin"
+    [attr.aria-label]="'settings.refresh.frequency' | translate"
+  >
+    @for (option of intervalOptions; track option) {
+      <mat-radio-button [value]="option">
+        {{ (option === 0 ? 'settings.refresh.options.manual' : 'settings.refresh.options.minutes') | translate: { minutes: option } }}
+      </mat-radio-button>
+    }
+  </mat-radio-group>
+
+  <mat-slide-toggle formControlName="pauseWhenHidden">
+    {{ 'settings.refresh.pauseWhenHidden' | translate }}
+  </mat-slide-toggle>
+
+  <p class="hint">{{ 'settings.refresh.hint' | translate }}</p>
+</div>

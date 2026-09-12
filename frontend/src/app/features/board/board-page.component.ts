@@ -73,6 +73,8 @@ export class BoardPageComponent implements OnInit {
   private initialized = false;
   private wasLoadingStatus = false;
   private lastToastedStartedAt: string | null = null;
+  /** Vrai si le polling a été arrêté par ce listener (et non par `ngOnDestroy`), pour ne redémarrer que ce qu'on a nous-même mis en pause. */
+  private pausedByVisibility = false;
 
   /** Sans jeton configuré (RG-004-10). `false` tant que les paramètres ne sont pas encore chargés. */
   protected readonly noToken = computed(() => {
@@ -198,7 +200,35 @@ export class BoardPageComponent implements OnInit {
     void this.loadMergeRequests();
     this.syncStore.startPolling();
     this.destroyRef.onDestroy(() => this.syncStore.stopPolling());
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    this.destroyRef.onDestroy(() =>
+      document.removeEventListener('visibilitychange', this.onVisibilityChange),
+    );
   }
+
+  /**
+   * RG-013-05 : suspend le polling de statut quand l'onglet est masqué (si
+   * `pauseWhenHidden`, `true` par défaut) et relit immédiatement le statut au
+   * retour — `startPolling()` déclenche un `loadStatus()` immédiat, dont la
+   * transition loading true→false relance déjà `loadMergeRequests()` via
+   * l'effect RG-005-06 ci-dessus : pas d'appel explicite séparé nécessaire
+   * (sinon double rechargement). Avant le premier chargement des paramètres,
+   * `settings()` est `null` : traité comme « pas de pause » plutôt que de
+   * risquer une suspension non voulue (voir archi.md, points de vigilance).
+   */
+  private readonly onVisibilityChange = (): void => {
+    const pauseWhenHidden = this.settingsStore.settings()?.pauseWhenHidden ?? false;
+    if (!pauseWhenHidden) {
+      return;
+    }
+    if (document.hidden) {
+      this.pausedByVisibility = true;
+      this.syncStore.stopPolling();
+    } else if (this.pausedByVisibility) {
+      this.pausedByVisibility = false;
+      this.syncStore.startPolling();
+    }
+  };
 
   /** Déclenché par le bouton Rafraîchir de la toolbar (RG-004-09). */
   protected refresh(): void {

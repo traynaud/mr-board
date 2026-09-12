@@ -44,6 +44,28 @@ describe('SettingsService', () => {
     await expect(pending).resolves.toEqual(expect.objectContaining({ tokenHint: 'wxyz' }));
   });
 
+  it('should_put_the_refresh_settings', async () => {
+    const body = {
+      gitlabUrl: 'https://gitlab.com',
+      refreshIntervalMin: 15,
+      pauseWhenHidden: false,
+    };
+    const pending = firstValueFrom(service.putSettings(body));
+    const req = ctrl.expectOne('/api/v1/settings');
+    expect(req.request.body).toEqual(body);
+    req.flush({
+      gitlabUrl: body.gitlabUrl,
+      tokenConfigured: false,
+      tokenHint: null,
+      refreshIntervalMin: 15,
+      pauseWhenHidden: false,
+    });
+
+    await expect(pending).resolves.toEqual(
+      expect.objectContaining({ refreshIntervalMin: 15, pauseWhenHidden: false }),
+    );
+  });
+
   it('should_post_test_connection', async () => {
     const pending = firstValueFrom(service.postTestConnection({ gitlabUrl: 'https://gitlab.com' }));
     const req = ctrl.expectOne('/api/v1/settings/test-connection');

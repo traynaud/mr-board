@@ -4,6 +4,6 @@ import { SyncRunDto } from './sync-run.dto';
 export class SyncStatusResponseDto {
   running!: boolean;
   lastRun!: SyncRunDto | null;
-  /** Always `null` until US-013 (scheduled synchronisation) exists. */
-  nextRunAt!: null;
+  /** Next scheduled sync due date, `null` in manual mode (RG-013-01/02/03/07). */
+  nextRunAt!: string | null;
 }

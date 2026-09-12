@@ -64,6 +64,7 @@ interface SyncRunRepoMock {
 interface SettingsServiceMock {
   getToken: jest.Mock;
   getGitlabUrl: jest.Mock;
+  getRefreshIntervalMin: jest.Mock;
 }
 interface ProjectsServiceMock {
   findById: jest.Mock;
@@ -111,6 +112,7 @@ describe('SyncService', () => {
             getGitlabUrl: jest
               .fn()
               .mockResolvedValue('https://gitlab.example.com'),
+            getRefreshIntervalMin: jest.fn().mockResolvedValue(0),
           },
         },
         {
@@ -380,6 +382,36 @@ describe('SyncService', () => {
         },
         nextRunAt: null,
       });
+    });
+
+    it('should_compute_the_next_run_from_the_interval_and_the_last_run', async () => {
+      settings.getRefreshIntervalMin.mockResolvedValue(15);
+      syncRunsRepo.findOne.mockResolvedValue({
+        id: 1,
+        startedAt: '2026-09-11T08:00:00.000Z',
+        finishedAt: '2026-09-11T08:00:05.000Z',
+        status: 'success',
+        mrCount: 3,
+        errorMessage: null,
+        trigger: 'manual',
+      });
+
+      const result = await service.getStatus();
+
+      expect(result.nextRunAt).toBe('2026-09-11T08:15:00.000Z');
+    });
+
+    it('should_be_immediately_due_when_no_sync_ever_ran_and_a_cadence_is_set', async () => {
+      settings.getRefreshIntervalMin.mockResolvedValue(5);
+
+      const before = Date.now();
+      const result = await service.getStatus();
+      const after = Date.now();
+
+      expect(result.nextRunAt).not.toBeNull();
+      const nextRunAtTime = new Date(result.nextRunAt as string).getTime();
+      expect(nextRunAtTime).toBeGreaterThanOrEqual(before);
+      expect(nextRunAtTime).toBeLessThanOrEqual(after);
     });
   });
 });

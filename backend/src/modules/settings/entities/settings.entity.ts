@@ -30,6 +30,14 @@ export class Settings {
   @Column({ name: 'me_email', type: 'text', nullable: true })
   meEmail!: string | null;
 
+  /** Scheduled sync cadence in minutes ; `0` = manual (RG-013-01). */
+  @Column({ name: 'refresh_interval_min', type: 'integer', default: 5 })
+  refreshIntervalMin!: number;
+
+  /** Suspend frontend polling/reload while the tab is hidden (RG-013-05) ; not read by the backend. */
+  @Column({ name: 'pause_when_hidden', type: 'boolean', default: true })
+  pauseWhenHidden!: boolean;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

@@ -20,6 +20,8 @@ describe('SettingsService', () => {
     gitlabTokenEncrypted: null,
     meUsername: null,
     meEmail: null,
+    refreshIntervalMin: 5,
+    pauseWhenHidden: true,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -66,6 +68,8 @@ describe('SettingsService', () => {
         tokenHint: null,
         meUsername: null,
         meEmail: null,
+        refreshIntervalMin: 5,
+        pauseWhenHidden: true,
       });
     });
 
@@ -125,6 +129,8 @@ describe('SettingsService', () => {
         tokenHint: 'wxyz',
         meUsername: null,
         meEmail: null,
+        refreshIntervalMin: 5,
+        pauseWhenHidden: true,
       });
     });
 
@@ -223,6 +229,50 @@ describe('SettingsService', () => {
         expect.objectContaining({
           meUsername: 'kbenali',
           meEmail: 'karim@exemple.fr',
+        }),
+      );
+    });
+
+    it('should_set_refresh_settings_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        refreshIntervalMin: 15,
+        pauseWhenHidden: false,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          refreshIntervalMin: 15,
+          pauseWhenHidden: false,
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          refreshIntervalMin: 15,
+          pauseWhenHidden: false,
+        }),
+      );
+    });
+
+    it('should_keep_refresh_settings_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        refreshIntervalMin: 30,
+        pauseWhenHidden: false,
+      });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          refreshIntervalMin: 30,
+          pauseWhenHidden: false,
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          refreshIntervalMin: 30,
+          pauseWhenHidden: false,
         }),
       );
     });
@@ -377,6 +427,19 @@ describe('SettingsService', () => {
         username: null,
         email: null,
       });
+    });
+
+    it('should_expose_the_configured_refresh_interval', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        refreshIntervalMin: 15,
+      });
+
+      await expect(service.getRefreshIntervalMin()).resolves.toBe(15);
+    });
+
+    it('should_default_the_refresh_interval_to_five_minutes', async () => {
+      await expect(service.getRefreshIntervalMin()).resolves.toBe(5);
     });
   });
 });

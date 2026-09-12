@@ -32,6 +32,7 @@ import { resolveMeIdentity } from './me-identity';
 import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
 import { GitlabConnectionSectionComponent } from './sections/gitlab-connection/gitlab-connection-section.component';
 import { MeSectionComponent } from './sections/me/me-section.component';
+import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import {
   RepoRow,
   RepositoriesSectionComponent,
@@ -60,6 +61,7 @@ export const TOAST_DURATION_MS = 3500;
     SettingsSectionComponent,
     GitlabConnectionSectionComponent,
     MeSectionComponent,
+    RefreshSectionComponent,
     RepositoriesSectionComponent,
   ],
   templateUrl: './settings-page.component.html',

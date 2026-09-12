@@ -18,6 +18,10 @@ export interface SettingsFormControls {
   gitlabToken: FormControl<string>;
   meUsername: FormControl<string>;
   meEmail: FormControl<string>;
+  /** Cadence de synchro planifiée en minutes ; `0` = manuel (RG-013-01). */
+  refreshIntervalMin: FormControl<number>;
+  /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
+  pauseWhenHidden: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -73,6 +77,8 @@ export function buildSettingsForm(): SettingsForm {
       nonNullable: true,
       validators: [Validators.email],
     }),
+    refreshIntervalMin: new FormControl(5, { nonNullable: true }),
+    pauseWhenHidden: new FormControl(true, { nonNullable: true }),
     // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
     // touché par resetSettingsForm (voir ci-dessous).
     repos: new FormArray<RepoAliasForm>([]),
@@ -91,6 +97,8 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.gitlabToken.reset('');
   form.controls.meUsername.reset(settings.meUsername ?? '');
   form.controls.meEmail.reset(settings.meEmail ?? '');
+  form.controls.refreshIntervalMin.reset(settings.refreshIntervalMin);
+  form.controls.pauseWhenHidden.reset(settings.pauseWhenHidden);
 }
 
 /**
@@ -101,11 +109,14 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
  * `PUT /projects/:id` (voir `collectDirtyAliasChanges`).
  */
 export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
-  const { gitlabUrl, gitlabToken, meUsername, meEmail } = form.getRawValue();
+  const { gitlabUrl, gitlabToken, meUsername, meEmail, refreshIntervalMin, pauseWhenHidden } =
+    form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
     ...(gitlabToken ? { gitlabToken } : {}),
     meUsername: meUsername.trim(),
     meEmail: meEmail.trim(),
+    refreshIntervalMin,
+    pauseWhenHidden,
   };
 }

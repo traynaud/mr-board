@@ -26,6 +26,8 @@ const NO_TOKEN_SETTINGS: Settings = {
   tokenHint: null,
   meUsername: null,
   meEmail: null,
+  refreshIntervalMin: 5,
+  pauseWhenHidden: true,
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
@@ -143,8 +145,14 @@ describe('BoardPageComponent', () => {
 
   afterEach(() => {
     TestBed.inject(SyncStore).stopPolling();
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
     http.verify();
   });
+
+  function setHidden(hidden: boolean): void {
+    Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  }
 
   const settle = async () => {
     await fixture.whenStable();
@@ -747,5 +755,65 @@ describe('BoardPageComponent', () => {
 
     fixture.destroy();
     expect(stopSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should_pause_polling_when_the_tab_becomes_hidden_and_pauseWhenHidden_is_enabled', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    const stopSpy = vi.spyOn(TestBed.inject(SyncStore), 'stopPolling');
+
+    setHidden(true);
+
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should_resume_polling_and_reload_merge_requests_when_the_tab_becomes_visible_again', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    const syncStore = TestBed.inject(SyncStore);
+    const startSpy = vi.spyOn(syncStore, 'startPolling');
+    setHidden(true);
+
+    setHidden(false);
+    await settle();
+    // La relecture immédiate du statut (`startPolling`) fait passer `loading`
+    // à `false`, ce qui redéclenche déjà `loadMergeRequests()` via l'effect
+    // RG-005-06 — pas de second appel explicite (voir board-page.component.ts).
+    http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+    await settle();
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
+    await settle();
+
+    expect(startSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should_not_pause_when_pauseWhenHidden_is_disabled', async () => {
+    await bootstrap({
+      settings: { ...WITH_TOKEN_SETTINGS, pauseWhenHidden: false },
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+    });
+    const stopSpy = vi.spyOn(TestBed.inject(SyncStore), 'stopPolling');
+
+    setHidden(true);
+
+    expect(stopSpy).not.toHaveBeenCalled();
+  });
+
+  it('should_not_pause_before_settings_have_loaded', async () => {
+    fixture = TestBed.createComponent(BoardPageComponent);
+    const stopSpy = vi.spyOn(TestBed.inject(SyncStore), 'stopPolling');
+    fixture.detectChanges();
+    await settle();
+
+    setHidden(true);
+
+    expect(stopSpy).not.toHaveBeenCalled();
+
+    http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+    http.expectOne('/api/v1/projects').flush([PROJECT]);
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+    await settle();
   });
 });

@@ -20,6 +20,8 @@ describe('SettingsPageComponent', () => {
     tokenHint: null,
     meUsername: null,
     meEmail: null,
+    refreshIntervalMin: 5,
+    pauseWhenHidden: true,
   };
   const projectApi: Project = {
     id: 1,
@@ -156,6 +158,8 @@ describe('SettingsPageComponent', () => {
       gitlabToken: 'glpat-abcdwxyz',
       meUsername: '',
       meEmail: '',
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -163,6 +167,8 @@ describe('SettingsPageComponent', () => {
       tokenHint: 'wxyz',
       meUsername: null,
       meEmail: null,
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
     await settle();
     await flushSync();
@@ -193,6 +199,8 @@ describe('SettingsPageComponent', () => {
       gitlabUrl: 'https://gitlab.exemple.fr',
       meUsername: 'mdupont',
       meEmail: 'marie@exemple.fr',
+      refreshIntervalMin: 5,
+      pauseWhenHidden: true,
     });
   });
 

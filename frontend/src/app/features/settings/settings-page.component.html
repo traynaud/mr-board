@@ -58,9 +58,16 @@
         [number]="'settings.projects.number' | translate"
         titleKey="settings.projects.title"
         descriptionKey="settings.projects.description"
-        [last]="true"
       >
         <app-repositories-section [rows]="repoRows()" />
+      </app-settings-section>
+      <app-settings-section
+        [number]="'settings.refresh.number' | translate"
+        titleKey="settings.refresh.title"
+        descriptionKey="settings.refresh.description"
+        [last]="true"
+      >
+        <app-refresh-section [form]="form" />
       </app-settings-section>
     </form>
   }

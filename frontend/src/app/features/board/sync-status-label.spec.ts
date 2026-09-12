@@ -1,5 +1,5 @@
 import { SyncRun } from '../../models/sync-status.model';
-import { computeSyncStatusLabel } from './sync-status-label';
+import { computeNextRunTooltip, computeSyncStatusLabel } from './sync-status-label';
 
 const NOW = new Date('2026-09-11T08:10:00.000Z').getTime();
 
@@ -89,5 +89,22 @@ describe('computeSyncStatusLabel', () => {
       NOW,
     );
     expect(label.key).toBe('board.sync.justNow');
+  });
+});
+
+describe('computeNextRunTooltip', () => {
+  it('should_show_the_manual_tooltip_when_there_is_no_next_run', () => {
+    expect(computeNextRunTooltip(null)).toEqual({
+      key: 'board.sync.manualTooltip',
+    });
+  });
+
+  it('should_show_the_formatted_time_of_the_next_run', () => {
+    const local = new Date(2026, 8, 12, 14, 5);
+
+    expect(computeNextRunTooltip(local.toISOString())).toEqual({
+      key: 'board.sync.nextRunTooltip',
+      params: { time: '14:05' },
+    });
   });
 });

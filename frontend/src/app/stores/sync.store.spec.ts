@@ -43,6 +43,16 @@ describe('SyncStore', () => {
     expect(store.loading()).toBe(false);
   });
 
+  it('should_load_the_next_run_at', async () => {
+    api.getStatus.mockReturnValue(
+      of(status({ nextRunAt: '2026-09-11T08:15:00.000Z' })),
+    );
+
+    await store.loadStatus();
+
+    expect(store.nextRunAt()).toBe('2026-09-11T08:15:00.000Z');
+  });
+
   it('should_report_loading_true_while_the_request_is_in_flight', async () => {
     api.getStatus.mockReturnValue(of(status()));
 

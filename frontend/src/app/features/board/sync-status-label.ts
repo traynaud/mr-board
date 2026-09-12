@@ -1,3 +1,4 @@
+import { formatTime } from '../../shared/format/format-date';
 import { SyncRun } from '../../models/sync-status.model';
 
 export interface SyncStatusLabel {
@@ -37,4 +38,24 @@ export function computeSyncStatusLabel(
     return { key: 'board.sync.justNow', accent: false };
   }
   return { key: 'board.sync.minutesAgo', params: { minutes }, accent: false };
+}
+
+export interface NextRunTooltip {
+  /** Clé i18n du tooltip de la toolbar (RG-013-07). */
+  key: string;
+  params?: { time: string };
+}
+
+/**
+ * Calcule le tooltip « prochaine synchro » de la toolbar (RG-013-07).
+ * @param nextRunAt échéance planifiée (ISO), `null` en mode manuel.
+ */
+export function computeNextRunTooltip(nextRunAt: string | null): NextRunTooltip {
+  if (nextRunAt === null) {
+    return { key: 'board.sync.manualTooltip' };
+  }
+  return {
+    key: 'board.sync.nextRunTooltip',
+    params: { time: formatTime(nextRunAt) },
+  };
 }

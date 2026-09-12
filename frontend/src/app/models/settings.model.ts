@@ -7,6 +7,10 @@ export interface Settings {
   meUsername: string | null;
   /** Email de repli pour la correspondance (RG-002-01, RG-G09). */
   meEmail: string | null;
+  /** Cadence de synchro planifiée en minutes ; `0` = manuel (RG-013-01). */
+  refreshIntervalMin: number;
+  /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
+  pauseWhenHidden: boolean;
 }
 
 /**
@@ -19,6 +23,8 @@ export interface UpdateSettingsRequest {
   gitlabToken?: string;
   meUsername?: string;
   meEmail?: string;
+  refreshIntervalMin?: number;
+  pauseWhenHidden?: boolean;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

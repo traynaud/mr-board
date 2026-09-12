@@ -26,3 +26,17 @@ export function formatDateTime(iso: string): string {
   const minutes = pad(date.getMinutes());
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
+
+/**
+ * Formate une date-heure ISO en `HH:mm`, dans le fuseau horaire local du
+ * navigateur (US-013, tooltip « Prochaine synchro »).
+ * @returns la chaîne d'origine si elle n'est pas interprétable.
+ */
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  const pad = (n: number): string => n.toString().padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

@@ -1,0 +1,17 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.interval-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-neutral-600);
+  font-size: 12px;
+}

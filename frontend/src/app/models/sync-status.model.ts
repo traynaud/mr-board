@@ -12,7 +12,8 @@ export interface SyncRun {
 export interface SyncStatus {
   running: boolean;
   lastRun: SyncRun | null;
-  nextRunAt: null;
+  /** Prochaine échéance de synchro planifiée, `null` en mode manuel (RG-013). */
+  nextRunAt: string | null;
 }
 
 /** Réponse de `POST /api/v1/sync`. */
