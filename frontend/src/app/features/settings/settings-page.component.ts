@@ -23,6 +23,7 @@ import { TranslateService } from '../../core/i18n/translate.service';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
+import { SyncStore } from '../../stores/sync.store';
 import { resolveMeIdentity } from './me-identity';
 import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
 import { GitlabConnectionSectionComponent } from './sections/gitlab-connection/gitlab-connection-section.component';
@@ -64,6 +65,7 @@ export const TOAST_DURATION_MS = 3500;
 export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly store = inject(SettingsStore);
   protected readonly projectsStore = inject(ProjectsStore);
+  private readonly syncStore = inject(SyncStore);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
@@ -172,6 +174,9 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       this.toast('settings.saveError');
       return;
     }
+    // Fire-and-forget (RG-004-15) : ne bloque ni le toast ni la navigation
+    // ci-dessous, et son échec éventuel est ignoré (voir SyncStore.trigger).
+    void this.syncStore.trigger();
     const aliasChanges = collectDirtyAliasChanges(this.form.controls.repos);
     const renameErrors = await Promise.all(
       aliasChanges.map((change) => this.projectsStore.rename(change.id, { alias: change.alias })),

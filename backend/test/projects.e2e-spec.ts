@@ -12,6 +12,7 @@ interface Body {
   alias?: string;
   pathWithNamespace?: string;
   gitlabProjectId?: number;
+  tokenConfigured?: boolean;
 }
 const body = (res: request.Response): Body => res.body as Body;
 const bodyList = (res: request.Response): Body[] => res.body as Body[];

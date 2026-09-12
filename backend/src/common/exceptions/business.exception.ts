@@ -55,3 +55,10 @@ export class GitlabUnavailableException extends BusinessException {
     super('gitlab.unavailable', message, HttpStatus.BAD_GATEWAY);
   }
 }
+
+/** A GitLab request exceeded its allotted time budget (502). See RG-004-14. */
+export class GitlabTimeoutException extends BusinessException {
+  constructor(message = 'GitLab request timed out') {
+    super('gitlab.timeout', message, HttpStatus.BAD_GATEWAY);
+  }
+}

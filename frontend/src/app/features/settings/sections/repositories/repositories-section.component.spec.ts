@@ -70,6 +70,14 @@ describe('RepositoriesSectionComponent', () => {
     http.expectOne('/api/v1/projects').flush(projects);
     await settle();
   };
+  /** Flushe le déclenchement de synchro ciblée après un ajout réussi (RG-004-15). */
+  const flushSync = async (projectId: number) => {
+    const req = http.expectOne(`/api/v1/sync?projectId=${projectId}`);
+    req.flush({ running: true }, { status: 202, statusText: 'Accepted' });
+    await settle();
+    http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
+    await settle();
+  };
   const pathInput = () => el.querySelector<HTMLInputElement>('input[formControlName="path"]')!;
   const addAliasInput = () =>
     el.querySelectorAll<HTMLInputElement>('input[formControlName="alias"]')[1];
@@ -110,6 +118,8 @@ describe('RepositoriesSectionComponent', () => {
       alias: 'front-web',
       gitlabProjectId: 7,
     });
+    await settle();
+    await flushSync(2);
   });
 
   it('should_show_error_and_retry', async () => {
@@ -136,6 +146,7 @@ describe('RepositoriesSectionComponent', () => {
     expect(req.request.body).toEqual({ path: 'equipe/front-web' });
     req.flush({ id: 2, pathWithNamespace: 'equipe/front-web', alias: 'front-web', gitlabProjectId: 7 });
     await settle();
+    await flushSync(2);
 
     expect(snackBar.open).toHaveBeenCalledWith(
       t('settings.projects.added'),

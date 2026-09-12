@@ -3,6 +3,7 @@ import {
   BusinessValidationException,
   EntityNotFoundException,
   GitlabAuthException,
+  GitlabTimeoutException,
   GitlabUnavailableException,
   MissingConfigurationException,
 } from './business.exception';
@@ -18,6 +19,7 @@ describe('Business exceptions', () => {
     ],
     [new GitlabAuthException(), 502, 'gitlab.auth'],
     [new GitlabUnavailableException(), 502, 'gitlab.unavailable'],
+    [new GitlabTimeoutException(), 502, 'gitlab.timeout'],
   ])('should_expose_status_and_code (%#)', (exception, status, code) => {
     expect(exception.getStatus()).toBe(status);
     expect(exception.code).toBe(code);

@@ -13,9 +13,27 @@
   "board": {
     "title": "MR Board",
     "toolbar": {
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "refresh": "Rafraîchir"
     },
-    "placeholder": "Le tableau des MRs arrive avec US-005."
+    "placeholder": "Le tableau des MRs arrive avec US-005.",
+    "sync": {
+      "never": "Jamais synchronisé",
+      "syncing": "Synchronisation en cours…",
+      "justNow": "Synchronisé à l'instant",
+      "minutesAgo": "Synchronisé il y a {{minutes}} min",
+      "failedMinutesAgo": "Dernière synchro en échec il y a {{minutes}} min",
+      "toastError": "La synchronisation a rencontré une erreur."
+    },
+    "noToken": {
+      "title": "Aucun jeton GitLab configuré.",
+      "description": "Les données affichées sont celles du dernier cache.",
+      "configure": "Configurer"
+    },
+    "noRepos": {
+      "title": "Aucun repo configuré",
+      "add": "Ajouter un repo"
+    }
   },
   "settings": {
     "title": "Paramètres",

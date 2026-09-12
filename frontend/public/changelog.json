@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-004",
+    "title": "Synchronisation des MRs depuis GitLab (GraphQL), toolbar de statut, bandeau sans jeton et état vide."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-003",
     "title": "Paramètres : gestion des repos GitLab à scanner (ajout, alias, suppression)."
   },

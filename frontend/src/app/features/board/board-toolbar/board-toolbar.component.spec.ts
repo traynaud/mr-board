@@ -1,0 +1,105 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideI18nTesting, t } from '../../../core/i18n/testing';
+import { provideIcons } from '../../../shared/icons/provide-icons';
+import { SyncRun } from '../../../models/sync-status.model';
+import { BoardToolbarComponent } from './board-toolbar.component';
+
+function run(overrides: Partial<SyncRun> = {}): SyncRun {
+  return {
+    startedAt: '2026-09-11T08:00:00.000Z',
+    finishedAt: '2026-09-11T08:00:00.000Z',
+    status: 'success',
+    mrCount: 3,
+    errorMessage: null,
+    trigger: 'manual',
+    ...overrides,
+  };
+}
+
+@Component({
+  imports: [BoardToolbarComponent],
+  template: `
+    <app-board-toolbar
+      [running]="running()"
+      [lastRun]="lastRun()"
+      [refreshDisabled]="refreshDisabled()"
+      (refresh)="refreshCount.set(refreshCount() + 1)"
+    />
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class HostComponent {
+  readonly running = signal(false);
+  readonly lastRun = signal<SyncRun | null>(null);
+  readonly refreshDisabled = signal(false);
+  readonly refreshCount = signal(0);
+}
+
+describe('BoardToolbarComponent', () => {
+  const setup = async () => {
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideRouter([]), provideI18nTesting(), provideIcons()],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  };
+
+  it('should_show_never_synced_by_default', async () => {
+    const { el } = await setup();
+
+    expect(el.querySelector('.sync-label')?.textContent?.trim()).toBe(t('board.sync.never'));
+    expect(el.querySelector('mat-progress-bar')).toBeNull();
+  });
+
+  it('should_show_syncing_and_the_progress_bar_while_running', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.running.set(true);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.sync-label')?.textContent?.trim()).toBe(t('board.sync.syncing'));
+    expect(el.querySelector('.sync-label')?.classList.contains('accent')).toBe(true);
+    expect(el.querySelector('mat-progress-bar')).not.toBeNull();
+  });
+
+  it('should_show_the_failed_label_in_accent_for_an_error_run', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.lastRun.set(
+      run({ status: 'error', finishedAt: new Date(Date.now() - 65_000).toISOString() }),
+    );
+    await fixture.whenStable();
+
+    expect(el.querySelector('.sync-label')?.textContent?.trim()).toBe(
+      t('board.sync.failedMinutesAgo', { minutes: 1 }),
+    );
+    expect(el.querySelector('.sync-label')?.classList.contains('accent')).toBe(true);
+  });
+
+  it('should_disable_the_refresh_button_when_asked', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.refreshDisabled.set(true);
+    await fixture.whenStable();
+
+    expect(el.querySelector('button[mat-stroked-button]')?.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('should_emit_refresh_on_button_click', async () => {
+    const { fixture, el } = await setup();
+
+    el.querySelector<HTMLButtonElement>('button[mat-stroked-button]')?.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.refreshCount()).toBe(1);
+  });
+
+  it('should_link_the_settings_button_to_settings', async () => {
+    const { el } = await setup();
+
+    const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button]');
+    expect(link?.getAttribute('href')).toBe('/settings');
+    expect(link?.getAttribute('aria-label')).toBe(t('board.toolbar.settings'));
+  });
+});

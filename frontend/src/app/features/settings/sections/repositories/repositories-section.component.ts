@@ -15,6 +15,7 @@ import {
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { Project } from '../../../../models/project.model';
 import { ProjectsStore } from '../../../../stores/projects.store';
+import { SyncStore } from '../../../../stores/sync.store';
 import { RepoAliasForm, optionalAliasFormatValidator } from '../../repos-form';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'écran Paramètres. */
@@ -65,6 +66,7 @@ const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
 })
 export class RepositoriesSectionComponent implements OnInit {
   protected readonly store = inject(ProjectsStore);
+  private readonly syncStore = inject(SyncStore);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
@@ -109,6 +111,15 @@ export class RepositoriesSectionComponent implements OnInit {
         this.toast(errorKey);
       }
       return;
+    }
+    // Le repo ajouté est déterministement le dernier de la liste juste après
+    // un `add()` réussi (`ProjectsStore.add` l'ajoute en fin de tableau) :
+    // évite de faire porter à `add()` un contrat de retour différent des
+    // autres méthodes des stores (clé i18n | null) pour ce seul besoin.
+    const added = this.store.projects().at(-1);
+    if (added) {
+      // Fire-and-forget (RG-004-15), voir SyncStore.trigger.
+      void this.syncStore.trigger(added.id);
     }
     this.addForm.reset({ path: '', alias: '' });
     this.toast('settings.projects.added');

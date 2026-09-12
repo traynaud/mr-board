@@ -1,0 +1,27 @@
+<mat-toolbar class="board-toolbar">
+  <span class="nav-brand">{{ 'board.title' | translate }}</span>
+  <span class="sync-label" [class.accent]="label().accent">{{
+    label().key | translate: (label().params ?? {})
+  }}</span>
+  <span class="spacer"></span>
+  <button
+    mat-stroked-button
+    type="button"
+    [disabled]="refreshDisabled()"
+    (click)="refresh.emit()"
+  >
+    <mat-icon svgIcon="refresh-cw" />
+    {{ 'board.toolbar.refresh' | translate }}
+  </button>
+  <a
+    mat-icon-button
+    routerLink="/settings"
+    [attr.aria-label]="'board.toolbar.settings' | translate"
+    [matTooltip]="'board.toolbar.settings' | translate"
+  >
+    <mat-icon svgIcon="settings" />
+  </a>
+</mat-toolbar>
+@if (running()) {
+  <mat-progress-bar mode="indeterminate" class="sync-progress" />
+}

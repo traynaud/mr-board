@@ -85,6 +85,31 @@ describe('ProjectsService', () => {
     });
   });
 
+  describe('listActive', () => {
+    it('should_return_only_enabled_projects_ordered_by_id', async () => {
+      repository.find.mockResolvedValue([row()]);
+
+      await expect(service.listActive()).resolves.toEqual([row()]);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { enabled: true },
+        order: { id: 'ASC' },
+      });
+    });
+  });
+
+  describe('findById', () => {
+    it('should_return_the_raw_entity', async () => {
+      repository.findOneBy.mockResolvedValue(row());
+
+      await expect(service.findById(1)).resolves.toEqual(row());
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+    });
+
+    it('should_return_null_for_an_unknown_id', async () => {
+      await expect(service.findById(99)).resolves.toBeNull();
+    });
+  });
+
   describe('add', () => {
     it('should_resolve_and_store_project_with_explicit_alias', async () => {
       const result = await service.add({

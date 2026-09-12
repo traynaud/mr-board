@@ -34,6 +34,27 @@ export class ProjectsService {
   }
 
   /**
+   * Active repositories, in the order they were added — used by
+   * `SyncService` to resolve the targets of an unscoped synchronisation.
+   */
+  async listActive(): Promise<Project[]> {
+    return this.repository.find({
+      where: { enabled: true },
+      order: { id: 'ASC' },
+    });
+  }
+
+  /**
+   * Raw entity for internal, server-side use only (unlike `list`/`rename`,
+   * never a 404).
+   * @returns `null` when `id` is unknown — used by `SyncService` to validate
+   * a `projectId` before starting a targeted synchronisation.
+   */
+  async findById(id: number): Promise<Project | null> {
+    return this.repository.findOneBy({ id });
+  }
+
+  /**
    * Resolves and adds a repository (RG-003-01 to RG-003-06).
    * @throws MissingConfigurationException when no GitLab token is configured (409).
    * @throws BusinessValidationException for an unresolvable path, a duplicate
@@ -107,9 +128,8 @@ export class ProjectsService {
   }
 
   /**
-   * Removes a repository (RG-003-08). Cascading deletion of its merge
-   * requests is a structural guarantee introduced by US-004's foreign key,
-   * not something this method needs to do (no `merge_requests` table exists yet).
+   * Removes a repository (RG-003-08). Its merge requests (and their
+   * reviewer/assignee rows) cascade at the database level (US-004).
    * @throws EntityNotFoundException when `id` is unknown (404).
    */
   async remove(id: number): Promise<void> {

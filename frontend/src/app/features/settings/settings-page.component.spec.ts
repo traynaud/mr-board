@@ -65,6 +65,13 @@ describe('SettingsPageComponent', () => {
     await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
   };
+  /** Flushe le déclenchement de synchro fire-and-forget après un save réussi (RG-004-15). */
+  const flushSync = async () => {
+    http.expectOne('/api/v1/sync').flush({ running: true }, { status: 202, statusText: 'Accepted' });
+    await settle();
+    http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
+    await settle();
+  };
   const urlInput = () => el.querySelector<HTMLInputElement>('input[formControlName="gitlabUrl"]')!;
   const tokenInput = () =>
     el.querySelector<HTMLInputElement>('input[formControlName="gitlabToken"]')!;
@@ -156,6 +163,7 @@ describe('SettingsPageComponent', () => {
       meEmail: null,
     });
     await settle();
+    await flushSync();
 
     expect(snackBar.open).toHaveBeenCalledWith(
       t('settings.saved'),
@@ -313,6 +321,7 @@ describe('SettingsPageComponent', () => {
     const settingsReq = http.expectOne('/api/v1/settings');
     settingsReq.flush(settings);
     await settle();
+    await flushSync();
 
     const renameReq = http.expectOne('/api/v1/projects/1');
     expect(renameReq.request.method).toBe('PUT');
@@ -339,6 +348,7 @@ describe('SettingsPageComponent', () => {
       .expectOne('/api/v1/settings')
       .flush({ ...settings, gitlabUrl: 'https://autre.exemple.fr' });
     await settle();
+    await flushSync();
 
     http.expectNone('/api/v1/projects/1');
   });
@@ -350,6 +360,7 @@ describe('SettingsPageComponent', () => {
     saveButton().click();
     http.expectOne('/api/v1/settings').flush(settings);
     await settle();
+    await flushSync();
 
     http
       .expectOne('/api/v1/projects/2')
@@ -379,6 +390,12 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLButtonElement>('.add-fields button')!.click();
     await settle();
     http.expectOne('/api/v1/projects').flush(projectWeb);
+    await settle();
+    http
+      .expectOne(`/api/v1/sync?projectId=${projectWeb.id}`)
+      .flush({ running: true }, { status: 202, statusText: 'Accepted' });
+    await settle();
+    http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
     await settle();
 
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);

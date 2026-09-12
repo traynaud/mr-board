@@ -126,8 +126,10 @@ HTTP → Controller → Service → Repository (TypeORM) → SQLite
 | `settings`         | `id` (=1, singleton), `gitlab_url`, `gitlab_token` (chiffré, nullable), `me_username`, `me_email`, `refresh_interval_min`, `pause_when_hidden`, `easy_files`, `easy_lines`, `hard_files`, `hard_lines`, `ready_green_days`, `ready_orange_days`, `workdays_only`, `open_in_new_tab`, `ignored_labels` (JSON `string[]`), `notify_assigned`, `tab_badge`, `updated_at` |
 | `projects`         | `id`, `gitlab_project_id` (unique), `path_with_namespace` (unique), `alias` (unique), `web_url`, `enabled`, `created_at`                                                                       |
 | `users`            | `id`, `gitlab_user_id` (unique), `username`, `name`, `avatar_url`, `web_url`                                                                                                                   |
-| `merge_requests`   | `id`, `gitlab_mr_id`, `iid`, `project_id` (FK), `title`, `web_url`, `draft` (bool), `state`, `author_id` (FK users), `reviewer_id` (FK users, nullable), `assignee_id` (FK users, nullable), `approved` (bool), `comments_count`, `changed_files`, `changed_lines`, `labels` (JSON), `created_at_gitlab`, `ready_at` (nullable), `updated_at_gitlab`, `synced_at`. Unique (`project_id`, `iid`) |
-| `sync_runs`        | `id`, `started_at`, `finished_at`, `status` (`success`/`error`/`partial`), `error_message`, `mr_count`, `trigger` (`manual`/`scheduled`)                                                        |
+| `merge_requests`   | `id`, `gitlab_mr_id`, `iid`, `project_id` (FK), `title`, `web_url`, `draft` (bool), `author_id` (FK users), `approved` (bool), `comments_count`, `changed_files`, `additions`, `deletions`, `labels` (JSON), `created_at_gitlab`, `ready_at` (nullable), `updated_at_gitlab`, `synced_at`. Unique (`project_id`, `iid`) |
+| `merge_request_reviewers` | `merge_request_id` (FK), `user_id` (FK). Table d'association — une MR peut avoir plusieurs reviewers (RG-G06), remplacée intégralement à chaque synchronisation de la MR (US-004) |
+| `merge_request_assignees` | `merge_request_id` (FK), `user_id` (FK). Même principe que `merge_request_reviewers`, pour les assignees |
+| `sync_runs`        | `id`, `started_at`, `finished_at`, `status` (`success`/`partial`/`error`), `error_message`, `mr_count`, `trigger` (`manual`/`scheduled`)                                                        |
 
 Règles :
 - Dates stockées en ISO 8601 UTC (colonne `text`) ; conversion en `Date` via transformer TypeORM

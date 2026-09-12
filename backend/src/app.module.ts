@@ -5,8 +5,11 @@ import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
+import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SyncModule } from './modules/sync/sync.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { SettingsModule } from './modules/settings/settings.module';
     HealthModule,
     SettingsModule,
     ProjectsModule,
+    UsersModule,
+    MergeRequestsModule,
+    SyncModule,
   ],
 })
 export class AppModule {}

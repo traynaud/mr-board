@@ -1,0 +1,65 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+/**
+ * A GitLab merge request synchronised locally (RG-004-02). Unique per
+ * (`project_id`, `iid`). `ready_at` follows the strict transition table of
+ * RG-004-04 and must never be recomputed outside `resolveReadyAt`.
+ */
+@Entity({ name: 'merge_requests' })
+export class MergeRequest {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column({ name: 'gitlab_mr_id', type: 'integer' })
+  gitlabMrId!: number;
+
+  @Column({ type: 'integer' })
+  iid!: number;
+
+  @Column({ name: 'project_id', type: 'integer' })
+  projectId!: number;
+
+  @Column({ type: 'text' })
+  title!: string;
+
+  @Column({ name: 'web_url', type: 'text' })
+  webUrl!: string;
+
+  @Column({ type: 'boolean' })
+  draft!: boolean;
+
+  @Column({ name: 'author_id', type: 'integer' })
+  authorId!: number;
+
+  @Column({ type: 'boolean' })
+  approved!: boolean;
+
+  @Column({ name: 'comments_count', type: 'integer' })
+  commentsCount!: number;
+
+  @Column({ name: 'changed_files', type: 'integer' })
+  changedFiles!: number;
+
+  @Column({ type: 'integer' })
+  additions!: number;
+
+  @Column({ type: 'integer' })
+  deletions!: number;
+
+  /** JSON-encoded `string[]`. */
+  @Column({ type: 'text' })
+  labels!: string;
+
+  @Column({ name: 'created_at_gitlab', type: 'text' })
+  createdAtGitlab!: string;
+
+  /** `null` while the MR is (or has always been) a draft. See RG-004-04. */
+  @Column({ name: 'ready_at', type: 'text', nullable: true })
+  readyAt!: string | null;
+
+  @Column({ name: 'updated_at_gitlab', type: 'text' })
+  updatedAtGitlab!: string;
+
+  @Column({ name: 'synced_at', type: 'text' })
+  syncedAt!: string;
+}

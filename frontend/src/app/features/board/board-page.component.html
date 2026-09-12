@@ -1,16 +1,27 @@
-<mat-toolbar class="board-toolbar">
-  <span class="nav-brand">{{ 'board.title' | translate }}</span>
-  <span class="spacer"></span>
-  <a
-    mat-icon-button
-    routerLink="/settings"
-    [attr.aria-label]="'board.toolbar.settings' | translate"
-    [matTooltip]="'board.toolbar.settings' | translate"
-  >
-    <mat-icon svgIcon="settings" />
-  </a>
-</mat-toolbar>
+<app-board-toolbar
+  [running]="syncStore.running()"
+  [lastRun]="syncStore.lastRun()"
+  [refreshDisabled]="refreshDisabled()"
+  (refresh)="refresh()"
+/>
+
+@if (noToken()) {
+  <div class="no-token-banner">
+    <mat-icon svgIcon="alert-circle" />
+    <span class="title">{{ 'board.noToken.title' | translate }}</span>
+    <span>{{ 'board.noToken.description' | translate }}</span>
+    <span class="spacer"></span>
+    <a mat-button routerLink="/settings">{{ 'board.noToken.configure' | translate }}</a>
+  </div>
+}
 
 <main class="board-content">
-  <p class="placeholder">{{ 'board.placeholder' | translate }}</p>
+  @if (noRepos()) {
+    <div class="empty-state">
+      <p>{{ 'board.noRepos.title' | translate }}</p>
+      <a mat-stroked-button routerLink="/settings">{{ 'board.noRepos.add' | translate }}</a>
+    </div>
+  } @else {
+    <p class="placeholder">{{ 'board.placeholder' | translate }}</p>
+  }
 </main>
