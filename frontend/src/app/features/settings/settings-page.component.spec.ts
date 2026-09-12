@@ -22,6 +22,13 @@ describe('SettingsPageComponent', () => {
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
+    easyFiles: 5,
+    easyLines: 100,
+    hardFiles: 20,
+    hardLines: 800,
+    readyGreenDays: 1,
+    readyOrangeDays: 3,
+    workdaysOnly: false,
   };
   const projectApi: Project = {
     id: 1,
@@ -160,6 +167,13 @@ describe('SettingsPageComponent', () => {
       meEmail: '',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -169,6 +183,13 @@ describe('SettingsPageComponent', () => {
       meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
     await settle();
     await flushSync();
@@ -201,6 +222,13 @@ describe('SettingsPageComponent', () => {
       meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
   });
 

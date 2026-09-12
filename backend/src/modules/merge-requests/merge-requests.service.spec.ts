@@ -4,6 +4,8 @@ import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-re
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
+import { DEFAULT_DIFFICULTY_THRESHOLDS } from './domain/calculate-difficulty';
+import { DEFAULT_READY_DELAY_THRESHOLDS } from './domain/calculate-ready-delay';
 import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
@@ -60,7 +62,7 @@ describe('MergeRequestsService', () => {
   let assigneesRepo: AssociationRepoMock;
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock; list: jest.Mock };
-  let settingsService: { getIdentity: jest.Mock };
+  let settingsService: { getIdentity: jest.Mock; getThresholds: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -135,6 +137,11 @@ describe('MergeRequestsService', () => {
             getIdentity: jest
               .fn()
               .mockResolvedValue({ username: null, email: null }),
+            getThresholds: jest.fn().mockResolvedValue({
+              difficulty: DEFAULT_DIFFICULTY_THRESHOLDS,
+              readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
+              workdaysOnly: false,
+            }),
           },
         },
       ],
@@ -505,6 +512,32 @@ describe('MergeRequestsService', () => {
       expect(view.difficulty).toBe('easy');
     });
 
+    it('should_apply_the_configured_difficulty_thresholds', async () => {
+      settingsService.getThresholds.mockResolvedValue({
+        difficulty: {
+          easyFiles: 10,
+          easyLines: 200,
+          hardFiles: 30,
+          hardLines: 900,
+        },
+        readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
+        workdaysOnly: false,
+      });
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ changedFiles: 6, additions: 50, deletions: 0 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.difficulty).toBe('easy');
+    });
+
     it('should_group_reviewers_and_assignees_by_merge_request', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, authorId: 10 }),
@@ -601,6 +634,55 @@ describe('MergeRequestsService', () => {
 
       expect(view.readyDays).toBe(3);
       expect(view.readyLevel).toBe('orange');
+    });
+
+    it('should_apply_the_configured_ready_delay_thresholds', async () => {
+      settingsService.getThresholds.mockResolvedValue({
+        difficulty: DEFAULT_DIFFICULTY_THRESHOLDS,
+        readyDelay: { greenDays: 5, orangeDays: 10 },
+        workdaysOnly: false,
+      });
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          createdAtGitlab: '2026-09-08T08:00:00.000Z',
+          readyAt: '2026-09-08T08:00:00.000Z',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.readyDays).toBe(3);
+      expect(view.readyLevel).toBe('green');
+    });
+
+    it('should_count_only_workdays_when_configured', async () => {
+      settingsService.getThresholds.mockResolvedValue({
+        difficulty: DEFAULT_DIFFICULTY_THRESHOLDS,
+        readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
+        workdaysOnly: true,
+      });
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          createdAtGitlab: '2026-09-04T08:00:00.000Z',
+          readyAt: '2026-09-04T08:00:00.000Z',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.readyDays).toBe(5);
     });
 
     it('should_report_null_ready_fields_and_the_opened_days_for_a_draft', async () => {

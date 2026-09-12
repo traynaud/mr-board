@@ -158,7 +158,7 @@ une fois ses dépendances réalisées.
 | US-011 | Filtres, tri et colonnes propagés dans l'URL             | Must     | M          | US-010                 | ✅ |
 | US-012 | Colonnes redimensionnables                               | Should   | M          | US-005, US-011         | ✅ |
 | US-013 | Actualisation automatique                                | Should   | M          | US-004                 | ✅ |
-| US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ☐ |
+| US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ✅ |
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ☐ |
 | US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ☐ |
 

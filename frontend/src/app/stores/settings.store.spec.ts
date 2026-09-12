@@ -14,6 +14,13 @@ describe('SettingsStore', () => {
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
+    easyFiles: 5,
+    easyLines: 100,
+    hardFiles: 20,
+    hardLines: 800,
+    readyGreenDays: 1,
+    readyOrangeDays: 3,
+    workdaysOnly: false,
   };
   const api = {
     getSettings: vi.fn(),

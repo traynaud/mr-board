@@ -22,6 +22,13 @@ describe('SettingsService', () => {
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
+    easyFiles: 5,
+    easyLines: 100,
+    hardFiles: 20,
+    hardLines: 800,
+    readyGreenDays: 1,
+    readyOrangeDays: 3,
+    workdaysOnly: false,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -70,6 +77,13 @@ describe('SettingsService', () => {
         meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
+        easyFiles: 5,
+        easyLines: 100,
+        hardFiles: 20,
+        hardLines: 800,
+        readyGreenDays: 1,
+        readyOrangeDays: 3,
+        workdaysOnly: false,
       });
     });
 
@@ -131,6 +145,13 @@ describe('SettingsService', () => {
         meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
+        easyFiles: 5,
+        easyLines: 100,
+        hardFiles: 20,
+        hardLines: 800,
+        readyGreenDays: 1,
+        readyOrangeDays: 3,
+        workdaysOnly: false,
       });
     });
 
@@ -275,6 +296,83 @@ describe('SettingsService', () => {
           pauseWhenHidden: false,
         }),
       );
+    });
+
+    it('should_set_threshold_settings_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        easyFiles: 10,
+        easyLines: 200,
+        hardFiles: 30,
+        hardLines: 900,
+        readyGreenDays: 2,
+        readyOrangeDays: 5,
+        workdaysOnly: true,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          easyFiles: 10,
+          easyLines: 200,
+          hardFiles: 30,
+          hardLines: 900,
+          readyGreenDays: 2,
+          readyOrangeDays: 5,
+          workdaysOnly: true,
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          easyFiles: 10,
+          easyLines: 200,
+          hardFiles: 30,
+          hardLines: 900,
+          readyGreenDays: 2,
+          readyOrangeDays: 5,
+          workdaysOnly: true,
+        }),
+      );
+    });
+
+    it('should_keep_threshold_settings_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({ ...row(), easyFiles: 8 });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(expect.objectContaining({ easyFiles: 8 }));
+    });
+
+    it('should_reject_hard_files_not_greater_than_easy_files', async () => {
+      await expect(
+        service.update({
+          gitlabUrl: 'https://gitlab.com',
+          easyFiles: 5,
+          hardFiles: 5,
+        }),
+      ).rejects.toMatchObject({ code: 'settings.hardFilesTooLow' });
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('should_reject_hard_lines_not_greater_than_easy_lines', async () => {
+      await expect(
+        service.update({
+          gitlabUrl: 'https://gitlab.com',
+          easyLines: 100,
+          hardLines: 50,
+        }),
+      ).rejects.toMatchObject({ code: 'settings.hardLinesTooLow' });
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('should_reject_ready_orange_not_greater_than_ready_green', async () => {
+      await expect(
+        service.update({
+          gitlabUrl: 'https://gitlab.com',
+          readyGreenDays: 3,
+          readyOrangeDays: 3,
+        }),
+      ).rejects.toMatchObject({ code: 'settings.readyOrangeTooLow' });
+      expect(repository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -440,6 +538,43 @@ describe('SettingsService', () => {
 
     it('should_default_the_refresh_interval_to_five_minutes', async () => {
       await expect(service.getRefreshIntervalMin()).resolves.toBe(5);
+    });
+
+    it('should_expose_the_default_thresholds', async () => {
+      await expect(service.getThresholds()).resolves.toEqual({
+        difficulty: {
+          easyFiles: 5,
+          easyLines: 100,
+          hardFiles: 20,
+          hardLines: 800,
+        },
+        readyDelay: { greenDays: 1, orangeDays: 3 },
+        workdaysOnly: false,
+      });
+    });
+
+    it('should_expose_the_configured_thresholds', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        easyFiles: 10,
+        easyLines: 200,
+        hardFiles: 30,
+        hardLines: 900,
+        readyGreenDays: 2,
+        readyOrangeDays: 5,
+        workdaysOnly: true,
+      });
+
+      await expect(service.getThresholds()).resolves.toEqual({
+        difficulty: {
+          easyFiles: 10,
+          easyLines: 200,
+          hardFiles: 30,
+          hardLines: 900,
+        },
+        readyDelay: { greenDays: 2, orangeDays: 5 },
+        workdaysOnly: true,
+      });
     });
   });
 });

@@ -11,6 +11,16 @@ export interface Settings {
   refreshIntervalMin: number;
   /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
   pauseWhenHidden: boolean;
+  /** Seuils de difficulté (RG-G03, RG-014-01). */
+  easyFiles: number;
+  easyLines: number;
+  hardFiles: number;
+  hardLines: number;
+  /** Seuils de délai Ready en jours (RG-G04, RG-014-01). */
+  readyGreenDays: number;
+  readyOrangeDays: number;
+  /** Ne compter que les jours ouvrés pour le délai Ready (RG-G04, RG-014-01). */
+  workdaysOnly: boolean;
 }
 
 /**
@@ -25,6 +35,13 @@ export interface UpdateSettingsRequest {
   meEmail?: string;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
+  easyFiles?: number;
+  easyLines?: number;
+  hardFiles?: number;
+  hardLines?: number;
+  readyGreenDays?: number;
+  readyOrangeDays?: number;
+  workdaysOnly?: boolean;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

@@ -13,6 +13,17 @@ import { RepoAliasForm } from './repos-form';
 /** Longueur minimale d'un jeton saisi (RG-001-02, identique au backend). */
 export const TOKEN_MIN_LENGTH = 8;
 
+/** Valeurs par défaut des seuils (RG-G03, RG-G04, RG-014-01), reprises par le lien « Valeurs par défaut ». */
+export const DEFAULT_THRESHOLDS = {
+  easyFiles: 5,
+  easyLines: 100,
+  hardFiles: 20,
+  hardLines: 800,
+  readyGreenDays: 1,
+  readyOrangeDays: 3,
+  workdaysOnly: false,
+} as const;
+
 export interface SettingsFormControls {
   gitlabUrl: FormControl<string>;
   gitlabToken: FormControl<string>;
@@ -22,6 +33,16 @@ export interface SettingsFormControls {
   refreshIntervalMin: FormControl<number>;
   /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
   pauseWhenHidden: FormControl<boolean>;
+  /** Seuils de difficulté (RG-G03, RG-014-01). */
+  easyFiles: FormControl<number>;
+  easyLines: FormControl<number>;
+  hardFiles: FormControl<number>;
+  hardLines: FormControl<number>;
+  /** Seuils de délai Ready en jours (RG-G04, RG-014-01). */
+  readyGreenDays: FormControl<number>;
+  readyOrangeDays: FormControl<number>;
+  /** Ne compter que les jours ouvrés pour le délai Ready (RG-G04, RG-014-01). */
+  workdaysOnly: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -59,30 +80,100 @@ export const tokenLengthValidator: ValidatorFn = (
     : { tokenTooShort: { min: TOKEN_MIN_LENGTH } };
 };
 
+/** Rejette les valeurs non entières (RG-014-02), ex. `2.5` saisi dans un champ number. */
+export const integerValidator: ValidatorFn = (
+  control: AbstractControl<number>,
+): ValidationErrors | null => {
+  const value = control.value;
+  return value === null || value === undefined || Number.isInteger(value)
+    ? null
+    : { integer: true };
+};
+
+/**
+ * Validateur de groupe (RG-014-01/02) : `hardFiles`/`hardLines` doivent
+ * dépasser leur pendant Easy, `readyOrangeDays` doit dépasser
+ * `readyGreenDays`. Le groupe parent réévalue ses propres validateurs à
+ * chaque changement d'un descendant : modifier `easyFiles` revalide donc
+ * `hardFiles` sans action supplémentaire. Pose/efface `{ mustExceed: true }`
+ * directement sur le champ en cause, en conservant ses éventuelles autres
+ * erreurs (`required`, `min`).
+ */
+export const thresholdsCrossValidator: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+  const group = control as SettingsForm;
+  applyMustExceed(group.controls.hardFiles, group.controls.easyFiles);
+  applyMustExceed(group.controls.hardLines, group.controls.easyLines);
+  applyMustExceed(group.controls.readyOrangeDays, group.controls.readyGreenDays);
+  return null;
+};
+
+function applyMustExceed(target: FormControl<number>, reference: FormControl<number>): void {
+  const otherErrors: ValidationErrors = { ...target.errors };
+  delete otherErrors['mustExceed'];
+  const hasOtherErrors = Object.keys(otherErrors).length > 0;
+  if (target.value <= reference.value) {
+    target.setErrors({ ...otherErrors, mustExceed: true });
+  } else if (hasOtherErrors) {
+    target.setErrors(otherErrors);
+  } else if (target.errors) {
+    target.setErrors(null);
+  }
+}
+
 /** Construit le formulaire Paramètres. Le jeton n'est jamais pré-rempli. */
 export function buildSettingsForm(): SettingsForm {
-  return new FormGroup<SettingsFormControls>({
-    gitlabUrl: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, gitlabUrlValidator],
-    }),
-    gitlabToken: new FormControl('', {
-      nonNullable: true,
-      validators: [tokenLengthValidator],
-    }),
-    meUsername: new FormControl('', { nonNullable: true }),
-    // Validators.email renvoie null pour une chaîne vide (RG-002-06) : pas
-    // besoin de validateur custom pour autoriser un email optionnel.
-    meEmail: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.email],
-    }),
-    refreshIntervalMin: new FormControl(5, { nonNullable: true }),
-    pauseWhenHidden: new FormControl(true, { nonNullable: true }),
-    // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
-    // touché par resetSettingsForm (voir ci-dessous).
-    repos: new FormArray<RepoAliasForm>([]),
-  });
+  return new FormGroup<SettingsFormControls>(
+    {
+      gitlabUrl: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, gitlabUrlValidator],
+      }),
+      gitlabToken: new FormControl('', {
+        nonNullable: true,
+        validators: [tokenLengthValidator],
+      }),
+      meUsername: new FormControl('', { nonNullable: true }),
+      // Validators.email renvoie null pour une chaîne vide (RG-002-06) : pas
+      // besoin de validateur custom pour autoriser un email optionnel.
+      meEmail: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.email],
+      }),
+      refreshIntervalMin: new FormControl(5, { nonNullable: true }),
+      pauseWhenHidden: new FormControl(true, { nonNullable: true }),
+      easyFiles: new FormControl(DEFAULT_THRESHOLDS.easyFiles, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1), integerValidator],
+      }),
+      easyLines: new FormControl(DEFAULT_THRESHOLDS.easyLines, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1), integerValidator],
+      }),
+      hardFiles: new FormControl(DEFAULT_THRESHOLDS.hardFiles, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1), integerValidator],
+      }),
+      hardLines: new FormControl(DEFAULT_THRESHOLDS.hardLines, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1), integerValidator],
+      }),
+      readyGreenDays: new FormControl(DEFAULT_THRESHOLDS.readyGreenDays, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(0), integerValidator],
+      }),
+      readyOrangeDays: new FormControl(DEFAULT_THRESHOLDS.readyOrangeDays, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(0), integerValidator],
+      }),
+      workdaysOnly: new FormControl(DEFAULT_THRESHOLDS.workdaysOnly, { nonNullable: true }),
+      // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
+      // touché par resetSettingsForm (voir ci-dessous).
+      repos: new FormArray<RepoAliasForm>([]),
+    },
+    { validators: [thresholdsCrossValidator] },
+  );
 }
 
 /**
@@ -99,6 +190,13 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.meEmail.reset(settings.meEmail ?? '');
   form.controls.refreshIntervalMin.reset(settings.refreshIntervalMin);
   form.controls.pauseWhenHidden.reset(settings.pauseWhenHidden);
+  form.controls.easyFiles.reset(settings.easyFiles);
+  form.controls.easyLines.reset(settings.easyLines);
+  form.controls.hardFiles.reset(settings.hardFiles);
+  form.controls.hardLines.reset(settings.hardLines);
+  form.controls.readyGreenDays.reset(settings.readyGreenDays);
+  form.controls.readyOrangeDays.reset(settings.readyOrangeDays);
+  form.controls.workdaysOnly.reset(settings.workdaysOnly);
 }
 
 /**
@@ -109,8 +207,21 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
  * `PUT /projects/:id` (voir `collectDirtyAliasChanges`).
  */
 export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
-  const { gitlabUrl, gitlabToken, meUsername, meEmail, refreshIntervalMin, pauseWhenHidden } =
-    form.getRawValue();
+  const {
+    gitlabUrl,
+    gitlabToken,
+    meUsername,
+    meEmail,
+    refreshIntervalMin,
+    pauseWhenHidden,
+    easyFiles,
+    easyLines,
+    hardFiles,
+    hardLines,
+    readyGreenDays,
+    readyOrangeDays,
+    workdaysOnly,
+  } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
     ...(gitlabToken ? { gitlabToken } : {}),
@@ -118,5 +229,12 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     meEmail: meEmail.trim(),
     refreshIntervalMin,
     pauseWhenHidden,
+    easyFiles,
+    easyLines,
+    hardFiles,
+    hardLines,
+    readyGreenDays,
+    readyOrangeDays,
+    workdaysOnly,
   };
 }

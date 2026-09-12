@@ -13,4 +13,14 @@ export class SettingsResponseDto {
   refreshIntervalMin!: number;
   /** Suspend frontend polling/reload while the tab is hidden (RG-013-05). */
   pauseWhenHidden!: boolean;
+  /** Difficulty thresholds (RG-G03, RG-014-01). */
+  easyFiles!: number;
+  easyLines!: number;
+  hardFiles!: number;
+  hardLines!: number;
+  /** Ready delay thresholds in days (RG-G04, RG-014-01). */
+  readyGreenDays!: number;
+  readyOrangeDays!: number;
+  /** Count only Monday-Friday for the Ready delay (RG-G04, RG-014-01). */
+  workdaysOnly!: boolean;
 }

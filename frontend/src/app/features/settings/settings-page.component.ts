@@ -37,6 +37,7 @@ import {
   RepoRow,
   RepositoriesSectionComponent,
 } from './sections/repositories/repositories-section.component';
+import { ThresholdsSectionComponent } from './sections/thresholds/thresholds-section.component';
 import { buildSettingsForm, resetSettingsForm, toUpdateRequest } from './settings-form';
 import { HasUnsavedChanges } from './unsaved-changes.guard';
 
@@ -63,6 +64,7 @@ export const TOAST_DURATION_MS = 3500;
     MeSectionComponent,
     RefreshSectionComponent,
     RepositoriesSectionComponent,
+    ThresholdsSectionComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',

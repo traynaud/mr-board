@@ -38,6 +38,30 @@ export class Settings {
   @Column({ name: 'pause_when_hidden', type: 'boolean', default: true })
   pauseWhenHidden!: boolean;
 
+  /** Difficulty thresholds (RG-G03, RG-014-01). */
+  @Column({ name: 'easy_files', type: 'integer', default: 5 })
+  easyFiles!: number;
+
+  @Column({ name: 'easy_lines', type: 'integer', default: 100 })
+  easyLines!: number;
+
+  @Column({ name: 'hard_files', type: 'integer', default: 20 })
+  hardFiles!: number;
+
+  @Column({ name: 'hard_lines', type: 'integer', default: 800 })
+  hardLines!: number;
+
+  /** Ready delay thresholds in days (RG-G04, RG-014-01). */
+  @Column({ name: 'ready_green_days', type: 'integer', default: 1 })
+  readyGreenDays!: number;
+
+  @Column({ name: 'ready_orange_days', type: 'integer', default: 3 })
+  readyOrangeDays!: number;
+
+  /** Count only Monday-Friday for the Ready delay (RG-G04, RG-014-01). */
+  @Column({ name: 'workdays_only', type: 'boolean', default: false })
+  workdaysOnly!: boolean;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

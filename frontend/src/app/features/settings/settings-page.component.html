@@ -65,9 +65,16 @@
         [number]="'settings.refresh.number' | translate"
         titleKey="settings.refresh.title"
         descriptionKey="settings.refresh.description"
-        [last]="true"
       >
         <app-refresh-section [form]="form" />
+      </app-settings-section>
+      <app-settings-section
+        [number]="'settings.thresholds.number' | translate"
+        titleKey="settings.thresholds.title"
+        descriptionKey="settings.thresholds.description"
+        [last]="true"
+      >
+        <app-thresholds-section [form]="form" />
       </app-settings-section>
     </form>
   }

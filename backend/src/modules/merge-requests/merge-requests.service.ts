@@ -8,11 +8,11 @@ import { SettingsService } from '../settings/settings.service';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import {
-  DEFAULT_DIFFICULTY_THRESHOLDS,
+  DifficultyThresholds,
   calculateDifficulty,
 } from './domain/calculate-difficulty';
 import {
-  DEFAULT_READY_DELAY_THRESHOLDS,
+  ReadyDelayThresholds,
   calculateElapsedDays,
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
@@ -139,6 +139,7 @@ export class MergeRequestsService {
       return { views: [], warnings };
     }
     const now = new Date().toISOString();
+    const thresholds = await this.settings.getThresholds();
 
     const mergeRequestIds = mergeRequests.map((mr) => mr.id);
     const [reviewerRows, assigneeRows] = await Promise.all([
@@ -172,6 +173,7 @@ export class MergeRequestsService {
         assigneeIdsByMr.get(mr.id) ?? [],
         now,
         identity,
+        thresholds,
       ),
     );
     if (mineOnly && !identityMissing) {
@@ -328,6 +330,11 @@ function toMergeRequestView(
   assigneeIds: number[],
   now: string,
   identity: Identity,
+  thresholds: {
+    difficulty: DifficultyThresholds;
+    readyDelay: ReadyDelayThresholds;
+    workdaysOnly: boolean;
+  },
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
@@ -349,8 +356,13 @@ function toMergeRequestView(
     assignees,
     approved: mergeRequest.approved,
     commentsCount: mergeRequest.commentsCount,
-    ...toDifficultyFields(mergeRequest),
-    ...toReadyFields(mergeRequest, now),
+    ...toDifficultyFields(mergeRequest, thresholds.difficulty),
+    ...toReadyFields(
+      mergeRequest,
+      now,
+      thresholds.readyDelay,
+      thresholds.workdaysOnly,
+    ),
     isMine: isMine(
       {
         authorUsername: author.username,
@@ -364,12 +376,14 @@ function toMergeRequestView(
 
 /**
  * Computes the Ready delay (RG-007-01) or, for a draft, the elapsed time
- * since it was opened (RG-007-05). `workdaysOnly` is hard-coded to `false`
- * until US-014 lets the user configure it.
+ * since it was opened (RG-007-05), using the user-configured thresholds and
+ * `workdaysOnly` option (RG-014-01).
  */
 function toReadyFields(
   mergeRequest: MergeRequest,
   now: string,
+  thresholds: ReadyDelayThresholds,
+  workdaysOnly: boolean,
 ): Pick<
   MergeRequestViewDto,
   'createdAt' | 'readyAt' | 'readyDays' | 'readyLevel' | 'openedDays'
@@ -377,7 +391,7 @@ function toReadyFields(
   const openedDays = calculateElapsedDays(
     mergeRequest.createdAtGitlab,
     now,
-    false,
+    workdaysOnly,
   );
   if (mergeRequest.readyAt === null) {
     return {
@@ -388,24 +402,30 @@ function toReadyFields(
       openedDays,
     };
   }
-  const readyDays = calculateElapsedDays(mergeRequest.readyAt, now, false);
+  const readyDays = calculateElapsedDays(
+    mergeRequest.readyAt,
+    now,
+    workdaysOnly,
+  );
   return {
     createdAt: mergeRequest.createdAtGitlab,
     readyAt: mergeRequest.readyAt,
     readyDays,
-    readyLevel: readyLevelForDays(readyDays, DEFAULT_READY_DELAY_THRESHOLDS),
+    readyLevel: readyLevelForDays(readyDays, thresholds),
     openedDays,
   };
 }
 
 /**
  * Computes `difficulty`/`changedLines` and passes through the raw diff
- * stats (RG-006-01, RG-006-05). `changedFiles`, `additions` and
- * `deletions` are always all `null` or all set together (same source,
- * `diffStatsSummary`) — checking `changedFiles` alone is enough.
+ * stats (RG-006-01, RG-006-05), using the user-configured thresholds
+ * (RG-014-01). `changedFiles`, `additions` and `deletions` are always all
+ * `null` or all set together (same source, `diffStatsSummary`) — checking
+ * `changedFiles` alone is enough.
  */
 function toDifficultyFields(
   mergeRequest: MergeRequest,
+  thresholds: DifficultyThresholds,
 ): Pick<
   MergeRequestViewDto,
   'difficulty' | 'changedFiles' | 'additions' | 'deletions' | 'changedLines'
@@ -422,11 +442,7 @@ function toDifficultyFields(
   }
   const changedLines = additions + deletions;
   return {
-    difficulty: calculateDifficulty(
-      changedFiles,
-      changedLines,
-      DEFAULT_DIFFICULTY_THRESHOLDS,
-    ),
+    difficulty: calculateDifficulty(changedFiles, changedLines, thresholds),
     changedFiles,
     additions,
     deletions,

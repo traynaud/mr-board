@@ -62,6 +62,13 @@ describe('Settings (e2e)', () => {
       meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
   });
 
@@ -114,6 +121,13 @@ describe('Settings (e2e)', () => {
       meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -139,6 +153,13 @@ describe('Settings (e2e)', () => {
       meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      easyFiles: 5,
+      easyLines: 100,
+      hardFiles: 20,
+      hardLines: 800,
+      readyGreenDays: 1,
+      readyOrangeDays: 3,
+      workdaysOnly: false,
     });
   });
 
@@ -335,5 +356,77 @@ describe('Settings (e2e)', () => {
     expect(body(res).message).toEqual([
       expect.stringContaining('refreshIntervalMin'),
     ]);
+  });
+
+  it('PUT /settings should_store_valid_thresholds', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      easyFiles: 10,
+      easyLines: 200,
+      hardFiles: 30,
+      hardLines: 900,
+      readyGreenDays: 2,
+      readyOrangeDays: 5,
+      workdaysOnly: true,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        easyFiles: 10,
+        easyLines: 200,
+        hardFiles: 30,
+        hardLines: 900,
+        readyGreenDays: 2,
+        readyOrangeDays: 5,
+        workdaysOnly: true,
+      }),
+    );
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_reject_hard_files_not_greater_than_easy_files', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      easyFiles: 10,
+      hardFiles: 10,
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).code).toBe('settings.hardFilesTooLow');
+  });
+
+  it('PUT /settings should_reject_hard_lines_not_greater_than_easy_lines', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      easyLines: 100,
+      hardLines: 80,
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).code).toBe('settings.hardLinesTooLow');
+  });
+
+  it('PUT /settings should_reject_ready_orange_not_greater_than_ready_green', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      readyGreenDays: 4,
+      readyOrangeDays: 4,
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).code).toBe('settings.readyOrangeTooLow');
+  });
+
+  it('PUT /settings should_reject_a_non_integer_threshold', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      easyLines: 2.5,
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([expect.stringContaining('easyLines')]);
   });
 });

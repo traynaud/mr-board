@@ -1,8 +1,10 @@
 import { FormControl } from '@angular/forms';
 import { buildRepoAliasGroup } from './repos-form';
 import {
+  DEFAULT_THRESHOLDS,
   buildSettingsForm,
   gitlabUrlValidator,
+  integerValidator,
   resetSettingsForm,
   toUpdateRequest,
   tokenLengthValidator,
@@ -38,6 +40,17 @@ describe('tokenLengthValidator', () => {
   });
 });
 
+describe('integerValidator', () => {
+  it('should_accept_integers', () => {
+    expect(integerValidator(new FormControl(5))).toBeNull();
+    expect(integerValidator(new FormControl(0))).toBeNull();
+  });
+
+  it('should_reject_decimals', () => {
+    expect(integerValidator(new FormControl(2.5))).toEqual({ integer: true });
+  });
+});
+
 describe('meEmail validator (Validators.email)', () => {
   it('should_build_form_with_email_control_accepting_empty_value', () => {
     const form = buildSettingsForm();
@@ -61,6 +74,13 @@ describe('settings form helpers', () => {
     meEmail: 'marie@exemple.fr',
     refreshIntervalMin: 15,
     pauseWhenHidden: false,
+    easyFiles: 10,
+    easyLines: 200,
+    hardFiles: 30,
+    hardLines: 900,
+    readyGreenDays: 2,
+    readyOrangeDays: 5,
+    workdaysOnly: true,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -77,6 +97,13 @@ describe('settings form helpers', () => {
       meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 15,
       pauseWhenHidden: false,
+      easyFiles: 10,
+      easyLines: 200,
+      hardFiles: 30,
+      hardLines: 900,
+      readyGreenDays: 2,
+      readyOrangeDays: 5,
+      workdaysOnly: true,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -107,6 +134,7 @@ describe('settings form helpers', () => {
       meEmail: '',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      ...DEFAULT_THRESHOLDS,
     });
   });
 
@@ -126,6 +154,7 @@ describe('settings form helpers', () => {
       meEmail: '',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
+      ...DEFAULT_THRESHOLDS,
     });
   });
 
@@ -172,5 +201,107 @@ describe('settings form helpers', () => {
 
     expect(form.controls.repos.length).toBe(1);
     expect(form.controls.repos.at(0).getRawValue()).toEqual({ id: 1, alias: 'api' });
+  });
+});
+
+describe('threshold controls', () => {
+  it('should_build_with_default_thresholds_and_be_valid', () => {
+    const form = buildSettingsForm();
+
+    expect(form.controls.easyFiles.value).toBe(DEFAULT_THRESHOLDS.easyFiles);
+    expect(form.controls.easyLines.value).toBe(DEFAULT_THRESHOLDS.easyLines);
+    expect(form.controls.hardFiles.value).toBe(DEFAULT_THRESHOLDS.hardFiles);
+    expect(form.controls.hardLines.value).toBe(DEFAULT_THRESHOLDS.hardLines);
+    expect(form.controls.readyGreenDays.value).toBe(DEFAULT_THRESHOLDS.readyGreenDays);
+    expect(form.controls.readyOrangeDays.value).toBe(DEFAULT_THRESHOLDS.readyOrangeDays);
+    expect(form.controls.workdaysOnly.value).toBe(DEFAULT_THRESHOLDS.workdaysOnly);
+    expect(form.controls.hardFiles.valid).toBe(true);
+    expect(form.controls.hardLines.valid).toBe(true);
+    expect(form.controls.readyOrangeDays.valid).toBe(true);
+  });
+
+  it('should_reject_hard_files_not_greater_than_easy_files', () => {
+    const form = buildSettingsForm();
+
+    form.controls.hardFiles.setValue(5);
+    form.controls.easyFiles.setValue(5);
+
+    expect(form.controls.hardFiles.hasError('mustExceed')).toBe(true);
+    expect(form.valid).toBe(false);
+  });
+
+  it('should_revalidate_hard_files_when_easy_files_changes', () => {
+    const form = buildSettingsForm();
+    form.controls.hardFiles.setValue(5);
+    form.controls.easyFiles.setValue(5);
+    expect(form.controls.hardFiles.hasError('mustExceed')).toBe(true);
+
+    form.controls.easyFiles.setValue(2);
+
+    expect(form.controls.hardFiles.hasError('mustExceed')).toBe(false);
+    expect(form.controls.hardFiles.valid).toBe(true);
+  });
+
+  it('should_reject_hard_lines_not_greater_than_easy_lines', () => {
+    const form = buildSettingsForm();
+
+    form.controls.hardLines.setValue(100);
+    form.controls.easyLines.setValue(100);
+
+    expect(form.controls.hardLines.hasError('mustExceed')).toBe(true);
+  });
+
+  it('should_reject_ready_orange_not_greater_than_ready_green', () => {
+    const form = buildSettingsForm();
+
+    form.controls.readyGreenDays.setValue(3);
+    form.controls.readyOrangeDays.setValue(3);
+
+    expect(form.controls.readyOrangeDays.hasError('mustExceed')).toBe(true);
+  });
+
+  it('should_keep_the_min_error_alongside_the_cross_field_error', () => {
+    const form = buildSettingsForm();
+    form.controls.easyFiles.setValue(5);
+
+    form.controls.hardFiles.setValue(-1);
+
+    expect(form.controls.hardFiles.hasError('min')).toBe(true);
+    expect(form.controls.hardFiles.hasError('mustExceed')).toBe(true);
+  });
+
+  it('should_reject_a_non_integer_value', () => {
+    const form = buildSettingsForm();
+
+    form.controls.easyLines.setValue(2.5);
+
+    expect(form.controls.easyLines.hasError('integer')).toBe(true);
+    expect(form.valid).toBe(false);
+  });
+
+  it('should_include_thresholds_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({
+      gitlabUrl: 'https://gitlab.com',
+      easyFiles: 10,
+      easyLines: 200,
+      hardFiles: 30,
+      hardLines: 900,
+      readyGreenDays: 2,
+      readyOrangeDays: 5,
+      workdaysOnly: true,
+    });
+
+    expect(toUpdateRequest(form)).toEqual(
+      expect.objectContaining({
+        easyFiles: 10,
+        easyLines: 200,
+        hardFiles: 30,
+        hardLines: 900,
+        readyGreenDays: 2,
+        readyOrangeDays: 5,
+        workdaysOnly: true,
+      }),
+    );
   });
 });

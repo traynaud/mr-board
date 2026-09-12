@@ -189,6 +189,37 @@
       },
       "pauseWhenHidden": "Mettre en pause quand l'onglet est inactif",
       "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
+    },
+    "thresholds": {
+      "number": "05",
+      "title": "Seuils",
+      "description": "Règles de calcul de la difficulté et du délai Ready.",
+      "difficulty": {
+        "title": "Difficulté",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "filesSuffix": "fich.",
+        "linesSuffix": "l.",
+        "between": "entre les deux"
+      },
+      "ready": {
+        "title": "Temps depuis Ready",
+        "green": "Vert",
+        "orange": "Orange",
+        "red": "Rouge",
+        "daysSuffix": "jours",
+        "beyond": "au-delà"
+      },
+      "workdaysOnly": "Compter uniquement les jours ouvrés",
+      "resetDefaults": "Valeurs par défaut",
+      "errors": {
+        "required": "Ce champ est obligatoire.",
+        "min": "Doit être un entier ≥ {{min}}.",
+        "integer": "Doit être un nombre entier.",
+        "mustExceedEasy": "Doit être supérieur à Easy",
+        "mustExceedReadyGreen": "Doit être supérieur à Vert"
+      }
     }
   },
   "errors": {
@@ -201,7 +232,10 @@
     },
     "settings": {
       "tokenMissing": "Configurez d'abord un jeton GitLab dans les paramètres.",
-      "invalidUrl": "URL d'instance invalide."
+      "invalidUrl": "URL d'instance invalide.",
+      "hardFilesTooLow": "Le seuil Hard (fichiers) doit dépasser le seuil Easy.",
+      "hardLinesTooLow": "Le seuil Hard (lignes) doit dépasser le seuil Easy.",
+      "readyOrangeTooLow": "Le seuil orange du délai Ready doit dépasser le seuil vert."
     },
     "projects": {
       "notFound": "Projet introuvable ou inaccessible avec ce jeton.",

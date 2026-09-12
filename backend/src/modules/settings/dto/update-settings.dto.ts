@@ -3,9 +3,11 @@ import {
   IsBoolean,
   IsEmail,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
   ValidateIf,
 } from 'class-validator';
 import { GitlabCredentialsDto } from './gitlab-credentials.dto';
@@ -52,4 +54,41 @@ export class UpdateSettingsDto extends GitlabCredentialsDto {
   @IsOptional()
   @IsBoolean()
   pauseWhenHidden?: boolean;
+
+  /** Difficulty thresholds (RG-G03, RG-014-01). Cross-field coherence is checked by `SettingsService`. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  easyFiles?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  easyLines?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  hardFiles?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  hardLines?: number;
+
+  /** Ready delay thresholds in days (RG-G04, RG-014-01). Cross-field coherence is checked by `SettingsService`. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  readyGreenDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  readyOrangeDays?: number;
+
+  /** Count only Monday-Friday for the Ready delay (RG-G04, RG-014-01). */
+  @IsOptional()
+  @IsBoolean()
+  workdaysOnly?: boolean;
 }

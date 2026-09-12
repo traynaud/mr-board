@@ -8,6 +8,8 @@ import {
   MissingConfigurationException,
 } from '../../common/exceptions';
 import { GitlabClientService } from '../gitlab/gitlab-client.service';
+import type { DifficultyThresholds } from '../merge-requests/domain/calculate-difficulty';
+import type { ReadyDelayThresholds } from '../merge-requests/domain/calculate-ready-delay';
 import { hasRequiredScope } from './domain/check-token-scopes';
 import { normalizeGitlabUrl } from './domain/normalize-gitlab-url';
 import { tokenHint } from './domain/token-hint';
@@ -41,8 +43,10 @@ export class SettingsService {
   }
 
   /**
-   * Updates the GitLab URL and, when provided, the token (RG-001-01, RG-001-02).
-   * @throws BusinessValidationException when the URL cannot be normalised.
+   * Updates the GitLab URL and, when provided, the token (RG-001-01, RG-001-02),
+   * identity, refresh cadence and difficulty/Ready delay thresholds (RG-014-01).
+   * @throws BusinessValidationException when the URL cannot be normalised, or
+   * when the merged thresholds are incoherent (see `requireCoherentThresholds`).
    */
   async update(dto: UpdateSettingsDto): Promise<SettingsResponseDto> {
     const settings = await this.load();
@@ -62,6 +66,28 @@ export class SettingsService {
     if (dto.pauseWhenHidden !== undefined) {
       settings.pauseWhenHidden = dto.pauseWhenHidden;
     }
+    if (dto.easyFiles !== undefined) {
+      settings.easyFiles = dto.easyFiles;
+    }
+    if (dto.easyLines !== undefined) {
+      settings.easyLines = dto.easyLines;
+    }
+    if (dto.hardFiles !== undefined) {
+      settings.hardFiles = dto.hardFiles;
+    }
+    if (dto.hardLines !== undefined) {
+      settings.hardLines = dto.hardLines;
+    }
+    if (dto.readyGreenDays !== undefined) {
+      settings.readyGreenDays = dto.readyGreenDays;
+    }
+    if (dto.readyOrangeDays !== undefined) {
+      settings.readyOrangeDays = dto.readyOrangeDays;
+    }
+    if (dto.workdaysOnly !== undefined) {
+      settings.workdaysOnly = dto.workdaysOnly;
+    }
+    this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
     return this.toResponse(await this.repository.save(settings));
   }
@@ -135,6 +161,32 @@ export class SettingsService {
     return (await this.load()).refreshIntervalMin;
   }
 
+  /**
+   * Difficulty and Ready delay thresholds configured by the user (RG-G03,
+   * RG-G04, RG-014-01), read fresh on every call so a save takes effect on
+   * the very next `GET /merge-requests` (RG-014-04).
+   */
+  async getThresholds(): Promise<{
+    difficulty: DifficultyThresholds;
+    readyDelay: ReadyDelayThresholds;
+    workdaysOnly: boolean;
+  }> {
+    const settings = await this.load();
+    return {
+      difficulty: {
+        easyFiles: settings.easyFiles,
+        easyLines: settings.easyLines,
+        hardFiles: settings.hardFiles,
+        hardLines: settings.hardLines,
+      },
+      readyDelay: {
+        greenDays: settings.readyGreenDays,
+        orangeDays: settings.readyOrangeDays,
+      },
+      workdaysOnly: settings.workdaysOnly,
+    };
+  }
+
   private async load(): Promise<Settings> {
     const existing = await this.repository.findOneBy({ id: SETTINGS_ID });
     if (existing) {
@@ -150,6 +202,13 @@ export class SettingsService {
         meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
+        easyFiles: 5,
+        easyLines: 100,
+        hardFiles: 20,
+        hardLines: 800,
+        readyGreenDays: 1,
+        readyOrangeDays: 3,
+        workdaysOnly: false,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -166,6 +225,33 @@ export class SettingsService {
     return url;
   }
 
+  /**
+   * Validates the cross-field coherence of the merged threshold values
+   * (RG-014-01) : `hardFiles`/`hardLines` must exceed their `easy*`
+   * counterpart, `readyOrangeDays` must exceed `readyGreenDays`.
+   * @throws BusinessValidationException with a code naming the field in error.
+   */
+  private requireCoherentThresholds(settings: Settings): void {
+    if (settings.hardFiles <= settings.easyFiles) {
+      throw new BusinessValidationException(
+        'settings.hardFilesTooLow',
+        'hardFiles must be greater than easyFiles',
+      );
+    }
+    if (settings.hardLines <= settings.easyLines) {
+      throw new BusinessValidationException(
+        'settings.hardLinesTooLow',
+        'hardLines must be greater than easyLines',
+      );
+    }
+    if (settings.readyOrangeDays <= settings.readyGreenDays) {
+      throw new BusinessValidationException(
+        'settings.readyOrangeTooLow',
+        'readyOrangeDays must be greater than readyGreenDays',
+      );
+    }
+  }
+
   private toResponse(settings: Settings): SettingsResponseDto {
     const token = settings.gitlabTokenEncrypted
       ? this.cipher.decrypt(settings.gitlabTokenEncrypted)
@@ -178,6 +264,13 @@ export class SettingsService {
       meEmail: settings.meEmail,
       refreshIntervalMin: settings.refreshIntervalMin,
       pauseWhenHidden: settings.pauseWhenHidden,
+      easyFiles: settings.easyFiles,
+      easyLines: settings.easyLines,
+      hardFiles: settings.hardFiles,
+      hardLines: settings.hardLines,
+      readyGreenDays: settings.readyGreenDays,
+      readyOrangeDays: settings.readyOrangeDays,
+      workdaysOnly: settings.workdaysOnly,
     };
   }
 }

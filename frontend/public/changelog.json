@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-014",
+    "title": "Paramètres — seuils configurables de difficulté et de délai Ready, avec jours ouvrés et réinitialisation."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-013",
     "title": "Synchronisation automatique planifiable (1/5/15/30 min ou manuel), pause hors onglet, prochaine synchro affichée."
   },

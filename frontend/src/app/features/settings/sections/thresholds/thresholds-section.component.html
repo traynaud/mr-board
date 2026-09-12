@@ -1,0 +1,120 @@
+<div class="blocks" [formGroup]="form()">
+  <div class="block">
+    <div class="block-title">{{ 'settings.thresholds.difficulty.title' | translate }}</div>
+    <div class="rows difficulty-rows">
+      <span class="row-label"
+        ><i class="square easy"></i>{{ 'settings.thresholds.difficulty.easy' | translate }}</span
+      >
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&lt;&nbsp;</span>
+        <input matInput type="number" formControlName="easyFiles" />
+        <span matTextSuffix
+          >&nbsp;{{ 'settings.thresholds.difficulty.filesSuffix' | translate }}</span
+        >
+        @if (form().controls.easyFiles.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.easyFiles.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 1 } }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&lt;&nbsp;</span>
+        <input matInput type="number" formControlName="easyLines" />
+        <span matTextSuffix
+          >&nbsp;{{ 'settings.thresholds.difficulty.linesSuffix' | translate }}</span
+        >
+        @if (form().controls.easyLines.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.easyLines.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 1 } }}</mat-error>
+        }
+      </mat-form-field>
+
+      <span class="row-label"
+        ><i class="square medium"></i
+        >{{ 'settings.thresholds.difficulty.medium' | translate }}</span
+      >
+      <span class="between">{{ 'settings.thresholds.difficulty.between' | translate }}</span>
+
+      <span class="row-label"
+        ><i class="square hard"></i>{{ 'settings.thresholds.difficulty.hard' | translate }}</span
+      >
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&gt;&nbsp;</span>
+        <input matInput type="number" formControlName="hardFiles" />
+        <span matTextSuffix
+          >&nbsp;{{ 'settings.thresholds.difficulty.filesSuffix' | translate }}</span
+        >
+        @if (form().controls.hardFiles.hasError('mustExceed')) {
+          <mat-error>{{ 'settings.thresholds.errors.mustExceedEasy' | translate }}</mat-error>
+        } @else if (form().controls.hardFiles.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.hardFiles.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 1 } }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&gt;&nbsp;</span>
+        <input matInput type="number" formControlName="hardLines" />
+        <span matTextSuffix
+          >&nbsp;{{ 'settings.thresholds.difficulty.linesSuffix' | translate }}</span
+        >
+        @if (form().controls.hardLines.hasError('mustExceed')) {
+          <mat-error>{{ 'settings.thresholds.errors.mustExceedEasy' | translate }}</mat-error>
+        } @else if (form().controls.hardLines.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.hardLines.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 1 } }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">{{ 'settings.thresholds.ready.title' | translate }}</div>
+    <div class="rows ready-rows">
+      <span class="row-label"
+        ><i class="square green"></i>{{ 'settings.thresholds.ready.green' | translate }}</span
+      >
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&le;&nbsp;</span>
+        <input matInput type="number" formControlName="readyGreenDays" />
+        <span matTextSuffix>&nbsp;{{ 'settings.thresholds.ready.daysSuffix' | translate }}</span>
+        @if (form().controls.readyGreenDays.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.readyGreenDays.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 0 } }}</mat-error>
+        }
+      </mat-form-field>
+
+      <span class="row-label"
+        ><i class="square orange"></i>{{ 'settings.thresholds.ready.orange' | translate }}</span
+      >
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <span matTextPrefix>&le;&nbsp;</span>
+        <input matInput type="number" formControlName="readyOrangeDays" />
+        <span matTextSuffix>&nbsp;{{ 'settings.thresholds.ready.daysSuffix' | translate }}</span>
+        @if (form().controls.readyOrangeDays.hasError('mustExceed')) {
+          <mat-error>{{ 'settings.thresholds.errors.mustExceedReadyGreen' | translate }}</mat-error>
+        } @else if (form().controls.readyOrangeDays.hasError('integer')) {
+          <mat-error>{{ 'settings.thresholds.errors.integer' | translate }}</mat-error>
+        } @else if (form().controls.readyOrangeDays.invalid) {
+          <mat-error>{{ 'settings.thresholds.errors.min' | translate: { min: 0 } }}</mat-error>
+        }
+      </mat-form-field>
+
+      <span class="row-label"
+        ><i class="square red"></i>{{ 'settings.thresholds.ready.red' | translate }}</span
+      >
+      <span class="between">{{ 'settings.thresholds.ready.beyond' | translate }}</span>
+    </div>
+
+    <mat-slide-toggle formControlName="workdaysOnly" class="workdays-toggle">
+      {{ 'settings.thresholds.workdaysOnly' | translate }}
+    </mat-slide-toggle>
+  </div>
+
+  <button mat-button type="button" class="reset-defaults" (click)="resetDefaults()">
+    {{ 'settings.thresholds.resetDefaults' | translate }}
+  </button>
+</div>

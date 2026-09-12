@@ -28,6 +28,13 @@ const NO_TOKEN_SETTINGS: Settings = {
   meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
+  easyFiles: 5,
+  easyLines: 100,
+  hardFiles: 20,
+  hardLines: 800,
+  readyGreenDays: 1,
+  readyOrangeDays: 3,
+  workdaysOnly: false,
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
