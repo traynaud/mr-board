@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
 import { ProjectsService } from '../projects/projects.service';
+import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
@@ -58,6 +59,7 @@ describe('MergeRequestsService', () => {
   let assigneesRepo: AssociationRepoMock;
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock };
+  let settingsService: { getIdentity: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -123,6 +125,14 @@ describe('MergeRequestsService', () => {
           provide: ProjectsService,
           useValue: { findByIds: jest.fn().mockResolvedValue([]) },
         },
+        {
+          provide: SettingsService,
+          useValue: {
+            getIdentity: jest
+              .fn()
+              .mockResolvedValue({ username: null, email: null }),
+          },
+        },
       ],
     }).compile();
 
@@ -132,6 +142,7 @@ describe('MergeRequestsService', () => {
     assigneesRepo = module.get(getRepositoryToken(MergeRequestAssignee));
     usersService = module.get(UsersService);
     projectsService = module.get(ProjectsService);
+    settingsService = module.get(SettingsService);
   });
 
   describe('upsertForProject', () => {
@@ -339,12 +350,22 @@ describe('MergeRequestsService', () => {
     }
 
     it('should_return_an_empty_array_and_skip_further_queries_when_there_is_no_open_merge_request', async () => {
-      await expect(service.listOpen()).resolves.toEqual([]);
+      await expect(service.listOpen({})).resolves.toEqual({
+        mergeRequests: [],
+        warnings: [],
+      });
 
       expect(reviewersRepo.findBy).not.toHaveBeenCalled();
       expect(assigneesRepo.findBy).not.toHaveBeenCalled();
       expect(projectsService.findByIds).not.toHaveBeenCalled();
       expect(usersService.findByIds).not.toHaveBeenCalled();
+    });
+
+    it('should_still_warn_about_a_missing_identity_when_there_is_no_open_merge_request', async () => {
+      await expect(service.listOpen({ mineOnly: true })).resolves.toEqual({
+        mergeRequests: [],
+        warnings: ['identity.missing'],
+      });
     });
 
     it('should_query_only_non_draft_merge_requests', async () => {
@@ -354,7 +375,7 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      await service.listOpen();
+      await service.listOpen({});
 
       expect(mergeRequestsRepo.find).toHaveBeenCalledWith({
         where: { draft: false },
@@ -375,37 +396,41 @@ describe('MergeRequestsService', () => {
         },
       ]);
 
-      const result = await service.listOpen();
+      const result = await service.listOpen({});
 
-      expect(result).toEqual([
-        {
-          id: 1,
-          projectAlias: 'api',
-          iid: 7,
-          title: 'Refonte facturation',
-          webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
-          draft: false,
-          author: {
-            username: 'mdupont',
-            name: 'Marie Dupont',
-            avatarUrl: 'https://gitlab.example.com/mdupont.png',
+      expect(result).toEqual({
+        mergeRequests: [
+          {
+            id: 1,
+            projectAlias: 'api',
+            iid: 7,
+            title: 'Refonte facturation',
+            webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
+            draft: false,
+            author: {
+              username: 'mdupont',
+              name: 'Marie Dupont',
+              avatarUrl: 'https://gitlab.example.com/mdupont.png',
+            },
+            reviewers: [],
+            assignees: [],
+            approved: true,
+            commentsCount: 3,
+            difficulty: 'medium',
+            changedFiles: 12,
+            additions: 340,
+            deletions: 58,
+            changedLines: 398,
+            createdAt: '2026-09-01T10:00:00.000Z',
+            readyAt: '2026-09-01T10:00:00.000Z',
+            readyDays: 9,
+            readyLevel: 'red',
+            openedDays: 9,
+            isMine: false,
           },
-          reviewers: [],
-          assignees: [],
-          approved: true,
-          commentsCount: 3,
-          difficulty: 'medium',
-          changedFiles: 12,
-          additions: 340,
-          deletions: 58,
-          changedLines: 398,
-          createdAt: '2026-09-01T10:00:00.000Z',
-          readyAt: '2026-09-01T10:00:00.000Z',
-          readyDays: 9,
-          readyLevel: 'red',
-          openedDays: 9,
-        },
-      ]);
+        ],
+        warnings: [],
+      });
       expect(projectsService.findByIds).toHaveBeenCalledWith([1]);
       expect(usersService.findByIds).toHaveBeenCalledWith([10]);
     });
@@ -423,7 +448,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.changedFiles).toBe(34);
       expect(view.additions).toBe(900);
@@ -445,7 +472,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.difficulty).toBe('medium');
       expect(view.changedFiles).toBeNull();
@@ -463,7 +492,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.changedFiles).toBe(0);
       expect(view.changedLines).toBe(0);
@@ -494,7 +525,7 @@ describe('MergeRequestsService', () => {
         },
       ]);
 
-      const result = await service.listOpen();
+      const { mergeRequests: result } = await service.listOpen({});
 
       expect(result[0].reviewers.map((u) => u.username)).toEqual([
         'kbenali',
@@ -515,7 +546,7 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      await expect(service.listOpen()).rejects.toThrow(/Project 1/);
+      await expect(service.listOpen({})).rejects.toThrow(/Project 1/);
     });
 
     it('should_throw_when_a_referenced_author_is_missing', async () => {
@@ -523,7 +554,7 @@ describe('MergeRequestsService', () => {
       projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
       usersService.findByIds.mockResolvedValue([]);
 
-      await expect(service.listOpen()).rejects.toThrow(/User 10/);
+      await expect(service.listOpen({})).rejects.toThrow(/User 10/);
     });
 
     it('should_report_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {
@@ -538,7 +569,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.readyAt).toBe('2026-09-10T08:00:00.000Z');
       expect(view.readyDays).toBe(1);
@@ -558,7 +591,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.readyDays).toBe(3);
       expect(view.readyLevel).toBe('orange');
@@ -577,7 +612,9 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const [view] = await service.listOpen();
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
 
       expect(view.draft).toBe(true);
       expect(view.readyAt).toBeNull();
@@ -604,7 +641,7 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const result = await service.listOpen();
+      const { mergeRequests: result } = await service.listOpen({});
 
       expect(result.map((v) => v.iid)).toEqual([2, 1]);
     });
@@ -631,10 +668,85 @@ describe('MergeRequestsService', () => {
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
 
-      const result = await service.listOpen('diff:asc');
+      const { mergeRequests: result } = await service.listOpen({
+        sort: 'diff:asc',
+      });
 
       expect(result.map((v) => v.difficulty)).toEqual(['easy', 'hard']);
       expect(result.map((v) => v.iid)).toEqual([2, 1]);
+    });
+
+    it('should_query_all_merge_requests_when_drafts_is_included', async () => {
+      await service.listOpen({ includeDrafts: true });
+
+      expect(mergeRequestsRepo.find).toHaveBeenCalledWith({ where: {} });
+    });
+
+    it('should_query_only_non_draft_merge_requests_when_drafts_is_not_included', async () => {
+      await service.listOpen({ includeDrafts: false });
+
+      expect(mergeRequestsRepo.find).toHaveBeenCalledWith({
+        where: { draft: false },
+      });
+    });
+
+    it('should_report_is_mine_true_when_my_username_matches_the_author', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+      settingsService.getIdentity.mockResolvedValue({
+        username: 'mdupont',
+        email: null,
+      });
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.isMine).toBe(true);
+    });
+
+    it('should_filter_to_merge_requests_where_i_have_a_role_when_mine_only_is_requested', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, authorId: 10 }),
+        persistedMergeRequest({ id: 2, iid: 2, authorId: 20 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        { id: 20, username: 'tgirard', name: 'Thomas Girard', avatarUrl: null },
+      ]);
+      settingsService.getIdentity.mockResolvedValue({
+        username: 'mdupont',
+        email: null,
+      });
+
+      const { mergeRequests: result, warnings } = await service.listOpen({
+        mineOnly: true,
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+      expect(warnings).toEqual([]);
+    });
+
+    it('should_ignore_mine_only_and_warn_when_no_identity_is_configured', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1 }),
+        persistedMergeRequest({ id: 2, iid: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result, warnings } = await service.listOpen({
+        mineOnly: true,
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1, 2]);
+      expect(warnings).toEqual(['identity.missing']);
     });
   });
 });

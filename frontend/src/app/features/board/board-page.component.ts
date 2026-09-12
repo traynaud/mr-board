@@ -14,11 +14,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardToolbarComponent } from './board-toolbar/board-toolbar.component';
+import { FilterBarComponent } from './filter-bar/filter-bar.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'application. */
@@ -38,6 +40,7 @@ const TOAST_DURATION_MS = 3500;
     RouterLink,
     TranslatePipe,
     BoardToolbarComponent,
+    FilterBarComponent,
     MrTableComponent,
   ],
   templateUrl: './board-page.component.html',
@@ -49,6 +52,7 @@ export class BoardPageComponent implements OnInit {
   protected readonly projectsStore = inject(ProjectsStore);
   protected readonly syncStore = inject(SyncStore);
   protected readonly mrStore = inject(MergeRequestsStore);
+  protected readonly filtersStore = inject(FiltersStore);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -84,6 +88,19 @@ export class BoardPageComponent implements OnInit {
       this.mrStore.mergeRequests().length === 0 &&
       !this.mrStore.loading(),
   );
+
+  /** Identité configurée (RG-002-05) : active le chip « Mes MRs » (RG-009-03). */
+  protected readonly identityConfigured = computed(() => {
+    const settings = this.settingsStore.settings();
+    return !!settings?.meUsername || !!settings?.meEmail;
+  });
+
+  /**
+   * « Mes MRs » est le seul filtre rapide au sens strict (RG-009-05) :
+   * « Drafts » est une préférence d'affichage. Détermine le texte de
+   * l'état vide et la visibilité du bouton « Effacer les filtres ».
+   */
+  protected readonly hasActiveFilter = computed(() => this.filtersStore.mine());
 
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
@@ -128,6 +145,24 @@ export class BoardPageComponent implements OnInit {
   /** Déclenché par le bouton Rafraîchir de la toolbar (RG-004-09). */
   protected refresh(): void {
     void this.syncStore.trigger();
+  }
+
+  /** RG-009-01/07 : bascule « Drafts » puis recharge (débounce dans le store). */
+  protected onDraftsToggle(): void {
+    this.filtersStore.toggleDrafts();
+    this.mrStore.scheduleReload();
+  }
+
+  /** RG-009-02/07. */
+  protected onMineToggle(): void {
+    this.filtersStore.toggleMine();
+    this.mrStore.scheduleReload();
+  }
+
+  /** RG-009-05/07 : ne réinitialise que « Mes MRs ». */
+  protected onClearFilters(): void {
+    this.filtersStore.clear();
+    this.mrStore.scheduleReload();
   }
 
   /**

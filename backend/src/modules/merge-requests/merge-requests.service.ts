@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
 import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
+import { SettingsService } from '../settings/settings.service';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import {
@@ -15,6 +16,7 @@ import {
   calculateElapsedDays,
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
+import { Identity, isMine } from './domain/is-mine';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import {
   DEFAULT_SORT,
@@ -23,9 +25,18 @@ import {
 } from './domain/sort-merge-requests';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
+import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
+
+export interface ListOpenOptions {
+  sort?: SortParam;
+  /** RG-009-01. Defaults to `false` (drafts hidden). */
+  includeDrafts?: boolean;
+  /** RG-009-02, RG-G09. Defaults to `false`. */
+  mineOnly?: boolean;
+}
 
 /**
  * Persists merge requests synchronised from GitLab: upsert by
@@ -44,24 +55,39 @@ export class MergeRequestsService {
     private readonly assignees: Repository<MergeRequestAssignee>,
     private readonly users: UsersService,
     private readonly projects: ProjectsService,
+    private readonly settings: SettingsService,
   ) {}
 
   /**
-   * Open (non-draft) merge requests, ordered per `sort` (RG-008-01/04,
-   * default `ready:asc`). The `draft: false` filter guarantees `ready_at`
-   * is never null for the returned rows (see `resolveReadyAt`); sorting
-   * happens in memory, once the view fields (`difficulty`, `readyAt`) are
-   * assembled, since `diff` ordering depends on a computed value with no
-   * SQL equivalent (see archi.md).
+   * Open merge requests, ordered per `sort` (RG-008-01/04, default
+   * `ready:asc`). Drafts are excluded unless `includeDrafts` (RG-009-01);
+   * when they're excluded, `ready_at` is never null for the returned rows
+   * (see `resolveReadyAt`). Sorting happens in memory, once the view
+   * fields (`difficulty`, `readyAt`) are assembled, since `diff` ordering
+   * depends on a computed value with no SQL equivalent (see archi.md).
+   * `mineOnly` restricts to merge requests where I have a role (RG-G09) —
+   * silently ignored, with a `warnings` entry, when no identity is
+   * configured (RG-009-02).
    */
   async listOpen(
-    sort: SortParam = DEFAULT_SORT,
-  ): Promise<MergeRequestViewDto[]> {
+    options: ListOpenOptions = {},
+  ): Promise<MergeRequestsResponseDto> {
+    const {
+      sort = DEFAULT_SORT,
+      includeDrafts = false,
+      mineOnly = false,
+    } = options;
     const mergeRequests = await this.mergeRequests.find({
-      where: { draft: false },
+      where: includeDrafts ? {} : { draft: false },
     });
+    const identity = await this.settings.getIdentity();
+    const identityMissing =
+      identity.username === null && identity.email === null;
+    const warnings: string[] =
+      mineOnly && identityMissing ? ['identity.missing'] : [];
+
     if (mergeRequests.length === 0) {
-      return [];
+      return { mergeRequests: [], warnings };
     }
     const now = new Date().toISOString();
 
@@ -88,7 +114,7 @@ export class MergeRequestsService {
     const projectsById = indexById(projectRows);
     const usersById = indexById(userRows);
 
-    const views = mergeRequests.map((mr) =>
+    let views = mergeRequests.map((mr) =>
       toMergeRequestView(
         mr,
         projectsById,
@@ -96,9 +122,14 @@ export class MergeRequestsService {
         reviewerIdsByMr.get(mr.id) ?? [],
         assigneeIdsByMr.get(mr.id) ?? [],
         now,
+        identity,
       ),
     );
-    return sortMergeRequests(views, sort);
+    if (mineOnly && !identityMissing) {
+      views = views.filter((view) => view.isMine);
+    }
+
+    return { mergeRequests: sortMergeRequests(views, sort), warnings };
   }
 
   /**
@@ -247,9 +278,16 @@ function toMergeRequestView(
   reviewerIds: number[],
   assigneeIds: number[],
   now: string,
+  identity: Identity,
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
+  const reviewers = reviewerIds.map((id) =>
+    toMergeRequestUser(mustGet(usersById, id, 'User')),
+  );
+  const assignees = assigneeIds.map((id) =>
+    toMergeRequestUser(mustGet(usersById, id, 'User')),
+  );
   return {
     id: mergeRequest.id,
     projectAlias: project.alias,
@@ -258,16 +296,20 @@ function toMergeRequestView(
     webUrl: mergeRequest.webUrl,
     draft: mergeRequest.draft,
     author: toMergeRequestUser(author),
-    reviewers: reviewerIds.map((id) =>
-      toMergeRequestUser(mustGet(usersById, id, 'User')),
-    ),
-    assignees: assigneeIds.map((id) =>
-      toMergeRequestUser(mustGet(usersById, id, 'User')),
-    ),
+    reviewers,
+    assignees,
     approved: mergeRequest.approved,
     commentsCount: mergeRequest.commentsCount,
     ...toDifficultyFields(mergeRequest),
     ...toReadyFields(mergeRequest, now),
+    isMine: isMine(
+      {
+        authorUsername: author.username,
+        reviewerUsernames: reviewers.map((reviewer) => reviewer.username),
+        assigneeUsernames: assignees.map((assignee) => assignee.username),
+      },
+      identity,
+    ),
   };
 }
 

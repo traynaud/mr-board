@@ -30,6 +30,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyDays: 6,
     readyLevel: 'red',
     openedDays: 6,
+    isMine: false,
     ...overrides,
   };
 }

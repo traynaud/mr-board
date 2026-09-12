@@ -50,4 +50,19 @@ export interface MergeRequestView {
   readyLevel: ReadyLevel | null;
   /** Jours écoulés depuis `createdAt`, affiché uniquement pour un draft (RG-007-05). */
   openedDays: number;
+  /** `true` si je suis auteur, reviewer ou affecté (RG-G09). Non affiché visuellement dans cette US. */
+  isMine: boolean;
+}
+
+/** Réponse de `GET /merge-requests` (RG-009-02) : les MRs et d'éventuels avertissements non bloquants. */
+export interface MergeRequestsResponse {
+  mergeRequests: MergeRequestView[];
+  /** Ex. `"identity.missing"` quand `mine=1` a été demandé sans identité configurée. */
+  warnings: string[];
+}
+
+/** État des filtres rapides (RG-009-01/02). */
+export interface MergeRequestFilters {
+  drafts: boolean;
+  mine: boolean;
 }

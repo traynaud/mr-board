@@ -153,7 +153,7 @@ une fois ses dépendances réalisées.
 | US-006 | Difficulté de la MR                                      | Must     | S          | US-005                 | ✅ |
 | US-007 | Temps depuis Ready                                       | Must     | M          | US-005                 | ✅ |
 | US-008 | Tri par défaut et tri sur colonnes                       | Must     | S          | US-006, US-007         | ✅ |
-| US-009 | Filtres rapides « Drafts » et « Mes MRs »                | Must     | S          | US-002, US-008         | ☐ |
+| US-009 | Filtres rapides « Drafts » et « Mes MRs »                | Must     | S          | US-002, US-008         | ✅ |
 | US-010 | Filtres composables (Projet, Auteur, Affecté à, Approved, Commenté) | Must | L      | US-009                 | ☐ |
 | US-011 | Filtres, tri et colonnes propagés dans l'URL             | Must     | M          | US-010                 | ☐ |
 | US-012 | Colonnes redimensionnables et colonne « Date d'ouverture » | Should | M          | US-005, US-011         | ☐ |

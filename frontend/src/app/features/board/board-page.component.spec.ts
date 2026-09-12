@@ -11,6 +11,7 @@ import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { SyncRun, SyncStatus } from '../../models/sync-status.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
+import { FiltersStore } from '../../stores/filters.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardPageComponent } from './board-page.component';
 
@@ -26,6 +27,10 @@ const WITH_TOKEN_SETTINGS: Settings = {
   tokenConfigured: true,
   tokenHint: 'wxyz',
 };
+const WITH_IDENTITY_SETTINGS: Settings = {
+  ...WITH_TOKEN_SETTINGS,
+  meUsername: 'mdupont',
+};
 const PROJECT: Project = {
   id: 1,
   pathWithNamespace: 'equipe/backend-api',
@@ -33,6 +38,7 @@ const PROJECT: Project = {
   gitlabProjectId: 42,
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
+const MERGE_REQUESTS_URL = '/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=0';
 
 function run(overrides: Partial<SyncRun> = {}): SyncRun {
   return {
@@ -69,6 +75,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyDays: 6,
     readyLevel: 'red',
     openedDays: 6,
+    isMine: false,
     ...overrides,
   };
 }
@@ -111,6 +118,7 @@ describe('BoardPageComponent', () => {
     projects: Project[];
     status: SyncStatus;
     mergeRequests?: MergeRequestView[];
+    warnings?: string[];
   }): Promise<void> {
     fixture = TestBed.createComponent(BoardPageComponent);
     el = fixture.nativeElement as HTMLElement;
@@ -118,7 +126,9 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(options.settings);
     http.expectOne('/api/v1/projects').flush(options.projects);
-    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush(options.mergeRequests ?? []);
+    http
+      .expectOne(MERGE_REQUESTS_URL)
+      .flush({ mergeRequests: options.mergeRequests ?? [], warnings: options.warnings ?? [] });
     http.expectOne('/api/v1/sync/status').flush(options.status);
     await settle();
   }
@@ -141,12 +151,13 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
       t('board.noRepos.title'),
     );
+    expect(el.querySelector('app-filter-bar')).toBeNull();
     expect(
       el.querySelector<HTMLButtonElement>('button[mat-stroked-button]')?.disabled,
     ).toBe(false);
   });
 
-  it('should_show_the_mr_table_when_merge_requests_are_returned', async () => {
+  it('should_show_the_filter_bar_and_the_mr_table_when_merge_requests_are_returned', async () => {
     await bootstrap({
       settings: WITH_TOKEN_SETTINGS,
       projects: [PROJECT],
@@ -156,11 +167,12 @@ describe('BoardPageComponent', () => {
 
     expect(el.querySelector('.no-token-banner')).toBeNull();
     expect(el.querySelector('.empty-state')).toBeNull();
+    expect(el.querySelector('app-filter-bar')).not.toBeNull();
     expect(el.querySelector('app-mr-table')).not.toBeNull();
     expect(el.querySelector('.title-link')?.textContent?.trim()).toBe('Refonte facturation');
   });
 
-  it('should_show_the_no_merge_requests_empty_state_when_the_list_is_empty', async () => {
+  it('should_show_the_no_merge_requests_empty_state_without_a_clear_button_when_no_filter_is_active', async () => {
     await bootstrap({
       settings: WITH_TOKEN_SETTINGS,
       projects: [PROJECT],
@@ -173,6 +185,99 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
       t('board.mergeRequests.empty'),
     );
+    expect(el.querySelector('.empty-state button')).toBeNull();
+  });
+
+  it('should_pass_identity_configured_to_the_filter_bar', async () => {
+    await bootstrap({
+      settings: WITH_IDENTITY_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+    });
+
+    const filterBar = el.querySelector('app-filter-bar');
+    expect(filterBar?.querySelector('.mat-mdc-chip-disabled')).toBeNull();
+  });
+
+  it('should_disable_the_mine_chip_when_identity_is_not_configured', async () => {
+    await bootstrap({
+      settings: WITH_TOKEN_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+    });
+
+    const filterBar = el.querySelector('app-filter-bar');
+    expect(filterBar?.querySelector('.mat-mdc-chip-disabled')).not.toBeNull();
+  });
+
+  const waitForDebounce = () => new Promise((resolve) => setTimeout(resolve, 200));
+
+  it('should_reload_with_drafts_1_after_toggling_the_drafts_chip', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    el.querySelector<HTMLElement>('app-filter-bar mat-chip-option button')?.click();
+    await waitForDebounce();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=1&mine=0')
+      .flush({ mergeRequests: [], warnings: [] });
+    await settle();
+  });
+
+  it('should_reload_with_mine_1_after_toggling_the_mine_chip', async () => {
+    await bootstrap({
+      settings: WITH_IDENTITY_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [mergeRequest()],
+    });
+
+    const mineChip = Array.from(
+      el.querySelectorAll<HTMLElement>('app-filter-bar mat-chip-option button'),
+    )[1];
+    mineChip.click();
+    await waitForDebounce();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=1')
+      .flush({ mergeRequests: [], warnings: [] });
+    await settle();
+
+    expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.emptyFiltered'),
+    );
+    expect(el.querySelector('.empty-state button')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.clearFilters'),
+    );
+  });
+
+  it('should_reload_with_mine_0_when_the_clear_filters_button_is_clicked', async () => {
+    await bootstrap({
+      settings: WITH_IDENTITY_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [],
+    });
+    // Force « Mes MRs » actif directement sur le store, sans repasser par un
+    // cycle chip-clic + debounce + fetch : seul le comportement du bouton
+    // « Effacer » est testé ici (déjà couvert isolément pour le chip lui-même).
+    TestBed.inject(FiltersStore).toggleMine();
+    fixture.detectChanges();
+    await settle();
+
+    const clearButton = el.querySelector<HTMLButtonElement>('.empty-state button');
+    expect(clearButton?.textContent?.trim()).toBe(t('board.mergeRequests.clearFilters'));
+
+    clearButton?.click();
+    await waitForDebounce();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=0')
+      .flush({ mergeRequests: [mergeRequest()], warnings: [] });
+    await settle();
   });
 
   it('should_toast_when_loading_merge_requests_fails', async () => {
@@ -182,7 +287,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
-    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush('down', { status: 500, statusText: 'KO' });
+    http.expectOne(MERGE_REQUESTS_URL).flush('down', { status: 500, statusText: 'KO' });
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 
@@ -207,7 +312,7 @@ describe('BoardPageComponent', () => {
     await settle();
     // Rechargement automatique des MRs à la fin de cette (deuxième) transition
     // de statut, non-baseline cette fois (RG-005-06).
-    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     await settle();
   });
 
@@ -235,7 +340,7 @@ describe('BoardPageComponent', () => {
         nextRunAt: null,
       });
     await settle();
-    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
@@ -255,7 +360,7 @@ describe('BoardPageComponent', () => {
     await settle();
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
-    http.expectOne('/api/v1/merge-requests?sort=ready:asc').flush([]);
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 

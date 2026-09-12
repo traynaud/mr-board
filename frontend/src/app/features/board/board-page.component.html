@@ -21,17 +21,35 @@
       <p>{{ 'board.noRepos.title' | translate }}</p>
       <a mat-stroked-button routerLink="/settings">{{ 'board.noRepos.add' | translate }}</a>
     </div>
-  } @else if (mrStore.loading() && mrStore.mergeRequests().length === 0) {
-    <mat-progress-bar mode="indeterminate" />
-  } @else if (noMergeRequests()) {
-    <div class="empty-state">
-      <p>{{ 'board.mergeRequests.empty' | translate }}</p>
-    </div>
   } @else {
-    <app-mr-table
+    <app-filter-bar
+      [drafts]="filtersStore.drafts()"
+      [mine]="filtersStore.mine()"
+      [identityConfigured]="identityConfigured()"
       [rows]="mrStore.mergeRequests()"
-      [sort]="mrStore.sort()"
-      (sortChange)="mrStore.setSort($event)"
+      (draftsToggle)="onDraftsToggle()"
+      (mineToggle)="onMineToggle()"
+      (clearFilters)="onClearFilters()"
     />
+    @if (mrStore.loading() && mrStore.mergeRequests().length === 0) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else if (noMergeRequests()) {
+      <div class="empty-state">
+        @if (hasActiveFilter()) {
+          <p>{{ 'board.mergeRequests.emptyFiltered' | translate }}</p>
+          <button mat-button type="button" (click)="onClearFilters()">
+            {{ 'board.mergeRequests.clearFilters' | translate }}
+          </button>
+        } @else {
+          <p>{{ 'board.mergeRequests.empty' | translate }}</p>
+        }
+      </div>
+    } @else {
+      <app-mr-table
+        [rows]="mrStore.mergeRequests()"
+        [sort]="mrStore.sort()"
+        (sortChange)="mrStore.setSort($event)"
+      />
+    }
   }
 </main>

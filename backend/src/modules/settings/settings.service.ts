@@ -100,6 +100,18 @@ export class SettingsService {
   }
 
   /**
+   * Current "me" identity, used for role matching (RG-G09, US-009).
+   * `null` fields mean the identity is not configured.
+   */
+  async getIdentity(): Promise<{
+    username: string | null;
+    email: string | null;
+  }> {
+    const { meUsername, meEmail } = await this.load();
+    return { username: meUsername, email: meEmail };
+  }
+
+  /**
    * Decrypted GitLab token for server-side use only.
    * @returns `null` when not configured or unreadable (RG-001-10).
    */

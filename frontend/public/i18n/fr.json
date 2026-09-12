@@ -16,9 +16,19 @@
       "settings": "Paramètres",
       "refresh": "Rafraîchir"
     },
+    "filters": {
+      "ariaLabel": "Filtres rapides",
+      "drafts": "Drafts",
+      "mine": "Mes MRs",
+      "mineDisabledTooltip": "Configurez votre identité dans les paramètres",
+      "count": "{{count}} MR{{countSuffix}} · {{projects}} projet{{projectsSuffix}}",
+      "clear": "Effacer"
+    },
     "mergeRequests": {
       "loadError": "Impossible de charger les MRs.",
       "empty": "Aucune MR ouverte.",
+      "emptyFiltered": "Aucune MR ne correspond aux filtres.",
+      "clearFilters": "Effacer les filtres",
       "none": "—",
       "columns": {
         "project": "Projet",

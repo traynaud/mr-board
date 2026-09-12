@@ -32,6 +32,11 @@ interface MergeRequestViewBody {
   readyDays: number | null;
   readyLevel: 'green' | 'orange' | 'red' | null;
   openedDays: number;
+  isMine: boolean;
+}
+interface MergeRequestsResponseBody {
+  mergeRequests: MergeRequestViewBody[];
+  warnings: string[];
 }
 
 function userNode(
@@ -142,7 +147,7 @@ describe('MergeRequests (e2e)', () => {
     const res = await api().get('/api/v1/merge-requests');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body).toEqual({ mergeRequests: [], warnings: [] });
   });
 
   it('setup: should_configure_a_token_and_a_repo_for_the_rest_of_this_suite', async () => {
@@ -182,7 +187,7 @@ describe('MergeRequests (e2e)', () => {
 
       const res = await api().get('/api/v1/merge-requests');
       expect(res.status).toBe(200);
-      const [view] = res.body as MergeRequestViewBody[];
+      const [view] = (res.body as MergeRequestsResponseBody).mergeRequests;
 
       expect(view).toEqual({
         id: expect.any(Number) as number,
@@ -210,6 +215,7 @@ describe('MergeRequests (e2e)', () => {
         readyDays: 9,
         readyLevel: 'red',
         openedDays: 9,
+        isMine: false,
       });
       expect(Object.keys(view).sort()).toEqual(
         [
@@ -234,6 +240,7 @@ describe('MergeRequests (e2e)', () => {
           'readyDays',
           'readyLevel',
           'openedDays',
+          'isMine',
         ].sort(),
       );
       expect(JSON.stringify(res.body)).not.toContain('token');
@@ -250,7 +257,7 @@ describe('MergeRequests (e2e)', () => {
       await waitUntilIdle();
 
       const res = await api().get('/api/v1/merge-requests');
-      const view = (res.body as MergeRequestViewBody[]).find(
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
         (mr) => mr.iid === 6,
       );
       expect(view?.readyDays).toBe(1);
@@ -268,7 +275,7 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests');
-    const [view] = res.body as MergeRequestViewBody[];
+    const [view] = (res.body as MergeRequestsResponseBody).mergeRequests;
     expect(view.difficulty).toBe('medium');
     expect(view.changedFiles).toBeNull();
     expect(view.additions).toBeNull();
@@ -287,13 +294,13 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests');
-    const [view] = res.body as MergeRequestViewBody[];
+    const [view] = (res.body as MergeRequestsResponseBody).mergeRequests;
     expect(view.changedFiles).toBe(0);
     expect(view.changedLines).toBe(0);
     expect(view.difficulty).toBe('easy');
   });
 
-  it('GET /merge-requests should_exclude_draft_merge_requests', async () => {
+  it('GET /merge-requests should_exclude_draft_merge_requests_by_default', async () => {
     gitlab.getOpenMergeRequests.mockResolvedValue([
       rawNode(1),
       rawNode(2, { draft: true }),
@@ -303,8 +310,29 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests');
-    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
     expect(iids).toEqual([1]);
+  });
+
+  it('GET /merge-requests?drafts=1 should_include_drafts_after_ready_sorted_by_created_at_ascending', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(20, { draft: false, createdAt: '2026-09-01T10:00:00Z' }),
+      rawNode(21, { draft: true, createdAt: '2026-09-05T10:00:00Z' }),
+      rawNode(22, { draft: true, createdAt: '2026-09-03T10:00:00Z' }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?drafts=1');
+    const { mergeRequests } = res.body as MergeRequestsResponseBody;
+    expect(mergeRequests.map((v) => v.iid)).toEqual([20, 22, 21]);
+    const draft = mergeRequests.find((v) => v.iid === 21);
+    expect(draft?.draft).toBe(true);
+    expect(draft?.readyAt).toBeNull();
+    expect(draft?.readyDays).toBeNull();
   });
 
   it('GET /merge-requests should_be_sorted_by_ready_at_ascending', async () => {
@@ -318,7 +346,9 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests');
-    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
     expect(iids).toEqual([1, 3, 5]);
   });
 
@@ -333,7 +363,9 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests?sort=ready:desc');
-    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
     expect(iids).toEqual([12, 11, 10]);
   });
 
@@ -354,9 +386,13 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests?sort=diff:asc');
-    const body = res.body as MergeRequestViewBody[];
-    expect(body.map((v) => v.iid)).toEqual([2, 3, 1]);
-    expect(body.map((v) => v.difficulty)).toEqual(['easy', 'medium', 'hard']);
+    const { mergeRequests } = res.body as MergeRequestsResponseBody;
+    expect(mergeRequests.map((v) => v.iid)).toEqual([2, 3, 1]);
+    expect(mergeRequests.map((v) => v.difficulty)).toEqual([
+      'easy',
+      'medium',
+      'hard',
+    ]);
   });
 
   it('GET /merge-requests?sort=diff:desc should_sort_hard_to_easy', async () => {
@@ -376,7 +412,9 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests?sort=diff:desc');
-    const iids = (res.body as MergeRequestViewBody[]).map((v) => v.iid);
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
     expect(iids).toEqual([1, 3, 2]);
   });
 
@@ -384,5 +422,93 @@ describe('MergeRequests (e2e)', () => {
     const res = await api().get('/api/v1/merge-requests?sort=title:asc');
 
     expect(res.status).toBe(400);
+  });
+
+  it('GET /merge-requests?mine=1 should_return_everything_and_warn_when_identity_is_not_configured', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([rawNode(30), rawNode(31)]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?mine=1');
+    const body = res.body as MergeRequestsResponseBody;
+    expect(body.mergeRequests.map((v) => v.iid)).toEqual([30, 31]);
+    expect(body.warnings).toEqual(['identity.missing']);
+  });
+
+  it('setup: should_configure_my_identity_for_the_rest_of_this_suite', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      meUsername: 'mdupont',
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('GET /merge-requests?mine=1 should_filter_to_merge_requests_where_i_am_the_author', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(40, { author: userNode(1, 'mdupont', { name: 'Marie Dupont' }) }),
+      rawNode(41, { author: userNode(5, 'jdurand', { name: 'Jean Durand' }) }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?mine=1');
+    const body = res.body as MergeRequestsResponseBody;
+    expect(body.mergeRequests.map((v) => v.iid)).toEqual([40]);
+    expect(body.mergeRequests[0].isMine).toBe(true);
+    expect(body.warnings).toEqual([]);
+  });
+
+  it('GET /merge-requests should_expose_is_mine_true_when_i_am_one_of_several_reviewers', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(50, {
+        author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+        reviewers: {
+          nodes: [
+            userNode(6, 'tgirard', { name: 'Thomas Girard' }),
+            userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+          ],
+        },
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+      (v) => v.iid === 50,
+    );
+    expect(view?.isMine).toBe(true);
+  });
+
+  it('GET /merge-requests?drafts=1&mine=1 should_combine_drafts_and_mine', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(60, {
+        author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+        createdAt: '2026-09-01T10:00:00Z',
+      }),
+      rawNode(61, {
+        draft: true,
+        author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+        createdAt: '2026-09-02T10:00:00Z',
+      }),
+      rawNode(62, {
+        draft: true,
+        author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+        createdAt: '2026-09-03T10:00:00Z',
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?drafts=1&mine=1');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
+    expect(iids).toEqual([60, 61]);
   });
 });

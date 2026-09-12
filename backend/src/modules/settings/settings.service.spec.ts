@@ -358,5 +358,25 @@ describe('SettingsService', () => {
     it('should_return_null_token_when_none', async () => {
       await expect(service.getToken()).resolves.toBeNull();
     });
+
+    it('should_expose_the_configured_identity', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        meUsername: 'mdupont',
+        meEmail: 'marie@exemple.fr',
+      });
+
+      await expect(service.getIdentity()).resolves.toEqual({
+        username: 'mdupont',
+        email: 'marie@exemple.fr',
+      });
+    });
+
+    it('should_expose_a_null_identity_when_not_configured', async () => {
+      await expect(service.getIdentity()).resolves.toEqual({
+        username: null,
+        email: null,
+      });
+    });
   });
 });

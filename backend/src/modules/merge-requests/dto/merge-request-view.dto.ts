@@ -36,4 +36,6 @@ export class MergeRequestViewDto {
   readyLevel!: ReadyLevel | null;
   /** Jours écoulés depuis `createdAt` ; toujours calculé, affiché uniquement pour un draft (RG-007-05). */
   openedDays!: number;
+  /** `true` si je suis auteur, reviewer ou affecté (RG-G09) ; toujours calculé (RG-009-06). */
+  isMine!: boolean;
 }
