@@ -2,9 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../core/api/api-error';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
+import { SettingsService } from '../core/api/settings.service';
+import { BrowserNotificationService } from '../core/notifications/browser-notification.service';
 import { MergeRequestsFacets, MergeRequestView } from '../models/merge-request.model';
+import { Settings } from '../models/settings.model';
 import { FiltersStore } from './filters.store';
 import { MergeRequestsStore } from './merge-requests.store';
+import { SettingsStore } from './settings.store';
 
 const MR: MergeRequestView = {
   id: 1,
@@ -46,17 +50,54 @@ const EMPTY_FACETS: MergeRequestsFacets = {
   ],
 };
 
+const SETTINGS: Settings = {
+  gitlabUrl: 'https://gitlab.com',
+  tokenConfigured: false,
+  tokenHint: null,
+  meUsername: 'mdupont',
+  meEmail: null,
+  refreshIntervalMin: 5,
+  pauseWhenHidden: true,
+  easyFiles: 5,
+  easyLines: 100,
+  hardFiles: 20,
+  hardLines: 800,
+  readyGreenDays: 1,
+  readyOrangeDays: 3,
+  workdaysOnly: false,
+  openInNewTab: false,
+  ignoredLabels: [],
+  notifyAssigned: true,
+  tabBadge: false,
+};
+
 describe('MergeRequestsStore', () => {
   const api = { getMergeRequests: vi.fn(), getFacets: vi.fn() };
+  const settingsApi = {
+    getSettings: vi.fn(),
+    putSettings: vi.fn(),
+    postTestConnection: vi.fn(),
+    getExportConfig: vi.fn(),
+    postImportConfig: vi.fn(),
+  };
+  const notifications = { show: vi.fn(), isSupported: vi.fn(), permission: vi.fn(), requestPermission: vi.fn() };
   let store: InstanceType<typeof MergeRequestsStore>;
   let filters: InstanceType<typeof FiltersStore>;
+  let settingsStore: InstanceType<typeof SettingsStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     api.getFacets.mockReturnValue(of(EMPTY_FACETS));
-    TestBed.configureTestingModule({ providers: [{ provide: MergeRequestsService, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: MergeRequestsService, useValue: api },
+        { provide: SettingsService, useValue: settingsApi },
+        { provide: BrowserNotificationService, useValue: notifications },
+      ],
+    });
     store = TestBed.inject(MergeRequestsStore);
     filters = TestBed.inject(FiltersStore);
+    settingsStore = TestBed.inject(SettingsStore);
   });
 
   it('should_load_merge_requests', async () => {
@@ -267,6 +308,69 @@ describe('MergeRequestsStore', () => {
       vi.advanceTimersByTime(150);
 
       expect(api.getMergeRequests).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('notifications', () => {
+    async function loadSettings(settings: Settings): Promise<void> {
+      settingsApi.getSettings.mockReturnValue(of(settings));
+      await settingsStore.load();
+    }
+
+    const ASSIGNED_MR: MergeRequestView = {
+      ...MR,
+      reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null }],
+    };
+
+    it('should_not_notify_on_the_first_load_of_the_session', async () => {
+      await loadSettings(SETTINGS);
+      api.getMergeRequests.mockReturnValue(of({ mergeRequests: [ASSIGNED_MR], warnings: [] }));
+
+      await store.load();
+
+      expect(notifications.show).not.toHaveBeenCalled();
+    });
+
+    it('should_notify_a_new_assignment_on_a_subsequent_load_when_enabled', async () => {
+      await loadSettings(SETTINGS);
+      api.getMergeRequests.mockReturnValueOnce(of({ mergeRequests: [MR], warnings: [] }));
+      await store.load();
+
+      api.getMergeRequests.mockReturnValueOnce(
+        of({ mergeRequests: [ASSIGNED_MR], warnings: [] }),
+      );
+      await store.load();
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        `MR Board — ${ASSIGNED_MR.projectAlias} !${ASSIGNED_MR.iid}`,
+        ASSIGNED_MR.title,
+        expect.any(Function),
+      );
+    });
+
+    it('should_not_notify_when_notify_assigned_is_disabled', async () => {
+      await loadSettings({ ...SETTINGS, notifyAssigned: false });
+      api.getMergeRequests.mockReturnValueOnce(of({ mergeRequests: [MR], warnings: [] }));
+      await store.load();
+
+      api.getMergeRequests.mockReturnValueOnce(
+        of({ mergeRequests: [ASSIGNED_MR], warnings: [] }),
+      );
+      await store.load();
+
+      expect(notifications.show).not.toHaveBeenCalled();
+    });
+
+    it('should_not_notify_when_settings_are_not_loaded', async () => {
+      api.getMergeRequests.mockReturnValueOnce(of({ mergeRequests: [MR], warnings: [] }));
+      await store.load();
+
+      api.getMergeRequests.mockReturnValueOnce(
+        of({ mergeRequests: [ASSIGNED_MR], warnings: [] }),
+      );
+      await store.load();
+
+      expect(notifications.show).not.toHaveBeenCalled();
     });
   });
 });

@@ -53,6 +53,10 @@ export interface SettingsFormControls {
   openInNewTab: FormControl<boolean>;
   /** Case « Ignorer les MRs avec le label wip / on-hold » (RG-015-02) ; converti vers/depuis `ignoredLabels`. */
   ignoreWip: FormControl<boolean>;
+  /** Notification navigateur quand une MR m'est nouvellement assignée (RG-016-01/02). */
+  notifyAssigned: FormControl<boolean>;
+  /** Badge dans le titre de l'onglet comptant les MRs au niveau Ready rouge (RG-016-04). */
+  tabBadge: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -180,6 +184,8 @@ export function buildSettingsForm(): SettingsForm {
       workdaysOnly: new FormControl(DEFAULT_THRESHOLDS.workdaysOnly, { nonNullable: true }),
       openInNewTab: new FormControl(false, { nonNullable: true }),
       ignoreWip: new FormControl(false, { nonNullable: true }),
+      notifyAssigned: new FormControl(false, { nonNullable: true }),
+      tabBadge: new FormControl(false, { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
       // touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -211,6 +217,8 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.workdaysOnly.reset(settings.workdaysOnly);
   form.controls.openInNewTab.reset(settings.openInNewTab);
   form.controls.ignoreWip.reset(settings.ignoredLabels.length > 0);
+  form.controls.notifyAssigned.reset(settings.notifyAssigned);
+  form.controls.tabBadge.reset(settings.tabBadge);
 }
 
 /**
@@ -236,6 +244,8 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.workdaysOnly.setValue(DEFAULT_THRESHOLDS.workdaysOnly);
   controls.openInNewTab.setValue(false);
   controls.ignoreWip.setValue(false);
+  controls.notifyAssigned.setValue(false);
+  controls.tabBadge.setValue(false);
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'gitlabToken' && name !== 'repos') {
       controls[name].markAsDirty();
@@ -267,6 +277,8 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     workdaysOnly,
     openInNewTab,
     ignoreWip,
+    notifyAssigned,
+    tabBadge,
   } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
@@ -284,5 +296,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     workdaysOnly,
     openInNewTab,
     ignoredLabels: ignoreWip ? [...DEFAULT_IGNORED_LABELS] : [],
+    notifyAssigned,
+    tabBadge,
   };
 }

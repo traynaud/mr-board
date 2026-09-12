@@ -160,7 +160,7 @@ une fois ses dépendances réalisées.
 | US-013 | Actualisation automatique                                | Should   | M          | US-004                 | ✅ |
 | US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ✅ |
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ✅ |
-| US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ☐ |
+| US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ✅ |
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
 

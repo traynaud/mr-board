@@ -3,6 +3,7 @@ import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { errorKeyOf } from '../core/api/api-error';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
+import { BrowserNotificationService } from '../core/notifications/browser-notification.service';
 import {
   DEFAULT_SORT,
   MergeRequestSort,
@@ -10,7 +11,9 @@ import {
   MergeRequestsFacets,
   SortKey,
 } from '../models/merge-request.model';
+import { findNewAssignments } from './assignment-diff';
 import { FiltersStore } from './filters.store';
+import { SettingsStore } from './settings.store';
 
 export interface MergeRequestsState {
   mergeRequests: MergeRequestView[];
@@ -45,77 +48,112 @@ const initialState: MergeRequestsState = {
 export const MergeRequestsStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withMethods((store, api = inject(MergeRequestsService), filters = inject(FiltersStore)) => {
-    let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+  withMethods(
+    (
+      store,
+      api = inject(MergeRequestsService),
+      filters = inject(FiltersStore),
+      settingsStore = inject(SettingsStore),
+      notifications = inject(BrowserNotificationService),
+    ) => {
+      let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+      let hasLoadedOnce = false;
 
-    async function load(): Promise<void> {
-      patchState(store, { loading: true, loadError: null });
-      try {
-        const baseFilters = { drafts: filters.drafts(), mine: filters.mine() };
-        const composableFilters = filters.composableFilters();
-        const [{ mergeRequests, warnings }, facets] = await Promise.all([
-          firstValueFrom(api.getMergeRequests(store.sort(), baseFilters, composableFilters)),
-          firstValueFrom(api.getFacets(baseFilters, composableFilters)),
-        ]);
-        patchState(store, { mergeRequests, warnings, facets, loading: false });
-        reconcileSelections(facets);
-      } catch (error) {
-        patchState(store, { loading: false, loadError: errorKeyOf(error) });
-      }
-    }
-
-    /**
-     * RG-010-09 : retire silencieusement, de chaque filtre multi-sélection,
-     * toute valeur sélectionnée absente des options renvoyées par `facets`
-     * (utilisateur disparu, alias renommé). `FiltersStore` reste un état UI
-     * pur, sans connaissance du serveur — cette logique vit ici.
-     */
-    function reconcileSelections(facets: MergeRequestsFacets): void {
-      for (const key of ['project', 'author', 'assigned'] as const) {
-        const known = new Set(facets[key].map((option) => option.value));
-        const current = filters[key]();
-        const pruned = current.filter((value) => known.has(value));
-        if (pruned.length !== current.length) {
-          filters.setMultiValue(key, pruned);
+      async function load(): Promise<void> {
+        const previous = store.mergeRequests();
+        patchState(store, { loading: true, loadError: null });
+        try {
+          const baseFilters = { drafts: filters.drafts(), mine: filters.mine() };
+          const composableFilters = filters.composableFilters();
+          const [{ mergeRequests, warnings }, facets] = await Promise.all([
+            firstValueFrom(api.getMergeRequests(store.sort(), baseFilters, composableFilters)),
+            firstValueFrom(api.getFacets(baseFilters, composableFilters)),
+          ]);
+          patchState(store, { mergeRequests, warnings, facets, loading: false });
+          reconcileSelections(facets);
+          notifyNewAssignments(previous, mergeRequests);
+          hasLoadedOnce = true;
+        } catch (error) {
+          patchState(store, { loading: false, loadError: errorKeyOf(error) });
         }
       }
-    }
-
-    return {
-      /** Charge la liste des MRs ouvertes, triées et filtrées (RG-005-01, RG-008-07, RG-009-01/02). */
-      load,
 
       /**
-       * Change le tri (RG-008-03) : colonne différente → ascendant ; même
-       * colonne ascendante → descendant ; même colonne descendante →
-       * ascendant. Recharge systématiquement (le tri est appliqué côté
-       * backend).
+       * Notifie les nouvelles assignations (RG-016-01/02) : jamais au premier
+       * chargement de la session (`hasLoadedOnce`), et seulement si l'option
+       * est activée.
        */
-      setSort(key: SortKey): void {
-        const current = store.sort();
-        const direction = current.key === key && current.direction === 'asc' ? 'desc' : 'asc';
-        patchState(store, { sort: { key, direction } });
-        void load();
-      },
+      function notifyNewAssignments(
+        previous: MergeRequestView[],
+        current: MergeRequestView[],
+      ): void {
+        const settings = settingsStore.settings();
+        if (!hasLoadedOnce || !settings?.notifyAssigned) {
+          return;
+        }
+        const username = settings.meUsername ?? '';
+        for (const assignment of findNewAssignments(previous, current, username)) {
+          notifications.show(
+            `MR Board — ${assignment.projectAlias} !${assignment.iid}`,
+            assignment.title,
+            () => window.open(assignment.webUrl, '_blank'),
+          );
+        }
+      }
 
       /**
-       * Restaure le tri depuis l'URL (RG-011-02) : patch direct, sans la
-       * logique de bascule de `setSort` ni de rechargement — le premier
-       * `load()` de `ngOnInit` s'en charge une fois tous les stores restaurés.
+       * RG-010-09 : retire silencieusement, de chaque filtre multi-sélection,
+       * toute valeur sélectionnée absente des options renvoyées par `facets`
+       * (utilisateur disparu, alias renommé). `FiltersStore` reste un état UI
+       * pur, sans connaissance du serveur — cette logique vit ici.
        */
-      restoreSort(sort: MergeRequestSort): void {
-        patchState(store, { sort });
-      },
+      function reconcileSelections(facets: MergeRequestsFacets): void {
+        for (const key of ['project', 'author', 'assigned'] as const) {
+          const known = new Set(facets[key].map((option) => option.value));
+          const current = filters[key]();
+          const pruned = current.filter((value) => known.has(value));
+          if (pruned.length !== current.length) {
+            filters.setMultiValue(key, pruned);
+          }
+        }
+      }
 
-      /**
-       * Recharge après un changement de filtre, avec un debounce de 150 ms
-       * (RG-009-07) pour éviter une requête par filtre quand plusieurs
-       * changent coup sur coup.
-       */
-      scheduleReload(): void {
-        clearTimeout(reloadTimer);
-        reloadTimer = setTimeout(() => void load(), FILTER_RELOAD_DEBOUNCE_MS);
-      },
-    };
-  }),
+      return {
+        /** Charge la liste des MRs ouvertes, triées et filtrées (RG-005-01, RG-008-07, RG-009-01/02). */
+        load,
+
+        /**
+         * Change le tri (RG-008-03) : colonne différente → ascendant ; même
+         * colonne ascendante → descendant ; même colonne descendante →
+         * ascendant. Recharge systématiquement (le tri est appliqué côté
+         * backend).
+         */
+        setSort(key: SortKey): void {
+          const current = store.sort();
+          const direction = current.key === key && current.direction === 'asc' ? 'desc' : 'asc';
+          patchState(store, { sort: { key, direction } });
+          void load();
+        },
+
+        /**
+         * Restaure le tri depuis l'URL (RG-011-02) : patch direct, sans la
+         * logique de bascule de `setSort` ni de rechargement — le premier
+         * `load()` de `ngOnInit` s'en charge une fois tous les stores restaurés.
+         */
+        restoreSort(sort: MergeRequestSort): void {
+          patchState(store, { sort });
+        },
+
+        /**
+         * Recharge après un changement de filtre, avec un debounce de 150 ms
+         * (RG-009-07) pour éviter une requête par filtre quand plusieurs
+         * changent coup sur coup.
+         */
+        scheduleReload(): void {
+          clearTimeout(reloadTimer);
+          reloadTimer = setTimeout(() => void load(), FILTER_RELOAD_DEBOUNCE_MS);
+        },
+      };
+    },
+  ),
 );

@@ -23,6 +23,8 @@ describe('SettingsStore', () => {
     workdaysOnly: false,
     openInNewTab: false,
     ignoredLabels: [],
+    notifyAssigned: false,
+    tabBadge: false,
   };
   const api = {
     getSettings: vi.fn(),

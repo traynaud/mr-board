@@ -31,6 +31,8 @@ describe('SettingsService', () => {
     workdaysOnly: false,
     openInNewTab: false,
     ignoredLabels: '[]',
+    notifyAssigned: false,
+    tabBadge: false,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -88,6 +90,8 @@ describe('SettingsService', () => {
         workdaysOnly: false,
         openInNewTab: false,
         ignoredLabels: [],
+        notifyAssigned: false,
+        tabBadge: false,
       });
     });
 
@@ -158,6 +162,8 @@ describe('SettingsService', () => {
         workdaysOnly: false,
         openInNewTab: false,
         ignoredLabels: [],
+        notifyAssigned: false,
+        tabBadge: false,
       });
     });
 
@@ -415,6 +421,35 @@ describe('SettingsService', () => {
         expect.objectContaining({ openInNewTab: true, ignoredLabels: ['wip'] }),
       );
     });
+
+    it('should_set_the_notification_settings_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        notifyAssigned: true,
+        tabBadge: true,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
+      );
+    });
+
+    it('should_keep_the_notification_settings_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({
+        ...row(),
+        notifyAssigned: true,
+        tabBadge: true,
+      });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(
+        expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
+      );
+    });
   });
 
   describe('applyImportedSettings', () => {
@@ -429,6 +464,8 @@ describe('SettingsService', () => {
         easyFiles: 12,
         openInNewTab: true,
         ignoredLabels: ['wip'],
+        notifyAssigned: true,
+        tabBadge: true,
       });
 
       expect(cipher.encrypt).not.toHaveBeenCalled();
@@ -439,6 +476,8 @@ describe('SettingsService', () => {
           easyFiles: 12,
           openInNewTab: true,
           ignoredLabels: JSON.stringify(['wip']),
+          notifyAssigned: true,
+          tabBadge: true,
         }),
       );
       expect(result).toEqual(
@@ -448,6 +487,8 @@ describe('SettingsService', () => {
           easyFiles: 12,
           openInNewTab: true,
           ignoredLabels: ['wip'],
+          notifyAssigned: true,
+          tabBadge: true,
         }),
       );
     });
@@ -729,6 +770,8 @@ describe('SettingsService', () => {
         workdaysOnly: false,
         openInNewTab: true,
         ignoredLabels: ['wip'],
+        notifyAssigned: false,
+        tabBadge: false,
       });
       expect(result).not.toHaveProperty('gitlabTokenEncrypted');
       expect(JSON.stringify(result)).not.toContain('should-not-appear');

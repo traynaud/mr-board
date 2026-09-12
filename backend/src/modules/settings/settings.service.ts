@@ -38,6 +38,8 @@ export interface MergeableSettingsFields {
   workdaysOnly?: boolean;
   openInNewTab?: boolean;
   ignoredLabels?: string[];
+  notifyAssigned?: boolean;
+  tabBadge?: boolean;
 }
 
 /** Every setting except the GitLab token, as exported/imported by US-015. */
@@ -56,6 +58,8 @@ export interface ExportableSettings {
   workdaysOnly: boolean;
   openInNewTab: boolean;
   ignoredLabels: string[];
+  notifyAssigned: boolean;
+  tabBadge: boolean;
 }
 
 /** Manages the settings singleton and the GitLab connection test. */
@@ -234,6 +238,8 @@ export class SettingsService {
       workdaysOnly: settings.workdaysOnly,
       openInNewTab: settings.openInNewTab,
       ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
+      notifyAssigned: settings.notifyAssigned,
+      tabBadge: settings.tabBadge,
     };
   }
 
@@ -285,6 +291,12 @@ export class SettingsService {
     if (dto.ignoredLabels !== undefined) {
       settings.ignoredLabels = JSON.stringify(dto.ignoredLabels);
     }
+    if (dto.notifyAssigned !== undefined) {
+      settings.notifyAssigned = dto.notifyAssigned;
+    }
+    if (dto.tabBadge !== undefined) {
+      settings.tabBadge = dto.tabBadge;
+    }
   }
 
   private async load(): Promise<Settings> {
@@ -311,6 +323,8 @@ export class SettingsService {
         workdaysOnly: false,
         openInNewTab: false,
         ignoredLabels: '[]',
+        notifyAssigned: false,
+        tabBadge: false,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -375,6 +389,8 @@ export class SettingsService {
       workdaysOnly: settings.workdaysOnly,
       openInNewTab: settings.openInNewTab,
       ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
+      notifyAssigned: settings.notifyAssigned,
+      tabBadge: settings.tabBadge,
     };
   }
 }

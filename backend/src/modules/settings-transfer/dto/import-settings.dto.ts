@@ -90,4 +90,12 @@ export class ImportSettingsDto {
   @IsArray()
   @IsString({ each: true })
   ignoredLabels?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  notifyAssigned?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  tabBadge?: boolean;
 }

@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
@@ -33,6 +34,9 @@ import { MrTableComponent } from './mr-table/mr-table.component';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'application. */
 const TOAST_DURATION_MS = 3500;
+
+/** Titre par défaut de l'onglet, restauré à la destruction du composant (RG-016-04). */
+const APP_TITLE = 'MR Board';
 
 /**
  * Écran Tableau (route `/`) : toolbar de synchronisation (US-004), bandeau
@@ -68,6 +72,7 @@ export class BoardPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly titleService = inject(Title);
 
   /** `false` tant qu'aucun chargement de statut ne s'est encore terminé (pas de toast à l'ouverture, RG-004-12). */
   private initialized = false;
@@ -153,6 +158,11 @@ export class BoardPageComponent implements OnInit {
     () => !this.noRepos() && !(this.mrStore.loading() && this.mrStore.mergeRequests().length === 0),
   );
 
+  /** RG-016-04 : nombre de MRs affichées au niveau Ready rouge, pour le badge du titre d'onglet. */
+  protected readonly redCount = computed(
+    () => this.mrStore.mergeRequests().filter((mr) => mr.readyLevel === 'red').length,
+  );
+
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
     // re-déclencher au montage pour un échec déjà présent avant l'ouverture.
@@ -191,6 +201,21 @@ export class BoardPageComponent implements OnInit {
       const queryParams = this.currentQueryParams();
       void this.router.navigate([], { relativeTo: this.route, queryParams, replaceUrl: true });
     });
+
+    // RG-016-04 : badge de comptage des MRs rouges dans le titre de l'onglet.
+    // L'effect s'arrête à la destruction du composant, mais le dernier titre
+    // posé resterait sinon affiché en naviguant vers /settings : restauré
+    // explicitement.
+    effect(() => {
+      const settings = this.settingsStore.settings();
+      if (!settings?.tabBadge) {
+        this.titleService.setTitle(APP_TITLE);
+        return;
+      }
+      const count = this.redCount();
+      this.titleService.setTitle(count > 0 ? `(${count}) ${APP_TITLE}` : APP_TITLE);
+    });
+    this.destroyRef.onDestroy(() => this.titleService.setTitle(APP_TITLE));
   }
 
   ngOnInit(): void {

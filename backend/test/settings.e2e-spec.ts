@@ -71,6 +71,8 @@ describe('Settings (e2e)', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
   });
 
@@ -132,6 +134,8 @@ describe('Settings (e2e)', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -166,6 +170,8 @@ describe('Settings (e2e)', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
   });
 
@@ -468,6 +474,33 @@ describe('Settings (e2e)', () => {
         openInNewTab: true,
         ignoredLabels: ['wip', 'on-hold'],
       }),
+    );
+  });
+
+  it('PUT /settings should_store_the_notification_settings', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      gitlabUrl: 'https://gitlab.com',
+      notifyAssigned: true,
+      tabBadge: true,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
+    );
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_keep_the_notification_settings_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
     );
   });
 

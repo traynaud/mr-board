@@ -2,7 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { By } from '@angular/platform-browser';
+import { By, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
@@ -37,6 +37,8 @@ const NO_TOKEN_SETTINGS: Settings = {
   workdaysOnly: false,
   openInNewTab: false,
   ignoredLabels: [],
+  notifyAssigned: false,
+  tabBadge: false,
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
@@ -837,5 +839,62 @@ describe('BoardPageComponent', () => {
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
+  });
+
+  describe('tab title badge (RG-016-04)', () => {
+    afterEach(() => {
+      TestBed.inject(Title).setTitle('MR Board');
+    });
+
+    it('should_leave_the_default_title_when_tab_badge_is_disabled', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: false },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ readyLevel: 'red' })],
+      });
+
+      expect(TestBed.inject(Title).getTitle()).toBe('MR Board');
+    });
+
+    it('should_show_the_red_count_in_the_title_when_tab_badge_is_enabled', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [
+          mergeRequest({ id: 1, readyLevel: 'red' }),
+          mergeRequest({ id: 2, readyLevel: 'green' }),
+          mergeRequest({ id: 3, readyLevel: 'red' }),
+        ],
+      });
+
+      expect(TestBed.inject(Title).getTitle()).toBe('(2) MR Board');
+    });
+
+    it('should_use_the_default_title_when_no_merge_request_is_red', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ readyLevel: 'green' })],
+      });
+
+      expect(TestBed.inject(Title).getTitle()).toBe('MR Board');
+    });
+
+    it('should_restore_the_default_title_when_the_component_is_destroyed', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ readyLevel: 'red' })],
+      });
+      expect(TestBed.inject(Title).getTitle()).toBe('(1) MR Board');
+
+      fixture.destroy();
+
+      expect(TestBed.inject(Title).getTitle()).toBe('MR Board');
+    });
   });
 });

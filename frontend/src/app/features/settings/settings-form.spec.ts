@@ -86,6 +86,8 @@ describe('settings form helpers', () => {
     workdaysOnly: true,
     openInNewTab: true,
     ignoredLabels: ['wip', 'on-hold'],
+    notifyAssigned: true,
+    tabBadge: true,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -111,6 +113,8 @@ describe('settings form helpers', () => {
       workdaysOnly: true,
       openInNewTab: true,
       ignoreWip: true,
+      notifyAssigned: true,
+      tabBadge: true,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -152,6 +156,8 @@ describe('settings form helpers', () => {
       ...DEFAULT_THRESHOLDS,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
   });
 
@@ -174,6 +180,8 @@ describe('settings form helpers', () => {
       ...DEFAULT_THRESHOLDS,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
   });
 
@@ -240,6 +248,28 @@ describe('settings form helpers', () => {
 
     expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ ignoredLabels: [] }));
   });
+
+  it('should_include_the_notification_settings_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({
+      gitlabUrl: 'https://gitlab.com',
+      notifyAssigned: true,
+      tabBadge: true,
+    });
+
+    expect(toUpdateRequest(form)).toEqual(
+      expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
+    );
+  });
+
+  it('should_reset_the_notification_settings_from_settings', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.notifyAssigned.value).toBe(true);
+    expect(form.controls.tabBadge.value).toBe(true);
+  });
 });
 
 describe('resetSettingsFormToDefaults', () => {
@@ -254,6 +284,8 @@ describe('resetSettingsFormToDefaults', () => {
       easyFiles: 1,
       openInNewTab: true,
       ignoreWip: true,
+      notifyAssigned: true,
+      tabBadge: true,
     });
 
     resetSettingsFormToDefaults(form);
@@ -268,6 +300,8 @@ describe('resetSettingsFormToDefaults', () => {
         ...DEFAULT_THRESHOLDS,
         openInNewTab: false,
         ignoreWip: false,
+        notifyAssigned: false,
+        tabBadge: false,
       }),
     );
   });

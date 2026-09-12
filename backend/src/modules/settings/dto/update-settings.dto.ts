@@ -103,4 +103,14 @@ export class UpdateSettingsDto extends GitlabCredentialsDto {
   @IsArray()
   @IsString({ each: true })
   ignoredLabels?: string[];
+
+  /** Browser notification when a merge request is newly assigned to me (RG-016-01/02). */
+  @IsOptional()
+  @IsBoolean()
+  notifyAssigned?: boolean;
+
+  /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
+  @IsOptional()
+  @IsBoolean()
+  tabBadge?: boolean;
 }

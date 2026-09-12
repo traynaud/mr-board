@@ -70,6 +70,14 @@ export class Settings {
   @Column({ name: 'ignored_labels', type: 'text', default: '[]' })
   ignoredLabels!: string;
 
+  /** Browser notification when a merge request is newly assigned to me (RG-016-01/02). */
+  @Column({ name: 'notify_assigned', type: 'boolean', default: false })
+  notifyAssigned!: boolean;
+
+  /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
+  @Column({ name: 'tab_badge', type: 'boolean', default: false })
+  tabBadge!: boolean;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

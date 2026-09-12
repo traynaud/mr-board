@@ -4,9 +4,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslateService, TranslationParams } from '../../../../core/i18n/translate.service';
+import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -28,13 +28,7 @@ const TOAST_DURATION_MS = 3500;
  */
 @Component({
   selector: 'app-miscellaneous-section',
-  imports: [
-    ReactiveFormsModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    MatTooltipModule,
-    TranslatePipe,
-  ],
+  imports: [ReactiveFormsModule, MatCheckboxModule, MatButtonModule, TranslatePipe],
   templateUrl: './miscellaneous-section.component.html',
   styleUrl: './miscellaneous-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,10 +39,33 @@ export class MiscellaneousSectionComponent {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
+  protected readonly notifications = inject(BrowserNotificationService);
 
   readonly form = input.required<SettingsForm>();
 
   protected readonly importing = signal(false);
+  /** Vrai quand l'utilisateur vient de refuser la permission de notification (RG-016-02). */
+  protected readonly permissionBlocked = signal(false);
+
+  /**
+   * Coche/décoche `notifyAssigned` manuellement (RG-016-02) : la case
+   * n'est jamais liée directement au `FormControl` — cocher demande
+   * d'abord la permission navigateur, et une case décochée ne la demande
+   * jamais.
+   */
+  protected async onNotifyAssignedChange(checked: boolean): Promise<void> {
+    const control = this.form().controls.notifyAssigned;
+    if (!checked) {
+      control.setValue(false);
+      control.markAsDirty();
+      this.permissionBlocked.set(false);
+      return;
+    }
+    const permission = await this.notifications.requestPermission();
+    control.setValue(permission === 'granted');
+    control.markAsDirty();
+    this.permissionBlocked.set(permission !== 'granted');
+  }
 
   /** Télécharge la config courante en JSON, hors jeton (RG-015-03). */
   protected async exportConfig(): Promise<void> {

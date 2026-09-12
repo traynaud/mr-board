@@ -28,6 +28,11 @@ le tableau sans le regarder.
 - Wireframe **1c** — section `06 · Divers` : « Notification navigateur quand une MR m'est affectée », « Badge de compteur sur l'onglet (MRs en rouge) »
 - Prototype — `notify`, `badge`
 
+> Note d'implémentation : ces deux cases existent déjà dans `MiscellaneousSectionComponent` (US-015, RG-015-06),
+> rendues désactivées avec l'infobulle « Bientôt disponible » et sans `FormControl` réel. Cette US doit les relier
+> à de vrais `FormControl` (`notifyAssigned`, `tabBadge`) sur `SettingsForm`, retirer `disabled`/le tooltip, et
+> gérer l'état supplémentaire « permission refusée » (RG-016-02) qui n'a pas d'équivalent dans les autres cases.
+
 ## 5. Critères d'acceptation
 
 ```gherkin

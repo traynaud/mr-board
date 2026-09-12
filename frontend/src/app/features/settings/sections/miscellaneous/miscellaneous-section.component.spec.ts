@@ -4,10 +4,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.interceptor';
+import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
 import { SettingsForm, buildSettingsForm } from '../../settings-form';
 import { MiscellaneousSectionComponent } from './miscellaneous-section.component';
@@ -38,6 +40,8 @@ const FULL_SETTINGS = {
   workdaysOnly: false,
   openInNewTab: false,
   ignoredLabels: [],
+  notifyAssigned: false,
+  tabBadge: false,
 };
 
 describe('MiscellaneousSectionComponent', () => {
@@ -47,9 +51,16 @@ describe('MiscellaneousSectionComponent', () => {
   let http: HttpTestingController;
   const snackBar = { open: vi.fn() };
   const dialog = { open: vi.fn() };
+  const notifications = {
+    isSupported: vi.fn(() => true),
+    permission: vi.fn(() => 'default' as NotificationPermission),
+    requestPermission: vi.fn(),
+    show: vi.fn(),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    notifications.isSupported.mockReturnValue(true);
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:mock'), revokeObjectURL: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     await TestBed.configureTestingModule({
@@ -61,6 +72,7 @@ describe('MiscellaneousSectionComponent', () => {
         provideIcons(),
         { provide: MatSnackBar, useValue: snackBar },
         { provide: MatDialog, useValue: dialog },
+        { provide: BrowserNotificationService, useValue: notifications },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -89,13 +101,64 @@ describe('MiscellaneousSectionComponent', () => {
     await settle();
   };
 
-  it('should_render_the_four_checkboxes_and_disable_the_two_reserved_for_us_016', () => {
+  it('should_render_the_four_checkboxes', () => {
     const boxes = el.querySelectorAll('mat-checkbox');
     expect(boxes.length).toBe(4);
-    expect(boxes[0].querySelector('input')?.disabled).toBe(true);
-    expect(boxes[1].querySelector('input')?.disabled).toBe(true);
+    expect(boxes[0].querySelector('input')?.disabled).toBe(false);
+    expect(boxes[1].querySelector('input')?.disabled).toBe(false);
     expect(boxes[2].querySelector('input')?.disabled).toBe(false);
     expect(boxes[3].querySelector('input')?.disabled).toBe(false);
+  });
+
+  it('should_disable_the_notify_checkbox_when_the_notification_api_is_unsupported', () => {
+    notifications.isSupported.mockReturnValue(false);
+    fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    el = fixture.nativeElement as HTMLElement;
+
+    const boxes = el.querySelectorAll('mat-checkbox');
+    expect(boxes[0].querySelector('input')?.disabled).toBe(true);
+  });
+
+  describe('notify assigned checkbox', () => {
+    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[0];
+
+    it('should_request_permission_and_check_the_box_when_granted', async () => {
+      notifications.requestPermission.mockResolvedValue('granted');
+
+      notifyCheckbox().querySelector('input')!.click();
+      await settle();
+
+      expect(notifications.requestPermission).toHaveBeenCalled();
+      expect(host.form.controls.notifyAssigned.value).toBe(true);
+      expect(host.form.controls.notifyAssigned.dirty).toBe(true);
+      expect(el.querySelector('.notifications-blocked')).toBeNull();
+    });
+
+    it('should_leave_the_box_unchecked_and_show_the_blocked_message_when_permission_is_denied', async () => {
+      notifications.requestPermission.mockResolvedValue('denied');
+
+      notifyCheckbox().querySelector('input')!.click();
+      await settle();
+
+      expect(host.form.controls.notifyAssigned.value).toBe(false);
+      expect(el.querySelector('.notifications-blocked')?.textContent).toContain(
+        t('settings.misc.notificationsBlocked'),
+      );
+    });
+
+    it('should_uncheck_without_requesting_permission', async () => {
+      host.form.controls.notifyAssigned.setValue(true);
+      fixture.detectChanges();
+      const section: { onNotifyAssignedChange(checked: boolean): Promise<void> } =
+        fixture.debugElement.query(By.directive(MiscellaneousSectionComponent)).componentInstance;
+
+      await section.onNotifyAssignedChange(false);
+
+      expect(notifications.requestPermission).not.toHaveBeenCalled();
+      expect(host.form.controls.notifyAssigned.value).toBe(false);
+      expect(host.form.controls.notifyAssigned.dirty).toBe(true);
+    });
   });
 
   it('should_export_the_config_and_trigger_a_download', async () => {

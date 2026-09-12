@@ -1,8 +1,15 @@
 <div class="fields" [formGroup]="form()">
-  <mat-checkbox disabled [matTooltip]="'settings.misc.comingSoon' | translate">
+  <mat-checkbox
+    [checked]="form().controls.notifyAssigned.value"
+    [disabled]="!notifications.isSupported()"
+    (change)="onNotifyAssignedChange($event.checked)"
+  >
     {{ 'settings.misc.notifyAssigned' | translate }}
   </mat-checkbox>
-  <mat-checkbox disabled [matTooltip]="'settings.misc.comingSoon' | translate">
+  @if (permissionBlocked()) {
+    <p class="notifications-blocked">{{ 'settings.misc.notificationsBlocked' | translate }}</p>
+  }
+  <mat-checkbox formControlName="tabBadge">
     {{ 'settings.misc.tabBadge' | translate }}
   </mat-checkbox>
   <mat-checkbox formControlName="openInNewTab">

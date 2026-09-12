@@ -25,6 +25,10 @@ export interface Settings {
   openInNewTab: boolean;
   /** Labels masquant une MR, comparaison insensible à la casse (RG-015-02). */
   ignoredLabels: string[];
+  /** Notification navigateur quand une MR m'est nouvellement assignée (RG-016-01/02). */
+  notifyAssigned: boolean;
+  /** Badge dans le titre de l'onglet comptant les MRs au niveau Ready rouge (RG-016-04). */
+  tabBadge: boolean;
 }
 
 /**
@@ -48,6 +52,8 @@ export interface UpdateSettingsRequest {
   workdaysOnly?: boolean;
   openInNewTab?: boolean;
   ignoredLabels?: string[];
+  notifyAssigned?: boolean;
+  tabBadge?: boolean;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

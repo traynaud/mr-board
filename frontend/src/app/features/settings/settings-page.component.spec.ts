@@ -31,6 +31,8 @@ describe('SettingsPageComponent', () => {
     workdaysOnly: false,
     openInNewTab: false,
     ignoredLabels: [],
+    notifyAssigned: false,
+    tabBadge: false,
   };
   const projectApi: Project = {
     id: 1,
@@ -179,6 +181,8 @@ describe('SettingsPageComponent', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -197,6 +201,8 @@ describe('SettingsPageComponent', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
     await settle();
     await flushSync();
@@ -238,6 +244,8 @@ describe('SettingsPageComponent', () => {
       workdaysOnly: false,
       openInNewTab: false,
       ignoredLabels: [],
+      notifyAssigned: false,
+      tabBadge: false,
     });
   });
 

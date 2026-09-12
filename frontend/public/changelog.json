@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-016",
+    "title": "Notification navigateur à l'affectation d'une MR et badge de comptage des MRs rouges dans le titre de l'onglet."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-015",
     "title": "Paramètres — nouvel onglet, labels ignorés, export/import de la config et réinitialisation globale."
   },

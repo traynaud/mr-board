@@ -27,4 +27,8 @@ export class SettingsResponseDto {
   openInNewTab!: boolean;
   /** Labels that hide a merge request, compared case-insensitively (RG-015-02). */
   ignoredLabels!: string[];
+  /** Browser notification when a merge request is newly assigned to me (RG-016-01/02). */
+  notifyAssigned!: boolean;
+  /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
+  tabBadge!: boolean;
 }
