@@ -6,6 +6,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { MergeRequestView } from '../../../models/merge-request.model';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
+import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { summarizeUsers } from './summarize-users';
 
 /**
@@ -22,6 +23,7 @@ import { summarizeUsers } from './summarize-users';
     MatTooltipModule,
     AvatarComponent,
     DifficultyBadgeComponent,
+    ReadyDelayComponent,
     TranslatePipe,
   ],
   templateUrl: './mr-table.component.html',
@@ -40,6 +42,7 @@ export class MrTableComponent {
     'reviewer',
     'assignee',
     'approved',
+    'ready',
   ];
 
   protected readonly summarizeUsers = summarizeUsers;

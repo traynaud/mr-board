@@ -14,6 +14,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     iid: 7,
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
+    draft: false,
     author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
     reviewers: [],
     assignees: [],
@@ -24,6 +25,11 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     additions: 1,
     deletions: 0,
     changedLines: 1,
+    createdAt: '2026-09-01T10:00:00.000Z',
+    readyAt: '2026-09-01T10:00:00.000Z',
+    readyDays: 6,
+    readyLevel: 'red',
+    openedDays: 6,
     ...overrides,
   };
 }
@@ -128,6 +134,7 @@ describe('MrTableComponent', () => {
       t('board.mergeRequests.columns.reviewer'),
       t('board.mergeRequests.columns.assignee'),
       t('board.mergeRequests.columns.approved'),
+      t('board.mergeRequests.columns.ready'),
     ]);
   });
 
@@ -147,5 +154,34 @@ describe('MrTableComponent', () => {
     const badge = el.querySelector('app-difficulty-badge');
     expect(badge?.querySelector('.square')?.classList.contains('hard')).toBe(true);
     expect(badge?.querySelector('.meta')?.textContent?.trim()).toBe('34 f · 1240 l');
+  });
+
+  it('should_render_the_ready_delay_for_each_row', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({ readyDays: 6, readyLevel: 'red' }),
+    ]);
+    await fixture.whenStable();
+
+    const readyDelay = el.querySelector('app-ready-delay');
+    expect(readyDelay?.querySelector('.ready')?.classList.contains('red')).toBe(true);
+  });
+
+  it('should_render_the_opened_label_for_a_draft_row', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        draft: true,
+        readyAt: null,
+        readyDays: null,
+        readyLevel: null,
+        openedDays: 12,
+      }),
+    ]);
+    await fixture.whenStable();
+
+    const readyDelay = el.querySelector('app-ready-delay');
+    expect(readyDelay?.querySelector('.opened')).not.toBeNull();
+    expect(readyDelay?.querySelector('.ready')).toBeNull();
   });
 });

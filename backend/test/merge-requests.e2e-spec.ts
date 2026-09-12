@@ -16,6 +16,7 @@ interface MergeRequestViewBody {
   iid: number;
   title: string;
   webUrl: string;
+  draft: boolean;
   author: MergeRequestUserBody;
   reviewers: MergeRequestUserBody[];
   assignees: MergeRequestUserBody[];
@@ -26,6 +27,11 @@ interface MergeRequestViewBody {
   additions: number | null;
   deletions: number | null;
   changedLines: number | null;
+  createdAt: string;
+  readyAt: string | null;
+  readyDays: number | null;
+  readyLevel: 'green' | 'orange' | 'red' | null;
+  openedDays: number;
 }
 
 function userNode(
@@ -40,6 +46,37 @@ function userNode(
     avatarUrl: overrides.avatarUrl ?? null,
     webUrl: `https://gitlab.com/${username}`,
   };
+}
+
+/**
+ * Freezes `Date`/`Date.now()` to `iso` for the duration of `fn`, keeping
+ * every timer function real (`setTimeout`/`setInterval`…) so it doesn't
+ * block `waitUntilIdle` or the sync scheduler — only "now" is deterministic.
+ */
+async function withFrozenTime<T>(
+  iso: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  jest.useFakeTimers({
+    doNotFake: [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'setImmediate',
+      'clearImmediate',
+      'nextTick',
+      'hrtime',
+      'performance',
+      'queueMicrotask',
+    ],
+  });
+  jest.setSystemTime(new Date(iso));
+  try {
+    return await fn();
+  } finally {
+    jest.useRealTimers();
+  }
 }
 
 function rawNode(
@@ -126,67 +163,100 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_expose_only_the_fields_in_scope_of_this_us', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1, {
+    await withFrozenTime('2026-09-11T08:00:00.000Z', async () => {
+      gitlab.getOpenMergeRequests.mockResolvedValue([
+        rawNode(1, {
+          approved: true,
+          userNotesCount: 3,
+          reviewers: {
+            nodes: [userNode(2, 'kbenali', { name: 'Karim Benali' })],
+          },
+          assignees: {
+            nodes: [userNode(3, 'lrousseau', { name: 'Léa Rousseau' })],
+          },
+        }),
+      ]);
+
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      expect(res.status).toBe(200);
+      const [view] = res.body as MergeRequestViewBody[];
+
+      expect(view).toEqual({
+        id: expect.any(Number) as number,
+        projectAlias: 'api',
+        iid: 1,
+        title: 'MR 1',
+        webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/1',
+        draft: false,
+        author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        reviewers: [
+          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
+        ],
+        assignees: [
+          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null },
+        ],
         approved: true,
-        userNotesCount: 3,
-        reviewers: {
-          nodes: [userNode(2, 'kbenali', { name: 'Karim Benali' })],
-        },
-        assignees: {
-          nodes: [userNode(3, 'lrousseau', { name: 'Léa Rousseau' })],
-        },
-      }),
-    ]);
-
-    await api().post('/api/v1/sync');
-    await waitUntilIdle();
-
-    const res = await api().get('/api/v1/merge-requests');
-    expect(res.status).toBe(200);
-    const [view] = res.body as MergeRequestViewBody[];
-
-    expect(view).toEqual({
-      id: expect.any(Number) as number,
-      projectAlias: 'api',
-      iid: 1,
-      title: 'MR 1',
-      webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/1',
-      author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
-      reviewers: [
-        { username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
-      ],
-      assignees: [
-        { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null },
-      ],
-      approved: true,
-      commentsCount: 3,
-      difficulty: 'easy',
-      changedFiles: 1,
-      additions: 1,
-      deletions: 0,
-      changedLines: 1,
+        commentsCount: 3,
+        difficulty: 'easy',
+        changedFiles: 1,
+        additions: 1,
+        deletions: 0,
+        changedLines: 1,
+        createdAt: '2026-09-01T10:00:00Z',
+        readyAt: '2026-09-01T10:00:00Z',
+        readyDays: 9,
+        readyLevel: 'red',
+        openedDays: 9,
+      });
+      expect(Object.keys(view).sort()).toEqual(
+        [
+          'id',
+          'projectAlias',
+          'iid',
+          'title',
+          'webUrl',
+          'draft',
+          'author',
+          'reviewers',
+          'assignees',
+          'approved',
+          'commentsCount',
+          'difficulty',
+          'changedFiles',
+          'additions',
+          'deletions',
+          'changedLines',
+          'createdAt',
+          'readyAt',
+          'readyDays',
+          'readyLevel',
+          'openedDays',
+        ].sort(),
+      );
+      expect(JSON.stringify(res.body)).not.toContain('token');
     });
-    expect(Object.keys(view).sort()).toEqual(
-      [
-        'id',
-        'projectAlias',
-        'iid',
-        'title',
-        'webUrl',
-        'author',
-        'reviewers',
-        'assignees',
-        'approved',
-        'commentsCount',
-        'difficulty',
-        'changedFiles',
-        'additions',
-        'deletions',
-        'changedLines',
-      ].sort(),
-    );
-    expect(JSON.stringify(res.body)).not.toContain('token');
+  });
+
+  it('GET /merge-requests should_expose_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {
+    await withFrozenTime('2026-09-11T08:00:00.000Z', async () => {
+      gitlab.getOpenMergeRequests.mockResolvedValue([
+        rawNode(6, { createdAt: '2026-09-10T08:00:00Z' }),
+      ]);
+
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestViewBody[]).find(
+        (mr) => mr.iid === 6,
+      );
+      expect(view?.readyDays).toBe(1);
+      expect(view?.readyLevel).toBe('green');
+      expect(view?.openedDays).toBe(1);
+    });
   });
 
   it('GET /merge-requests should_report_medium_difficulty_and_null_stats_when_unavailable', async () => {

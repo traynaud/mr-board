@@ -1,0 +1,39 @@
+:host {
+  display: inline-flex;
+}
+
+.ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  &.green {
+    color: var(--color-success);
+  }
+
+  &.orange {
+    color: var(--color-warning);
+  }
+
+  &.red {
+    color: var(--color-accent);
+  }
+}
+
+.square {
+  width: 8px;
+  height: 8px;
+  display: block;
+  flex: none;
+  background: currentColor;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.opened {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}

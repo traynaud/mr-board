@@ -151,7 +151,7 @@ une fois ses dépendances réalisées.
 | US-004 | Synchronisation des MRs depuis GitLab                    | Must     | L          | US-001, US-003         | ✅ |
 | US-005 | Tableau des MRs — colonnes de base                       | Must     | L          | US-004                 | ✅ |
 | US-006 | Difficulté de la MR                                      | Must     | S          | US-005                 | ✅ |
-| US-007 | Temps depuis Ready                                       | Must     | M          | US-005                 | ☐ |
+| US-007 | Temps depuis Ready                                       | Must     | M          | US-005                 | ✅ |
 | US-008 | Tri par défaut et tri sur colonnes                       | Must     | S          | US-006, US-007         | ☐ |
 | US-009 | Filtres rapides « Drafts » et « Mes MRs »                | Must     | S          | US-002, US-008         | ☐ |
 | US-010 | Filtres composables (Projet, Auteur, Affecté à, Approved, Commenté) | Must | L      | US-009                 | ☐ |

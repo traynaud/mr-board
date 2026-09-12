@@ -288,6 +288,30 @@ describe('MergeRequestsService', () => {
   });
 
   describe('listOpen', () => {
+    const NOW = '2026-09-11T08:00:00.000Z';
+
+    beforeEach(() => {
+      jest.useFakeTimers({
+        doNotFake: [
+          'setTimeout',
+          'clearTimeout',
+          'setInterval',
+          'clearInterval',
+          'setImmediate',
+          'clearImmediate',
+          'nextTick',
+          'hrtime',
+          'performance',
+          'queueMicrotask',
+        ],
+      });
+      jest.setSystemTime(new Date(NOW));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     function persistedMergeRequest(
       overrides: Partial<MergeRequest> = {},
     ): MergeRequest {
@@ -361,6 +385,7 @@ describe('MergeRequestsService', () => {
           iid: 7,
           title: 'Refonte facturation',
           webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
+          draft: false,
           author: {
             username: 'mdupont',
             name: 'Marie Dupont',
@@ -375,6 +400,11 @@ describe('MergeRequestsService', () => {
           additions: 340,
           deletions: 58,
           changedLines: 398,
+          createdAt: '2026-09-01T10:00:00.000Z',
+          readyAt: '2026-09-01T10:00:00.000Z',
+          readyDays: 9,
+          readyLevel: 'red',
+          openedDays: 9,
         },
       ]);
       expect(projectsService.findByIds).toHaveBeenCalledWith([1]);
@@ -495,6 +525,66 @@ describe('MergeRequestsService', () => {
       usersService.findByIds.mockResolvedValue([]);
 
       await expect(service.listOpen()).rejects.toThrow(/User 10/);
+    });
+
+    it('should_report_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          createdAtGitlab: '2026-09-10T08:00:00.000Z',
+          readyAt: '2026-09-10T08:00:00.000Z',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.readyAt).toBe('2026-09-10T08:00:00.000Z');
+      expect(view.readyDays).toBe(1);
+      expect(view.readyLevel).toBe('green');
+      expect(view.openedDays).toBe(1);
+    });
+
+    it('should_report_an_orange_ready_level_for_a_merge_request_ready_three_days_ago', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          createdAtGitlab: '2026-09-08T08:00:00.000Z',
+          readyAt: '2026-09-08T08:00:00.000Z',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.readyDays).toBe(3);
+      expect(view.readyLevel).toBe('orange');
+    });
+
+    it('should_report_null_ready_fields_and_the_opened_days_for_a_draft', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          draft: true,
+          createdAtGitlab: '2026-08-30T08:00:00.000Z',
+          readyAt: null,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.draft).toBe(true);
+      expect(view.readyAt).toBeNull();
+      expect(view.readyDays).toBeNull();
+      expect(view.readyLevel).toBeNull();
+      expect(view.openedDays).toBe(12);
     });
   });
 });

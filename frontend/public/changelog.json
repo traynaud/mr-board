@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-007",
+    "title": "Temps depuis Ready : délai coloré vert/orange/rouge depuis la mise en Ready, ancienneté d'ouverture pour les drafts."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-006",
     "title": "Difficulté de la MR : jeton coloré Easy/Medium/Hard avec détail et gestion des statistiques indisponibles."
   },

@@ -10,6 +10,11 @@ import {
   DEFAULT_DIFFICULTY_THRESHOLDS,
   calculateDifficulty,
 } from './domain/calculate-difficulty';
+import {
+  DEFAULT_READY_DELAY_THRESHOLDS,
+  calculateElapsedDays,
+  readyLevelForDays,
+} from './domain/calculate-ready-delay';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
@@ -49,6 +54,7 @@ export class MergeRequestsService {
     if (mergeRequests.length === 0) {
       return [];
     }
+    const now = new Date().toISOString();
 
     const mergeRequestIds = mergeRequests.map((mr) => mr.id);
     const [reviewerRows, assigneeRows] = await Promise.all([
@@ -80,6 +86,7 @@ export class MergeRequestsService {
         usersById,
         reviewerIdsByMr.get(mr.id) ?? [],
         assigneeIdsByMr.get(mr.id) ?? [],
+        now,
       ),
     );
   }
@@ -229,6 +236,7 @@ function toMergeRequestView(
   usersById: Map<number, User>,
   reviewerIds: number[],
   assigneeIds: number[],
+  now: string,
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
@@ -238,6 +246,7 @@ function toMergeRequestView(
     iid: mergeRequest.iid,
     title: mergeRequest.title,
     webUrl: mergeRequest.webUrl,
+    draft: mergeRequest.draft,
     author: toMergeRequestUser(author),
     reviewers: reviewerIds.map((id) =>
       toMergeRequestUser(mustGet(usersById, id, 'User')),
@@ -248,6 +257,43 @@ function toMergeRequestView(
     approved: mergeRequest.approved,
     commentsCount: mergeRequest.commentsCount,
     ...toDifficultyFields(mergeRequest),
+    ...toReadyFields(mergeRequest, now),
+  };
+}
+
+/**
+ * Computes the Ready delay (RG-007-01) or, for a draft, the elapsed time
+ * since it was opened (RG-007-05). `workdaysOnly` is hard-coded to `false`
+ * until US-014 lets the user configure it.
+ */
+function toReadyFields(
+  mergeRequest: MergeRequest,
+  now: string,
+): Pick<
+  MergeRequestViewDto,
+  'createdAt' | 'readyAt' | 'readyDays' | 'readyLevel' | 'openedDays'
+> {
+  const openedDays = calculateElapsedDays(
+    mergeRequest.createdAtGitlab,
+    now,
+    false,
+  );
+  if (mergeRequest.readyAt === null) {
+    return {
+      createdAt: mergeRequest.createdAtGitlab,
+      readyAt: null,
+      readyDays: null,
+      readyLevel: null,
+      openedDays,
+    };
+  }
+  const readyDays = calculateElapsedDays(mergeRequest.readyAt, now, false);
+  return {
+    createdAt: mergeRequest.createdAtGitlab,
+    readyAt: mergeRequest.readyAt,
+    readyDays,
+    readyLevel: readyLevelForDays(readyDays, DEFAULT_READY_DELAY_THRESHOLDS),
+    openedDays,
   };
 }
 

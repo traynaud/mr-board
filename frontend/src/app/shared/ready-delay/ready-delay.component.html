@@ -1,0 +1,8 @@
+@if (draft()) {
+  <span class="opened">{{ label() }}</span>
+} @else {
+  <span class="ready" [class]="readyLevel()" [matTooltip]="tooltip()">
+    <i class="square"></i>
+    <span class="label">{{ label() }}</span>
+  </span>
+}

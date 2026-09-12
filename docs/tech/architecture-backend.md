@@ -68,10 +68,10 @@ modules/merge-requests/
 ├── merge-requests.service.ts             # orchestration, accès données
 ├── merge-requests.service.spec.ts
 ├── domain/
-│   ├── difficulty.calculator.ts          # fonction pure : (files, lines, thresholds) → 'easy' | 'medium' | 'hard'
-│   ├── difficulty.calculator.spec.ts
-│   ├── ready-delay.calculator.ts         # fonction pure : (readyAt, now, thresholds, workdays) → { days, level }
-│   └── ready-delay.calculator.spec.ts
+│   ├── calculate-difficulty.ts           # fonction pure : (files, lines, thresholds) → 'easy' | 'medium' | 'hard'
+│   ├── calculate-difficulty.spec.ts
+│   ├── calculate-ready-delay.ts          # fonctions pures : (from, now, workdaysOnly) → jours ; (days, thresholds) → niveau
+│   └── calculate-ready-delay.spec.ts
 ├── entities/
 │   └── merge-request.entity.ts
 └── dto/

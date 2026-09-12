@@ -53,6 +53,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     iid: 7,
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
+    draft: false,
     author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
     reviewers: [],
     assignees: [],
@@ -63,6 +64,11 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     additions: 1,
     deletions: 0,
     changedLines: 1,
+    createdAt: '2026-09-01T10:00:00.000Z',
+    readyAt: '2026-09-01T10:00:00.000Z',
+    readyDays: 6,
+    readyLevel: 'red',
+    openedDays: 6,
     ...overrides,
   };
 }

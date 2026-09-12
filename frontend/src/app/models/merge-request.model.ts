@@ -7,10 +7,11 @@ export interface MergeRequestUser {
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export type ReadyLevel = 'green' | 'orange' | 'red';
+
 /**
  * Miroir de `MergeRequestViewDto` (backend). Volontairement minimal :
- * ni `draft`, ni `readyAt`/`readyDays`/`readyLevel` — ces champs seront
- * ajoutés par les US qui les affichent (US-007, US-009…).
+ * ni `labels` — ajouté par l'US qui l'affiche (US-015).
  */
 export interface MergeRequestView {
   id: number;
@@ -18,6 +19,7 @@ export interface MergeRequestView {
   iid: number;
   title: string;
   webUrl: string;
+  draft: boolean;
   author: MergeRequestUser;
   reviewers: MergeRequestUser[];
   assignees: MergeRequestUser[];
@@ -29,4 +31,14 @@ export interface MergeRequestView {
   additions: number | null;
   deletions: number | null;
   changedLines: number | null;
+  /** ISO 8601, date d'ouverture GitLab. */
+  createdAt: string;
+  /** ISO 8601 ; `null` pour un draft. */
+  readyAt: string | null;
+  /** `null` pour un draft (RG-007-01). */
+  readyDays: number | null;
+  /** `null` pour un draft (RG-007-01). */
+  readyLevel: ReadyLevel | null;
+  /** Jours écoulés depuis `createdAt`, affiché uniquement pour un draft (RG-007-05). */
+  openedDays: number;
 }

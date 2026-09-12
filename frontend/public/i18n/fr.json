@@ -28,7 +28,8 @@
         "comments": "Commentaires",
         "reviewer": "Reviewer",
         "assignee": "Affecté",
-        "approved": "Approved"
+        "approved": "Approved",
+        "ready": "Depuis Ready"
       },
       "difficulty": {
         "easy": "Easy",
@@ -38,6 +39,13 @@
         "tooltip": "{{files}} fichiers modifiés · {{lines}} lignes (+{{additions}} / −{{deletions}})",
         "unavailable": "?",
         "unavailableTooltip": "Statistiques indisponibles"
+      },
+      "ready": {
+        "today": "aujourd'hui",
+        "days": "{{days}} j",
+        "tooltip": "Prête depuis le {{date}}",
+        "openedToday": "ouverte aujourd'hui",
+        "openedDays": "ouverte il y a {{days}} j"
       }
     },
     "sync": {

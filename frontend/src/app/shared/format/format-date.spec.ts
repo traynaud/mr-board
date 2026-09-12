@@ -1,4 +1,4 @@
-import { formatShortDate } from './format-date';
+import { formatDateTime, formatShortDate } from './format-date';
 
 describe('formatShortDate', () => {
   it('should_format_iso_date', () => {
@@ -11,5 +11,25 @@ describe('formatShortDate', () => {
 
   it('should_return_input_when_not_a_date', () => {
     expect(formatShortDate('bientôt')).toBe('bientôt');
+  });
+});
+
+describe('formatDateTime', () => {
+  it('should_format_a_datetime_in_the_local_timezone_with_padding', () => {
+    // Constructed from local components so the expectation holds regardless
+    // of the machine's timezone (RG-007-04).
+    const local = new Date(2027, 2, 5, 9, 5);
+
+    expect(formatDateTime(local.toISOString())).toBe('05/03/2027 09:05');
+  });
+
+  it('should_format_a_datetime_without_leading_zero_needs', () => {
+    const local = new Date(2026, 11, 25, 16, 30);
+
+    expect(formatDateTime(local.toISOString())).toBe('25/12/2026 16:30');
+  });
+
+  it('should_return_input_when_not_a_date', () => {
+    expect(formatDateTime('bientôt')).toBe('bientôt');
   });
 });
