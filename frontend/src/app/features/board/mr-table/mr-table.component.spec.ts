@@ -1,5 +1,8 @@
+import { HarnessLoader } from '@angular/cdk/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
@@ -37,13 +40,23 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
 
 @Component({
   imports: [MrTableComponent],
-  template: `<app-mr-table [rows]="rows()" [sort]="sort()" (sortChange)="lastSortChange = $event" />`,
+  template: `
+    <app-mr-table
+      [rows]="rows()"
+      [sort]="sort()"
+      [showOpened]="showOpened()"
+      (sortChange)="lastSortChange = $event"
+      (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
+    />
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
+  readonly showOpened = signal(false);
   lastSortChange: SortKey | null = null;
+  toggleOpenedColumnCount = 0;
 }
 
 describe('MrTableComponent', () => {
@@ -54,7 +67,8 @@ describe('MrTableComponent', () => {
     }).compileComponents();
     const fixture = TestBed.createComponent(HostComponent);
     await fixture.whenStable();
-    return { fixture, el: fixture.nativeElement as HTMLElement };
+    const loader: HarnessLoader = TestbedHarnessEnvironment.loader(fixture);
+    return { fixture, el: fixture.nativeElement as HTMLElement, loader };
   };
 
   it('should_render_one_row_per_merge_request_with_project_title_and_comments', async () => {
@@ -138,7 +152,60 @@ describe('MrTableComponent', () => {
       t('board.mergeRequests.columns.assignee'),
       t('board.mergeRequests.columns.approved'),
       `${t('board.mergeRequests.columns.ready')} ↑`,
+      '',
     ]);
+  });
+
+  it('should_hide_the_opened_column_by_default_and_show_it_when_showOpened_is_true', async () => {
+    const { fixture, el } = await setup();
+
+    expect(
+      Array.from(el.querySelectorAll('th')).some(
+        (th) => th.textContent?.trim() === t('board.mergeRequests.columns.opened'),
+      ),
+    ).toBe(false);
+
+    fixture.componentInstance.showOpened.set(true);
+    await fixture.whenStable();
+
+    const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim());
+    expect(headers).toContain(t('board.mergeRequests.columns.opened'));
+    expect(headers.at(-2)).toBe(t('board.mergeRequests.columns.opened'));
+  });
+
+  it('should_show_the_created_date_in_the_opened_column', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.showOpened.set(true);
+    fixture.componentInstance.rows.set([mergeRequest({ createdAt: '2026-09-01T10:00:00.000Z' })]);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.opened-cell')?.textContent?.trim()).toBe('01/09/2026');
+  });
+
+  describe('columns menu', () => {
+    it('should_show_the_checkbox_reflecting_showOpened', async () => {
+      const { fixture, loader } = await setup();
+      fixture.componentInstance.showOpened.set(true);
+      await fixture.whenStable();
+
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      const checked = document.querySelector('.menu-option[aria-checked]')?.getAttribute('aria-checked');
+      expect(checked).toBe('true');
+    });
+
+    it('should_emit_toggleOpenedColumn_and_keep_the_menu_open_when_the_option_is_clicked', async () => {
+      const { fixture, loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      document.querySelector<HTMLElement>('.menu-option')?.click();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.toggleOpenedColumnCount).toBe(1);
+      expect(await menu.isOpen()).toBe(true);
+    });
   });
 
   it('should_mark_the_active_sort_column_with_an_arrow_accent_color_and_aria_sort', async () => {

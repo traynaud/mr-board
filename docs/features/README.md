@@ -155,14 +155,18 @@ une fois ses dépendances réalisées.
 | US-008 | Tri par défaut et tri sur colonnes                       | Must     | S          | US-006, US-007         | ✅ |
 | US-009 | Filtres rapides « Drafts » et « Mes MRs »                | Must     | S          | US-002, US-008         | ✅ |
 | US-010 | Filtres composables (Projet, Auteur, Affecté à, Approved, Commenté) | Must | L      | US-009                 | ✅ |
-| US-011 | Filtres, tri et colonnes propagés dans l'URL             | Must     | M          | US-010                 | ☐ |
-| US-012 | Colonnes redimensionnables et colonne « Date d'ouverture » | Should | M          | US-005, US-011         | ☐ |
+| US-011 | Filtres, tri et colonnes propagés dans l'URL             | Must     | M          | US-010                 | ✅ |
+| US-012 | Colonnes redimensionnables                               | Should   | M          | US-005, US-011         | ☐ |
 | US-013 | Actualisation automatique                                | Should   | M          | US-004                 | ☐ |
 | US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ☐ |
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ☐ |
 | US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ☐ |
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
+
+> La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
+> (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
+> couvre plus que le redimensionnement des colonnes.
 
 ---
 

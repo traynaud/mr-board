@@ -3,6 +3,7 @@
     <a
       mat-icon-button
       routerLink="/"
+      [queryParams]="boardQueryParams()"
       [attr.aria-label]="'common.back' | translate"
       [matTooltip]="'common.back' | translate"
     >

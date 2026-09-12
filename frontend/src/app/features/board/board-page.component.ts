@@ -11,10 +11,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import {
+  decodeQueryParams,
+  encodeQueryParams,
+  normalizeParams,
+} from '../../core/url-state/query-params.mapper';
 import { FilterKey } from '../../models/merge-request.model';
+import { ColumnsStore } from '../../stores/columns.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
@@ -54,9 +60,12 @@ export class BoardPageComponent implements OnInit {
   protected readonly syncStore = inject(SyncStore);
   protected readonly mrStore = inject(MergeRequestsStore);
   protected readonly filtersStore = inject(FiltersStore);
+  protected readonly columnsStore = inject(ColumnsStore);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   /** `false` tant qu'aucun chargement de statut ne s'est encore terminé (pas de toast à l'ouverture, RG-004-12). */
   private initialized = false;
@@ -106,6 +115,40 @@ export class BoardPageComponent implements OnInit {
     () => this.filtersStore.mine() || this.filtersStore.active().length > 0,
   );
 
+  /** RG-011-01/06 : query params courants (filtres + tri + colonnes), ordre stable. */
+  protected readonly currentQueryParams = computed(() =>
+    encodeQueryParams({
+      drafts: this.filtersStore.drafts(),
+      mine: this.filtersStore.mine(),
+      active: this.filtersStore.active(),
+      project: this.filtersStore.project(),
+      author: this.filtersStore.author(),
+      assigned: this.filtersStore.assigned(),
+      approved: this.filtersStore.approved(),
+      commented: this.filtersStore.commented(),
+      sort: this.mrStore.sort(),
+      showOpened: this.columnsStore.showOpened(),
+    }),
+  );
+
+  /**
+   * RG-011-06 : query string affichée en pied de page, au format canonique
+   * de RG-011-01 (`key=value&…`) — pas `URLSearchParams.toString()`, qui
+   * encode `:` en `%3A` et romprait la correspondance littérale avec le
+   * format documenté (ex. `sort=ready:asc`).
+   */
+  protected readonly currentQueryString = computed(() => {
+    const params = this.currentQueryParams();
+    return `?${Object.entries(params)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&')}`;
+  });
+
+  /** RG-011-06 : pied de page visible sur l'écran Tableau, hors état « pas de repo » et chargement initial. */
+  protected readonly showFooter = computed(
+    () => !this.noRepos() && !(this.mrStore.loading() && this.mrStore.mergeRequests().length === 0),
+  );
+
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
     // re-déclencher au montage pour un échec déjà présent avant l'ouverture.
@@ -136,9 +179,18 @@ export class BoardPageComponent implements OnInit {
       // ci-dessus, sans polling dédié aux MRs elles-mêmes.
       void this.loadMergeRequests();
     });
+
+    // RG-011-02/03/07 : réécrit l'URL (sans empiler d'historique) à chaque
+    // changement de filtre/tri/colonne — couvre uniformément tous les
+    // handlers existants (dont « Effacer ») sans code dédié dans chacun.
+    effect(() => {
+      const queryParams = this.currentQueryParams();
+      void this.router.navigate([], { relativeTo: this.route, queryParams, replaceUrl: true });
+    });
   }
 
   ngOnInit(): void {
+    this.restoreFromUrl();
     void this.settingsStore.load();
     void this.projectsStore.load();
     void this.loadMergeRequests();
@@ -195,6 +247,39 @@ export class BoardPageComponent implements OnInit {
       this.filtersStore.setBoolean(event.key, event.value);
       this.mrStore.scheduleReload();
     }
+  }
+
+  /**
+   * RG-011-09 : bascule la colonne « Date d'ouverture ». Purement local — ne
+   * recharge pas les MRs (aucun paramètre API concerné).
+   */
+  protected onToggleOpenedColumn(): void {
+    this.columnsStore.toggleOpened();
+  }
+
+  /**
+   * RG-011-02 : restaure filtres/tri/colonnes depuis l'URL au chargement, en
+   * un seul instantané (`snapshot`, jamais un abonnement réactif — sinon la
+   * propre écriture de l'effet de synchronisation redéclencherait une
+   * décodification à chaque changement, voir archi.md). Doit s'exécuter
+   * avant le premier `loadMergeRequests()` pour que celui-ci parte de l'état
+   * restauré plutôt que des valeurs par défaut.
+   */
+  private restoreFromUrl(): void {
+    const raw = normalizeParams(this.route.snapshot.queryParams);
+    const state = decodeQueryParams(raw);
+    this.filtersStore.restore({
+      drafts: state.drafts,
+      mine: state.mine,
+      active: state.active,
+      project: state.project,
+      author: state.author,
+      assigned: state.assigned,
+      approved: state.approved,
+      commented: state.commented,
+    });
+    this.mrStore.restoreSort(state.sort);
+    this.columnsStore.restore(state.showOpened);
   }
 
   /**

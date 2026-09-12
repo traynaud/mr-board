@@ -1,13 +1,29 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
+import { formatShortDate } from '../../../shared/format/format-date';
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { summarizeUsers } from './summarize-users';
+
+/** Colonnes toujours affichées, dans l'ordre (RG-005-02, RG-007-*). */
+const BASE_COLUMNS = [
+  'project',
+  'author',
+  'title',
+  'difficulty',
+  'comments',
+  'reviewer',
+  'assignee',
+  'approved',
+  'ready',
+];
 
 /**
  * Tableau des MRs ouvertes — 8 colonnes (RG-005-02, RG-007-*). Purement
@@ -21,7 +37,9 @@ import { summarizeUsers } from './summarize-users';
   selector: 'app-mr-table',
   imports: [
     MatTableModule,
+    MatCheckboxModule,
     MatIconModule,
+    MatMenuModule,
     MatTooltipModule,
     AvatarComponent,
     DifficultyBadgeComponent,
@@ -35,21 +53,21 @@ import { summarizeUsers } from './summarize-users';
 export class MrTableComponent {
   readonly rows = input.required<MergeRequestView[]>();
   readonly sort = input.required<MergeRequestSort>();
-  readonly sortChange = output<SortKey>();
+  /** RG-011-09 : visibilité de la colonne optionnelle « Date d'ouverture ». */
+  readonly showOpened = input.required<boolean>();
 
-  protected readonly displayedColumns = [
-    'project',
-    'author',
-    'title',
-    'difficulty',
-    'comments',
-    'reviewer',
-    'assignee',
-    'approved',
-    'ready',
-  ];
+  readonly sortChange = output<SortKey>();
+  /** RG-011-09 : bascule la visibilité de la colonne « Date d'ouverture ». */
+  readonly toggleOpenedColumn = output<void>();
+
+  protected readonly displayedColumns = computed(() => [
+    ...BASE_COLUMNS,
+    ...(this.showOpened() ? ['opened'] : []),
+    'columnsMenu',
+  ]);
 
   protected readonly summarizeUsers = summarizeUsers;
+  protected readonly formatShortDate = formatShortDate;
 
   protected readonly trackById = (_index: number, row: MergeRequestView): number => row.id;
 

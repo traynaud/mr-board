@@ -218,6 +218,18 @@ describe('MergeRequestsStore', () => {
     );
   });
 
+  describe('restoreSort', () => {
+    it('should_patch_the_sort_directly_without_reloading', () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+      api.getMergeRequests.mockClear();
+
+      store.restoreSort({ key: 'diff', direction: 'desc' });
+
+      expect(store.sort()).toEqual({ key: 'diff', direction: 'desc' });
+      expect(api.getMergeRequests).not.toHaveBeenCalled();
+    });
+  });
+
   describe('scheduleReload', () => {
     beforeEach(() => {
       vi.useFakeTimers();

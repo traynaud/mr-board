@@ -9,6 +9,8 @@ import { httpErrorInterceptor } from '../../core/interceptors/http-error.interce
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
+import { ColumnsStore } from '../../stores/columns.store';
+import { FiltersStore } from '../../stores/filters.store';
 import { SettingsPageComponent } from './settings-page.component';
 
 describe('SettingsPageComponent', () => {
@@ -52,7 +54,7 @@ describe('SettingsPageComponent', () => {
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture = TestBed.createComponent(SettingsPageComponent);
     el = fixture.nativeElement as HTMLElement;
     fixture.detectChanges();
@@ -170,7 +172,9 @@ describe('SettingsPageComponent', () => {
       t('common.ok'),
       expect.objectContaining({ panelClass: 'mrb-toast' }),
     );
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(router.navigate).toHaveBeenCalledWith(['/'], {
+      queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
+    });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     expect(tokenInput().value).toBe('');
   });
@@ -201,7 +205,7 @@ describe('SettingsPageComponent', () => {
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(t('settings.saveError'), t('common.ok'), expect.anything());
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(urlInput().value).toBe('https://autre.exemple.fr');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
@@ -211,7 +215,29 @@ describe('SettingsPageComponent', () => {
 
     el.querySelector<HTMLButtonElement>('button.cancel')!.click();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(router.navigate).toHaveBeenCalledWith(['/'], {
+      queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
+    });
+  });
+
+  it('should_navigate_to_the_board_with_its_current_filters_on_cancel', async () => {
+    TestBed.inject(FiltersStore).toggleMine();
+    TestBed.inject(ColumnsStore).toggleOpened();
+    await loadSettings();
+
+    el.querySelector<HTMLButtonElement>('button.cancel')!.click();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/'], {
+      queryParams: { drafts: '0', mine: '1', sort: 'ready:asc', cols: 'opened' },
+    });
+  });
+
+  it('should_bind_the_current_board_query_params_to_the_back_link', async () => {
+    TestBed.inject(FiltersStore).toggleMine();
+    await loadSettings();
+
+    const backLink = el.querySelector<HTMLAnchorElement>('a[routerLink="/"]');
+    expect(backLink?.getAttribute('href')).toContain('mine=1');
   });
 
   it('should_disable_test_without_token_and_enable_with_stored_token', async () => {
@@ -334,7 +360,9 @@ describe('SettingsPageComponent', () => {
       t('common.ok'),
       expect.anything(),
     );
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(router.navigate).toHaveBeenCalledWith(['/'], {
+      queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
+    });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     expect(repoAliasInputs()[0].value).toBe('back');
   });
@@ -371,7 +399,7 @@ describe('SettingsPageComponent', () => {
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(t('settings.saveError'), t('common.ok'), expect.anything());
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     expect(repoAliasInputs()[1].value).toBe('API');
   });

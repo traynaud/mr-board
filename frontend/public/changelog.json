@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-011",
+    "title": "Filtres, tri et colonnes propagés dans l'URL, menu Colonnes et pied de page avec la query string."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-010",
     "title": "Filtres composables Projet, Auteur, Affecté à, Approved et Commenté, avec compteurs contextuels."
   },

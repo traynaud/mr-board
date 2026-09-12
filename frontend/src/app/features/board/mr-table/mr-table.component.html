@@ -128,6 +128,41 @@
     </td>
   </ng-container>
 
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  <ng-container matColumnDef="opened">
+    <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.opened' | translate }}</th>
+    <td mat-cell *matCellDef="let row" class="opened-cell">{{ formatShortDate(row.createdAt) }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="columnsMenu">
+    <th mat-header-cell *matHeaderCellDef class="columns-menu-header">
+      <button
+        mat-icon-button
+        type="button"
+        [matMenuTriggerFor]="columnsMenu"
+        [attr.aria-label]="'board.columns.menuLabel' | translate"
+      >
+        <mat-icon svgIcon="columns" />
+      </button>
+    </th>
+    <td mat-cell *matCellDef="let row"></td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
 </table>
+
+<mat-menu #columnsMenu="matMenu">
+  <div class="menu-title">{{ 'board.columns.menuLabel' | translate }}</div>
+  <div
+    class="menu-option"
+    role="checkbox"
+    tabindex="0"
+    [attr.aria-checked]="showOpened()"
+    (click)="$event.stopPropagation(); toggleOpenedColumn.emit()"
+    (keydown.enter)="toggleOpenedColumn.emit()"
+    (keydown.space)="$event.preventDefault(); toggleOpenedColumn.emit()"
+  >
+    <mat-checkbox [checked]="showOpened()" [disableRipple]="true" tabindex="-1" (click)="$event.preventDefault()" />
+    <span class="option-label">{{ 'board.columns.opened' | translate }}</span>
+  </div>
+</mat-menu>

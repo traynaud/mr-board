@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { errorKeyOf } from '../core/api/api-error';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
 import {
+  DEFAULT_SORT,
   MergeRequestSort,
   MergeRequestView,
   MergeRequestsFacets,
@@ -22,9 +23,6 @@ export interface MergeRequestsState {
   /** Options et compteurs contextuels des 5 filtres composables (RG-010-07). */
   facets: MergeRequestsFacets | null;
 }
-
-/** RG-008-01/08 : tri par défaut, conservé le temps de la session en attendant l'URL (US-011). */
-const DEFAULT_SORT: MergeRequestSort = { key: 'ready', direction: 'asc' };
 
 /** RG-009-07 : les changements de filtre sont débounce avant de recharger. */
 const FILTER_RELOAD_DEBOUNCE_MS = 150;
@@ -98,6 +96,15 @@ export const MergeRequestsStore = signalStore(
         const direction = current.key === key && current.direction === 'asc' ? 'desc' : 'asc';
         patchState(store, { sort: { key, direction } });
         void load();
+      },
+
+      /**
+       * Restaure le tri depuis l'URL (RG-011-02) : patch direct, sans la
+       * logique de bascule de `setSort` ni de rechargement — le premier
+       * `load()` de `ngOnInit` s'en charge une fois tous les stores restaurés.
+       */
+      restoreSort(sort: MergeRequestSort): void {
+        patchState(store, { sort });
       },
 
       /**

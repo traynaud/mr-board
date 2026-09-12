@@ -20,7 +20,11 @@ import { Router, RouterLink } from '@angular/router';
 import { merge } from 'rxjs';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { encodeQueryParams } from '../../core/url-state/query-params.mapper';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
+import { ColumnsStore } from '../../stores/columns.store';
+import { FiltersStore } from '../../stores/filters.store';
+import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
@@ -66,6 +70,9 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly store = inject(SettingsStore);
   protected readonly projectsStore = inject(ProjectsStore);
   private readonly syncStore = inject(SyncStore);
+  private readonly filtersStore = inject(FiltersStore);
+  private readonly mrStore = inject(MergeRequestsStore);
+  private readonly columnsStore = inject(ColumnsStore);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
@@ -198,11 +205,32 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       resetSettingsForm(this.form, settings);
     }
     this.toast('settings.saved');
-    await this.router.navigateByUrl('/');
+    await this.router.navigate(['/'], { queryParams: this.boardQueryParams() });
   }
 
   protected cancel(): void {
-    void this.router.navigateByUrl('/');
+    void this.router.navigate(['/'], { queryParams: this.boardQueryParams() });
+  }
+
+  /**
+   * RG-011-05 : reconstruit la query string du tableau à partir de ses
+   * stores (`FiltersStore`/`MergeRequestsStore`/`ColumnsStore` sont
+   * `providedIn: 'root'`, donc leur état survit à la navigation vers cet
+   * écran — pas besoin d'un registre séparé « dernière URL »).
+   */
+  protected boardQueryParams(): Record<string, string> {
+    return encodeQueryParams({
+      drafts: this.filtersStore.drafts(),
+      mine: this.filtersStore.mine(),
+      active: this.filtersStore.active(),
+      project: this.filtersStore.project(),
+      author: this.filtersStore.author(),
+      assigned: this.filtersStore.assigned(),
+      approved: this.filtersStore.approved(),
+      commented: this.filtersStore.commented(),
+      sort: this.mrStore.sort(),
+      showOpened: this.columnsStore.showOpened(),
+    });
   }
 
   private toast(key: string): void {

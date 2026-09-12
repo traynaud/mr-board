@@ -55,8 +55,16 @@
       <app-mr-table
         [rows]="mrStore.mergeRequests()"
         [sort]="mrStore.sort()"
+        [showOpened]="columnsStore.showOpened()"
         (sortChange)="mrStore.setSort($event)"
+        (toggleOpenedColumn)="onToggleOpenedColumn()"
       />
+    }
+    @if (showFooter()) {
+      <div class="board-footer">
+        <span>{{ 'board.footer.legend' | translate }}</span>
+        <span class="query-string">{{ currentQueryString() }}</span>
+      </div>
     }
   }
 </main>

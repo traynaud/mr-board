@@ -51,6 +51,34 @@ describe('FiltersStore', () => {
     expect(store.drafts()).toBe(true);
   });
 
+  describe('restore', () => {
+    it('should_patch_the_whole_state_in_one_shot', () => {
+      store.restore({
+        drafts: true,
+        mine: true,
+        active: ['project', 'approved'],
+        project: ['api'],
+        approved: 'yes',
+      });
+
+      expect(store.drafts()).toBe(true);
+      expect(store.mine()).toBe(true);
+      expect(store.active()).toEqual(['project', 'approved']);
+      expect(store.project()).toEqual(['api']);
+      expect(store.approved()).toBe('yes');
+      expect(store.author()).toEqual([]);
+    });
+
+    it('should_leave_unspecified_fields_untouched', () => {
+      store.toggleDrafts();
+
+      store.restore({ mine: true });
+
+      expect(store.drafts()).toBe(true);
+      expect(store.mine()).toBe(true);
+    });
+  });
+
   describe('addFilter', () => {
     it('should_add_a_filter_to_the_active_list', () => {
       store.addFilter('project');

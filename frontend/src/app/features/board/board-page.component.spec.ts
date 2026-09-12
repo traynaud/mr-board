@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
@@ -12,10 +12,12 @@ import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { SyncRun, SyncStatus } from '../../models/sync-status.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
+import { ColumnsStore } from '../../stores/columns.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardPageComponent } from './board-page.component';
 import { FilterBarComponent } from './filter-bar/filter-bar.component';
+import { MrTableComponent } from './mr-table/mr-table.component';
 
 const NO_TOKEN_SETTINGS: Settings = {
   gitlabUrl: 'https://gitlab.exemple.fr',
@@ -108,12 +110,21 @@ describe('BoardPageComponent', () => {
   let http: HttpTestingController;
   const snackBar = { open: vi.fn() };
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
+  /**
+   * Configure (ou reconfigure, après `TestBed.resetTestingModule()`) le
+   * module de test. `activatedRoute` permet de fournir des query params
+   * initiaux différents de ceux, vides, du `beforeEach` par défaut —
+   * `ActivatedRoute` ne peut pas être remplacée après l'instanciation du
+   * module (voir les tests de restauration ci-dessous).
+   */
+  async function configureBoardTestingModule(activatedRoute?: {
+    snapshot: { queryParams: Record<string, string> };
+  }): Promise<void> {
     await TestBed.configureTestingModule({
       imports: [BoardPageComponent],
       providers: [
         provideRouter([]),
+        ...(activatedRoute ? [{ provide: ActivatedRoute, useValue: activatedRoute }] : []),
         provideHttpClient(withInterceptors([apiBaseUrlInterceptor, httpErrorInterceptor])),
         provideHttpClientTesting(),
         provideI18nTesting(),
@@ -122,6 +133,11 @@ describe('BoardPageComponent', () => {
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
+  }
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await configureBoardTestingModule();
   });
 
   afterEach(() => {
@@ -378,6 +394,160 @@ describe('BoardPageComponent', () => {
     await settle();
 
     expect(TestBed.inject(FiltersStore).active()).toEqual([]);
+  });
+
+  describe('URL state (US-011)', () => {
+    it('should_restore_drafts_mine_filters_sort_and_columns_from_the_url_before_the_first_load', async () => {
+      TestBed.resetTestingModule();
+      await configureBoardTestingModule({
+        snapshot: {
+          queryParams: { drafts: '1', mine: '1', project: 'api,web', sort: 'diff:desc', cols: 'opened' },
+        },
+      });
+
+      fixture = TestBed.createComponent(BoardPageComponent);
+      el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      await settle();
+      http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+      http.expectOne('/api/v1/projects').flush([PROJECT]);
+      const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
+      expect(mrReq.request.params.get('drafts')).toBe('1');
+      expect(mrReq.request.params.get('mine')).toBe('1');
+      expect(mrReq.request.params.get('project')).toBe('api,web');
+      expect(mrReq.request.params.get('sort')).toBe('diff:desc');
+      mrReq.flush({ mergeRequests: [], warnings: [] });
+      const facetsReq = http.expectOne((r) => r.url === '/api/v1/merge-requests/facets');
+      expect(facetsReq.request.params.get('drafts')).toBe('1');
+      expect(facetsReq.request.params.get('project')).toBe('api,web');
+      // Facets incluant « api »/« web », pour que la réconciliation RG-010-09
+      // ne retire pas silencieusement la sélection restaurée depuis l'URL.
+      facetsReq.flush({
+        ...EMPTY_FACETS,
+        project: [
+          { value: 'api', label: 'api · equipe/api', count: 0 },
+          { value: 'web', label: 'web · equipe/web', count: 0 },
+        ],
+      });
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+
+      expect(TestBed.inject(FiltersStore).active()).toEqual(['project']);
+      expect(TestBed.inject(FiltersStore).project()).toEqual(['api', 'web']);
+      expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
+    });
+
+    it('should_write_the_url_with_default_params_and_replaceUrl_on_the_very_first_load', async () => {
+      // Espionné avant toute création de composant : capture l'appel émis
+      // par le premier passage de l'effet d'écriture d'URL, sans changement
+      // de filtre préalable (RG-011-02, « URL complétée par défaut »).
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+      expect(navigateSpy).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
+          replaceUrl: true,
+        }),
+      );
+    });
+
+    it('should_write_the_url_without_pushing_history_when_a_filter_changes', async () => {
+      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      TestBed.inject(FiltersStore).toggleMine();
+      await settle();
+
+      expect(navigateSpy).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ drafts: '0', mine: '1', sort: 'ready:asc' }),
+          replaceUrl: true,
+        }),
+      );
+    });
+
+    it('should_prune_a_renamed_project_alias_from_both_the_selection_and_the_rewritten_url', async () => {
+      // RG-010-09 (US-010) + réactivité de l'effet d'écriture d'URL
+      // (US-011) combinées de bout en bout : « api » a été renommé/retiré,
+      // il n'apparaît plus dans la réponse `facets`.
+      TestBed.resetTestingModule();
+      await configureBoardTestingModule({ snapshot: { queryParams: { project: 'api' } } });
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      fixture = TestBed.createComponent(BoardPageComponent);
+      el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      await settle();
+      http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+      http.expectOne('/api/v1/projects').flush([PROJECT]);
+      const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
+      expect(mrReq.request.params.get('project')).toBe('api');
+      mrReq.flush({ mergeRequests: [], warnings: [] });
+      const facetsReq = http.expectOne((r) => r.url === '/api/v1/merge-requests/facets');
+      facetsReq.flush({
+        ...EMPTY_FACETS,
+        project: [{ value: 'back', label: 'back · equipe/back', count: 0 }],
+      });
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+
+      expect(TestBed.inject(FiltersStore).active()).toEqual(['project']);
+      expect(TestBed.inject(FiltersStore).project()).toEqual([]);
+      // RG-011-01 : un filtre actif sans valeur reste présent (« project= »),
+      // il n'est pas retiré de l'URL — seule sa valeur est vidée.
+      expect(navigateSpy).toHaveBeenLastCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ project: '' }),
+          replaceUrl: true,
+        }),
+      );
+    });
+
+    it('should_show_the_current_query_string_in_the_footer', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toBe(
+        '?drafts=0&mine=0&sort=ready:asc',
+      );
+    });
+
+    it('should_not_show_the_footer_in_the_no_repos_empty_state', async () => {
+      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
+
+      expect(el.querySelector('.board-footer')).toBeNull();
+    });
+
+    it('should_toggle_the_opened_column_from_the_mr_table_menu_output', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      expect(TestBed.inject(ColumnsStore).showOpened()).toBe(false);
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      mrTable.toggleOpenedColumn.emit();
+      await settle();
+
+      expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
+      expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toContain('cols=opened');
+    });
   });
 
   it('should_toast_when_loading_merge_requests_fails', async () => {

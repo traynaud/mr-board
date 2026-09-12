@@ -12,11 +12,17 @@ export type ReadyLevel = 'green' | 'orange' | 'red';
 export type SortKey = 'ready' | 'diff';
 export type SortDirection = 'asc' | 'desc';
 
+export const SORT_KEYS: SortKey[] = ['ready', 'diff'];
+export const SORT_DIRECTIONS: SortDirection[] = ['asc', 'desc'];
+
 /** État de tri du tableau (RG-008-*). Toujours une colonne active, jamais d'état « sans tri » (RG-008-03). */
 export interface MergeRequestSort {
   key: SortKey;
   direction: SortDirection;
 }
+
+/** RG-008-01/08 : tri par défaut (la plus ancienne MR Ready en haut). */
+export const DEFAULT_SORT: MergeRequestSort = { key: 'ready', direction: 'asc' };
 
 /**
  * Miroir de `MergeRequestViewDto` (backend). Volontairement minimal :

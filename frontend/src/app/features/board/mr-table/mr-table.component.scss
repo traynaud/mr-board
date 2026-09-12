@@ -88,3 +88,38 @@ th.sortable {
 th.sortable.active .sort-arrow {
   opacity: 1;
 }
+
+.opened-cell {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
+
+.columns-menu-header {
+  width: 36px;
+  padding: 0 2px;
+}
+
+.menu-title {
+  padding: 8px 14px 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.menu-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-neutral-100);
+  }
+}
+
+.option-label {
+  font-size: 13px;
+}

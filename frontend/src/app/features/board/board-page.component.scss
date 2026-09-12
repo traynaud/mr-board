@@ -24,6 +24,9 @@
 }
 
 .board-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: var(--space-6) var(--space-4);
 }
 
@@ -37,5 +40,20 @@
 
   p {
     margin: 0;
+  }
+}
+
+.board-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: auto;
+  padding-top: var(--space-4);
+  font-size: 11px;
+  color: var(--color-neutral-600);
+
+  .query-string {
+    font-family: ui-monospace, Menlo, monospace;
   }
 }

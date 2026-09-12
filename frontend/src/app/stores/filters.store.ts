@@ -61,6 +61,16 @@ export const FiltersStore = signalStore(
       patchState(store, { mine: !store.mine() });
     },
 
+    /**
+     * RG-011-02 : restaure l'état complet depuis l'URL au chargement — patch
+     * direct en bloc, sans passer par les méthodes de toggle unitaires (qui
+     * ont chacune leur propre logique de bascule, inadaptée à une
+     * restauration one-shot).
+     */
+    restore(state: Partial<FiltersState>): void {
+      patchState(store, state);
+    },
+
     /** RG-010-03 : crée la pastille d'un filtre pas encore actif. Sans effet si déjà actif. */
     addFilter(key: FilterKey): void {
       if (store.active().includes(key)) {

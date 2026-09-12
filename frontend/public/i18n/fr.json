@@ -44,6 +44,10 @@
         "remove": "Retirer le filtre {{name}}"
       }
     },
+    "columns": {
+      "menuLabel": "Colonnes",
+      "opened": "Date d'ouverture"
+    },
     "mergeRequests": {
       "loadError": "Impossible de charger les MRs.",
       "empty": "Aucune MR ouverte.",
@@ -59,7 +63,8 @@
         "reviewer": "Reviewer",
         "assignee": "Affecté",
         "approved": "Approved",
-        "ready": "Depuis Ready"
+        "ready": "Depuis Ready",
+        "opened": "Ouverte"
       },
       "difficulty": {
         "easy": "Easy",
@@ -77,6 +82,9 @@
         "openedToday": "ouverte aujourd'hui",
         "openedDays": "ouverte il y a {{days}} j"
       }
+    },
+    "footer": {
+      "legend": "Drafts après les MRs ready, triés par date d'ouverture · « Mes MRs » = auteur, reviewer ou affecté"
     },
     "sync": {
       "never": "Jamais synchronisé",
