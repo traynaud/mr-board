@@ -2,6 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
@@ -14,6 +15,7 @@ import { provideIcons } from '../../shared/icons/provide-icons';
 import { FiltersStore } from '../../stores/filters.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardPageComponent } from './board-page.component';
+import { FilterBarComponent } from './filter-bar/filter-bar.component';
 
 const NO_TOKEN_SETTINGS: Settings = {
   gitlabUrl: 'https://gitlab.exemple.fr',
@@ -38,7 +40,27 @@ const PROJECT: Project = {
   gitlabProjectId: 42,
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
-const MERGE_REQUESTS_URL = '/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=0';
+const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc';
+const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0';
+const EMPTY_FACETS = {
+  project: [],
+  author: [],
+  assigned: [{ value: 'nobody', label: 'Nobody', count: 0 }],
+  approved: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 0 },
+  ],
+  commented: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 0 },
+  ],
+};
+// Facets incluant l'option « api », pour que la réconciliation RG-010-09 ne
+// retire pas silencieusement une sélection de projet valide.
+const FACETS_WITH_API = {
+  ...EMPTY_FACETS,
+  project: [{ value: 'api', label: 'api · equipe/backend-api', count: 0 }],
+};
 
 function run(overrides: Partial<SyncRun> = {}): SyncRun {
   return {
@@ -129,6 +151,7 @@ describe('BoardPageComponent', () => {
     http
       .expectOne(MERGE_REQUESTS_URL)
       .flush({ mergeRequests: options.mergeRequests ?? [], warnings: options.warnings ?? [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     http.expectOne('/api/v1/sync/status').flush(options.status);
     await settle();
   }
@@ -220,8 +243,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=1&mine=0')
+      .expectOne('/api/v1/merge-requests?drafts=1&mine=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne('/api/v1/merge-requests/facets?drafts=1&mine=0').flush(EMPTY_FACETS);
     await settle();
   });
 
@@ -241,8 +265,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=1')
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=1&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=1').flush(EMPTY_FACETS);
     await settle();
 
     expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
@@ -275,9 +300,84 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?sort=ready:asc&drafts=0&mine=0')
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc')
       .flush({ mergeRequests: [mergeRequest()], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     await settle();
+  });
+
+  it('should_show_the_empty_state_with_a_clear_button_when_a_composable_filter_is_active_but_matches_nothing', async () => {
+    await bootstrap({
+      settings: WITH_TOKEN_SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [],
+    });
+    // RG-010-10 : au moins un filtre composable actif, comme « Mes MRs »,
+    // doit basculer l'état vide sur le message filtré (déjà couvert pour
+    // « Mes MRs » ci-dessus ; ici la logique est étendue à `active`).
+    TestBed.inject(FiltersStore).addFilter('project');
+    fixture.detectChanges();
+    await settle();
+
+    expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.emptyFiltered'),
+    );
+    expect(el.querySelector('.empty-state button')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.clearFilters'),
+    );
+  });
+
+  it('should_reload_after_adding_removing_toggling_or_selecting_a_composable_filter', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    const filterBar = fixture.debugElement.query(By.directive(FilterBarComponent))
+      .componentInstance as FilterBarComponent;
+
+    filterBar.filterAdd.emit('project');
+    await waitForDebounce();
+    await settle();
+    http
+      .expectOne(
+        (r) => r.url === '/api/v1/merge-requests' && !r.params.has('project'),
+      )
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).active()).toEqual(['project']);
+
+    filterBar.filterToggleValue.emit({ key: 'project', value: 'api' });
+    await waitForDebounce();
+    await settle();
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && r.params.get('project') === 'api')
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(FACETS_WITH_API);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).project()).toEqual(['api']);
+
+    filterBar.filterSelectBoolean.emit({ key: 'approved', value: 'yes' });
+    await waitForDebounce();
+    await settle();
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && r.params.get('approved') === '1')
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(FACETS_WITH_API);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).approved()).toBe('yes');
+
+    filterBar.filterRemove.emit('project');
+    await waitForDebounce();
+    await settle();
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && !r.params.has('project'))
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).active()).toEqual([]);
   });
 
   it('should_toast_when_loading_merge_requests_fails', async () => {
@@ -288,6 +388,7 @@ describe('BoardPageComponent', () => {
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
     http.expectOne(MERGE_REQUESTS_URL).flush('down', { status: 500, statusText: 'KO' });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 
@@ -313,6 +414,7 @@ describe('BoardPageComponent', () => {
     // Rechargement automatique des MRs à la fin de cette (deuxième) transition
     // de statut, non-baseline cette fois (RG-005-06).
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     await settle();
   });
 
@@ -341,6 +443,7 @@ describe('BoardPageComponent', () => {
       });
     await settle();
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
@@ -361,6 +464,7 @@ describe('BoardPageComponent', () => {
     http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
     await settle();
 

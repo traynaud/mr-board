@@ -3,12 +3,33 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatChipListboxHarness, MatChipOptionHarness } from '@angular/material/chips/testing';
+import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
-import { MergeRequestView } from '../../../models/merge-request.model';
+import {
+  ComposableFilters,
+  EMPTY_COMPOSABLE_FILTERS,
+  FilterKey,
+  MergeRequestView,
+  MergeRequestsFacets,
+} from '../../../models/merge-request.model';
 import { provideIcons } from '../../../shared/icons/provide-icons';
 import { FilterBarComponent } from './filter-bar.component';
+
+const EMPTY_FACETS: MergeRequestsFacets = {
+  project: [{ value: 'api', label: 'api · equipe/backend-api', count: 2 }],
+  author: [],
+  assigned: [{ value: 'nobody', label: 'Nobody', count: 2 }],
+  approved: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 2 },
+  ],
+  commented: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 2 },
+  ],
+};
 
 function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
   return {
@@ -46,9 +67,16 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       [mine]="mine()"
       [identityConfigured]="identityConfigured()"
       [rows]="rows()"
+      [active]="active()"
+      [composableFilters]="composableFilters()"
+      [facets]="facets()"
       (draftsToggle)="draftsToggleCount = draftsToggleCount + 1"
       (mineToggle)="mineToggleCount = mineToggleCount + 1"
       (clearFilters)="clearCount = clearCount + 1"
+      (filterAdd)="added.push($event)"
+      (filterRemove)="removed.push($event)"
+      (filterToggleValue)="toggled.push($event)"
+      (filterSelectBoolean)="selectedBoolean.push($event)"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,9 +86,16 @@ class HostComponent {
   readonly mine = signal(false);
   readonly identityConfigured = signal(true);
   readonly rows = signal<MergeRequestView[]>([mr({ id: 1 }), mr({ id: 2, projectAlias: 'web' })]);
+  readonly active = signal<FilterKey[]>([]);
+  readonly composableFilters = signal<ComposableFilters>(EMPTY_COMPOSABLE_FILTERS);
+  readonly facets = signal<MergeRequestsFacets | null>(EMPTY_FACETS);
   draftsToggleCount = 0;
   mineToggleCount = 0;
   clearCount = 0;
+  added: FilterKey[] = [];
+  removed: FilterKey[] = [];
+  toggled: { key: FilterKey; value: string }[] = [];
+  selectedBoolean: { key: FilterKey; value: 'yes' | 'no' }[] = [];
 }
 
 describe('FilterBarComponent', () => {
@@ -146,7 +181,7 @@ describe('FilterBarComponent', () => {
     );
   });
 
-  it('should_hide_the_clear_button_when_mine_is_inactive', async () => {
+  it('should_hide_the_clear_button_when_no_filter_is_active', async () => {
     const { el } = await setup();
 
     expect(el.querySelector('.summary button')).toBeNull();
@@ -164,5 +199,59 @@ describe('FilterBarComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.clearCount).toBe(1);
+  });
+
+  it('should_show_the_clear_button_when_a_composable_filter_is_active_even_without_mine', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['project']);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.summary button')).not.toBeNull();
+  });
+
+  it('should_render_one_pill_per_active_filter_with_its_facet_options', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['project', 'approved']);
+    await fixture.whenStable();
+
+    expect(el.querySelectorAll('app-filter-pill')).toHaveLength(2);
+  });
+
+  it('should_pass_the_current_multi_selection_to_the_matching_pill', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['project']);
+    fixture.componentInstance.composableFilters.set({
+      ...EMPTY_COMPOSABLE_FILTERS,
+      project: ['api'],
+    });
+    await fixture.whenStable();
+
+    expect(el.querySelector('app-filter-pill .pill-body')?.textContent).toContain('api');
+  });
+
+  it('should_emit_filter_remove_with_the_filter_key_when_a_pill_cross_is_clicked', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['project']);
+    await fixture.whenStable();
+
+    el.querySelector<HTMLButtonElement>('app-filter-pill .pill-remove')?.click();
+
+    expect(fixture.componentInstance.removed).toEqual(['project']);
+  });
+
+  it('should_render_the_add_filter_menu', async () => {
+    const { el } = await setup();
+
+    expect(el.querySelector('app-add-filter-menu')).not.toBeNull();
+  });
+
+  it('should_emit_filter_add_when_a_filter_is_chosen_in_the_add_menu', async () => {
+    const { fixture, loader } = await setup();
+    const addFilterMenu = await loader.getHarness(MatMenuHarness);
+    await addFilterMenu.open();
+    const items = await addFilterMenu.getItems();
+    await items[0].click();
+
+    expect(fixture.componentInstance.added).toEqual(['project']);
   });
 });

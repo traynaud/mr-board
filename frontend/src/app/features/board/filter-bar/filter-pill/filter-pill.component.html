@@ -1,0 +1,65 @@
+<span class="pill" [class.open]="menuOpen()">
+  <button
+    type="button"
+    class="pill-body"
+    [matMenuTriggerFor]="menu"
+    (menuOpened)="menuOpen.set(true)"
+    (menuClosed)="menuOpen.set(false)"
+  >
+    {{ pillLabel() }}
+    <mat-icon svgIcon="chevron-down" class="chevron" />
+  </button>
+  <span class="pill-separator"></span>
+  <button type="button" class="pill-remove" [attr.aria-label]="removeAriaLabel()" (click)="remove.emit()">
+    <mat-icon svgIcon="x" />
+  </button>
+</span>
+
+<mat-menu #menu="matMenu" class="filter-pill-menu">
+  <div class="menu-title">{{ menuTitle() }}</div>
+
+  @if (isMulti()) {
+    @if (showSearch()) {
+      <div class="menu-search">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <input
+            matInput
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+            [placeholder]="'board.filters.pills.search' | translate"
+          />
+        </mat-form-field>
+      </div>
+    }
+    <div class="menu-options">
+      @for (option of filteredOptions(); track option.value) {
+        <div
+          class="menu-option"
+          [class.zero]="option.count === 0"
+          role="checkbox"
+          tabindex="0"
+          [attr.aria-checked]="isSelected(option.value)"
+          (click)="$event.stopPropagation(); onOptionClick(option.value)"
+          (keydown.enter)="onOptionClick(option.value)"
+          (keydown.space)="$event.preventDefault(); onOptionClick(option.value)"
+        >
+          <mat-checkbox
+            [checked]="isSelected(option.value)"
+            [disableRipple]="true"
+            tabindex="-1"
+            (click)="$event.preventDefault()"
+          />
+          <span class="option-label">{{ option.label }}</span>
+          <span class="option-count">{{ option.count }}</span>
+        </div>
+      }
+    </div>
+  } @else {
+    @for (option of options(); track option.value) {
+      <button mat-menu-item type="button" (click)="onOptionClick(option.value)">
+        <span class="option-label">{{ option.label }}</span>
+        <span class="option-count">{{ option.count }}</span>
+      </button>
+    }
+  }
+</mat-menu>

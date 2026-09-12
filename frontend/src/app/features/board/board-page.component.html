@@ -27,9 +27,16 @@
       [mine]="filtersStore.mine()"
       [identityConfigured]="identityConfigured()"
       [rows]="mrStore.mergeRequests()"
+      [active]="filtersStore.active()"
+      [composableFilters]="filtersStore.composableFilters()"
+      [facets]="mrStore.facets()"
       (draftsToggle)="onDraftsToggle()"
       (mineToggle)="onMineToggle()"
       (clearFilters)="onClearFilters()"
+      (filterAdd)="onFilterAdd($event)"
+      (filterRemove)="onFilterRemove($event)"
+      (filterToggleValue)="onFilterToggleValue($event)"
+      (filterSelectBoolean)="onFilterSelectBoolean($event)"
     />
     @if (mrStore.loading() && mrStore.mergeRequests().length === 0) {
       <mat-progress-bar mode="indeterminate" />

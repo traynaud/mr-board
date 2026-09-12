@@ -14,6 +14,17 @@ describe('FiltersStore', () => {
     expect(store.mine()).toBe(false);
   });
 
+  it('should_default_to_no_active_composable_filter', () => {
+    expect(store.active()).toEqual([]);
+    expect(store.composableFilters()).toEqual({
+      project: [],
+      author: [],
+      assigned: [],
+      approved: null,
+      commented: null,
+    });
+  });
+
   it('should_toggle_drafts', () => {
     store.toggleDrafts();
     expect(store.drafts()).toBe(true);
@@ -38,5 +49,116 @@ describe('FiltersStore', () => {
 
     expect(store.mine()).toBe(false);
     expect(store.drafts()).toBe(true);
+  });
+
+  describe('addFilter', () => {
+    it('should_add_a_filter_to_the_active_list', () => {
+      store.addFilter('project');
+
+      expect(store.active()).toEqual(['project']);
+    });
+
+    it('should_preserve_the_order_filters_were_added_in', () => {
+      store.addFilter('approved');
+      store.addFilter('project');
+
+      expect(store.active()).toEqual(['approved', 'project']);
+    });
+
+    it('should_have_no_effect_when_the_filter_is_already_active', () => {
+      store.addFilter('project');
+      store.addFilter('project');
+
+      expect(store.active()).toEqual(['project']);
+    });
+  });
+
+  describe('removeFilter', () => {
+    it('should_remove_the_pill_and_reset_a_multi_value_filter', () => {
+      store.addFilter('project');
+      store.toggleMultiValue('project', 'api');
+
+      store.removeFilter('project');
+
+      expect(store.active()).toEqual([]);
+      expect(store.project()).toEqual([]);
+    });
+
+    it('should_remove_the_pill_and_reset_a_boolean_filter_to_null', () => {
+      store.addFilter('approved');
+      store.setBoolean('approved', 'yes');
+
+      store.removeFilter('approved');
+
+      expect(store.active()).toEqual([]);
+      expect(store.approved()).toBeNull();
+    });
+  });
+
+  describe('toggleMultiValue', () => {
+    it('should_add_a_value_not_yet_selected', () => {
+      store.toggleMultiValue('project', 'api');
+
+      expect(store.project()).toEqual(['api']);
+    });
+
+    it('should_remove_a_value_already_selected', () => {
+      store.toggleMultiValue('assigned', 'nobody');
+      store.toggleMultiValue('assigned', 'mdupont');
+
+      store.toggleMultiValue('assigned', 'nobody');
+
+      expect(store.assigned()).toEqual(['mdupont']);
+    });
+  });
+
+  describe('setMultiValue', () => {
+    it('should_replace_the_whole_selection_without_toggling', () => {
+      store.toggleMultiValue('author', 'mdupont');
+
+      store.setMultiValue('author', ['kbenali']);
+
+      expect(store.author()).toEqual(['kbenali']);
+    });
+  });
+
+  describe('setBoolean', () => {
+    it('should_select_a_value', () => {
+      store.setBoolean('approved', 'yes');
+
+      expect(store.approved()).toBe('yes');
+    });
+
+    it('should_deselect_when_reclicking_the_same_value', () => {
+      store.setBoolean('commented', 'no');
+
+      store.setBoolean('commented', 'no');
+
+      expect(store.commented()).toBeNull();
+    });
+
+    it('should_switch_to_the_other_value_when_it_differs', () => {
+      store.setBoolean('approved', 'yes');
+
+      store.setBoolean('approved', 'no');
+
+      expect(store.approved()).toBe('no');
+    });
+  });
+
+  it('should_clear_every_active_pill_and_composable_filter_value_but_not_drafts', () => {
+    store.toggleDrafts();
+    store.addFilter('project');
+    store.toggleMultiValue('project', 'api');
+    store.addFilter('approved');
+    store.setBoolean('approved', 'yes');
+
+    store.clear();
+
+    expect(store.drafts()).toBe(true);
+    expect(store.mine()).toBe(false);
+    expect(store.active()).toEqual([]);
+    expect(store.project()).toEqual([]);
+    expect(store.approved()).toBeNull();
   });
 });

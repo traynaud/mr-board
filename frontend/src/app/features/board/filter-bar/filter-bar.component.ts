@@ -5,19 +5,36 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../core/i18n/translate.service';
-import { MergeRequestView } from '../../../models/merge-request.model';
+import {
+  ComposableFilters,
+  FacetOption,
+  FilterKey,
+  MergeRequestView,
+  MergeRequestsFacets,
+  isMultiValueFilter,
+} from '../../../models/merge-request.model';
+import { AddFilterMenuComponent } from './add-filter-menu/add-filter-menu.component';
 import { countLabelParts } from './count-label';
+import { FilterPillComponent } from './filter-pill/filter-pill.component';
 
 /**
- * Barre de filtres rapides (RG-009-*) : chips « Drafts » / « Mes MRs »,
- * compteur (RG-G20) et bouton « Effacer » — visible seulement si « Mes
- * MRs » est actif (RG-009-05, seul un vrai filtre, pas une préférence
- * d'affichage). Purement présentationnel : reçoit l'état, émet les
- * intentions de bascule, ne recharge jamais lui-même.
+ * Barre de filtres (RG-009-*, RG-010-*) : chips « Drafts » / « Mes MRs »,
+ * pastilles des filtres composables actifs + bouton « Ajouter un filtre »,
+ * compteur (RG-G20) et bouton « Effacer » — visible si un filtre composable
+ * ou « Mes MRs » est actif. Purement présentationnel : reçoit l'état, émet
+ * les intentions, ne recharge jamais lui-même.
  */
 @Component({
   selector: 'app-filter-bar',
-  imports: [MatButtonModule, MatChipsModule, MatIconModule, MatTooltipModule, TranslatePipe],
+  imports: [
+    MatButtonModule,
+    MatChipsModule,
+    MatIconModule,
+    MatTooltipModule,
+    TranslatePipe,
+    AddFilterMenuComponent,
+    FilterPillComponent,
+  ],
   templateUrl: './filter-bar.component.html',
   styleUrl: './filter-bar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,10 +46,17 @@ export class FilterBarComponent {
   readonly mine = input.required<boolean>();
   readonly identityConfigured = input.required<boolean>();
   readonly rows = input.required<MergeRequestView[]>();
+  readonly active = input.required<FilterKey[]>();
+  readonly composableFilters = input.required<ComposableFilters>();
+  readonly facets = input.required<MergeRequestsFacets | null>();
 
   readonly draftsToggle = output<void>();
   readonly mineToggle = output<void>();
   readonly clearFilters = output<void>();
+  readonly filterAdd = output<FilterKey>();
+  readonly filterRemove = output<FilterKey>();
+  readonly filterToggleValue = output<{ key: FilterKey; value: string }>();
+  readonly filterSelectBoolean = output<{ key: FilterKey; value: 'yes' | 'no' }>();
 
   protected readonly countLabel = computed(() => {
     const parts = countLabelParts(this.rows());
@@ -43,4 +67,18 @@ export class FilterBarComponent {
       projectsSuffix: parts.projectsSuffix,
     });
   });
+
+  protected readonly hasActiveFilter = computed(() => this.mine() || this.active().length > 0);
+
+  protected optionsFor(key: FilterKey): FacetOption[] {
+    return this.facets()?.[key] ?? [];
+  }
+
+  protected multiValueFor(key: FilterKey): string[] {
+    return isMultiValueFilter(key) ? this.composableFilters()[key] : [];
+  }
+
+  protected booleanValueFor(key: FilterKey): 'yes' | 'no' | null {
+    return isMultiValueFilter(key) ? null : this.composableFilters()[key];
+  }
 }

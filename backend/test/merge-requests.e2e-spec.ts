@@ -38,6 +38,18 @@ interface MergeRequestsResponseBody {
   mergeRequests: MergeRequestViewBody[];
   warnings: string[];
 }
+interface FacetOptionBody {
+  value: string;
+  label: string;
+  count: number;
+}
+interface MergeRequestsFacetsBody {
+  project: FacetOptionBody[];
+  author: FacetOptionBody[];
+  assigned: FacetOptionBody[];
+  approved: FacetOptionBody[];
+  commented: FacetOptionBody[];
+}
 
 function userNode(
   id: number,
@@ -510,5 +522,263 @@ describe('MergeRequests (e2e)', () => {
       (v) => v.iid,
     );
     expect(iids).toEqual([60, 61]);
+  });
+
+  it('setup: should_configure_a_second_repo_for_the_composable_filters_tests', async () => {
+    gitlab.getProject.mockResolvedValue({
+      id: 43,
+      path_with_namespace: 'equipe/web',
+      web_url: 'https://gitlab.com/equipe/web',
+    });
+    const res = await api()
+      .post('/api/v1/projects')
+      .send({ path: 'equipe/web', alias: 'web' });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('GET /merge-requests?project=... should_only_return_merge_requests_of_the_given_projects', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([rawNode(70), rawNode(71)])
+          : Promise.resolve([rawNode(72)]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?project=api');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests
+      .map((v) => v.iid)
+      .sort((a, b) => a - b);
+    expect(iids).toEqual([70, 71]);
+  });
+
+  it('GET /merge-requests?assigned=nobody should_return_merge_requests_without_reviewer_or_assignee', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              rawNode(80),
+              rawNode(81, {
+                reviewers: { nodes: [userNode(2, 'kbenali')] },
+              }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?assigned=nobody');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
+    expect(iids).toEqual([80]);
+  });
+
+  it('GET /merge-requests?assigned=kbenali should_match_either_reviewer_or_assignee_role', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              rawNode(90, {
+                reviewers: { nodes: [userNode(2, 'kbenali')] },
+              }),
+              rawNode(91, {
+                assignees: { nodes: [userNode(2, 'kbenali')] },
+              }),
+              rawNode(92),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?assigned=kbenali');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests
+      .map((v) => v.iid)
+      .sort((a, b) => a - b);
+    expect(iids).toEqual([90, 91]);
+  });
+
+  it('GET /merge-requests?approved=0 should_only_return_unapproved_merge_requests', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              rawNode(100, { approved: true }),
+              rawNode(101, { approved: false }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?approved=0');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
+    expect(iids).toEqual([101]);
+  });
+
+  it('GET /merge-requests?commented=1 should_only_return_merge_requests_with_at_least_one_comment', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              rawNode(110, { userNotesCount: 0 }),
+              rawNode(111, { userNotesCount: 2 }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?commented=1');
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
+    expect(iids).toEqual([111]);
+  });
+
+  it('GET /merge-requests?project=api&approved=1&mine=1 should_combine_all_active_filters_with_and', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) => {
+        if (pathWithNamespace === 'equipe/api') {
+          return Promise.resolve([
+            rawNode(120, {
+              approved: true,
+              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+            }),
+            rawNode(121, {
+              approved: false,
+              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+            }),
+            rawNode(122, {
+              approved: true,
+              author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+            }),
+          ]);
+        }
+        return Promise.resolve([
+          rawNode(123, {
+            approved: true,
+            author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+          }),
+        ]);
+      },
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get(
+      '/api/v1/merge-requests?project=api&approved=1&mine=1',
+    );
+    const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+      (v) => v.iid,
+    );
+    expect(iids).toEqual([120]);
+  });
+
+  it('GET /merge-requests?approved=maybe should_respond_400_for_an_invalid_boolean_filter_value', async () => {
+    const res = await api().get('/api/v1/merge-requests?approved=maybe');
+
+    expect(res.status).toBe(400);
+  });
+
+  it('GET /merge-requests?project=inconnu should_respond_200_with_an_empty_list_for_an_unknown_project_alias', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) =>
+        pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([rawNode(130)])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?project=inconnu');
+
+    expect(res.status).toBe(200);
+    expect((res.body as MergeRequestsResponseBody).mergeRequests).toEqual([]);
+  });
+
+  it('GET /merge-requests/facets should_expose_options_and_contextual_counts_for_the_5_filters', async () => {
+    gitlab.getOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, pathWithNamespace: string) => {
+        if (pathWithNamespace === 'equipe/api') {
+          return Promise.resolve([
+            rawNode(140, {
+              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+              userNotesCount: 0,
+            }),
+            rawNode(141, {
+              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+              reviewers: {
+                nodes: [userNode(2, 'kbenali', { name: 'Karim Benali' })],
+              },
+              userNotesCount: 0,
+            }),
+            rawNode(142, {
+              author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+              approved: true,
+              userNotesCount: 1,
+            }),
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests/facets');
+    expect(res.status).toBe(200);
+    const facets = res.body as MergeRequestsFacetsBody;
+
+    expect(facets.project.find((o) => o.value === 'api')?.count).toBe(3);
+    expect(facets.project.find((o) => o.value === 'web')?.count).toBe(0);
+    expect(facets.author).toEqual(
+      expect.arrayContaining([
+        { value: 'mdupont', label: 'Marie Dupont', count: 2 },
+        { value: 'jdurand', label: 'Jean Durand', count: 1 },
+      ]),
+    );
+    expect(facets.assigned[0]).toEqual({
+      value: 'nobody',
+      label: 'Nobody',
+      count: 2,
+    });
+    expect(facets.approved).toEqual([
+      { value: 'yes', label: 'Oui', count: 1 },
+      { value: 'no', label: 'Non', count: 2 },
+    ]);
+    expect(facets.commented).toEqual([
+      { value: 'yes', label: 'Oui', count: 1 },
+      { value: 'no', label: 'Non', count: 2 },
+    ]);
+  });
+
+  it('GET /merge-requests/facets?project=web should_not_apply_a_filter_to_its_own_options', async () => {
+    const res = await api().get('/api/v1/merge-requests/facets?project=web');
+    expect(res.status).toBe(200);
+    const facets = res.body as MergeRequestsFacetsBody;
+
+    // 'project' ignores its own active filter: 'api' keeps its true count (3).
+    expect(facets.project.find((o) => o.value === 'api')?.count).toBe(3);
+    expect(facets.project.find((o) => o.value === 'web')?.count).toBe(0);
+    // but 'assigned' IS scoped by project=web (no open MR there).
+    expect(facets.assigned[0]).toEqual({
+      value: 'nobody',
+      label: 'Nobody',
+      count: 0,
+    });
   });
 });

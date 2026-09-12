@@ -66,3 +66,55 @@ export interface MergeRequestFilters {
   drafts: boolean;
   mine: boolean;
 }
+
+/** Les 5 filtres composables (RG-010-01). */
+export type FilterKey = 'project' | 'author' | 'assigned' | 'approved' | 'commented';
+
+/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03). */
+export const ALL_FILTER_KEYS: FilterKey[] = [
+  'project',
+  'author',
+  'assigned',
+  'approved',
+  'commented',
+];
+
+/** `project`/`author`/`assigned` sont des filtres multi-sélection ; `approved`/`commented` sont booléens. */
+export function isMultiValueFilter(key: FilterKey): key is 'project' | 'author' | 'assigned' {
+  return key === 'project' || key === 'author' || key === 'assigned';
+}
+
+/** État des 5 filtres composables (RG-010-01/02). `'nobody'` est une valeur comme une autre dans `assigned`. */
+export interface ComposableFilters {
+  project: string[];
+  author: string[];
+  assigned: string[];
+  approved: 'yes' | 'no' | null;
+  commented: 'yes' | 'no' | null;
+}
+
+export const EMPTY_COMPOSABLE_FILTERS: ComposableFilters = {
+  project: [],
+  author: [],
+  assigned: [],
+  approved: null,
+  commented: null,
+};
+
+/** Une option sélectionnable d'un menu de filtre, avec son compteur contextuel (RG-010-07/08). */
+export interface FacetOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+/** Réponse de `GET /merge-requests/facets` (RG-010-07). */
+export interface MergeRequestsFacets {
+  project: FacetOption[];
+  author: FacetOption[];
+  /** `'nobody'` toujours en première position (RG-010-05). */
+  assigned: FacetOption[];
+  /** 2 entrées, `value: 'yes'|'no'`. */
+  approved: FacetOption[];
+  commented: FacetOption[];
+}

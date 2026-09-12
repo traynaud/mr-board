@@ -4,6 +4,7 @@ import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-re
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
+import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
@@ -58,7 +59,7 @@ describe('MergeRequestsService', () => {
   let reviewersRepo: AssociationRepoMock;
   let assigneesRepo: AssociationRepoMock;
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
-  let projectsService: { findByIds: jest.Mock };
+  let projectsService: { findByIds: jest.Mock; list: jest.Mock };
   let settingsService: { getIdentity: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
@@ -123,7 +124,10 @@ describe('MergeRequestsService', () => {
         },
         {
           provide: ProjectsService,
-          useValue: { findByIds: jest.fn().mockResolvedValue([]) },
+          useValue: {
+            findByIds: jest.fn().mockResolvedValue([]),
+            list: jest.fn().mockResolvedValue([]),
+          },
         },
         {
           provide: SettingsService,
@@ -144,6 +148,32 @@ describe('MergeRequestsService', () => {
     projectsService = module.get(ProjectsService);
     settingsService = module.get(SettingsService);
   });
+
+  function persistedMergeRequest(
+    overrides: Partial<MergeRequest> = {},
+  ): MergeRequest {
+    return {
+      id: 1,
+      gitlabMrId: 123,
+      iid: 7,
+      projectId: 1,
+      title: 'Refonte facturation',
+      webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
+      draft: false,
+      authorId: 10,
+      approved: true,
+      commentsCount: 3,
+      changedFiles: 12,
+      additions: 340,
+      deletions: 58,
+      labels: '[]',
+      createdAtGitlab: '2026-09-01T10:00:00.000Z',
+      readyAt: '2026-09-01T10:00:00.000Z',
+      updatedAtGitlab: '2026-09-01T10:00:00.000Z',
+      syncedAt: '2026-09-11T08:00:00.000Z',
+      ...overrides,
+    };
+  }
 
   describe('upsertForProject', () => {
     it('should_insert_a_new_merge_request_with_ready_at_from_gitlab_created_at', async () => {
@@ -322,32 +352,6 @@ describe('MergeRequestsService', () => {
     afterEach(() => {
       jest.useRealTimers();
     });
-
-    function persistedMergeRequest(
-      overrides: Partial<MergeRequest> = {},
-    ): MergeRequest {
-      return {
-        id: 1,
-        gitlabMrId: 123,
-        iid: 7,
-        projectId: 1,
-        title: 'Refonte facturation',
-        webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
-        draft: false,
-        authorId: 10,
-        approved: true,
-        commentsCount: 3,
-        changedFiles: 12,
-        additions: 340,
-        deletions: 58,
-        labels: '[]',
-        createdAtGitlab: '2026-09-01T10:00:00.000Z',
-        readyAt: '2026-09-01T10:00:00.000Z',
-        updatedAtGitlab: '2026-09-01T10:00:00.000Z',
-        syncedAt: '2026-09-11T08:00:00.000Z',
-        ...overrides,
-      };
-    }
 
     it('should_return_an_empty_array_and_skip_further_queries_when_there_is_no_open_merge_request', async () => {
       await expect(service.listOpen({})).resolves.toEqual({
@@ -747,6 +751,110 @@ describe('MergeRequestsService', () => {
 
       expect(result.map((v) => v.iid)).toEqual([1, 2]);
       expect(warnings).toEqual(['identity.missing']);
+    });
+
+    it('should_apply_the_project_composable_filter', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, projectId: 1 }),
+        persistedMergeRequest({ id: 2, iid: 2, projectId: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([
+        { id: 1, alias: 'api' },
+        { id: 2, alias: 'web' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        filters: { ...EMPTY_COMPOSABLE_FILTERS, project: ['web'] },
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([2]);
+    });
+
+    it('should_apply_the_assigned_nobody_composable_filter', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1 }),
+        persistedMergeRequest({ id: 2, iid: 2 }),
+      ]);
+      reviewersRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 10 },
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        filters: { ...EMPTY_COMPOSABLE_FILTERS, assigned: ['nobody'] },
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([2]);
+    });
+  });
+
+  describe('getFacets', () => {
+    it('should_return_empty_facets_when_there_is_no_open_merge_request', async () => {
+      projectsService.list.mockResolvedValue([]);
+
+      await expect(service.getFacets({})).resolves.toEqual({
+        project: [],
+        author: [],
+        assigned: [{ value: 'nobody', label: 'Nobody', count: 0 }],
+        approved: [
+          { value: 'yes', label: 'Oui', count: 0 },
+          { value: 'no', label: 'Non', count: 0 },
+        ],
+        commented: [
+          { value: 'yes', label: 'Oui', count: 0 },
+          { value: 'no', label: 'Non', count: 0 },
+        ],
+      });
+    });
+
+    it('should_list_every_configured_project_including_one_with_no_open_merge_request', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, projectId: 1 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.list.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+        { id: 2, alias: 'web', pathWithNamespace: 'equipe/web' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const facets = await service.getFacets({});
+
+      expect(facets.project).toEqual([
+        { value: 'api', label: 'api · equipe/api', count: 1 },
+        { value: 'web', label: 'web · equipe/web', count: 0 },
+      ]);
+    });
+
+    it('should_scope_the_base_set_to_drafts_and_mine_before_counting_facets', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, authorId: 10 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.list.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+      settingsService.getIdentity.mockResolvedValue({
+        username: 'someone-else',
+        email: null,
+      });
+
+      const facets = await service.getFacets({ mineOnly: true });
+
+      expect(facets.project).toEqual([
+        { value: 'api', label: 'api · equipe/api', count: 0 },
+      ]);
     });
   });
 });

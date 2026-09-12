@@ -3,7 +3,12 @@ import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { errorKeyOf } from '../core/api/api-error';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
-import { MergeRequestSort, MergeRequestView, SortKey } from '../models/merge-request.model';
+import {
+  MergeRequestSort,
+  MergeRequestView,
+  MergeRequestsFacets,
+  SortKey,
+} from '../models/merge-request.model';
 import { FiltersStore } from './filters.store';
 
 export interface MergeRequestsState {
@@ -14,6 +19,8 @@ export interface MergeRequestsState {
   sort: MergeRequestSort;
   /** Avertissements non bloquants renvoyés par l'API (ex. `identity.missing`, RG-009-02). */
   warnings: string[];
+  /** Options et compteurs contextuels des 5 filtres composables (RG-010-07). */
+  facets: MergeRequestsFacets | null;
 }
 
 /** RG-008-01/08 : tri par défaut, conservé le temps de la session en attendant l'URL (US-011). */
@@ -28,6 +35,7 @@ const initialState: MergeRequestsState = {
   loadError: null,
   sort: DEFAULT_SORT,
   warnings: [],
+  facets: null,
 };
 
 /**
@@ -45,15 +53,33 @@ export const MergeRequestsStore = signalStore(
     async function load(): Promise<void> {
       patchState(store, { loading: true, loadError: null });
       try {
-        const { mergeRequests, warnings } = await firstValueFrom(
-          api.getMergeRequests(store.sort(), {
-            drafts: filters.drafts(),
-            mine: filters.mine(),
-          }),
-        );
-        patchState(store, { mergeRequests, warnings, loading: false });
+        const baseFilters = { drafts: filters.drafts(), mine: filters.mine() };
+        const composableFilters = filters.composableFilters();
+        const [{ mergeRequests, warnings }, facets] = await Promise.all([
+          firstValueFrom(api.getMergeRequests(store.sort(), baseFilters, composableFilters)),
+          firstValueFrom(api.getFacets(baseFilters, composableFilters)),
+        ]);
+        patchState(store, { mergeRequests, warnings, facets, loading: false });
+        reconcileSelections(facets);
       } catch (error) {
         patchState(store, { loading: false, loadError: errorKeyOf(error) });
+      }
+    }
+
+    /**
+     * RG-010-09 : retire silencieusement, de chaque filtre multi-sélection,
+     * toute valeur sélectionnée absente des options renvoyées par `facets`
+     * (utilisateur disparu, alias renommé). `FiltersStore` reste un état UI
+     * pur, sans connaissance du serveur — cette logique vit ici.
+     */
+    function reconcileSelections(facets: MergeRequestsFacets): void {
+      for (const key of ['project', 'author', 'assigned'] as const) {
+        const known = new Set(facets[key].map((option) => option.value));
+        const current = filters[key]();
+        const pruned = current.filter((value) => known.has(value));
+        if (pruned.length !== current.length) {
+          filters.setMultiValue(key, pruned);
+        }
       }
     }
 

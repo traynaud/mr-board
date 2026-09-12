@@ -16,6 +16,12 @@ import {
   calculateElapsedDays,
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
+import { ConfiguredProject, buildFacets } from './domain/build-facets';
+import {
+  ComposableFilters,
+  EMPTY_COMPOSABLE_FILTERS,
+  applyComposableFilters,
+} from './domain/filter-merge-requests';
 import { Identity, isMine } from './domain/is-mine';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import {
@@ -25,6 +31,7 @@ import {
 } from './domain/sort-merge-requests';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
+import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
 import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
@@ -36,6 +43,14 @@ export interface ListOpenOptions {
   includeDrafts?: boolean;
   /** RG-009-02, RG-G09. Defaults to `false`. */
   mineOnly?: boolean;
+  /** RG-010-01/02. Defaults to no filter active. */
+  filters?: ComposableFilters;
+}
+
+export interface FacetsOptions {
+  includeDrafts?: boolean;
+  mineOnly?: boolean;
+  filters?: ComposableFilters;
 }
 
 /**
@@ -60,14 +75,10 @@ export class MergeRequestsService {
 
   /**
    * Open merge requests, ordered per `sort` (RG-008-01/04, default
-   * `ready:asc`). Drafts are excluded unless `includeDrafts` (RG-009-01);
-   * when they're excluded, `ready_at` is never null for the returned rows
-   * (see `resolveReadyAt`). Sorting happens in memory, once the view
-   * fields (`difficulty`, `readyAt`) are assembled, since `diff` ordering
-   * depends on a computed value with no SQL equivalent (see archi.md).
-   * `mineOnly` restricts to merge requests where I have a role (RG-G09) —
-   * silently ignored, with a `warnings` entry, when no identity is
-   * configured (RG-009-02).
+   * `ready:asc`), narrowed by the 5 composable filters (RG-010-01/02) on
+   * top of the `drafts`/`mine` base (RG-009). `mineOnly` restricts to
+   * merge requests where I have a role (RG-G09) — silently ignored, with a
+   * `warnings` entry, when no identity is configured (RG-009-02).
    */
   async listOpen(
     options: ListOpenOptions = {},
@@ -76,7 +87,45 @@ export class MergeRequestsService {
       sort = DEFAULT_SORT,
       includeDrafts = false,
       mineOnly = false,
+      filters = EMPTY_COMPOSABLE_FILTERS,
     } = options;
+    const { views: base, warnings } = await this.loadBase(
+      includeDrafts,
+      mineOnly,
+    );
+    const filtered = applyComposableFilters(base, filters);
+    return { mergeRequests: sortMergeRequests(filtered, sort), warnings };
+  }
+
+  /**
+   * Options and contextual counts for the 5 composable filters (RG-010-07):
+   * each filter's own options are counted against the `drafts`/`mine` base
+   * with every *other* active composable filter applied, never itself.
+   */
+  async getFacets(
+    options: FacetsOptions = {},
+  ): Promise<MergeRequestsFacetsDto> {
+    const {
+      includeDrafts = false,
+      mineOnly = false,
+      filters = EMPTY_COMPOSABLE_FILTERS,
+    } = options;
+    const { views: base } = await this.loadBase(includeDrafts, mineOnly);
+    const configuredProjects: ConfiguredProject[] = await this.projects.list();
+    return buildFacets(base, filters, configuredProjects);
+  }
+
+  /**
+   * Assembles the `drafts`/`mine`-scoped merge request views (RG-009),
+   * shared by `listOpen` and `getFacets` before the 5 composable filters
+   * (RG-010) diverge their outcome (rows vs. facet counts). The
+   * `draft: false` filter, when applied, guarantees `ready_at` is never
+   * null for the returned rows (see `resolveReadyAt`).
+   */
+  private async loadBase(
+    includeDrafts: boolean,
+    mineOnly: boolean,
+  ): Promise<{ views: MergeRequestViewDto[]; warnings: string[] }> {
     const mergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
     });
@@ -87,7 +136,7 @@ export class MergeRequestsService {
       mineOnly && identityMissing ? ['identity.missing'] : [];
 
     if (mergeRequests.length === 0) {
-      return { mergeRequests: [], warnings };
+      return { views: [], warnings };
     }
     const now = new Date().toISOString();
 
@@ -129,7 +178,7 @@ export class MergeRequestsService {
       views = views.filter((view) => view.isMine);
     }
 
-    return { mergeRequests: sortMergeRequests(views, sort), warnings };
+    return { views, warnings };
   }
 
   /**

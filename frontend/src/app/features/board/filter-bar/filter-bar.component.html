@@ -19,11 +19,27 @@
 </mat-chip-listbox>
 
 <span class="separator"></span>
+
+<span class="filter-pills">
+  @for (key of active(); track key) {
+    <app-filter-pill
+      [filterKey]="key"
+      [options]="optionsFor(key)"
+      [multiSelected]="multiValueFor(key)"
+      [booleanSelected]="booleanValueFor(key)"
+      (toggleValue)="filterToggleValue.emit({ key, value: $event })"
+      (selectBoolean)="filterSelectBoolean.emit({ key, value: $event })"
+      (remove)="filterRemove.emit(key)"
+    />
+  }
+  <app-add-filter-menu [active]="active()" (addFilter)="filterAdd.emit($event)" />
+</span>
+
 <span class="spacer"></span>
 
 <span class="summary">
   <span class="count">{{ countLabel() }}</span>
-  @if (mine()) {
+  @if (hasActiveFilter()) {
     <button mat-button type="button" (click)="clearFilters.emit()">
       {{ 'board.filters.clear' | translate }}
     </button>

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../core/api/api-error';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
-import { MergeRequestView } from '../models/merge-request.model';
+import { MergeRequestsFacets, MergeRequestView } from '../models/merge-request.model';
 import { FiltersStore } from './filters.store';
 import { MergeRequestsStore } from './merge-requests.store';
 
@@ -31,14 +31,29 @@ const MR: MergeRequestView = {
   isMine: false,
 };
 const RESPONSE = { mergeRequests: [MR], warnings: [] };
+const EMPTY_COMPOSABLE_FILTERS = { project: [], author: [], assigned: [], approved: null, commented: null };
+const EMPTY_FACETS: MergeRequestsFacets = {
+  project: [{ value: 'api', label: 'api · equipe/api', count: 1 }],
+  author: [{ value: 'mdupont', label: 'Marie Dupont', count: 1 }],
+  assigned: [{ value: 'nobody', label: 'Nobody', count: 1 }],
+  approved: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 1 },
+  ],
+  commented: [
+    { value: 'yes', label: 'Oui', count: 0 },
+    { value: 'no', label: 'Non', count: 1 },
+  ],
+};
 
 describe('MergeRequestsStore', () => {
-  const api = { getMergeRequests: vi.fn() };
+  const api = { getMergeRequests: vi.fn(), getFacets: vi.fn() };
   let store: InstanceType<typeof MergeRequestsStore>;
   let filters: InstanceType<typeof FiltersStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    api.getFacets.mockReturnValue(of(EMPTY_FACETS));
     TestBed.configureTestingModule({ providers: [{ provide: MergeRequestsService, useValue: api }] });
     store = TestBed.inject(MergeRequestsStore);
     filters = TestBed.inject(FiltersStore);
@@ -98,6 +113,7 @@ describe('MergeRequestsStore', () => {
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
       { drafts: false, mine: false },
+      EMPTY_COMPOSABLE_FILTERS,
     );
   });
 
@@ -111,7 +127,61 @@ describe('MergeRequestsStore', () => {
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
       { drafts: true, mine: true },
+      EMPTY_COMPOSABLE_FILTERS,
     );
+  });
+
+  it('should_pass_the_composable_filters_to_the_api_and_facets_endpoint', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('project');
+    filters.toggleMultiValue('project', 'api');
+
+    await store.load();
+
+    const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, project: ['api'] };
+    expect(api.getMergeRequests).toHaveBeenCalledWith(
+      { key: 'ready', direction: 'asc' },
+      { drafts: false, mine: false },
+      expectedComposableFilters,
+    );
+    expect(api.getFacets).toHaveBeenCalledWith(
+      { drafts: false, mine: false },
+      expectedComposableFilters,
+    );
+  });
+
+  it('should_expose_the_facets_from_the_response', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+
+    await store.load();
+
+    expect(store.facets()).toEqual(EMPTY_FACETS);
+  });
+
+  it('should_silently_drop_a_selected_value_absent_from_the_new_facets_options', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('author');
+    filters.toggleMultiValue('author', 'ghost');
+    api.getFacets.mockReturnValue(
+      of({ ...EMPTY_FACETS, author: [{ value: 'mdupont', label: 'Marie Dupont', count: 1 }] }),
+    );
+
+    await store.load();
+
+    expect(filters.author()).toEqual([]);
+  });
+
+  it('should_keep_a_selected_value_still_present_in_the_new_facets_options', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('author');
+    filters.toggleMultiValue('author', 'mdupont');
+    api.getFacets.mockReturnValue(
+      of({ ...EMPTY_FACETS, author: [{ value: 'mdupont', label: 'Marie Dupont', count: 1 }] }),
+    );
+
+    await store.load();
+
+    expect(filters.author()).toEqual(['mdupont']);
   });
 
   it('should_switch_to_ascending_when_a_different_column_is_selected', async () => {
@@ -144,6 +214,7 @@ describe('MergeRequestsStore', () => {
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'diff', direction: 'asc' },
       { drafts: false, mine: false },
+      EMPTY_COMPOSABLE_FILTERS,
     );
   });
 

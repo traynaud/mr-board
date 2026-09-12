@@ -12,6 +12,13 @@
   flex-wrap: wrap;
 }
 
+.filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .separator {
   width: 1px;
   height: 24px;

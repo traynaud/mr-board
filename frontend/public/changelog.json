@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-010",
+    "title": "Filtres composables Projet, Auteur, Affecté à, Approved et Commenté, avec compteurs contextuels."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-009",
     "title": "Filtres rapides Drafts et Mes MRs, avec compteur et bouton Effacer dans une nouvelle barre de filtres."
   },

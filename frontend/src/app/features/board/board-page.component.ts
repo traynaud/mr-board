@@ -14,6 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { FilterKey } from '../../models/merge-request.model';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
@@ -96,11 +97,14 @@ export class BoardPageComponent implements OnInit {
   });
 
   /**
-   * « Mes MRs » est le seul filtre rapide au sens strict (RG-009-05) :
-   * « Drafts » est une préférence d'affichage. Détermine le texte de
-   * l'état vide et la visibilité du bouton « Effacer les filtres ».
+   * « Mes MRs » et les filtres composables sont les seuls vrais filtres
+   * (RG-009-05, RG-010-10) : « Drafts » est une préférence d'affichage.
+   * Détermine le texte de l'état vide et la visibilité du bouton
+   * « Effacer les filtres ».
    */
-  protected readonly hasActiveFilter = computed(() => this.filtersStore.mine());
+  protected readonly hasActiveFilter = computed(
+    () => this.filtersStore.mine() || this.filtersStore.active().length > 0,
+  );
 
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
@@ -159,10 +163,38 @@ export class BoardPageComponent implements OnInit {
     this.mrStore.scheduleReload();
   }
 
-  /** RG-009-05/07 : ne réinitialise que « Mes MRs ». */
+  /** RG-009-05/07, RG-010-11 : réinitialise « Mes MRs » et les 5 filtres composables. */
   protected onClearFilters(): void {
     this.filtersStore.clear();
     this.mrStore.scheduleReload();
+  }
+
+  /** RG-010-03 : crée la pastille d'un filtre et recharge. */
+  protected onFilterAdd(key: FilterKey): void {
+    this.filtersStore.addFilter(key);
+    this.mrStore.scheduleReload();
+  }
+
+  /** RG-010-04 : retire la pastille d'un filtre et recharge. */
+  protected onFilterRemove(key: FilterKey): void {
+    this.filtersStore.removeFilter(key);
+    this.mrStore.scheduleReload();
+  }
+
+  /** RG-010-05 : bascule une valeur d'un filtre multi-sélection et recharge. */
+  protected onFilterToggleValue(event: { key: FilterKey; value: string }): void {
+    if (event.key === 'project' || event.key === 'author' || event.key === 'assigned') {
+      this.filtersStore.toggleMultiValue(event.key, event.value);
+      this.mrStore.scheduleReload();
+    }
+  }
+
+  /** RG-010-06 : choisit (ou désélectionne) une valeur d'un filtre booléen et recharge. */
+  protected onFilterSelectBoolean(event: { key: FilterKey; value: 'yes' | 'no' }): void {
+    if (event.key === 'approved' || event.key === 'commented') {
+      this.filtersStore.setBoolean(event.key, event.value);
+      this.mrStore.scheduleReload();
+    }
   }
 
   /**

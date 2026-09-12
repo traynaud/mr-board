@@ -22,7 +22,27 @@
       "mine": "Mes MRs",
       "mineDisabledTooltip": "Configurez votre identité dans les paramètres",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} projet{{projectsSuffix}}",
-      "clear": "Effacer"
+      "clear": "Effacer",
+      "add": "Ajouter un filtre",
+      "pills": {
+        "names": {
+          "project": "Projet",
+          "author": "Auteur",
+          "assigned": "Affecté à",
+          "approved": "Approved",
+          "commented": "Commenté"
+        },
+        "titles": {
+          "assigned": "Affecté à (Reviewer OU Affecté)"
+        },
+        "nobody": "Nobody",
+        "all": "tous",
+        "none": "—",
+        "yes": "Oui",
+        "no": "Non",
+        "search": "Rechercher…",
+        "remove": "Retirer le filtre {{name}}"
+      }
     },
     "mergeRequests": {
       "loadError": "Impossible de charger les MRs.",

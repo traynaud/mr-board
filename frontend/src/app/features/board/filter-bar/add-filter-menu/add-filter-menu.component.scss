@@ -1,0 +1,20 @@
+:host {
+  display: inline-flex;
+}
+
+.add-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1;
+
+  mat-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+[mat-menu-item][disabled] {
+  color: var(--color-neutral-400);
+}
