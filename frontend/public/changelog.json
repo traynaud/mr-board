@@ -2,6 +2,12 @@
   {
     "date": "2026-09-12",
     "type": "feat",
+    "user-story": "US-006",
+    "title": "Difficulté de la MR : jeton coloré Easy/Medium/Hard avec détail et gestion des statistiques indisponibles."
+  },
+  {
+    "date": "2026-09-12",
+    "type": "feat",
     "user-story": "US-005",
     "title": "Tableau des MRs : colonnes Projet, Auteur, Titre, Commentaires, Reviewer, Affecté, Approved."
   },

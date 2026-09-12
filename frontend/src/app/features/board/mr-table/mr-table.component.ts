@@ -5,6 +5,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { MergeRequestView } from '../../../models/merge-request.model';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
 import { summarizeUsers } from './summarize-users';
 
 /**
@@ -15,7 +16,14 @@ import { summarizeUsers } from './summarize-users';
  */
 @Component({
   selector: 'app-mr-table',
-  imports: [MatTableModule, MatIconModule, MatTooltipModule, AvatarComponent, TranslatePipe],
+  imports: [
+    MatTableModule,
+    MatIconModule,
+    MatTooltipModule,
+    AvatarComponent,
+    DifficultyBadgeComponent,
+    TranslatePipe,
+  ],
   templateUrl: './mr-table.component.html',
   styleUrl: './mr-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +35,7 @@ export class MrTableComponent {
     'project',
     'author',
     'title',
+    'difficulty',
     'comments',
     'reviewer',
     'assignee',

@@ -16,6 +16,11 @@ const MR: MergeRequestView = {
   assignees: [],
   approved: false,
   commentsCount: 0,
+  difficulty: 'easy',
+  changedFiles: 1,
+  additions: 1,
+  deletions: 0,
+  changedLines: 1,
 };
 
 describe('MergeRequestsStore', () => {

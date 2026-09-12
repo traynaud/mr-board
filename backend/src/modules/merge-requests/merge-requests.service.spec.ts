@@ -370,10 +370,75 @@ describe('MergeRequestsService', () => {
           assignees: [],
           approved: true,
           commentsCount: 3,
+          difficulty: 'medium',
+          changedFiles: 12,
+          additions: 340,
+          deletions: 58,
+          changedLines: 398,
         },
       ]);
       expect(projectsService.findByIds).toHaveBeenCalledWith([1]);
       expect(usersService.findByIds).toHaveBeenCalledWith([10]);
+    });
+
+    it('should_compute_changed_lines_and_difficulty_from_the_diff_stats', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          changedFiles: 34,
+          additions: 900,
+          deletions: 340,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.changedFiles).toBe(34);
+      expect(view.additions).toBe(900);
+      expect(view.deletions).toBe(340);
+      expect(view.changedLines).toBe(1240);
+      expect(view.difficulty).toBe('hard');
+    });
+
+    it('should_report_medium_difficulty_and_null_stats_when_diff_stats_are_unavailable', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          changedFiles: null,
+          additions: null,
+          deletions: null,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.difficulty).toBe('medium');
+      expect(view.changedFiles).toBeNull();
+      expect(view.additions).toBeNull();
+      expect(view.deletions).toBeNull();
+      expect(view.changedLines).toBeNull();
+    });
+
+    it('should_distinguish_a_real_zero_from_unavailable_stats', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ changedFiles: 0, additions: 0, deletions: 0 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const [view] = await service.listOpen();
+
+      expect(view.changedFiles).toBe(0);
+      expect(view.changedLines).toBe(0);
+      expect(view.difficulty).toBe('easy');
     });
 
     it('should_group_reviewers_and_assignees_by_merge_request', async () => {

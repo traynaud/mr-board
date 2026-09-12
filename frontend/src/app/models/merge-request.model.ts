@@ -5,10 +5,12 @@ export interface MergeRequestUser {
   avatarUrl: string | null;
 }
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 /**
  * Miroir de `MergeRequestViewDto` (backend). Volontairement minimal :
- * ni `draft`, ni `difficulty`, ni `readyAt`/`readyDays`/`readyLevel` — ces
- * champs seront ajoutés par les US qui les affichent (US-006, US-007…).
+ * ni `draft`, ni `readyAt`/`readyDays`/`readyLevel` — ces champs seront
+ * ajoutés par les US qui les affichent (US-007, US-009…).
  */
 export interface MergeRequestView {
   id: number;
@@ -21,4 +23,10 @@ export interface MergeRequestView {
   assignees: MergeRequestUser[];
   approved: boolean;
   commentsCount: number;
+  difficulty: Difficulty;
+  /** `null` quand les statistiques de diff sont indisponibles (RG-006-02). */
+  changedFiles: number | null;
+  additions: number | null;
+  deletions: number | null;
+  changedLines: number | null;
 }

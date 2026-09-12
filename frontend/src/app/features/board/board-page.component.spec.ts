@@ -58,6 +58,11 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     assignees: [],
     approved: false,
     commentsCount: 0,
+    difficulty: 'easy',
+    changedFiles: 1,
+    additions: 1,
+    deletions: 0,
+    changedLines: 1,
     ...overrides,
   };
 }

@@ -21,6 +21,11 @@ interface MergeRequestViewBody {
   assignees: MergeRequestUserBody[];
   approved: boolean;
   commentsCount: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  changedFiles: number | null;
+  additions: number | null;
+  deletions: number | null;
+  changedLines: number | null;
 }
 
 function userNode(
@@ -156,6 +161,11 @@ describe('MergeRequests (e2e)', () => {
       ],
       approved: true,
       commentsCount: 3,
+      difficulty: 'easy',
+      changedFiles: 1,
+      additions: 1,
+      deletions: 0,
+      changedLines: 1,
     });
     expect(Object.keys(view).sort()).toEqual(
       [
@@ -169,9 +179,48 @@ describe('MergeRequests (e2e)', () => {
         'assignees',
         'approved',
         'commentsCount',
+        'difficulty',
+        'changedFiles',
+        'additions',
+        'deletions',
+        'changedLines',
       ].sort(),
     );
     expect(JSON.stringify(res.body)).not.toContain('token');
+  });
+
+  it('GET /merge-requests should_report_medium_difficulty_and_null_stats_when_unavailable', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(1, { diffStatsSummary: null }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const [view] = res.body as MergeRequestViewBody[];
+    expect(view.difficulty).toBe('medium');
+    expect(view.changedFiles).toBeNull();
+    expect(view.additions).toBeNull();
+    expect(view.deletions).toBeNull();
+    expect(view.changedLines).toBeNull();
+  });
+
+  it('GET /merge-requests should_distinguish_a_real_zero_from_unavailable_stats', async () => {
+    gitlab.getOpenMergeRequests.mockResolvedValue([
+      rawNode(1, {
+        diffStatsSummary: { fileCount: 0, additions: 0, deletions: 0 },
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const [view] = res.body as MergeRequestViewBody[];
+    expect(view.changedFiles).toBe(0);
+    expect(view.changedLines).toBe(0);
+    expect(view.difficulty).toBe('easy');
   });
 
   it('GET /merge-requests should_exclude_draft_merge_requests', async () => {

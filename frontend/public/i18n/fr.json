@@ -24,10 +24,20 @@
         "project": "Projet",
         "author": "Auteur",
         "title": "Titre",
+        "difficulty": "Difficulté",
         "comments": "Commentaires",
         "reviewer": "Reviewer",
         "assignee": "Affecté",
         "approved": "Approved"
+      },
+      "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "meta": "{{files}} f · {{lines}} l",
+        "tooltip": "{{files}} fichiers modifiés · {{lines}} lignes (+{{additions}} / −{{deletions}})",
+        "unavailable": "?",
+        "unavailableTooltip": "Statistiques indisponibles"
       }
     },
     "sync": {

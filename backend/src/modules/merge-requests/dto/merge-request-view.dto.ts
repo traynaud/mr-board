@@ -1,10 +1,11 @@
+import { Difficulty } from '../domain/calculate-difficulty';
 import { MergeRequestUserDto } from './merge-request-user.dto';
 
 /**
- * Response of `GET /api/v1/merge-requests` (RG-005-11). Deliberately
- * minimal: no `draft`, `difficulty`, `readyAt`/`readyDays`/`readyLevel`,
- * diff stats or `labels` — those are added by the US that displays them
- * (US-006, US-007, US-009, US-015).
+ * Response of `GET /api/v1/merge-requests` (RG-005-11, extended by
+ * RG-006-01). Still no `draft`, `readyAt`/`readyDays`/`readyLevel` or
+ * `labels` — those are added by the US that displays them (US-007, US-009,
+ * US-015).
  */
 export class MergeRequestViewDto {
   id!: number;
@@ -17,4 +18,11 @@ export class MergeRequestViewDto {
   assignees!: MergeRequestUserDto[];
   approved!: boolean;
   commentsCount!: number;
+  difficulty!: Difficulty;
+  /** `null` when the diff stats were unavailable at sync time (RG-006-02). */
+  changedFiles!: number | null;
+  additions!: number | null;
+  deletions!: number | null;
+  /** `additions + deletions`, `null` iff the diff stats are unavailable. */
+  changedLines!: number | null;
 }

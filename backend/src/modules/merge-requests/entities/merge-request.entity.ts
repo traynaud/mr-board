@@ -37,14 +37,17 @@ export class MergeRequest {
   @Column({ name: 'comments_count', type: 'integer' })
   commentsCount!: number;
 
-  @Column({ name: 'changed_files', type: 'integer' })
-  changedFiles!: number;
+  /** `null` when the diff stats were unavailable at sync time (RG-006-02). */
+  @Column({ name: 'changed_files', type: 'integer', nullable: true })
+  changedFiles!: number | null;
 
-  @Column({ type: 'integer' })
-  additions!: number;
+  /** `null` iff `changedFiles` is `null` (same source, `diffStatsSummary`). */
+  @Column({ type: 'integer', nullable: true })
+  additions!: number | null;
 
-  @Column({ type: 'integer' })
-  deletions!: number;
+  /** `null` iff `changedFiles` is `null` (same source, `diffStatsSummary`). */
+  @Column({ type: 'integer', nullable: true })
+  deletions!: number | null;
 
   /** JSON-encoded `string[]`. */
   @Column({ type: 'text' })

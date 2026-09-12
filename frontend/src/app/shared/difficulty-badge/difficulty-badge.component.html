@@ -1,0 +1,9 @@
+@if (unavailable()) {
+  <span class="badge unavailable" [matTooltip]="tooltip()">{{ label() }}</span>
+} @else {
+  <span class="badge" [matTooltip]="tooltip()">
+    <i class="square" [class]="difficulty()"></i>
+    <span class="label">{{ label() }}</span>
+    <span class="meta">{{ meta() }}</span>
+  </span>
+}

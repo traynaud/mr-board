@@ -102,13 +102,15 @@ describe('mapGraphqlMergeRequest', () => {
     });
   });
 
-  it('should_default_diff_stats_to_zero_when_summary_is_absent', () => {
+  it('should_return_null_diff_stats_when_summary_is_absent', () => {
+    // RG-006-02 : préserve la distinction entre "0 fichier modifié" (un vrai
+    // zéro) et "statistiques indisponibles" — ne jamais remplacer par 0.
     const mapped = mapGraphqlMergeRequest(
       buildMergeRequest({ diffStatsSummary: null }),
     );
-    expect(mapped.changedFiles).toBe(0);
-    expect(mapped.additions).toBe(0);
-    expect(mapped.deletions).toBe(0);
+    expect(mapped.changedFiles).toBeNull();
+    expect(mapped.additions).toBeNull();
+    expect(mapped.deletions).toBeNull();
   });
 
   it('should_map_a_merge_request_with_no_reviewer_or_assignee', () => {

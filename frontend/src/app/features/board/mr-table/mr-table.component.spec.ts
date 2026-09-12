@@ -19,6 +19,11 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     assignees: [],
     approved: false,
     commentsCount: 0,
+    difficulty: 'easy',
+    changedFiles: 1,
+    additions: 1,
+    deletions: 0,
+    changedLines: 1,
     ...overrides,
   };
 }
@@ -118,10 +123,29 @@ describe('MrTableComponent', () => {
       t('board.mergeRequests.columns.project'),
       t('board.mergeRequests.columns.author'),
       t('board.mergeRequests.columns.title'),
+      t('board.mergeRequests.columns.difficulty'),
       '',
       t('board.mergeRequests.columns.reviewer'),
       t('board.mergeRequests.columns.assignee'),
       t('board.mergeRequests.columns.approved'),
     ]);
+  });
+
+  it('should_render_the_difficulty_badge_for_each_row', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        difficulty: 'hard',
+        changedFiles: 34,
+        additions: 900,
+        deletions: 340,
+        changedLines: 1240,
+      }),
+    ]);
+    await fixture.whenStable();
+
+    const badge = el.querySelector('app-difficulty-badge');
+    expect(badge?.querySelector('.square')?.classList.contains('hard')).toBe(true);
+    expect(badge?.querySelector('.meta')?.textContent?.trim()).toBe('34 f · 1240 l');
   });
 });

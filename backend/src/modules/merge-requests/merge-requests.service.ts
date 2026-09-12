@@ -6,6 +6,10 @@ import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
+import {
+  DEFAULT_DIFFICULTY_THRESHOLDS,
+  calculateDifficulty,
+} from './domain/calculate-difficulty';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
@@ -243,5 +247,42 @@ function toMergeRequestView(
     ),
     approved: mergeRequest.approved,
     commentsCount: mergeRequest.commentsCount,
+    ...toDifficultyFields(mergeRequest),
+  };
+}
+
+/**
+ * Computes `difficulty`/`changedLines` and passes through the raw diff
+ * stats (RG-006-01, RG-006-05). `changedFiles`, `additions` and
+ * `deletions` are always all `null` or all set together (same source,
+ * `diffStatsSummary`) — checking `changedFiles` alone is enough.
+ */
+function toDifficultyFields(
+  mergeRequest: MergeRequest,
+): Pick<
+  MergeRequestViewDto,
+  'difficulty' | 'changedFiles' | 'additions' | 'deletions' | 'changedLines'
+> {
+  const { changedFiles, additions, deletions } = mergeRequest;
+  if (changedFiles === null || additions === null || deletions === null) {
+    return {
+      difficulty: 'medium',
+      changedFiles: null,
+      additions: null,
+      deletions: null,
+      changedLines: null,
+    };
+  }
+  const changedLines = additions + deletions;
+  return {
+    difficulty: calculateDifficulty(
+      changedFiles,
+      changedLines,
+      DEFAULT_DIFFICULTY_THRESHOLDS,
+    ),
+    changedFiles,
+    additions,
+    deletions,
+    changedLines,
   };
 }

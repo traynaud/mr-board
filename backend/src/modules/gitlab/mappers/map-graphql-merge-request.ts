@@ -22,9 +22,13 @@ export interface MappedGitlabMergeRequest {
   commentsCount: number;
   approved: boolean;
   labels: string[];
-  changedFiles: number;
-  additions: number;
-  deletions: number;
+  /**
+   * `null` when GitLab returned no `diffStatsSummary` (RG-006-02) — always
+   * `null` together with `additions`/`deletions` (same source).
+   */
+  changedFiles: number | null;
+  additions: number | null;
+  deletions: number | null;
   author: MappedGitlabUser;
   reviewers: MappedGitlabUser[];
   assignees: MappedGitlabUser[];
@@ -72,9 +76,9 @@ export function mapGraphqlMergeRequest(
     commentsCount: node.userNotesCount,
     approved: node.approved,
     labels: node.labels.nodes.map((label) => label.title),
-    changedFiles: node.diffStatsSummary?.fileCount ?? 0,
-    additions: node.diffStatsSummary?.additions ?? 0,
-    deletions: node.diffStatsSummary?.deletions ?? 0,
+    changedFiles: node.diffStatsSummary?.fileCount ?? null,
+    additions: node.diffStatsSummary?.additions ?? null,
+    deletions: node.diffStatsSummary?.deletions ?? null,
     author: mapGraphqlUser(node.author),
     reviewers: node.reviewers.nodes.map(mapGraphqlUser),
     assignees: node.assignees.nodes.map(mapGraphqlUser),
