@@ -8,6 +8,8 @@ export interface AppConfig {
   appSecret: string;
   corsOrigin: string;
   logLevel: string;
+  /** Directory of the built frontend to serve on `/` (undefined = API only). */
+  staticDir?: string;
 }
 
 /** Configuration key used with `ConfigService.get<AppConfig>(APP_CONFIG)`. */
@@ -24,5 +26,6 @@ export const configuration = (): { [APP_CONFIG]: AppConfig } => ({
     appSecret: process.env.APP_SECRET ?? '',
     corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
     logLevel: process.env.LOG_LEVEL ?? 'log',
+    staticDir: process.env.STATIC_DIR || undefined,
   },
 });

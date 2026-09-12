@@ -10,6 +10,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { UsersModule } from './modules/users/users.module';
+import { StaticModule } from './static/static.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     ScheduleModule.forRoot(),
     DatabaseModule,
+    StaticModule,
     HealthModule,
     SettingsModule,
     ProjectsModule,

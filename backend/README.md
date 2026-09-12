@@ -27,3 +27,8 @@ npm run start:dev           # http://localhost:3000/api/v1/health
 ## Variables d'environnement
 
 Voir `.env.example`. `APP_SECRET` est obligatoire (chiffrement du jeton GitLab).
+
+## Servir le frontend depuis l'API
+
+Définir `STATIC_DIR` (ex : `../frontend/dist/frontend/browser`) pour que NestJS serve le build Angular sur `/`.
+C'est le mode utilisé par l'image Docker (voir `../docs/tech/docker.md`).

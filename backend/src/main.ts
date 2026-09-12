@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { setupApp } from './app.setup';
 import { APP_CONFIG, AppConfig } from './config/configuration';
+import { buildHelmetOptions } from './config/helmet-options';
 
 const LOG_LEVELS: readonly LogLevel[] = [
   'error',
@@ -17,12 +18,12 @@ const LOG_LEVELS: readonly LogLevel[] = [
 /** Boots the HTTP server. */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  const { port, corsOrigin, logLevel } = app
+  const { port, corsOrigin, logLevel, staticDir } = app
     .get(ConfigService)
     .getOrThrow<AppConfig>(APP_CONFIG);
   const maxLevel = LOG_LEVELS.indexOf(logLevel as LogLevel);
   app.useLogger(LOG_LEVELS.slice(0, maxLevel + 1));
-  app.use(helmet());
+  app.use(helmet(buildHelmetOptions(staticDir)));
   app.enableCors({ origin: corsOrigin });
   setupApp(app);
   app.enableShutdownHooks();

@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/coverage
+**/.angular
+**/.env
+**/.env.*
+!**/.env.example
+backend/data
+**/*.sqlite*
+**/*.log
+.git
+.idea
+.vscode
+.claude
+docs

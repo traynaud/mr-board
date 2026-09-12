@@ -12,4 +12,5 @@ export const validationSchema = Joi.object({
   LOG_LEVEL: Joi.string()
     .valid('error', 'warn', 'log', 'debug', 'verbose')
     .default('log'),
+  STATIC_DIR: Joi.string().allow('').optional(),
 });

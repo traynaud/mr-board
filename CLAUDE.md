@@ -110,6 +110,10 @@ rtk npx ng test --no-watch     # Tests unitaires (Vitest via @angular/build:unit
 rtk npx ng test --no-watch --coverage
 rtk npx tsc --noEmit
 rtk npm run build
+
+# Docker (frontend + backend dans un seul container, voir docs/tech/docker.md)
+cp .env.example .env           # renseigner APP_SECRET
+docker compose up -d --build   # http://localhost:3000
 ```
 
 Le détail des commandes de test et des règles de couverture est dans `docs/tech/testing.md`.

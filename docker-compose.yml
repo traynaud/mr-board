@@ -1,0 +1,21 @@
+services:
+  mr-board:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mr-board:local
+    container_name: mr-board
+    ports:
+      - "${MR_BOARD_PORT:-3000}:3000"
+    environment:
+      # Obligatoire (>= 16 caractères) : chiffrement du jeton GitLab. À définir dans ./.env
+      APP_SECRET: ${APP_SECRET:?APP_SECRET manquant — copier .env.example vers .env et le renseigner}
+      LOG_LEVEL: ${LOG_LEVEL:-log}
+      # Origine autorisée par CORS (même origine que l'app : http://<hôte>:<port>)
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    volumes:
+      - mr-board-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mr-board-data:
