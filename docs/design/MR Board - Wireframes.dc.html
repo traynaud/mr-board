@@ -32,6 +32,144 @@ a{color:var(--color-text)}a:hover{color:var(--color-accent)}
 </style>
 </helmet>
 
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Epic multi-sources · connexions GitLab + GitHub — paramètres « 02 · Connexions & dépôts », tableau avec provenance des MRs</span></div>
+<div class="dv-opts">
+
+<!-- ═══ 2a — paramètres · connexions ═══ -->
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Paramètres · liste de connexions — GitLab existante (migrée, repliée), GitHub en cours d'ajout (dépliée), dépôts rattachés à leur connexion</div>
+<div class="dv-card" style="width:820px">
+  <div class="nav" style="padding:10px 20px">
+    <a href="#2b" class="btn btn-icon btn-secondary" title="Retour"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></a>
+    <span class="nav-brand">Paramètres</span>
+    <button class="btn btn-secondary">Annuler</button>
+    <button class="btn btn-primary" style="justify-content:flex-start">Enregistrer</button>
+  </div>
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:0 32px;padding:0 20px">
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">01 · Moi</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Mon identité sur chaque forge est déclarée dans sa connexion.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="field"><label>Email (optionnel)</label><input class="input" placeholder="marie@exemple.fr"></div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600">MD</span><span>Marie Dupont</span><span class="tag tag-neutral" style="display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg>mdupont</span><span class="tag tag-neutral" style="display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>marie-dupont</span></div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" defaultChecked="{{ true }}" style="accent-color:var(--color-accent);width:16px;height:16px;margin:0"><span>Surligner mes MRs dans le tableau (auteur, reviewer, affecté)</span></label></div>
+    </div>
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);position:relative"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexions &amp; dépôts</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Une connexion = une forge, une URL, un jeton et mon nom d'utilisateur. Chaque dépôt est rattaché à sa connexion.</p>
+      <div class="dv-note" style="left:0;top:120px;position:static;margin-top:16px;max-width:none">Migration : l'ancienne config (instance + jeton + identité) devient automatiquement la connexion « GitLab équipe ». Un utilisateur GitLab seul ne voit rien changer dans le tableau.</div></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:flex;flex-direction:column;gap:12px">
+
+      <div style="border:1px solid var(--color-divider);background:var(--color-surface)">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg>
+          <b style="font-weight:600">GitLab équipe</b><span style="color:var(--color-neutral-600)">gitlab.exemple.fr · mdupont</span>
+          <span style="flex:1"></span><span class="tag tag-neutral">3 dépôts</span><span style="font-size:12px;display:inline-flex;align-items:center;gap:5px;color:#2f8f4e"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>Connecté</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--color-accent);background:var(--color-surface)">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--color-divider);cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>
+          <b style="font-weight:600">GitHub</b><span style="color:var(--color-neutral-600)">github.com · marie-dupont</span>
+          <span style="flex:1"></span><span class="tag tag-accent">nouvelle</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg>
+        </div>
+        <div style="padding:16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field" style="grid-column:1/-1"><label>Type de forge</label><span class="seg"><label class="seg-opt"><input type="radio" name="forge-new">GitLab</label><label class="seg-opt"><input type="radio" name="forge-new" checked>GitHub</label></span></div>
+          <div class="field"><label>Nom</label><input class="input" value="GitHub"></div>
+          <div class="field"><label>URL</label><input class="input" value="https://github.com"><span style="font-size:11px;color:var(--color-neutral-600)">github.com ou votre GitHub Enterprise Server</span></div>
+          <div class="field"><label>Mon nom d'utilisateur</label><input class="input" value="marie-dupont"></div>
+          <div class="field"><label>Jeton d'accès personnel</label><div style="display:flex;gap:8px"><input class="input" type="password" value="ghp_xxxxxxxxxxxxxxxxxxxx"><button class="btn btn-icon btn-secondary" title="Afficher"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div><span style="font-size:11px;color:var(--color-neutral-600)">ghp_… ou github_pat_… · scope <code>repo</code> (lecture)</span></div>
+          <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px"><button class="btn btn-secondary">Tester la connexion</button><span style="font-size:13px;display:inline-flex;align-items:center;gap:6px;color:#2f8f4e"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>Connecté · marie-dupont · scope repo</span></div>
+          <div style="grid-column:1/-1">
+            <div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Dépôts de cette connexion</div>
+            <table class="table" style="font-size:13px">
+              <thead><tr><th>owner/repo</th><th style="width:130px">Alias</th><th style="width:40px"></th></tr></thead>
+              <tbody>
+                <tr><td>exemple-org/design-tokens</td><td><input class="input" value="tokens" style="min-height:30px;padding:3px 8px"></td><td><button class="btn btn-icon btn-ghost" style="width:30px;height:30px;color:var(--color-text)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></td></tr>
+                <tr><td>exemple-org/mobile-app</td><td><input class="input" value="mobile" style="min-height:30px;padding:3px 8px"></td><td><button class="btn btn-icon btn-ghost" style="width:30px;height:30px;color:var(--color-text)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></td></tr>
+                <tr><td colspan="3" style="border-bottom:0;padding-top:10px"><div style="display:flex;gap:8px"><input class="input" placeholder="owner/repo ou URL GitHub" style="flex:1"><input class="input" placeholder="alias" style="width:130px"><button class="btn btn-secondary" style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</button></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button class="btn btn-ghost" style="font-size:12px;color:var(--color-accent-700)">Supprimer cette connexion</button></div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" style="align-self:flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter une connexion</button>
+    </div>
+
+    <div style="padding:22px 0"><h6 style="color:var(--color-neutral-500);margin:0">03 · Actualisation · 04 · Seuils · 05 · Divers</h6></div>
+    <div style="padding:22px 0;font-size:12px;color:var(--color-neutral-600)">Inchangés — renumérotés (l'ancienne section « Repos à scanner » est absorbée par les connexions).</div>
+  </div>
+</div></div>
+
+<!-- ═══ 2b — tableau multi-sources ═══ -->
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Tableau · deux connexions — icône de forge sur le tag projet, infobulle « connexion · chemin », filtre « Connexion » proposé, synchro qui nomme la connexion en cause</div>
+<div class="dv-card" style="width:1240px">
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--color-surface);border-bottom:1px solid var(--color-divider);font:12px ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">
+    <span style="display:inline-flex;gap:5px"><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i></span>
+    <span style="margin-left:10px;padding:2px 10px;background:var(--color-bg);border:1px solid var(--color-divider);flex:1">mrboard.local/?drafts=0&amp;mine=0&amp;assigned=nobody&amp;conn=gh&amp;sort=ready:asc</span>
+  </div>
+  <div class="nav" style="padding:10px 20px">
+    <span class="nav-brand">MR Board</span>
+    <span style="font-size:12px;color:var(--color-neutral-600)">Synchronisé il y a 2 min · <span style="color:var(--color-accent-700)">GitHub : jeton refusé (401)</span></span>
+    <button class="btn btn-secondary" style="justify-content:flex-start"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"></path></svg>Rafraîchir</button>
+    <a href="#2a" class="btn btn-icon btn-secondary" title="Paramètres"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--color-accent-100);border-bottom:2px solid var(--color-accent);font-size:13px;color:var(--color-accent-800)">
+    <span style="font-weight:600">Connexion « GitHub » : jeton refusé (401).</span><span>Ses PRs affichées sont celles du dernier cache · GitLab équipe synchronisé normalement.</span><span style="flex:1"></span><a href="#2a" class="btn btn-ghost" style="font-size:12px;padding:4px 8px">Configurer</a>
+  </div>
+  <div style="position:relative;display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:2px solid var(--color-divider);flex-wrap:wrap">
+    <span class="seg"><label class="seg-opt"><input type="radio" name="c-state" checked>Ready</label><label class="seg-opt"><input type="radio" name="c-state">+ Drafts</label></span>
+    <button class="btn btn-secondary" style="font-size:13px;padding:6px 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Mes MRs</button>
+    <span style="width:1px;height:24px;background:var(--color-divider);margin:0 4px"></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent-300);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Affecté à :</span><b style="font-weight:600">Nobody</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+    <span style="position:relative">
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Connexion :</span><b style="font-weight:600">GitHub</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+      <div style="position:absolute;left:0;top:calc(100% + 6px);width:260px;background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:var(--shadow-lg);z-index:10;font-size:13px">
+        <div style="padding:8px 10px;border-bottom:1px solid var(--color-divider);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-600)">Connexion</div>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px"><span style="width:14px;height:14px;border:1.5px solid var(--color-divider)"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg><span>GitLab équipe</span><span style="color:var(--color-neutral-600);font-size:11px">gitlab.exemple.fr</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">7</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--color-neutral-200)"><span style="width:14px;height:14px;background:var(--color-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg><span>GitHub</span><span style="color:var(--color-neutral-600);font-size:11px">github.com</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">2</span></label>
+      </div>
+    </span>
+    <button class="btn btn-ghost" style="font-size:13px;padding:6px 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un filtre</button>
+    <span style="flex:1"></span>
+    <span style="font-size:12px;color:var(--color-neutral-600)">9 MRs · 5 projets · 2 connexions</span>
+    <button class="btn btn-ghost" style="font-size:12px;padding:4px 6px">Effacer</button>
+  </div>
+  <div class="dv-note" style="left:210px;top:300px">Filtre « Connexion » n'apparaît dans « Ajouter un filtre » qu'à partir de 2 connexions. Une seule source : pas d'icône, pas de filtre, messages inchangés.</div>
+  <table class="table">
+    <thead><tr>
+      <th style="width:96px">Projet</th><th style="width:64px">Auteur</th><th>Titre</th>
+      <th style="width:150px">Difficulté <span style="opacity:.5">↕</span></th>
+      <th style="width:60px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></th>
+      <th style="width:84px">Reviewer</th><th style="width:84px">Affecté</th><th style="width:88px">Approved</th>
+      <th style="width:130px;color:var(--color-accent)">Depuis Ready ↑</th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ rowsMulti }}" as="r" hint-placeholder-count="9">
+      <tr>
+        <td style="position:relative"><span class="tag tag-neutral" title="{{ r.tip }}" style="font-weight:600;display:inline-flex;align-items:center;gap:5px"><sc-if value="{{ r.isGitlab }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="opacity:.75"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg></sc-if><sc-if value="{{ r.isGithub }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="opacity:.75"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></sc-if>{{ r.proj }}</span><sc-if value="{{ r.showTip }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;top:-22px;background:var(--color-neutral-900);color:#fff;font-size:12px;padding:4px 8px;white-space:nowrap;z-index:4">{{ r.tip }}</span></sc-if></td>
+        <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600;box-shadow:{{ r.author.ring }}"><sc-if value="{{ r.author.img }}" hint-placeholder-val="{{ false }}"><i title="Photo de profil" style="display:block;width:28px;height:28px;background:linear-gradient(135deg,#c9c5c5 0%,#6b6767 45%,#2a2828 100%)"></i></sc-if><sc-if value="{{ r.author.noImg }}" hint-placeholder-val="{{ true }}">{{ r.author.ini }}</sc-if></span></td>
+        <td style="max-width:380px"><a href="#" title="{{ r.title }}" style="text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></td>
+        <td><span style="display:inline-flex;align-items:center;gap:8px"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
+        <td>{{ r.comments }}</td>
+        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.reviewer.ring }}">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.assignee.ring }}">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2f8f4e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
+        <td><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></td>
+      </tr>
+      </sc-for>
+    </tbody>
+  </table>
+  <div style="display:flex;justify-content:space-between;padding:10px 20px;font-size:11px;color:var(--color-neutral-600)"><span>Mêmes colonnes, calculs, filtres et tris pour les PRs GitHub · la spécificité de la forge reste dans le client + mapper</span><span>Infobulle du tag projet : « connexion · chemin »</span></div>
+</div></div>
+
+</div>
+<p class="dv-next">Essayer ensuite : « dans <a class="dv-oid" href="#2a">2a</a>, montre l'état d'erreur du test de jeton » · « variante de <a class="dv-oid" href="#2b">2b</a> avec une colonne Connexion au lieu de l'icône » · « écran vide : aucune connexion configurée »</p>
+</section>
+
 <section class="dv-turn" id="t1">
 <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">MR Board · écrans principaux — tableau par défaut, tableau avec drafts et filtres ouverts, paramètres</span></div>
 <div class="dv-opts">
@@ -73,12 +211,12 @@ a{color:var(--color-text)}a:hover{color:var(--color-accent)}
       <sc-for list="{{ rowsReady }}" as="r" hint-placeholder-count="7">
       <tr>
         <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
-        <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600;letter-spacing:.02em">{{ r.author.ini }}</span></td>
+        <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600;letter-spacing:.02em;box-shadow:{{ r.author.ring }}"><sc-if value="{{ r.author.img }}" hint-placeholder-val="{{ false }}"><i title="Photo de profil" style="display:block;width:28px;height:28px;background:linear-gradient(135deg,#c9c5c5 0%,#6b6767 45%,#2a2828 100%)"></i></sc-if><sc-if value="{{ r.author.noImg }}" hint-placeholder-val="{{ true }}">{{ r.author.ini }}</sc-if></span></td>
         <td style="max-width:380px"><a href="#" title="{{ r.title }}" style="text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></td>
         <td><span style="display:inline-flex;align-items:center;gap:8px"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
         <td style="text-align:left">{{ r.comments }}</td>
-        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
-        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.reviewer.ring }}">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.assignee.ring }}">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
         <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2f8f4e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
         <td><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></td>
       </tr>
@@ -146,19 +284,19 @@ a{color:var(--color-text)}a:hover{color:var(--color-accent)}
       <sc-for list="{{ rowsWithDrafts }}" as="r" hint-placeholder-count="9">
       <tr style="opacity:{{ r.opacity }}">
         <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
-        <td style="position:relative"><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600">{{ r.author.ini }}</span><sc-if value="{{ r.showTip }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;top:-22px;background:var(--color-neutral-900);color:#fff;font-size:12px;padding:4px 8px;white-space:nowrap;z-index:4">{{ r.author.name }}</span></sc-if></td>
+        <td style="position:relative"><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600;box-shadow:{{ r.author.ring }}"><sc-if value="{{ r.author.img }}" hint-placeholder-val="{{ false }}"><i title="Photo de profil" style="display:block;width:28px;height:28px;background:linear-gradient(135deg,#c9c5c5 0%,#6b6767 45%,#2a2828 100%)"></i></sc-if><sc-if value="{{ r.author.noImg }}" hint-placeholder-val="{{ true }}">{{ r.author.ini }}</sc-if></span><sc-if value="{{ r.showTip }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;top:-22px;background:var(--color-neutral-900);color:#fff;font-size:12px;padding:4px 8px;white-space:nowrap;z-index:4">{{ r.author.name }}</span></sc-if></td>
         <td style="max-width:380px"><span style="display:flex;align-items:center;gap:8px;min-width:0"><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="font-weight:600;flex:none">Draft</span></sc-if><a href="#" title="{{ r.title }}" style="text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></span></td>
         <td><span style="display:inline-flex;align-items:center;gap:8px"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
         <td>{{ r.comments }}</td>
-        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
-        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.reviewer.ring }}">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.assignee.ring }}">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
         <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2f8f4e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
         <td><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-neutral-600)">ouverte {{ r.opened }}</span></sc-if><sc-if value="{{ r.notDraft }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></sc-if></td>
       </tr>
       </sc-for>
     </tbody>
   </table>
-  <div style="padding:10px 20px;font-size:11px;color:var(--color-neutral-600)">Drafts : après les MRs ready, triés par date d'ouverture croissante · pas de date Ready · « Mes MRs » = j'ai au moins un rôle : auteur, reviewer ou affecté</div>
+  <div style="padding:10px 20px;font-size:11px;color:var(--color-neutral-600)">Drafts : après les MRs ready, triés par date d'ouverture croissante · pas de date Ready · moi (auteur, reviewer ou affecté) → anneau accent autour de l'avatar (initiales ou photo) · désactivable dans Paramètres › Moi · « Mes MRs » = j'ai au moins un rôle : auteur, reviewer ou affecté</div>
   
 </div></div>
 
@@ -178,6 +316,7 @@ a{color:var(--color-text)}a:hover{color:var(--color-accent)}
       <div class="field"><label>Nom d'utilisateur GitLab</label><input class="input" value="mdupont"></div>
       <div class="field"><label>Email (optionnel)</label><input class="input" placeholder="marie@exemple.fr"></div>
       <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:#fff;font-size:11px;font-weight:600">MD</span><span>Marie Dupont</span><span class="tag tag-neutral">détecté via le jeton</span></div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" defaultChecked="{{ true }}" style="accent-color:var(--color-accent);width:16px;height:16px;margin:0"><span>Surligner mes MRs dans le tableau (auteur, reviewer, affecté)</span></label></div>
     </div>
 
     <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexion GitLab</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Jeton personnel avec le scope <code>read_api</code>. Stocké localement dans le navigateur.</p></div>
@@ -242,9 +381,11 @@ a{color:var(--color-text)}a:hover{color:var(--color-accent)}
 class Component extends DCLogic {
   renderVals() {
     const U = {
-      md: { ini: 'MD', name: 'Marie Dupont' }, kb: { ini: 'KB', name: 'Karim Benali' },
+      md: { ini: 'MD', name: 'Marie Dupont', me: true, img: true }, kb: { ini: 'KB', name: 'Karim Benali' },
       lr: { ini: 'LR', name: 'Léa Rousseau' }, tg: { ini: 'TG', name: 'Tom Girard' }, ap: { ini: 'AP', name: 'Ana Pereira' },
     };
+    const RING = '0 0 0 2px var(--color-bg),0 0 0 4px var(--color-accent)';
+    Object.values(U).forEach(u => { u.ring = u.me ? RING : 'none'; u.noImg = !u.img; });
     const DIFF = { easy: ['#2f8f4e', 'Easy'], medium: ['#d98a1f', 'Medium'], hard: ['var(--color-accent)', 'Hard'] };
     const readyColor = d => d <= 1 ? '#2f8f4e' : d <= 3 ? '#d98a1f' : 'var(--color-accent)';
     const mk = (proj, author, title, diff, files, lines, comments, reviewer, assignee, approved, days, draft, opened, showTip) => ({
@@ -267,7 +408,17 @@ class Component extends DCLogic {
       mk('infra', U.tg, 'WIP: cluster staging en spot instances', 'hard', 27, 900, 0, null, null, false, 0, true, 'il y a 12 j', true),
       mk('web', U.ap, 'Draft: nouveau système de notifications', 'medium', 11, 380, 1, U.md, null, false, 0, true, 'il y a 4 j'),
     ];
-    return { rowsReady: ready, rowsWithDrafts: [...ready, ...drafts] };
+    const PATHS = { api: 'GitLab équipe · equipe/backend-api', web: 'GitLab équipe · equipe/front-web', infra: 'GitLab équipe · plateforme/infra-terraform' };
+    const gl = r => Object.assign({}, r, { isGitlab: true, isGithub: false, tip: PATHS[r.proj], showTip: false });
+    const gh = (r, path, showTip) => Object.assign({}, r, { isGitlab: false, isGithub: true, tip: 'GitHub · ' + path, showTip: !!showTip });
+    const multi = [
+      gl(ready[0]), gl(ready[1]),
+      gh(mk('tokens', U.lr, 'Tokens sémantiques pour le thème sombre', 'medium', 6, 180, 2, U.md, null, false, 4), 'exemple-org/design-tokens', true),
+      gl(ready[2]), gl(ready[3]),
+      gh(mk('mobile', U.tg, 'Migre la CI vers des reusable workflows GitHub Actions', 'medium', 15, 520, 5, U.kb, U.kb, true, 2), 'exemple-org/mobile-app'),
+      gl(ready[4]), gl(ready[5]), gl(ready[6]),
+    ];
+    return { rowsReady: ready, rowsWithDrafts: [...ready, ...drafts], rowsMulti: multi };
   }
 }
 </script>

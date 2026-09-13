@@ -42,6 +42,7 @@ md-filled-button,md-outlined-button,md-text-button{--md-filled-button-label-text
 .table td{vertical-align:middle;padding:6px 8px;font-size:13px}
 .table tbody tr:hover td{background:var(--color-neutral-100)}
 md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
+.conn-head:hover{background:var(--color-neutral-100)}
 @keyframes toastin{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
 </style>
 </helmet>
@@ -51,7 +52,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
   <div data-screen-label="Tableau" style="display:flex;flex-direction:column;flex:1">
     <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:2px solid var(--color-divider)">
       <span class="nav-brand">MR Board</span>
-      <span style="font-size:12px;color:var(--color-neutral-600)">{{ syncLabel }}</span>
+      <span style="font-size:12px;color:var(--color-neutral-600)">{{ syncLabel }}<sc-if value="{{ syncErrLabel }}" hint-placeholder-val="{{ false }}"> · <span style="color:var(--color-accent-700)">{{ syncErrLabel }}</span></sc-if></span>
       <span style="flex:1"></span>
       <md-outlined-button data-act="refresh" disabled="{{ refreshDisabled }}"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"></path></svg></md-icon>Rafraîchir</md-outlined-button>
       <md-icon-button data-act="theme-toggle" aria-label="{{ themeToggleLabel }}"><md-icon><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if><sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if></md-icon></md-icon-button>
@@ -59,10 +60,12 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
     </div>
     <sc-if value="{{ syncing }}" hint-placeholder-val="{{ false }}"><md-linear-progress indeterminate style="--md-linear-progress-track-height:2px;--md-linear-progress-active-indicator-height:2px;margin-top:-2px"></md-linear-progress></sc-if>
 
-    <sc-if value="{{ noToken }}" hint-placeholder-val="{{ false }}">
-      <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--color-accent-100);border-bottom:2px solid var(--color-accent);font-size:13px;color:var(--color-accent-800)">
-        <span style="font-weight:600">Aucun jeton GitLab configuré.</span><span>Les données affichées sont celles du dernier cache.</span><span style="flex:1"></span>
-        <md-text-button data-act="goto" data-view="settings">Configurer</md-text-button>
+    <sc-if value="{{ hasIssues }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--color-accent-100);border-bottom:2px solid var(--color-accent);font-size:13px;color:var(--color-accent-800);flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+          <sc-for list="{{ issues }}" as="is" hint-placeholder-count="1"><span><span style="font-weight:600">{{ is.head }}</span> {{ is.tail }}</span></sc-for>
+        </div>
+        <md-text-button data-act="goto" data-view="settings" style="flex:none">Configurer</md-text-button>
       </div>
     </sc-if>
 
@@ -78,7 +81,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
             <sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3">
               <md-menu-item keep-open data-act="opt" data-f="{{ p.f }}" data-v="{{ o.v }}">
                 <md-checkbox slot="start" touch-target="none" checked="{{ o.on }}" style="pointer-events:none"></md-checkbox>
-                <div slot="headline" style="font-size:13px">{{ o.label }}</div>
+                <div slot="headline" style="font-size:13px;display:flex;align-items:center;gap:8px"><sc-if value="{{ o.gl }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg></sc-if><sc-if value="{{ o.gh }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></sc-if><span style="white-space:nowrap">{{ o.label }}</span><sc-if value="{{ o.sub }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;color:var(--color-neutral-600);white-space:nowrap">{{ o.sub }}</span></sc-if></div>
                 <span slot="end" style="font-size:11px;color:var(--color-neutral-600)">{{ o.count }}</span>
               </md-menu-item>
             </sc-for>
@@ -99,7 +102,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
 
     <div style="overflow-x:auto"><table class="table" style="min-width:860px">
       <thead><tr>
-        <th style="width:64px">Projet</th><th style="width:52px">Auteur</th><th>Titre</th>
+        <th style="width:72px">Projet</th><th style="width:52px">Auteur</th><th>Titre</th>
         <th style="width:150px;color:{{ diffHeadColor }}" data-act="sort" data-key="diff">Difficulté <span style="opacity:.7">{{ diffArrow }}</span></th>
         <th style="width:44px" title="Commentaires"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></th>
         <th style="width:72px">Reviewer</th><th style="width:72px">Affecté</th><th style="width:76px">Approved</th>
@@ -118,13 +121,13 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
       <tbody>
         <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
         <tr style="opacity:{{ r.opacity }}">
-          <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
-          <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600">{{ r.author.ini }}</span></td>
+          <td><span class="tag tag-neutral" title="{{ r.tip }}" style="font-weight:600;display:inline-flex;align-items:center;gap:5px;cursor:default"><sc-if value="{{ r.glIcon }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="opacity:.75"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg></sc-if><sc-if value="{{ r.ghIcon }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="opacity:.75"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></sc-if>{{ r.proj }}</span></td>
+          <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600;box-shadow:{{ r.author.ring }}"><sc-if value="{{ r.author.img }}" hint-placeholder-val="{{ false }}"><i title="Photo de profil" style="display:block;width:28px;height:28px;background:linear-gradient(135deg,#c9c5c5 0%,#6b6767 45%,#2a2828 100%)"></i></sc-if><sc-if value="{{ r.author.noImg }}" hint-placeholder-val="{{ true }}">{{ r.author.ini }}</sc-if></span></td>
           <td style="max-width:0"><span style="display:flex;align-items:center;gap:8px;min-width:0"><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="font-weight:600;flex:none">Draft</span></sc-if><a href="{{ r.url }}" target="{{ linkTarget }}" title="{{ r.title }}" style="text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></span></td>
           <td><span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
           <td>{{ r.comments }}</td>
-          <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
-          <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+          <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.reviewer.ring }}">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+          <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600;box-shadow:{{ r.assignee.ring }}">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
           <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
           <td><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-neutral-600)">ouverte {{ r.openedLabel }}</span></sc-if><sc-if value="{{ r.notDraft }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></sc-if></td>
           <sc-if value="{{ showOpened }}" hint-placeholder-val="{{ false }}"><td style="font-size:12px;color:var(--color-neutral-600)">{{ r.openedDate }}</td></sc-if>
@@ -137,7 +140,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
       </tbody>
     </table></div>
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 20px;padding:10px 20px 24px;font-size:11px;color:var(--color-neutral-600);margin-top:auto">
-      <span>Drafts après les MRs ready, triés par date d'ouverture · « Mes MRs » = auteur, reviewer ou affecté</span>
+      <span>Drafts après les MRs ready, triés par date d'ouverture · anneau rouge = c'est moi (auteur, reviewer ou affecté) · « Mes MRs » = auteur, reviewer ou affecté<sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}"> · survoler le tag projet : connexion · chemin</sc-if></span>
       <sc-if value="{{ showUrl }}" hint-placeholder-val="{{ true }}"><span style="font-family:ui-monospace,Menlo,monospace">?{{ query }}</span></sc-if>
     </div>
   </div>
@@ -154,36 +157,65 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
     </div>
     <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 32px">
 
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">01 · Moi</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Utilisé par « Mes MRs » et pour repérer mes rôles.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">01 · Moi</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Mon identité sur chaque forge est déclarée dans sa connexion ; « Mes MRs » les réunit.</p></div>
       <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <md-outlined-text-field label="Nom d'utilisateur GitLab" value="{{ d.user }}" data-in="user"></md-outlined-text-field>
         <md-outlined-text-field label="Email (optionnel)" value="{{ d.email }}" data-in="email" placeholder="marie@exemple.fr"></md-outlined-text-field>
-        <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600">{{ meIni }}</span><span>{{ meName }}</span><span class="tag tag-neutral">{{ meStatus }}</span></div>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600">{{ meIni }}</span><span>{{ meName }}</span>
+          <sc-for list="{{ idents }}" as="id" hint-placeholder-count="2"><span class="tag tag-neutral" title="{{ id.conn }}" style="display:inline-flex;align-items:center;gap:5px"><sc-if value="{{ id.gl }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg></sc-if><sc-if value="{{ id.gh }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></sc-if>{{ id.user }}</span></sc-for>
+        </div>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px;font-size:13px"><md-checkbox touch-target="wrapper" checked="{{ d.highlightMe }}" data-act="chk" data-key="highlightMe"></md-checkbox><span>Surligner mes MRs dans le tableau (auteur, reviewer, affecté)</span></div>
       </div>
 
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexion GitLab</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Jeton personnel avec le scope <code>read_api</code>. Stocké localement dans le navigateur.</p></div>
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <md-outlined-text-field label="URL de l'instance" value="{{ d.url }}" data-in="url"></md-outlined-text-field>
-        <md-outlined-text-field label="Jeton d'accès personnel" type="{{ tokenType }}" value="{{ d.token }}" data-in="token">
-          <md-icon-button slot="trailing-icon" toggle data-act="show-token" aria-label="Afficher le jeton"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></md-icon><md-icon slot="selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path></svg></md-icon></md-icon-button>
-        </md-outlined-text-field>
-        <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px"><md-outlined-button data-act="test" disabled="{{ testDisabled }}">Tester la connexion</md-outlined-button><span style="font-size:13px;color:{{ testColor }}">{{ testLabel }}</span></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexions &amp; dépôts</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Une connexion = une forge, une URL, un jeton et mon nom d'utilisateur. Chaque dépôt est rattaché à sa connexion. Jetons stockés localement.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ conns }}" as="c" hint-placeholder-count="2">
+          <div style="border:1px solid {{ c.border }};background:var(--color-surface)">
+            <div class="conn-head" data-act="conn-toggle" data-ci="{{ c.i }}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid {{ c.headBorder }}">
+              <sc-if value="{{ c.gl }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="m23.6 9.593-.033-.086L20.3.98a.851.851 0 0 0-.336-.405.875.875 0 0 0-1 .053.875.875 0 0 0-.29.44l-2.206 6.748H7.542L5.336 1.068a.857.857 0 0 0-.29-.442.875.875 0 0 0-1-.052.85.85 0 0 0-.336.405L.443 9.502l-.033.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.009 1.009 0 0 0 1.22 0l1.5-1.132 2.461-1.863 5.006-3.75.013-.01a6.068 6.068 0 0 0 2-7.002Z"></path></svg></sc-if>
+              <sc-if value="{{ c.gh }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg></sc-if>
+              <b style="font-weight:600;white-space:nowrap">{{ c.title }}</b><span style="color:var(--color-neutral-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.summary }}</span>
+              <span style="flex:1"></span>
+              <span class="tag tag-neutral" style="flex:none">{{ c.repoLabel }}</span>
+              <sc-if value="{{ c.statusLabel }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:{{ c.statusColor }};white-space:nowrap">{{ c.statusLabel }}</span></sc-if>
+              <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M18 15l-6-6-6 6"></path></svg></sc-if>
+              <sc-if value="{{ c.closed }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M6 9l6 6 6-6"></path></svg></sc-if>
+            </div>
+            <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:16px 14px">
+                <div style="grid-column:1/-1"><div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Type de forge</div>
+                  <div style="display:flex;gap:4px 20px;font-size:13px">
+                    <span style="display:inline-flex;align-items:center;gap:6px;cursor:pointer" data-act="conn-type" data-ci="{{ c.i }}" data-v="gitlab"><md-radio name="type-{{ c.id }}" value="gitlab" checked="{{ c.glOn }}" touch-target="none" style="pointer-events:none"></md-radio>GitLab</span>
+                    <span style="display:inline-flex;align-items:center;gap:6px;cursor:pointer" data-act="conn-type" data-ci="{{ c.i }}" data-v="github"><md-radio name="type-{{ c.id }}" value="github" checked="{{ c.ghOn }}" touch-target="none" style="pointer-events:none"></md-radio>GitHub</span>
+                  </div></div>
+                <md-outlined-text-field label="Nom" value="{{ c.name }}" data-in="c:name" data-ci="{{ c.i }}" placeholder="{{ c.namePh }}"></md-outlined-text-field>
+                <md-outlined-text-field label="URL" value="{{ c.url }}" data-in="c:url" data-ci="{{ c.i }}" supporting-text="{{ c.urlHint }}"></md-outlined-text-field>
+                <md-outlined-text-field label="Mon nom d'utilisateur" value="{{ c.user }}" data-in="c:user" data-ci="{{ c.i }}" supporting-text="Sert à « Mes MRs » et à repérer mes rôles"></md-outlined-text-field>
+                <md-outlined-text-field label="Jeton d'accès personnel" type="{{ c.tokenType }}" value="{{ c.token }}" data-in="c:token" data-ci="{{ c.i }}" supporting-text="{{ c.tokenHint }}">
+                  <md-icon-button slot="trailing-icon" data-act="show-token" data-ci="{{ c.i }}" aria-label="Afficher le jeton"><md-icon><sc-if value="{{ c.tokenHidden }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if><sc-if value="{{ c.tokenShown }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path></svg></sc-if></md-icon></md-icon-button>
+                </md-outlined-text-field>
+                <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px"><md-outlined-button data-act="test" data-ci="{{ c.i }}" disabled="{{ c.testDisabled }}">Tester la connexion</md-outlined-button><span style="font-size:13px;color:{{ c.testColor }}">{{ c.testLabel }}</span></div>
+                <div style="grid-column:1/-1">
+                  <div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Dépôts de cette connexion — l'alias s'affiche dans la colonne Projet et le filtre</div>
+                  <table class="table" style="font-size:13px">
+                    <thead><tr><th>{{ c.pathHead }}</th><th style="width:150px">Alias</th><th style="width:48px"></th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{ c.repos }}" as="rp" hint-placeholder-count="2">
+                        <tr><td>{{ rp.path }}</td><td><md-outlined-text-field value="{{ rp.alias }}" data-in="alias" data-ci="{{ c.i }}" data-i="{{ rp.i }}" style="--md-outlined-field-top-space:6px;--md-outlined-field-bottom-space:6px"></md-outlined-text-field></td><td><md-icon-button data-act="del-repo" data-ci="{{ c.i }}" data-i="{{ rp.i }}" touch-target="none" aria-label="Supprimer" style="--md-icon-button-icon-size:16px;width:32px;height:32px"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></md-icon></md-icon-button></td></tr>
+                      </sc-for>
+                      <tr><td colspan="3" style="border-bottom:0;padding-top:12px"><div style="display:flex;gap:8px;align-items:center"><md-outlined-text-field placeholder="{{ c.repoPh }}" value="{{ c.newRepo }}" data-in="newRepo" data-ci="{{ c.i }}" style="flex:1;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-text-field placeholder="alias" value="{{ c.newAlias }}" data-in="newAlias" data-ci="{{ c.i }}" style="width:150px;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-button data-act="add-repo" data-ci="{{ c.i }}" disabled="{{ c.addRepoDisabled }}" style="flex:none"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></md-icon>Ajouter</md-outlined-button></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><md-text-button data-act="conn-del" data-ci="{{ c.i }}" style="--md-text-button-label-text-color:var(--color-accent-700)">Supprimer cette connexion</md-text-button></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noConns }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--color-neutral-600);margin:0">Aucune connexion. Ajoutez-en une pour alimenter le tableau.</p></sc-if>
+        <md-outlined-button data-act="conn-add" style="align-self:flex-start"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></md-icon>Ajouter une connexion</md-outlined-button>
       </div>
 
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">03 · Repos à scanner</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">L'alias est ce qui s'affiche dans la colonne Projet et le filtre.</p></div>
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)">
-        <table class="table" style="font-size:13px">
-          <thead><tr><th>Chemin du projet</th><th style="width:150px">Alias</th><th style="width:48px"></th></tr></thead>
-          <tbody>
-            <sc-for list="{{ repos }}" as="rp" hint-placeholder-count="3">
-              <tr><td>{{ rp.path }}</td><td><md-outlined-text-field value="{{ rp.alias }}" data-in="alias" data-i="{{ rp.i }}" style="--md-outlined-field-top-space:6px;--md-outlined-field-bottom-space:6px"></md-outlined-text-field></td><td><md-icon-button data-act="del-repo" data-i="{{ rp.i }}" touch-target="none" aria-label="Supprimer" style="--md-icon-button-icon-size:16px;width:32px;height:32px"><md-icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></md-icon></md-icon-button></td></tr>
-            </sc-for>
-            <tr><td colspan="3" style="border-bottom:0;padding-top:12px"><div style="display:flex;gap:8px;align-items:center"><md-outlined-text-field placeholder="groupe/projet ou URL GitLab" value="{{ newRepo }}" data-in="newRepo" style="flex:1;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-text-field placeholder="alias" value="{{ newAlias }}" data-in="newAlias" style="width:150px;--md-outlined-field-top-space:8px;--md-outlined-field-bottom-space:8px"></md-outlined-text-field><md-outlined-button data-act="add-repo" disabled="{{ addRepoDisabled }}" style="flex:none"><md-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></md-icon>Ajouter</md-outlined-button></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">04 · Actualisation</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Synchro automatique ; le bouton Rafraîchir force toujours.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">03 · Actualisation</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Synchro automatique de toutes les connexions ; le bouton Rafraîchir force toujours.</p></div>
       <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:flex;flex-direction:column;gap:16px">
         <div><div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Fréquence</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px 20px;font-size:13px">
@@ -192,7 +224,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
         <div style="display:flex;align-items:center;gap:12px;font-size:13px"><md-switch selected="{{ d.pauseHidden }}" data-act="chk" data-key="pauseHidden"></md-switch><span>Mettre en pause quand l'onglet est inactif</span></div>
       </div>
 
-      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">05 · Seuils</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Règles de calcul de la difficulté et du délai Ready.</p></div>
+      <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">04 · Seuils</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Règles de calcul de la difficulté et du délai Ready, identiques pour toutes les forges.</p></div>
       <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px 24px">
         <div><div style="font-size:12px;margin-bottom:8px;color:var(--color-neutral-700)">Difficulté</div>
           <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px 10px;align-items:center;font-size:13px">
@@ -209,7 +241,7 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
           <div style="display:flex;align-items:center;gap:12px;font-size:13px;margin-top:14px"><md-switch selected="{{ d.workdays }}" data-act="chk" data-key="workdays"></md-switch><span>Compter uniquement les jours ouvrés</span></div></div>
       </div>
 
-      <div style="padding:22px 0"><h6 style="color:var(--color-accent);margin:0 0 4px">06 · Divers</h6></div>
+      <div style="padding:22px 0"><h6 style="color:var(--color-accent);margin:0 0 4px">05 · Divers</h6></div>
       <div style="padding:22px 0;display:flex;flex-direction:column;gap:12px;font-size:13px">
         <div style="margin-bottom:4px"><div style="font-size:12px;margin-bottom:6px;color:var(--color-neutral-700)">Thème</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px 20px;font-size:13px">
@@ -226,50 +258,88 @@ md-outlined-text-field{--md-outlined-text-field-container-shape:0px;width:100%}
 </sc-if>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;left:20px;bottom:20px;background:var(--color-neutral-900);color:var(--color-bg);font-size:13px;padding:10px 14px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-lg);animation:toastin .2s ease-out;z-index:50">{{ toast }}<md-text-button data-act="toast-close" style="--md-text-button-label-text-color:var(--color-accent-400);--md-text-button-hover-label-text-color:var(--color-bg)">OK</md-text-button></div>
+  <div style="position:fixed;left:20px;bottom:20px;background:var(--color-neutral-900);color:var(--color-bg);font-size:13px;padding:10px 14px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-lg);animation:toastin .2s ease-out;z-index:50;max-width:min(560px,calc(100vw - 40px))">{{ toast }}<md-text-button data-act="toast-close" style="--md-text-button-label-text-color:var(--color-accent-400);--md-text-button-hover-label-text-color:var(--color-bg);flex:none">OK</md-text-button></div>
 </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;showUrl&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;showUrl&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;forgeIcons&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;always&quot;,&quot;never&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;'auto'|'always'|'never'&quot;,&quot;section&quot;:&quot;Multi-sources&quot;}}">
+// USERS: username → person (p = canonical person key, shared across forges)
 const USERS = {
-  mdupont: { ini: 'MD', name: 'Marie Dupont' }, kbenali: { ini: 'KB', name: 'Karim Benali' },
-  lrousseau: { ini: 'LR', name: 'Léa Rousseau' }, tgirard: { ini: 'TG', name: 'Tom Girard' }, apereira: { ini: 'AP', name: 'Ana Pereira' },
+  mdupont: { p: 'md', ini: 'MD', name: 'Marie Dupont', img: true }, 'marie-dupont': { p: 'md', ini: 'MD', name: 'Marie Dupont', img: true },
+  kbenali: { p: 'kb', ini: 'KB', name: 'Karim Benali' }, 'k-benali': { p: 'kb', ini: 'KB', name: 'Karim Benali' },
+  lrousseau: { p: 'lr', ini: 'LR', name: 'Léa Rousseau' }, 'lea-rousseau': { p: 'lr', ini: 'LR', name: 'Léa Rousseau' },
+  tgirard: { p: 'tg', ini: 'TG', name: 'Tom Girard' }, 't-girard': { p: 'tg', ini: 'TG', name: 'Tom Girard' },
+  apereira: { p: 'ap', ini: 'AP', name: 'Ana Pereira' },
+  'sofia-nkemelu': { p: 'sn', ini: 'SN', name: 'Sofia Nkemelu' }, 'dependabot': { p: 'bot', ini: 'DB', name: 'dependabot[bot]' },
+};
+const PERSON = u => (USERS[u] || {}).p;
+const PEOPLE = []; Object.keys(USERS).forEach(u => { if (!PEOPLE.find(x => x.p === USERS[u].p)) PEOPLE.push(USERS[u]); });
+const FORGES = {
+  gitlab: { label: 'GitLab', url: 'https://gitlab.com', tokenRe: /^glpat-/, tokenHint: 'glpat-… · scope read_api', urlHint: 'gitlab.com ou votre instance auto-hébergée', repoPh: 'groupe/projet ou URL GitLab', pathHead: 'Chemin du projet', mrUrl: (c, m) => `${c.url}/${m.proj}/-/merge_requests/${m.id}`, ok: c => `✓ Connecté · ${c.user} · expire le 12/03/2027` },
+  github: { label: 'GitHub', url: 'https://github.com', tokenRe: /^(ghp_|github_pat_)/, tokenHint: 'ghp_… ou github_pat_… · scope repo (lecture)', urlHint: 'github.com ou votre GitHub Enterprise Server', repoPh: 'owner/repo ou URL GitHub', pathHead: 'owner/repo', mrUrl: (c, m) => `${c.url}/${m.proj}/pull/${m.id}`, ok: c => `✓ Connecté · ${c.user} · scope repo` },
 };
 const DEFAULT_SETTINGS = {
-  user: 'mdupont', email: '', url: 'https://gitlab.exemple.fr', token: 'glpat-xxxxxxxxxxxxxxxxxxxx',
-  repos: [{ path: 'equipe/backend-api', alias: 'api' }, { path: 'equipe/front-web', alias: 'web' }, { path: 'plateforme/infra-terraform', alias: 'infra' }],
+  email: '',
+  connections: [
+    { id: 'gl-1', type: 'gitlab', name: 'GitLab équipe', url: 'https://gitlab.exemple.fr', token: 'glpat-xxxxxxxxxxxxxxxxxxxx', user: 'mdupont',
+      repos: [{ path: 'equipe/backend-api', alias: 'api' }, { path: 'equipe/front-web', alias: 'web' }, { path: 'plateforme/infra-terraform', alias: 'infra' }] },
+    { id: 'gh-1', type: 'github', name: 'GitHub', url: 'https://github.com', token: 'ghp_xxxxxxxxxxxxxxxxxxxx', user: 'marie-dupont',
+      repos: [{ path: 'exemple-org/design-tokens', alias: 'tokens' }, { path: 'exemple-org/mobile-app', alias: 'mobile' }, { path: 'exemple-org/docs-site', alias: 'docs' }] },
+  ],
   freq: '5', pauseHidden: true, easyFiles: 5, easyLines: 100, hardFiles: 20, hardLines: 800, readyGreen: 1, readyOrange: 3, workdays: false,
-  notify: true, badge: true, newTab: false, ignoreWip: false, theme: 'system',
+  notify: true, badge: true, newTab: false, ignoreWip: false, highlightMe: true, theme: 'system',
 };
-// proj = repo path; author/reviewer/assignee = usernames; readyDays = days since Ready; openedDays = days since opened
+// forge = type de forge ; proj = chemin du dépôt — rattaché à la connexion de ce type qui déclare ce chemin
 const MRS = [
-  { id: 412, proj: 'equipe/backend-api', author: 'kbenali', title: 'Refonte complète du module de facturation et migration des schémas Prisma vers la v5', files: 34, lines: 1240, comments: 12, reviewer: 'mdupont', assignee: 'mdupont', approved: false, readyDays: 6, openedDays: 9 },
-  { id: 388, proj: 'equipe/front-web', author: 'lrousseau', title: 'Corrige le flash blanc au chargement du dashboard', files: 2, lines: 38, comments: 0, reviewer: null, assignee: null, approved: false, readyDays: 5, openedDays: 5 },
-  { id: 409, proj: 'equipe/backend-api', author: 'tgirard', title: 'Pagination curseur sur /merge_requests', files: 9, lines: 310, comments: 4, reviewer: 'apereira', assignee: 'apereira', approved: true, readyDays: 3, openedDays: 4 },
-  { id: 77, proj: 'plateforme/infra-terraform', author: 'apereira', title: 'Bump Terraform provider gitlab 16.x → 17.x', files: 12, lines: 420, comments: 2, reviewer: 'kbenali', assignee: null, approved: false, readyDays: 2, openedDays: 2 },
-  { id: 391, proj: 'equipe/front-web', author: 'mdupont', title: 'Ajout du filtre « Affecté à » avec option Nobody', files: 4, lines: 96, comments: 7, reviewer: 'lrousseau', assignee: 'lrousseau', approved: true, readyDays: 1, openedDays: 3 },
-  { id: 415, proj: 'equipe/backend-api', author: 'lrousseau', title: 'Ajoute un index composite sur (project_id, ready_at)', files: 1, lines: 14, comments: 1, reviewer: null, assignee: 'tgirard', approved: false, readyDays: 1, openedDays: 1 },
-  { id: 393, proj: 'equipe/front-web', author: 'kbenali', title: 'Colonnes redimensionnables et persistance des largeurs', files: 7, lines: 260, comments: 3, reviewer: 'mdupont', assignee: null, approved: false, readyDays: 0, openedDays: 1 },
-  { id: 79, proj: 'plateforme/infra-terraform', author: 'tgirard', title: 'WIP: cluster staging en spot instances', files: 27, lines: 900, comments: 0, reviewer: null, assignee: null, approved: false, draft: true, openedDays: 12 },
-  { id: 396, proj: 'equipe/front-web', author: 'apereira', title: 'Draft: nouveau système de notifications', files: 11, lines: 380, comments: 1, reviewer: 'mdupont', assignee: null, approved: false, draft: true, openedDays: 4 },
+  { id: 412, forge: 'gitlab', proj: 'equipe/backend-api', author: 'kbenali', title: 'Refonte complète du module de facturation et migration des schémas Prisma vers la v5', files: 34, lines: 1240, comments: 12, reviewer: 'mdupont', assignee: 'mdupont', approved: false, readyDays: 6, openedDays: 9 },
+  { id: 388, forge: 'gitlab', proj: 'equipe/front-web', author: 'lrousseau', title: 'Corrige le flash blanc au chargement du dashboard', files: 2, lines: 38, comments: 0, reviewer: null, assignee: null, approved: false, readyDays: 5, openedDays: 5 },
+  { id: 58, forge: 'github', proj: 'exemple-org/design-tokens', author: 'lea-rousseau', title: 'Tokens sémantiques pour le thème sombre', files: 6, lines: 180, comments: 2, reviewer: 'marie-dupont', assignee: null, approved: false, readyDays: 4, openedDays: 4 },
+  { id: 409, forge: 'gitlab', proj: 'equipe/backend-api', author: 'tgirard', title: 'Pagination curseur sur /merge_requests', files: 9, lines: 310, comments: 4, reviewer: 'apereira', assignee: 'apereira', approved: true, readyDays: 3, openedDays: 4 },
+  { id: 77, forge: 'gitlab', proj: 'plateforme/infra-terraform', author: 'apereira', title: 'Bump Terraform provider gitlab 16.x → 17.x', files: 12, lines: 420, comments: 2, reviewer: 'kbenali', assignee: null, approved: false, readyDays: 2, openedDays: 2 },
+  { id: 212, forge: 'github', proj: 'exemple-org/mobile-app', author: 't-girard', title: 'Migre la CI vers des reusable workflows GitHub Actions', files: 15, lines: 520, comments: 5, reviewer: 'k-benali', assignee: 'k-benali', approved: true, readyDays: 2, openedDays: 6 },
+  { id: 391, forge: 'gitlab', proj: 'equipe/front-web', author: 'mdupont', title: 'Ajout du filtre « Affecté à » avec option Nobody', files: 4, lines: 96, comments: 7, reviewer: 'lrousseau', assignee: 'lrousseau', approved: true, readyDays: 1, openedDays: 3 },
+  { id: 415, forge: 'gitlab', proj: 'equipe/backend-api', author: 'lrousseau', title: 'Ajoute un index composite sur (project_id, ready_at)', files: 1, lines: 14, comments: 1, reviewer: null, assignee: 'tgirard', approved: false, readyDays: 1, openedDays: 1 },
+  { id: 393, forge: 'gitlab', proj: 'equipe/front-web', author: 'kbenali', title: 'Colonnes redimensionnables et persistance des largeurs', files: 7, lines: 260, comments: 3, reviewer: 'mdupont', assignee: null, approved: false, readyDays: 0, openedDays: 1 },
+  { id: 79, forge: 'gitlab', proj: 'plateforme/infra-terraform', author: 'tgirard', title: 'WIP: cluster staging en spot instances', files: 27, lines: 900, comments: 0, reviewer: null, assignee: null, approved: false, draft: true, openedDays: 12 },
+  { id: 396, forge: 'gitlab', proj: 'equipe/front-web', author: 'apereira', title: 'Draft: nouveau système de notifications', files: 11, lines: 380, comments: 1, reviewer: 'mdupont', assignee: null, approved: false, draft: true, openedDays: 4 },
+  { id: 61, forge: 'github', proj: 'exemple-org/design-tokens', author: 'marie-dupont', title: 'Draft: script de release automatique', files: 3, lines: 70, comments: 0, reviewer: null, assignee: null, approved: false, draft: true, openedDays: 2 },
+  { id: 230, forge: 'github', proj: 'exemple-org/mobile-app', author: 'sofia-nkemelu', title: 'Écran d\'onboarding : parcours en 3 étapes avec reprise', files: 22, lines: 860, comments: 9, reviewer: 'marie-dupont', assignee: 'marie-dupont', approved: false, readyDays: 7, openedDays: 11 },
+  { id: 233, forge: 'github', proj: 'exemple-org/mobile-app', author: 'dependabot', title: 'chore(deps): bump react-native from 0.74.2 to 0.75.1', files: 2, lines: 24, comments: 0, reviewer: null, assignee: null, approved: false, readyDays: 3, openedDays: 3 },
+  { id: 118, forge: 'github', proj: 'exemple-org/docs-site', author: 'k-benali', title: 'Guide de contribution multi-forge (GitLab + GitHub)', files: 4, lines: 140, comments: 3, reviewer: 'sofia-nkemelu', assignee: null, approved: true, readyDays: 1, openedDays: 2 },
+  { id: 121, forge: 'github', proj: 'exemple-org/docs-site', author: 'marie-dupont', title: 'Corrige les ancres cassées dans la page API', files: 1, lines: 9, comments: 1, reviewer: 'lea-rousseau', assignee: 'lea-rousseau', approved: false, readyDays: 0, openedDays: 0 },
+  { id: 235, forge: 'github', proj: 'exemple-org/mobile-app', author: 't-girard', title: 'Draft: mode hors-ligne pour la liste des commandes', files: 14, lines: 410, comments: 2, reviewer: null, assignee: null, approved: false, draft: true, openedDays: 6 },
 ];
-const FILTERS = { project: 'Projet', author: 'Auteur', assigned: 'Affecté à', approved: 'Approved', commented: 'Commenté' };
+const FILTERS = { project: 'Projet', author: 'Auteur', assigned: 'Affecté à', approved: 'Approved', commented: 'Commenté', conn: 'Connexion' };
+const LIST_FILTERS = ['project', 'author', 'assigned', 'conn'];
 const GREEN = 'var(--c-ok)', ORANGE = 'var(--c-warn)', RED = 'var(--color-accent)';
-const STORE = 'mrboard.proto.v1';
+const STORE = 'mrboard.proto.v2', STORE_V1 = 'mrboard.proto.v1';
+const host = u => (u || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+// Migration « une instance + un jeton + une identité » → liste de connexions
+function migrate(st) {
+  if (!st || st.connections) return st;
+  const { url, token, user, repos } = st, out = Object.assign({}, st);
+  delete out.url; delete out.token; delete out.user; delete out.repos;
+  out.connections = [{ id: 'gl-1', type: 'gitlab', name: host(url) || 'GitLab', url: url || FORGES.gitlab.url, token: token || '', user: user || '', repos: repos || [] }];
+  return out;
+}
 
 class Component extends DCLogic {
   constructor(props) {
     super(props);
     this.rootRef = React.createRef();
     let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
+    // Première ouverture en v2 : on garde les filtres v1 mais on repart des connexions de démo (GitLab + github.com)
+    if (!saved) { try { const v1 = JSON.parse(localStorage.getItem(STORE_V1) || 'null'); if (v1) { delete v1.settings; delete v1.project; delete v1.conn; saved = v1; } } catch (e) {} }
     this.state = Object.assign({
       view: 'board', drafts: false, mine: false,
-      active: ['project', 'assigned'], project: ['api', 'web'], author: [], assigned: ['nobody'], approved: null, commented: null,
+      active: ['project', 'assigned'], project: ['api', 'web', 'tokens'], author: [], assigned: ['nobody'], conn: [], approved: null, commented: null,
       sort: { key: 'ready', dir: 'asc' }, menu: null, showOpened: false,
-      syncing: false, lastSync: Date.now() - 120000, now: Date.now(), toast: null,
-      settings: DEFAULT_SETTINGS, draft: null, showToken: false, test: null, newRepo: '', newAlias: '',
+      syncing: false, lastSync: Date.now() - 120000, now: Date.now(), toast: null, syncErrors: {},
+      settings: DEFAULT_SETTINGS, draft: null, showToken: {}, test: {}, openConn: {}, newRepo: {}, newAlias: {},
     }, saved || {}, this.parseHash());
-    this.state.settings = Object.assign({}, DEFAULT_SETTINGS, this.state.settings);
+    this.state.settings = Object.assign({}, DEFAULT_SETTINGS, migrate(this.state.settings));
+    if (!this.state.conn) this.state.conn = [];
   }
   resolvedTheme() {
     const t = (this.state.draft || this.state.settings).theme || 'system';
@@ -282,7 +352,7 @@ class Component extends DCLogic {
     if (q.has('drafts')) o.drafts = q.get('drafts') === '1';
     if (q.has('mine')) o.mine = q.get('mine') === '1';
     const active = [];
-    for (const f of ['project', 'author', 'assigned']) { const v = list(f); if (v) { o[f] = v; active.push(f); } }
+    for (const f of LIST_FILTERS) { const v = list(f); if (v) { o[f] = v; active.push(f); } }
     for (const f of ['approved', 'commented']) if (q.has(f)) { o[f] = q.get(f); active.push(f); }
     if (q.has('sort')) { const [key, dir] = q.get('sort').split(':'); o.sort = { key, dir: dir || 'asc' }; }
     if (q.has('cols')) o.showOpened = q.get('cols').includes('opened');
@@ -311,7 +381,7 @@ class Component extends DCLogic {
   componentWillUnmount() { clearInterval(this.tick); }
   componentDidUpdate() {
     this.applyTheme(); this.syncUrl(); this.syncMenus();
-    const s = this.state, keep = { view: s.view, drafts: s.drafts, mine: s.mine, active: s.active, project: s.project, author: s.author, assigned: s.assigned, approved: s.approved, commented: s.commented, sort: s.sort, showOpened: s.showOpened, settings: s.settings, lastSync: s.lastSync };
+    const s = this.state, keep = { view: s.view, drafts: s.drafts, mine: s.mine, active: s.active, project: s.project, author: s.author, assigned: s.assigned, conn: s.conn, approved: s.approved, commented: s.commented, sort: s.sort, showOpened: s.showOpened, settings: s.settings, lastSync: s.lastSync, syncErrors: s.syncErrors };
     try { localStorage.setItem(STORE, JSON.stringify(keep)); } catch (e) {}
   }
   syncMenus() {
@@ -326,15 +396,21 @@ class Component extends DCLogic {
 
   toggleIn(arr, v) { return arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]; }
   removeFilter(f) { this.setState(s => ({ active: s.active.filter(x => x !== f), [f]: Array.isArray(s[f]) ? [] : null, menu: null })); }
-  toast(msg) { clearTimeout(this.toastT); this.setState({ toast: msg }); this.toastT = setTimeout(() => this.setState({ toast: null }), 3500); }
+  toast(msg) { clearTimeout(this.toastT); this.setState({ toast: msg }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4500); }
+  tokenOk(c) { return !!c.token && FORGES[c.type].tokenRe.test(c.token); }
   refresh() {
     if (this.state.syncing) return;
     this.setState({ syncing: true });
-    setTimeout(() => this.setState({ syncing: false, lastSync: Date.now(), now: Date.now() }), 1600);
+    setTimeout(() => {
+      const errs = {}, names = [];
+      this.state.settings.connections.forEach(c => { if (c.token && !this.tokenOk(c)) { errs[c.id] = '401'; names.push(c.name || host(c.url)); } });
+      this.setState({ syncing: false, lastSync: Date.now(), now: Date.now(), syncErrors: errs });
+      if (names.length) this.toast(`Échec de synchronisation · ${names.map(n => `« ${n} »`).join(', ')} : jeton refusé (401). Les autres connexions sont à jour.`);
+    }, 1600);
   }
   onClick(e) {
     const el = e.target.closest('[data-act]'); if (!el) return;
-    const a = el.dataset, s = this.state;
+    const a = el.dataset, s = this.state, ci = +a.ci;
     switch (a.act) {
       case 'toggle': this.setState({ [a.key]: !s[a.key] }); break;
       case 'menu': this.setState({ menu: s.menu === a.f ? null : a.f }); break;
@@ -343,28 +419,41 @@ class Component extends DCLogic {
         else this.setState({ [a.f]: s[a.f] === a.v ? null : a.v, menu: null });
         break;
       case 'add-filter': this.setState({ active: [...s.active, a.f], menu: a.f }); break;
-      case 'clear': this.setState({ active: [], project: [], author: [], assigned: [], approved: null, commented: null, mine: false, menu: null }); break;
+      case 'clear': this.setState({ active: [], project: [], author: [], assigned: [], conn: [], approved: null, commented: null, mine: false, menu: null }); break;
       case 'sort': this.setState({ sort: { key: a.key, dir: s.sort.key === a.key && s.sort.dir === 'asc' ? 'desc' : 'asc' } }); break;
       case 'col': this.setState({ showOpened: !s.showOpened }); break;
       case 'refresh': this.refresh(); break;
-      case 'goto': this.setState({ view: a.view, draft: JSON.parse(JSON.stringify(s.settings)), test: null, showToken: false, menu: null }); break;
+      case 'goto': this.setState({ view: a.view, draft: JSON.parse(JSON.stringify(s.settings)), test: {}, showToken: {}, openConn: {}, newRepo: {}, newAlias: {}, menu: null }); break;
       case 'cancel': this.setState({ view: 'board', draft: null }); break;
       case 'save': {
-        const d = s.draft, aliases = d.repos.map(r => r.alias);
-        this.setState({ settings: d, view: 'board', draft: null, project: s.project.filter(p => aliases.includes(p)) });
+        const d = s.draft; d.connections = d.connections.filter(c => c.url.trim() || c.token || c.repos.length).map(c => Object.assign({}, c, { name: c.name.trim() || host(c.url) || FORGES[c.type].label }));
+        const aliases = d.connections.flatMap(c => c.repos.map(r => r.alias)), ids = d.connections.map(c => c.id);
+        const conn = s.conn.filter(x => ids.includes(x)), active = ids.length > 1 ? s.active : s.active.filter(f => f !== 'conn');
+        this.setState({ settings: d, view: 'board', draft: null, project: s.project.filter(p => aliases.includes(p)), conn: ids.length > 1 ? conn : [], active });
         this.toast('Paramètres enregistrés'); this.refresh(); break;
       }
-      case 'show-token': this.setState({ showToken: !s.showToken }); break;
-      case 'test':
-        this.setState({ test: 'pending' });
-        setTimeout(() => this.setState({ test: this.state.draft && this.state.draft.token.startsWith('glpat-') ? 'ok' : 'ko' }), 1200);
-        break;
-      case 'add-repo': {
-        const path = s.newRepo.trim().replace(/^https?:\/\/[^/]+\//, '').replace(/\/$/, '');
-        const alias = s.newAlias.trim() || path.split('/').pop();
-        this.setDraft(d => ({ repos: [...d.repos, { path, alias }] })); this.setState({ newRepo: '', newAlias: '' }); break;
+      case 'conn-toggle': { const id = s.draft.connections[ci].id; this.setState({ openConn: Object.assign({}, s.openConn, { [id]: !s.openConn[id] }) }); break; }
+      case 'conn-type': this.setConn(ci, c => { const other = FORGES[c.type === 'gitlab' ? 'github' : 'gitlab'].url; return { type: a.v, url: (!c.url || c.url === FORGES[c.type].url || c.url === other) ? FORGES[a.v].url : c.url }; }); break;
+      case 'conn-add': {
+        const c = { id: 'c-' + Date.now().toString(36), type: 'gitlab', name: '', url: FORGES.gitlab.url, token: '', user: '', repos: [] };
+        this.setDraft(d => ({ connections: [...d.connections, c] })); this.setState({ openConn: Object.assign({}, s.openConn, { [c.id]: true }) }); break;
       }
-      case 'del-repo': this.setDraft(d => ({ repos: d.repos.filter((_, i) => i !== +a.i) })); break;
+      case 'conn-del': this.setDraft(d => ({ connections: d.connections.filter((_, i) => i !== ci) })); break;
+      case 'show-token': { const id = s.draft.connections[ci].id; this.setState({ showToken: Object.assign({}, s.showToken, { [id]: !s.showToken[id] }) }); break; }
+      case 'test': {
+        const c = s.draft.connections[ci], id = c.id;
+        this.setState({ test: Object.assign({}, s.test, { [id]: 'pending' }) });
+        setTimeout(() => { const cc = (this.state.draft || s.draft).connections.find(x => x.id === id) || c; this.setState(st => ({ test: Object.assign({}, st.test, { [id]: this.tokenOk(cc) ? 'ok' : 'ko' }) })); }, 1200);
+        break;
+      }
+      case 'add-repo': {
+        const id = s.draft.connections[ci].id, raw = (s.newRepo[id] || '').trim();
+        const path = raw.replace(/^https?:\/\/[^/]+\//, '').replace(/\/$/, '').replace(/\.git$/, '');
+        const alias = (s.newAlias[id] || '').trim() || path.split('/').pop();
+        this.setConn(ci, c => ({ repos: [...c.repos, { path, alias }] }));
+        this.setState({ newRepo: Object.assign({}, s.newRepo, { [id]: '' }), newAlias: Object.assign({}, s.newAlias, { [id]: '' }) }); break;
+      }
+      case 'del-repo': this.setConn(ci, c => ({ repos: c.repos.filter((_, i) => i !== +a.i) })); break;
       case 'freq': this.setDraft(() => ({ freq: a.v })); break;
       case 'theme': this.setDraft(() => ({ theme: a.v })); break;
       case 'theme-toggle': { const next = this.resolvedTheme() === 'dark' ? 'light' : 'dark'; this.setState(st => ({ settings: Object.assign({}, st.settings, { theme: next }), draft: st.draft ? Object.assign({}, st.draft, { theme: next }) : null })); break; }
@@ -378,31 +467,42 @@ class Component extends DCLogic {
     }
   }
   setDraft(fn) { this.setState(s => ({ draft: Object.assign({}, s.draft, fn(s.draft)) })); }
+  setConn(ci, fn) { this.setDraft(d => ({ connections: d.connections.map((c, i) => i === ci ? Object.assign({}, c, fn(c)) : c) })); }
   onInput(e) {
     const el = e.target.closest('[data-in]'); if (!el) return;
-    const k = el.dataset.in, v = el.value;
-    if (k === 'newRepo' || k === 'newAlias') return this.setState({ [k]: v });
-    if (k === 'alias') return this.setDraft(d => ({ repos: d.repos.map((r, i) => i === +el.dataset.i ? Object.assign({}, r, { alias: v }) : r) }));
+    const k = el.dataset.in, v = el.value, ci = +el.dataset.ci;
+    if (k === 'newRepo' || k === 'newAlias') { const id = this.state.draft.connections[ci].id; return this.setState(s => ({ [k]: Object.assign({}, s[k], { [id]: v }) })); }
+    if (k === 'alias') return this.setConn(ci, c => ({ repos: c.repos.map((r, i) => i === +el.dataset.i ? Object.assign({}, r, { alias: v }) : r) }));
+    if (k.startsWith('c:')) return this.setConn(ci, () => ({ [k.slice(2)]: v }));
     const num = ['easyFiles', 'easyLines', 'hardFiles', 'hardLines', 'readyGreen', 'readyOrange'].includes(k);
     this.setDraft(() => ({ [k]: num ? (v === '' ? '' : +v) : v }));
   }
 
   renderVals() {
-    const s = this.state, st = s.settings, me = st.user;
-    const alias = {}; st.repos.forEach(r => alias[r.path] = r.alias);
+    const s = this.state, st = s.settings, conns = st.connections;
+    const connById = {}; conns.forEach(c => connById[c.id] = c);
+    const alias = {}; conns.forEach(c => c.repos.forEach(r => alias[c.id + '/' + r.path] = r.alias));
+    const connOf = m => conns.find(c => c.type === m.forge && c.repos.some(r => r.path === m.proj));
+    const RING = '0 0 0 2px var(--color-bg),0 0 0 4px var(--color-accent)';
+    const personOf = (m, name) => { if (!name) return null; const u = USERS[name] || {}, c = connById[m.conn]; return Object.assign({}, u, { ring: st.highlightMe !== false && c && name === c.user ? RING : 'none', noImg: !u.img }); };
+    const authorOf = m => personOf(m, m.author);
+    const isMe = m => { const c = connById[m.conn]; return !!c && (m.author === c.user || m.reviewer === c.user || m.assignee === c.user); };
     const T = v => v === null || v === undefined || v === false ? null : true;
     const fmtDays = d => d < 1 ? "aujourd'hui" : `${d} j`;
     const readyColor = d => d <= st.readyGreen ? GREEN : d <= st.readyOrange ? ORANGE : RED;
     const diffOf = m => (m.files < st.easyFiles && m.lines < st.easyLines) ? 0 : (m.files > st.hardFiles || m.lines > st.hardLines) ? 2 : 1;
     const DIFF = [[GREEN, 'Easy'], [ORANGE, 'Medium'], [RED, 'Hard']];
+    const multi = conns.length > 1, iconMode = this.props.forgeIcons ?? 'auto';
+    const showIcons = iconMode === 'always' || (iconMode === 'auto' && multi);
 
-    let base = MRS.filter(m => alias[m.proj]).filter(m => s.drafts || !m.draft);
+    let base = MRS.map(m => { const c = connOf(m); return c ? Object.assign({}, m, { conn: c.id }) : null; }).filter(Boolean).filter(m => s.drafts || !m.draft);
     if (st.ignoreWip) base = base.filter(m => !/^wip\b/i.test(m.title));
-    if (s.mine) base = base.filter(m => m.author === me || m.reviewer === me || m.assignee === me);
+    if (s.mine) base = base.filter(isMe);
     const tests = {
-      project: m => !s.project.length || s.project.includes(alias[m.proj]),
-      author: m => !s.author.length || s.author.includes(m.author),
-      assigned: m => !s.assigned.length || s.assigned.some(v => v === 'nobody' ? (!m.reviewer && !m.assignee) : (m.reviewer === v || m.assignee === v)),
+      project: m => !s.project.length || s.project.includes(alias[m.conn + '/' + m.proj]),
+      author: m => !s.author.length || s.author.includes(PERSON(m.author)),
+      assigned: m => !s.assigned.length || s.assigned.some(v => v === 'nobody' ? (!m.reviewer && !m.assignee) : (PERSON(m.reviewer) === v || PERSON(m.assignee) === v)),
+      conn: m => !s.conn.length || s.conn.includes(m.conn),
       approved: m => !s.approved || (s.approved === 'yes') === m.approved,
       commented: m => !s.commented || (s.commented === 'yes') === (m.comments > 0),
     };
@@ -412,59 +512,84 @@ class Component extends DCLogic {
     const ready = visible.filter(m => !m.draft).sort((a, b) => (s.sort.key === 'diff' ? diffOf(a) - diffOf(b) || a.readyDays - b.readyDays : a.readyDays - b.readyDays || diffOf(a) - diffOf(b)) * dirMul);
     const drafts = visible.filter(m => m.draft).sort((a, b) => a.openedDays - b.openedDays);
     const rows = [...ready, ...drafts].map(m => {
-      const d = diffOf(m), opened = new Date(s.now - m.openedDays * 864e5);
+      const d = diffOf(m), opened = new Date(s.now - m.openedDays * 864e5), c = connById[m.conn];
       return {
-        proj: alias[m.proj], author: USERS[m.author], title: m.title, comments: m.comments, approved: m.approved,
-        reviewer: USERS[m.reviewer] || null, assignee: USERS[m.assignee] || null, noReviewer: !m.reviewer, noAssignee: !m.assignee,
+        proj: alias[m.conn + '/' + m.proj], author: authorOf(m), title: m.title, comments: m.comments, approved: m.approved,
+        tip: `${c.name} · ${m.proj}`, glIcon: showIcons && c.type === 'gitlab', ghIcon: showIcons && c.type === 'github',
+        reviewer: personOf(m, m.reviewer), assignee: personOf(m, m.assignee), noReviewer: !m.reviewer, noAssignee: !m.assignee,
         draft: !!m.draft, notDraft: !m.draft, opacity: m.draft ? 0.72 : 1,
         diffColor: DIFF[d][0], diffLabel: DIFF[d][1], diffMeta: `${m.files} f · ${m.lines} l`,
         readyLabel: m.draft ? '' : fmtDays(m.readyDays), readyColor: m.draft ? '' : readyColor(m.readyDays),
         openedLabel: m.openedDays < 1 ? "aujourd'hui" : `il y a ${m.openedDays} j`, openedDate: opened.toLocaleDateString('fr-FR'),
-        url: `${st.url}/${m.proj}/-/merge_requests/${m.id}`,
+        url: FORGES[c.type].mrUrl(c, m),
       };
     });
 
     const count = (f, pred) => applyAllBut(f).filter(pred).length;
     const optsFor = f => {
-      if (f === 'project') return st.repos.map(r => ({ v: r.alias, label: `${r.alias} · ${r.path}`, count: count(f, m => alias[m.proj] === r.alias), on: T(s.project.includes(r.alias)) }));
-      if (f === 'author') return Object.keys(USERS).map(u => ({ v: u, label: USERS[u].name, count: count(f, m => m.author === u), on: T(s.author.includes(u)) }));
+      if (f === 'project') return conns.flatMap(c => c.repos.map(r => ({ v: r.alias, label: r.alias, sub: (multi ? c.name + ' · ' : '') + r.path, count: count(f, m => alias[m.conn + '/' + m.proj] === r.alias), on: T(s.project.includes(r.alias)) })));
+      if (f === 'author') return PEOPLE.map(u => ({ v: u.p, label: u.name, count: count(f, m => PERSON(m.author) === u.p), on: T(s.author.includes(u.p)) }));
       if (f === 'assigned') return [{ v: 'nobody', label: 'Nobody', count: count(f, m => !m.reviewer && !m.assignee), on: T(s.assigned.includes('nobody')) }]
-        .concat(Object.keys(USERS).map(u => ({ v: u, label: USERS[u].name, count: count(f, m => m.reviewer === u || m.assignee === u), on: T(s.assigned.includes(u)) })));
+        .concat(PEOPLE.map(u => ({ v: u.p, label: u.name, count: count(f, m => PERSON(m.reviewer) === u.p || PERSON(m.assignee) === u.p), on: T(s.assigned.includes(u.p)) })));
+      if (f === 'conn') return conns.map(c => ({ v: c.id, label: c.name, sub: host(c.url), gl: c.type === 'gitlab', gh: c.type === 'github', count: count(f, m => m.conn === c.id), on: T(s.conn.includes(c.id)) }));
       if (f === 'approved') return [{ v: 'yes', label: 'Oui', count: count(f, m => m.approved), on: T(s.approved === 'yes') }, { v: 'no', label: 'Non', count: count(f, m => !m.approved), on: T(s.approved === 'no') }];
       return [{ v: 'yes', label: 'Oui', count: count(f, m => m.comments > 0), on: T(s.commented === 'yes') }, { v: 'no', label: 'Non', count: count(f, m => !m.comments), on: T(s.commented === 'no') }];
     };
+    const person = p => PEOPLE.find(x => x.p === p);
     const valueLabel = f => {
-      const v = s[f]; if (Array.isArray(v)) return v.length ? v.map(x => x === 'nobody' ? 'Nobody' : USERS[x] ? USERS[x].ini : x).join(', ') : 'tous';
+      const v = s[f];
+      if (Array.isArray(v)) return v.length ? v.map(x => x === 'nobody' ? 'Nobody' : f === 'conn' ? (connById[x] || {}).name || x : person(x) ? person(x).ini : x).join(', ') : 'tous';
       return v === 'yes' ? 'Oui' : v === 'no' ? 'Non' : '—';
     };
-    const pills = s.active.map(f => ({ id: 'pill-' + f, f, title: f === 'assigned' ? 'Affecté à (Reviewer OU Affecté)' : FILTERS[f], label: `${FILTERS[f]} : ${valueLabel(f)}`, sel: T(s.menu === f), open: T(s.menu === f), opts: optsFor(f) }));
-    const addOpts = Object.keys(FILTERS).filter(f => !s.active.includes(f)).map(f => ({ f, label: FILTERS[f] }));
+    const pills = s.active.map(f => ({ id: 'pill-' + f, f, title: f === 'assigned' ? 'Affecté à (Reviewer OU Affecté)' : FILTERS[f], label: `${FILTERS[f]} : ${valueLabel(f)}`, sel: T(s.menu === f), opts: optsFor(f) }));
+    const addOpts = Object.keys(FILTERS).filter(f => !s.active.includes(f) && (f !== 'conn' || multi)).map(f => ({ f, label: FILTERS[f] }));
     const projects = new Set(rows.map(r => r.proj));
 
     const ago = Math.round((s.now - s.lastSync) / 60000);
-    const syncLabel = s.syncing ? 'Synchronisation en cours…' : ago < 1 ? "Synchronisé à l'instant" : `Synchronisé il y a ${ago} min`;
+    const syncLabel = s.syncing ? (multi ? `Synchronisation de ${conns.length} connexions…` : 'Synchronisation en cours…') : ago < 1 ? "Synchronisé à l'instant" : `Synchronisé il y a ${ago} min`;
+    const errNames = Object.keys(s.syncErrors).filter(id => connById[id]).map(id => connById[id].name);
+    const syncErrLabel = !s.syncing && errNames.length ? `${errNames.join(', ')} : jeton refusé (401)` : '';
+    const issues = [];
+    conns.forEach(c => {
+      if (!c.token) issues.push({ head: `Connexion « ${c.name} » : aucun jeton configuré.`, tail: 'Ses MRs affichées sont celles du dernier cache.' });
+      else if (s.syncErrors[c.id]) issues.push({ head: `Connexion « ${c.name} » : jeton refusé (401).`, tail: multi ? 'Ses MRs affichées sont celles du dernier cache · les autres connexions sont synchronisées.' : 'Les données affichées sont celles du dernier cache.' });
+    });
+    if (!conns.length) issues.push({ head: 'Aucune connexion configurée.', tail: 'Ajoutez une connexion GitLab ou GitHub pour alimenter le tableau.' });
     const arrow = k => s.sort.key === k ? (s.sort.dir === 'asc' ? '↑' : '↓') : '↕';
 
-    const d = s.draft || st, meU = USERS[d.user];
+    const d = s.draft || st, meU = USERS[(d.connections[0] || {}).user];
+    const idents = d.connections.filter(c => c.user).map(c => ({ user: c.user, conn: c.name || host(c.url), gl: c.type === 'gitlab', gh: c.type === 'github' }));
     const freqOpts = [['1', '1 min'], ['5', '5 min'], ['15', '15 min'], ['30', '30 min'], ['0', 'Manuel']].map(([v, label]) => ({ v, label, on: T(d.freq === v) }));
-    const test = s.test, dark = this.resolvedTheme() === 'dark';
+    const dark = this.resolvedTheme() === 'dark';
     const themeOpts = [['system', 'Système'], ['light', 'Clair'], ['dark', 'Sombre']].map(([v, label]) => ({ v, label, on: T(d.theme === v) }));
+    const connCards = d.connections.map((c, i) => {
+      const F = FORGES[c.type], open = !!s.openConn[c.id], test = s.test[c.id], n = c.repos.length, isNew = !c.url && !c.token && !c.repos.length && !c.name;
+      const status = test === 'ok' ? [F.ok(c), GREEN] : test === 'ko' ? ['Jeton refusé (401)', 'var(--color-accent-700)'] : test === 'pending' ? ['Connexion…', 'var(--color-neutral-600)'] : !c.token ? ['Aucun jeton', 'var(--color-accent-700)'] : s.syncErrors[c.id] ? ['Dernière synchro en échec', 'var(--color-accent-700)'] : ['', ''];
+      return {
+        i, id: c.id, name: c.name, url: c.url, user: c.user, token: c.token, gl: c.type === 'gitlab', gh: c.type === 'github', glOn: T(c.type === 'gitlab'), ghOn: T(c.type === 'github'),
+        title: c.name || (isNew ? 'Nouvelle connexion' : F.label), summary: [host(c.url), c.user].filter(Boolean).join(' · '),
+        repoLabel: `${n} dépôt${n > 1 ? 's' : ''}`, statusLabel: status[0], statusColor: status[1],
+        open, closed: !open, border: open ? 'var(--color-accent)' : 'var(--color-divider)', headBorder: open ? 'var(--color-divider)' : 'transparent',
+        namePh: F.label, urlHint: F.urlHint, tokenHint: F.tokenHint, repoPh: F.repoPh, pathHead: F.pathHead,
+        tokenType: s.showToken[c.id] ? 'text' : 'password', tokenHidden: !s.showToken[c.id], tokenShown: !!s.showToken[c.id],
+        testDisabled: T(test === 'pending' || !c.token), testLabel: test === 'pending' ? 'Connexion…' : test === 'ok' ? F.ok(c) : test === 'ko' ? 'Échec : jeton refusé (401)' : '',
+        testColor: test === 'ok' ? GREEN : test === 'ko' ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
+        repos: c.repos.map((r, j) => Object.assign({ i: j }, r)), newRepo: s.newRepo[c.id] || '', newAlias: s.newAlias[c.id] || '', addRepoDisabled: T(!(s.newRepo[c.id] || '').trim()),
+      };
+    });
     return {
       isDark: dark, isLight: !dark, themeToggleLabel: dark ? 'Passer en thème clair' : 'Passer en thème sombre', themeOpts,
       rootRef: this.rootRef, isBoard: s.view === 'board', isSettings: s.view === 'settings',
-      syncLabel, syncing: s.syncing, refreshDisabled: T(s.syncing), noToken: !st.token,
-      draftsSel: T(s.drafts), mineSel: T(s.mine), pills, addOpts, addOpen: T(s.menu === 'add'), addDisabled: T(!addOpts.length),
-      countLabel: `${rows.length} MR${rows.length > 1 ? 's' : ''} · ${projects.size} projet${projects.size > 1 ? 's' : ''}`,
+      syncLabel, syncErrLabel, syncing: s.syncing, refreshDisabled: T(s.syncing), issues, hasIssues: issues.length > 0, multi,
+      draftsSel: T(s.drafts), mineSel: T(s.mine), pills, addOpts, addDisabled: T(!addOpts.length),
+      countLabel: `${rows.length} MR${rows.length > 1 ? 's' : ''} · ${projects.size} projet${projects.size > 1 ? 's' : ''}` + (multi ? ` · ${conns.length} connexions` : ''),
       rows, noRows: !rows.length, linkTarget: st.newTab ? '_blank' : '_self',
       diffArrow: arrow('diff'), readyArrow: arrow('ready'),
       diffHeadColor: s.sort.key === 'diff' ? 'var(--color-accent)' : 'inherit', readyHeadColor: s.sort.key === 'ready' ? 'var(--color-accent)' : 'inherit',
-      showOpened: s.showOpened, showOpenedChk: T(s.showOpened), colsOpen: T(s.menu === 'cols'),
+      showOpened: s.showOpened, showOpenedChk: T(s.showOpened),
       showUrl: this.props.showUrl ?? true, query: this.query(),
-      d, repos: d.repos.map((r, i) => Object.assign({ i }, r)), newRepo: s.newRepo, newAlias: s.newAlias, addRepoDisabled: T(!s.newRepo.trim()),
-      meIni: meU ? meU.ini : '?', meName: meU ? meU.name : 'Utilisateur inconnu', meStatus: meU ? 'détecté via le jeton' : 'non trouvé',
-      tokenType: s.showToken ? 'text' : 'password', testDisabled: T(test === 'pending' || !d.token),
-      testLabel: test === 'pending' ? 'Connexion…' : test === 'ok' ? '✓ Connecté · expire le 12/03/2027' : test === 'ko' ? 'Échec : jeton refusé (401)' : '',
-      testColor: test === 'ok' ? GREEN : test === 'ko' ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
+      d, conns: connCards, noConns: !connCards.length, idents,
+      meIni: meU ? meU.ini : '?', meName: meU ? meU.name : 'Utilisateur inconnu',
       freqOpts, toast: s.toast,
     };
   }
