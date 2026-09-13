@@ -64,6 +64,8 @@ const COLUMNS_AFTER_STATUS = ['ready'];
 })
 export class MrTableComponent {
   private readonly i18n = inject(TranslateService);
+  /** Langue courante (RG-022-10), exposée pour les appels de formatage du template. */
+  protected readonly language = this.i18n.language;
 
   readonly rows = input.required<MergeRequestView[]>();
   readonly sort = input.required<MergeRequestSort>();

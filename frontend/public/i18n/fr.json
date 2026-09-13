@@ -257,6 +257,9 @@
         "light": "Clair",
         "dark": "Sombre"
       },
+      "language": {
+        "title": "Langue"
+      },
       "openInNewTab": "Ouvrir les MRs dans un nouvel onglet",
       "ignoreWip": "Ignorer les MRs avec le label wip / on-hold",
       "notifyAssigned": "Notification navigateur quand une MR m'est affectée",

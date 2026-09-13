@@ -73,7 +73,7 @@ export class GitlabConnectionSectionComponent {
           ? this.i18n.translate('settings.connection.result.unknownExpiry')
           : result.expiresAt
             ? this.i18n.translate('settings.connection.result.expires', {
-                date: formatShortDate(result.expiresAt),
+                date: formatShortDate(result.expiresAt, this.i18n.language()),
               })
             : this.i18n.translate('settings.connection.result.noExpiry');
         return `${connected} · ${expiry}`;

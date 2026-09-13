@@ -7,9 +7,10 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslateService, TranslationParams } from '../../../../core/i18n/translate.service';
+import { LanguageService } from '../../../../core/language/language.service';
 import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
 import { ThemeService } from '../../../../core/theme/theme.service';
-import { ThemePreference } from '../../../../models/settings.model';
+import { Language, ThemePreference } from '../../../../models/settings.model';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -21,6 +22,16 @@ import { SettingsForm, resetSettingsForm } from '../../settings-form';
 
 /** Options du contrôle « Thème » (RG-018-02), même pattern que la fréquence de RG-013. */
 export const THEME_OPTIONS: readonly ThemePreference[] = ['system', 'light', 'dark'];
+
+/**
+ * Options du contrôle « Langue » (RG-022-02), même pattern que « Thème » —
+ * à la différence près que les libellés sont des endonymes en dur, jamais
+ * traduits (quelle que soit la langue active, RG-022-02).
+ */
+export const LANGUAGE_OPTIONS: readonly { value: Language; label: string }[] = [
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'English' },
+];
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'écran Paramètres. */
 const TOAST_DURATION_MS = 3500;
@@ -52,6 +63,7 @@ export class MiscellaneousSectionComponent {
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly themeService = inject(ThemeService);
+  private readonly languageService = inject(LanguageService);
   protected readonly notifications = inject(BrowserNotificationService);
 
   readonly form = input.required<SettingsForm>();
@@ -61,10 +73,16 @@ export class MiscellaneousSectionComponent {
   protected readonly permissionBlocked = signal(false);
 
   protected readonly themeOptions = THEME_OPTIONS;
+  protected readonly languageOptions = LANGUAGE_OPTIONS;
 
   /** Aperçu immédiat du thème choisi, sans attendre « Enregistrer » (RG-018-03). */
   protected onThemeChange(theme: ThemePreference): void {
     this.themeService.setPreview(theme);
+  }
+
+  /** Aperçu immédiat de la langue choisie, sans attendre « Enregistrer » (RG-022-03). */
+  protected onLanguageChange(language: Language): void {
+    this.languageService.setPreview(language);
   }
 
   /**

@@ -55,6 +55,7 @@ configurée dans les paramètres.
 | **Moi**              | Identité GitLab de l'utilisateur courant (username, email) utilisée par « Mes MRs »                     |
 | **Jeton**            | Personal Access Token GitLab (scope `read_api`) utilisé par le backend                                  |
 | **Thème**            | Préférence d'affichage `system` / `light` / `dark` (US-018)                                             |
+| **Langue**           | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json` (US-022) |
 | **Anneau « moi »**   | Liseré accent autour de mon avatar (auteur, reviewer, affecté) dans le tableau, désactivable via `highlightMe` (US-023) |
 
 ---
@@ -83,7 +84,7 @@ contenu à droite), sections :
 - `03 · Repos à scanner` — tableau chemin / alias / supprimer, ligne d'ajout
 - `04 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
 - `05 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
-- `06 · Divers` — thème (système / clair / sombre, US-018), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `06 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -172,17 +173,17 @@ une fois ses dépendances réalisées.
 | US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ☐ |
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
 | US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
-| US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ☐ |
+| US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ✅ |
 | US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
-**v2** : US-017, US-018 et US-023 (livrées) puis, **propositions à valider**, US-019 → US-022. Ordre conseillé :
-US-022 → US-019 → US-020 → US-021. US-022 est indépendante de l'épique multi-forges et peut être livrée avant elle
-(pour que les nouveaux libellés de l'épique naissent directement dans les deux langues). US-017 avant US-020 pour
-que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
+**v2** : US-017, US-018, US-022 et US-023 (livrées) puis, **proposition à valider**, US-019 → US-021 (épique
+multi-forges). US-022 étant livrée avant l'épique, les nouveaux libellés de US-019 → US-021 devront être traduits
+en anglais dès leur ajout à `en.json`. US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise
+les codes de RG-017-04.
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -212,30 +213,27 @@ que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées (à l'exception de **US-017**, **US-018** et **US-023**, livrées — leurs
-termes « Statut », « Thème » et « Anneau « moi » » ont rejoint le glossaire, §3). Les termes ci-dessous rejoindront
-le glossaire à la livraison des US concernées.
+Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-022** et **US-023**,
+livrées — leurs termes « Statut », « Thème », « Langue » et « Anneau « moi » » ont rejoint le glossaire, §3. Les
+termes ci-dessous rejoindront le glossaire à la livraison des US concernées.
 
 | Terme          | Définition                                                                                                  | US     |
 |----------------|-------------------------------------------------------------------------------------------------------------|--------|
 | **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
 | **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
-| **Langue**     | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json`         | US-022 |
-
-Spécification hors épique multi-forges restant à valider : **US-022** (`docs/features/US-022-langues/specs.md`).
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
 « Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
 « Thème »), §4.1 (bascule toolbar), §4.2 (option Thème en 06), §9 (retrait de « Thème sombre »), §7 roadmap (✅) ;
-US-023 — §3 (glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de
-page conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par RG-023-06), §6 (`isMe` sur
+US-022 — §3 (glossaire, terme « Langue »), §4.2 (option « Langue » en 06, sous « Thème »), §6 (attribut `language`
+de `Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, réactivité), §7 roadmap (✅) ; US-023 — §3
+(glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de page
+conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par RG-023-06), §6 (`isMe` sur
 `author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap (✅).
 
 Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
 RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
-US-022 — §3 (terme « Langue »), §4.2 (option « Langue » en 06, sous « Thème »), §6 (attribut `language` de
-`Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, script de parité).
 
 ---
 

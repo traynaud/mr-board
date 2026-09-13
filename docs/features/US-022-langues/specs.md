@@ -1,6 +1,7 @@
 # US-022 — Support d'autres langues (anglais)
 
-Version : 1.0 — 2026-09-13
+Version : 1.1 — 2026-09-14 (relecture PO : compte de clés i18n mis à jour après livraison de l'US-023, ajout du
+vocabulaire anglais des 3 clés introduites par cette US)
 Statut : proposition PO, à valider avant `/project:feature US-022`.
 
 ## 1. Reformulation
@@ -64,13 +65,15 @@ par langue) pour qu'ajouter une troisième langue se résume ensuite à un fichi
   valeur de `fr.json` est utilisée (le dictionnaire `fr` reste chargé en mémoire comme référence) ; si elle est
   absente des deux, la clé elle-même est renvoyée et un avertissement est logué en dev (règle existante,
   `docs/tech/i18n.md` §4).
-- **RG-022-08** : **Périmètre de la traduction anglaise** : la totalité des clés existantes (214 au 2026-09-13 —
-  groupes `app`, `common`, `board.*`, `settings.*`, `errors.*`), y compris les `aria-label`, les infobulles, les
-  placeholders, les textes de dialogs et de toasts, les messages d'erreur résolus depuis les codes backend
-  (`errors.gitlab.*`, `errors.settings.*`, `errors.projects.*`, `identity.missing`…), le titre et le corps des
-  notifications navigateur (RG-016-01), le libellé du badge d'onglet (RG-016-04, inchangé : « (N) MR Board »).
-  Aucun texte visible ne doit rester en français quand `en` est actif : la QA parcourt chaque écran / état listé en
-  RG-018-09 (même grille) dans les deux langues.
+- **RG-022-08** : **Périmètre de la traduction anglaise** : la totalité des clés existantes (217 au 2026-09-14, après
+  livraison de l'US-023 — groupes `app`, `common`, `board.*`, `settings.*`, `errors.*`), y compris les `aria-label`,
+  les infobulles, les placeholders, les textes de dialogs et de toasts, les messages d'erreur résolus depuis les
+  codes backend (`errors.gitlab.*`, `errors.settings.*`, `errors.projects.*`, `identity.missing`…), le titre et le
+  corps des notifications navigateur (RG-016-01), le libellé du badge d'onglet (RG-016-04, inchangé :
+  « (N) MR Board »), et les trois clés ajoutées par l'US-023 (`settings.me.highlightMe`,
+  `board.mergeRequests.meSuffix`, `board.footer.legendHighlighted`, voir RG-022-09). Aucun texte visible ne doit
+  rester en français quand `en` est actif : la QA parcourt chaque écran / état listé en RG-018-09 (même grille) dans
+  les deux langues.
 - **RG-022-09** : **Vocabulaire anglais de référence** (à respecter dans `en.json`, cohérent avec le glossaire du
   README §3) :
 
@@ -115,6 +118,9 @@ par langue) pour qu'ajouter une troisième langue se résume ensuite à un fichi
   | Fichier de configuration invalide          | Invalid configuration file                   |
   | Notifications bloquées par le navigateur   | Notifications blocked by the browser         |
   | Configurez votre identité dans les paramètres | Set up your identity in the settings      |
+  | Surligner mes MRs dans le tableau (auteur, reviewer, affecté) (US-023) | Highlight my MRs in the table (author, reviewer, assignee) |
+  | (moi) (US-023, suffixe de tooltip)         | (me)                                          |
+  | anneau rouge = c'est moi (auteur, reviewer ou affecté) (US-023, segment du pied de page) | red ring = that's me (author, reviewer or assignee) |
 
   Les termes produit déjà anglais en français (« MR », « Draft », « Ready », « Easy/Medium/Hard », « Approved »,
   « Nobody », « GitLab », « MR Board ») restent identiques. Les autres clés sont traduites dans le même registre

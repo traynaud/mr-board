@@ -247,9 +247,11 @@
       mat-cell
       *matCellDef="let row"
       class="opened-cell"
-      [matTooltip]="'board.mergeRequests.opened.tooltip' | translate: { date: formatDateTime(row.createdAt) }"
+      [matTooltip]="
+        'board.mergeRequests.opened.tooltip' | translate: { date: formatDateTime(row.createdAt, language()) }
+      "
     >
-      {{ formatShortDate(row.createdAt) }}
+      {{ formatShortDate(row.createdAt, language()) }}
     </td>
   </ng-container>
 

@@ -11,7 +11,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import type { ThemePreference } from '../entities/settings.entity';
+import type { Language, ThemePreference } from '../entities/settings.entity';
 import { GitlabCredentialsDto } from './gitlab-credentials.dto';
 
 /** Maximum length accepted for a GitLab username (RG-002-02). */
@@ -22,6 +22,9 @@ export const REFRESH_INTERVAL_OPTIONS = [0, 1, 5, 15, 30] as const;
 
 /** RG-018-01 : the only accepted values for the theme preference. */
 export const THEME_OPTIONS = ['system', 'light', 'dark'] as const;
+
+/** RG-022-01 : the only accepted values for the UI language preference. */
+export const LANGUAGE_OPTIONS = ['fr', 'en'] as const;
 
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
@@ -127,4 +130,9 @@ export class UpdateSettingsDto extends GitlabCredentialsDto {
   @IsOptional()
   @IsBoolean()
   highlightMe?: boolean;
+
+  /** UI language preference (RG-022-01). */
+  @IsOptional()
+  @IsIn(LANGUAGE_OPTIONS)
+  language?: Language;
 }

@@ -61,6 +61,20 @@ describe('ReadyDelayComponent', () => {
     expect(el.querySelector('.ready')).not.toBeNull();
   });
 
+  it('should_show_an_iso_datetime_tooltip_when_the_language_is_english', async () => {
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideI18nTesting('en')],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe(
+      t('board.mergeRequests.ready.tooltip', { date: formatDateTime('2026-09-05T14:30:00.000Z', 'en') }, 'en'),
+    );
+  });
+
   it('should_show_today_when_ready_days_is_zero', async () => {
     const { fixture, el } = await setup();
     fixture.componentInstance.readyDays.set(0);

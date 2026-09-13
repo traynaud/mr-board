@@ -9,6 +9,7 @@ import { of } from 'rxjs';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.interceptor';
+import { LanguageService } from '../../../../core/language/language.service';
 import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
 import { stubMatchMedia } from '../../../../core/theme/testing';
 import { ThemeService } from '../../../../core/theme/theme.service';
@@ -46,6 +47,7 @@ const FULL_SETTINGS = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  language: 'fr',
 };
 
 describe('MiscellaneousSectionComponent', () => {
@@ -122,7 +124,7 @@ describe('MiscellaneousSectionComponent', () => {
       el.querySelectorAll('mat-radio-button')[index].querySelector<HTMLInputElement>('input')!;
 
     it('should_render_the_three_theme_options', () => {
-      const labels = Array.from(el.querySelectorAll('mat-radio-button')).map((node) =>
+      const labels = Array.from(el.querySelectorAll('.theme-field mat-radio-button')).map((node) =>
         node.textContent?.trim(),
       );
 
@@ -143,6 +145,33 @@ describe('MiscellaneousSectionComponent', () => {
       expect(host.form.controls.theme.dirty).toBe(true);
       expect(themeService.preference()).toBe('dark');
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+  });
+
+  describe('language radio group', () => {
+    const radioInput = (index: number) =>
+      el.querySelectorAll('.language-field mat-radio-button')[index].querySelector<HTMLInputElement>(
+        'input',
+      )!;
+
+    it('should_render_the_two_language_options_as_untranslated_endonyms', () => {
+      const labels = Array.from(el.querySelectorAll('.language-field mat-radio-button')).map((node) =>
+        node.textContent?.trim(),
+      );
+
+      expect(labels).toEqual(['Français', 'English']);
+    });
+
+    it('should_update_the_form_and_preview_the_language_immediately', async () => {
+      const languageService = TestBed.inject(LanguageService);
+
+      radioInput(1).click();
+      await settle();
+      http.expectOne('i18n/en.json').flush({});
+
+      expect(host.form.controls.language.value).toBe('en');
+      expect(host.form.controls.language.dirty).toBe(true);
+      expect(languageService.preference()).toBe('en');
     });
   });
 

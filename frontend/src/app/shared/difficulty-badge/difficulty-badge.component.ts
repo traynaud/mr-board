@@ -44,11 +44,12 @@ export class DifficultyBadgeComponent {
     if (this.unavailable()) {
       return this.i18n.translate('board.mergeRequests.difficulty.unavailableTooltip');
     }
+    const language = this.i18n.language();
     return this.i18n.translate('board.mergeRequests.difficulty.tooltip', {
       files: this.changedFiles() ?? 0,
-      lines: formatThousands(this.changedLines() ?? 0),
-      additions: formatThousands(this.additions() ?? 0),
-      deletions: formatThousands(this.deletions() ?? 0),
+      lines: formatThousands(this.changedLines() ?? 0, language),
+      additions: formatThousands(this.additions() ?? 0, language),
+      deletions: formatThousands(this.deletions() ?? 0, language),
     });
   });
 }

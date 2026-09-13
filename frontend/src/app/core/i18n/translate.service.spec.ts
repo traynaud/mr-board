@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { computed } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { t } from './testing';
 import {
@@ -58,6 +59,66 @@ describe('TranslateService', () => {
     service.use({ msg: 'Il y a {{ days }} j et {{count}} MR' });
 
     expect(service.translate('msg', { days: 3, count: 7 })).toBe('Il y a 3 j et 7 MR');
+  });
+
+  it('should_default_the_language_signal_to_fr', () => {
+    expect(service.language()).toBe('fr');
+  });
+
+  it('should_fetch_both_dictionaries_when_loading_a_non_french_language', async () => {
+    const pending = service.load('en');
+    http.expectOne('i18n/fr.json').flush({ a: { b: 'Bonjour' } });
+    http.expectOne('i18n/en.json').flush({ a: { b: 'Hello' } });
+    await pending;
+
+    expect(service.language()).toBe('en');
+    expect(service.translate('a.b')).toBe('Hello');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('should_fall_back_to_french_when_a_key_is_missing_from_the_active_language', async () => {
+    const pending = service.load('en');
+    http.expectOne('i18n/fr.json').flush({ a: { b: 'Bonjour', c: 'Seulement en français' } });
+    http.expectOne('i18n/en.json').flush({ a: { b: 'Hello' } });
+    await pending;
+
+    expect(service.translate('a.c')).toBe('Seulement en français');
+  });
+
+  it('should_not_refetch_a_dictionary_already_in_cache', async () => {
+    const first = service.load('en');
+    http.expectOne('i18n/fr.json').flush({});
+    http.expectOne('i18n/en.json').flush({});
+    await first;
+
+    // Repasser en fr puis en en ne doit déclencher aucune nouvelle requête :
+    // http.verify() (afterEach) échouerait sinon sur une requête non attendue.
+    await service.load('fr');
+    await service.load('en');
+  });
+
+  it('use_should_set_the_language_signal_and_keep_french_as_fallback', () => {
+    service.use({ a: 'Bonjour' }, 'fr');
+    service.use({ b: 'Hello' }, 'en');
+
+    expect(service.language()).toBe('en');
+    expect(service.translate('b')).toBe('Hello');
+    expect(service.translate('a')).toBe('Bonjour');
+  });
+
+  it('should_make_any_computed_calling_translate_directly_reactive_to_a_language_change', () => {
+    // Régression (QA US-022, BUG-001) : un `computed()` de composant qui
+    // appelle `translate()` directement (hors du pipe `| translate`) doit
+    // lui aussi se recalculer quand la langue change — sans avoir à lire
+    // lui-même le signal `language`. Avant le correctif, seul le pipe lisait
+    // ce signal ; ce test aurait échoué (valeur figée sur 'Bonjour').
+    service.use({ greeting: 'Bonjour' }, 'fr');
+    const greeting = computed(() => service.translate('greeting'));
+    expect(greeting()).toBe('Bonjour');
+
+    service.use({ greeting: 'Hello' }, 'en');
+
+    expect(greeting()).toBe('Hello');
   });
 });
 

@@ -1,4 +1,4 @@
-import { ThemePreference } from '../entities/settings.entity';
+import { Language, ThemePreference } from '../entities/settings.entity';
 
 /** Response of `GET|PUT /api/v1/settings`. Never carries the token itself. */
 export class SettingsResponseDto {
@@ -37,4 +37,6 @@ export class SettingsResponseDto {
   theme!: ThemePreference;
   /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
   highlightMe!: boolean;
+  /** UI language preference (RG-022-01). */
+  language!: Language;
 }

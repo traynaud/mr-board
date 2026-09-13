@@ -75,6 +75,7 @@ describe('Settings (e2e)', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
   });
 
@@ -140,6 +141,7 @@ describe('Settings (e2e)', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -178,6 +180,7 @@ describe('Settings (e2e)', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
   });
 
@@ -559,6 +562,36 @@ describe('Settings (e2e)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ highlightMe: false }));
+  });
+
+  it('PUT /settings should_store_the_language', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', language: 'en' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ language: 'en' }));
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_keep_the_language_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ language: 'en' }));
+  });
+
+  it('PUT /settings should_reject_an_invalid_language', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', language: 'de' });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([expect.stringContaining('language')]);
   });
 
   it('PUT /settings should_reject_a_non_array_ignored_labels', async () => {

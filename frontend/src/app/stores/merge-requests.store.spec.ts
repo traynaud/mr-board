@@ -72,6 +72,7 @@ const SETTINGS: Settings = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  language: 'fr',
 };
 
 describe('MergeRequestsStore', () => {

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
+import { TranslateService } from '../../../../core/i18n/translate.service';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
 import { TestConnectionState } from '../../../../stores/settings.store';
 import { SettingsForm, buildSettingsForm } from '../../settings-form';
@@ -53,6 +54,22 @@ describe('GitlabConnectionSectionComponent', () => {
       t('settings.connection.tokenNone'),
     );
     expect(tokenInput().placeholder).toBe('');
+  });
+
+  it('should_update_the_no_token_hint_when_the_language_changes_while_mounted', async () => {
+    // Régression (QA US-022, BUG-001) : ce texte est préparé par un
+    // `computed()` (`tokenHintLabel`) qui appelle `TranslateService.translate()`
+    // directement, hors du pipe `| translate`. Reproduit le bug observé
+    // manuellement : « Aucun jeton » restait affiché après bascule vers
+    // l'anglais tant que ce composant restait monté.
+    expect(el.querySelector('.token-hint')?.textContent?.trim()).toBe(
+      t('settings.connection.tokenNone'),
+    );
+
+    TestBed.inject(TranslateService).use({ settings: { connection: { tokenNone: 'No token' } } }, 'en');
+    fixture.detectChanges();
+
+    expect(el.querySelector('.token-hint')?.textContent?.trim()).toBe('No token');
   });
 
   it('should_show_configured_hint_and_keep_placeholder', async () => {
@@ -119,6 +136,32 @@ describe('GitlabConnectionSectionComponent', () => {
     expect(result.querySelector('mat-icon')).not.toBeNull();
     expect(result.textContent?.replace(/\s+/g, ' ').trim()).toBe(
       `${t('settings.connection.result.connected', { name: 'Marie Dupont', username: 'mdupont' })} · ${t('settings.connection.result.expires', { date: '12/03/2027' })}`,
+    );
+  });
+
+  it('should_render_the_expiry_date_in_iso_format_when_the_language_is_english', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideI18nTesting('en'), provideIcons()],
+    }).compileComponents();
+    const enFixture = TestBed.createComponent(HostComponent);
+    enFixture.componentInstance.test.set({
+      status: 'success',
+      errorKey: null,
+      result: {
+        username: 'mdupont',
+        name: 'Marie Dupont',
+        avatarUrl: null,
+        expiresAt: '2027-03-12',
+        expirationKnown: true,
+      },
+    });
+    await enFixture.whenStable();
+
+    const result = (enFixture.nativeElement as HTMLElement).querySelector('.test-result')!;
+    expect(result.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      `${t('settings.connection.result.connected', { name: 'Marie Dupont', username: 'mdupont' }, 'en')} · ${t('settings.connection.result.expires', { date: '2027-03-12' }, 'en')}`,
     );
   });
 

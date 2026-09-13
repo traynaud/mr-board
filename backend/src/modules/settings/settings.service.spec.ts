@@ -35,6 +35,7 @@ describe('SettingsService', () => {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
+    language: 'fr',
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -96,6 +97,7 @@ describe('SettingsService', () => {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
       });
     });
 
@@ -170,6 +172,7 @@ describe('SettingsService', () => {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
       });
     });
 
@@ -495,6 +498,26 @@ describe('SettingsService', () => {
       const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
 
       expect(result).toEqual(expect.objectContaining({ highlightMe: false }));
+    });
+
+    it('should_set_the_language_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        language: 'en',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ language: 'en' }),
+      );
+      expect(result).toEqual(expect.objectContaining({ language: 'en' }));
+    });
+
+    it('should_keep_the_language_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({ ...row(), language: 'en' });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(expect.objectContaining({ language: 'en' }));
     });
   });
 
@@ -823,6 +846,7 @@ describe('SettingsService', () => {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
       });
       expect(result).not.toHaveProperty('gitlabTokenEncrypted');
       expect(JSON.stringify(result)).not.toContain('should-not-appear');

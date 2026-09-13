@@ -69,6 +69,18 @@ describe('DifficultyBadgeComponent', () => {
     expect(el.querySelector('.square')?.classList.contains(expectedClass)).toBe(true);
   });
 
+  it('should_use_a_comma_thousands_separator_in_the_tooltip_when_the_language_is_english', async () => {
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideI18nTesting('en')],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe('34 files changed · 1,240 lines (+900 / −340)');
+  });
+
   it('should_show_a_question_mark_and_unavailable_tooltip_when_stats_are_null', async () => {
     const { fixture, el } = await setup();
     fixture.componentInstance.changedFiles.set(null);

@@ -1,6 +1,9 @@
 /** Préférence de thème (RG-018-01) : `system` suit l'OS, `light`/`dark` la forcent. */
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** Langue de l'interface (RG-022-01). */
+export type Language = 'fr' | 'en';
+
 /** Miroir de `SettingsResponseDto` (backend). Ne contient jamais le jeton. */
 export interface Settings {
   gitlabUrl: string;
@@ -36,6 +39,8 @@ export interface Settings {
   theme: ThemePreference;
   /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01). */
   highlightMe: boolean;
+  /** Langue de l'interface (RG-022-01). */
+  language: Language;
 }
 
 /**
@@ -63,6 +68,7 @@ export interface UpdateSettingsRequest {
   tabBadge?: boolean;
   theme?: ThemePreference;
   highlightMe?: boolean;
+  language?: Language;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

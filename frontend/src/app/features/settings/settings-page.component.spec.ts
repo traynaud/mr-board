@@ -6,6 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
+import { LanguageService } from '../../core/language/language.service';
 import { stubMatchMedia } from '../../core/theme/testing';
 import { ThemeService } from '../../core/theme/theme.service';
 import { Project } from '../../models/project.model';
@@ -37,6 +38,7 @@ describe('SettingsPageComponent', () => {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
+      language: 'fr',
   };
   const projectApi: Project = {
     id: 1,
@@ -195,6 +197,7 @@ describe('SettingsPageComponent', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -217,6 +220,7 @@ describe('SettingsPageComponent', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
     await settle();
     await flushSync();
@@ -262,6 +266,7 @@ describe('SettingsPageComponent', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
   });
 
@@ -543,5 +548,26 @@ describe('SettingsPageComponent', () => {
 
     expect(themeService.preference()).toBe('system');
     expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+  });
+
+  it('should_preview_the_language_immediately_and_restore_it_when_the_page_is_left', async () => {
+    await loadSettings();
+    const languageService = TestBed.inject(LanguageService);
+    TestBed.flushEffects();
+
+    const englishRadio = Array.from(
+      el.querySelectorAll<HTMLElement>('app-miscellaneous-section mat-radio-button'),
+    )[4].querySelector<HTMLInputElement>('input')!;
+    englishRadio.click();
+    await settle();
+    http.expectOne('i18n/en.json').flush({});
+
+    expect(languageService.preference()).toBe('en');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    fixture.destroy();
+    TestBed.flushEffects();
+
+    expect(languageService.preference()).toBe('fr');
   });
 });

@@ -322,6 +322,21 @@ describe('MrTableComponent', () => {
     expect(el.querySelector('.opened-cell')?.textContent?.trim()).toBe('01/09/2026');
   });
 
+  it('should_show_the_created_date_in_iso_format_when_the_language_is_english', async () => {
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideI18nTesting('en'), provideIcons()],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.showOpened.set(true);
+    fixture.componentInstance.rows.set([mergeRequest({ createdAt: '2026-09-01T10:00:00.000Z' })]);
+    await fixture.whenStable();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.opened-cell')?.textContent?.trim()).toBe('2026-09-01');
+  });
+
   describe('columns menu', () => {
     function menuOptions(): HTMLElement[] {
       return Array.from(document.querySelectorAll<HTMLElement>('.menu-option'));

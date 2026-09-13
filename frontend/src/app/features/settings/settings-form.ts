@@ -7,7 +7,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { Settings, ThemePreference, UpdateSettingsRequest } from '../../models/settings.model';
+import { Language, Settings, ThemePreference, UpdateSettingsRequest } from '../../models/settings.model';
 import { RepoAliasForm } from './repos-form';
 
 /** Longueur minimale d'un jeton saisi (RG-001-02, identique au backend). */
@@ -61,6 +61,8 @@ export interface SettingsFormControls {
   theme: FormControl<ThemePreference>;
   /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01/02). */
   highlightMe: FormControl<boolean>;
+  /** Langue de l'interface (RG-022-01/02). */
+  language: FormControl<Language>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -192,6 +194,7 @@ export function buildSettingsForm(): SettingsForm {
       tabBadge: new FormControl(false, { nonNullable: true }),
       theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
       highlightMe: new FormControl(true, { nonNullable: true }),
+      language: new FormControl<Language>('fr', { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
       // touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -227,6 +230,7 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.tabBadge.reset(settings.tabBadge);
   form.controls.theme.reset(settings.theme);
   form.controls.highlightMe.reset(settings.highlightMe);
+  form.controls.language.reset(settings.language);
 }
 
 /**
@@ -256,6 +260,7 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.tabBadge.setValue(false);
   controls.theme.setValue('system');
   controls.highlightMe.setValue(true);
+  controls.language.setValue('fr');
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'gitlabToken' && name !== 'repos') {
       controls[name].markAsDirty();
@@ -291,6 +296,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     tabBadge,
     theme,
     highlightMe,
+    language,
   } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
@@ -312,5 +318,6 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     tabBadge,
     theme,
     highlightMe,
+    language,
   };
 }

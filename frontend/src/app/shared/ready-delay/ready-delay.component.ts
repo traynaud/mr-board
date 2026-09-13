@@ -46,7 +46,7 @@ export class ReadyDelayComponent {
       return '';
     }
     return this.i18n.translate('board.mergeRequests.ready.tooltip', {
-      date: formatDateTime(readyAt),
+      date: formatDateTime(readyAt, this.i18n.language()),
     });
   });
 }

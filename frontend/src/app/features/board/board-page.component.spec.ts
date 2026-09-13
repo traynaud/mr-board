@@ -42,6 +42,7 @@ const NO_TOKEN_SETTINGS: Settings = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  language: 'fr',
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,

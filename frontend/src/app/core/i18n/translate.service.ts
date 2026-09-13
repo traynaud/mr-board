@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { Language } from '../../models/settings.model';
 
 /** Dictionnaire de traduction : arbre de chaînes indexé par clé. */
 export interface TranslationDictionary {
@@ -10,7 +11,8 @@ export interface TranslationDictionary {
 /** Paramètres interpolés dans une traduction (`{{name}}`). */
 export type TranslationParams = Record<string, string | number>;
 
-const DICTIONARY_URL = 'i18n/fr.json';
+/** Langue toujours chargée en mémoire comme repli (RG-022-07). */
+const FALLBACK_LANGUAGE: Language = 'fr';
 
 /**
  * Recherche une clé pointée (`board.toolbar.refresh`) dans le dictionnaire.
@@ -42,28 +44,50 @@ export function interpolateTranslation(template: string, params: TranslationPara
 
 /**
  * Service de traduction sans dépendance externe (voir docs/tech/i18n.md).
- * Le dictionnaire est chargé une fois au démarrage via `provideI18n()`.
+ * Gère plusieurs dictionnaires (`fr`, `en`, RG-022-06) : le dictionnaire
+ * `fr` est toujours conservé en mémoire comme repli (RG-022-07), même
+ * quand la langue active est `en`. Le dictionnaire initial est chargé une
+ * fois au démarrage via `provideI18n()` ; `load()` peut être rappelée en
+ * cours de session pour changer de langue (RG-022-03/04).
  */
 @Injectable({ providedIn: 'root' })
 export class TranslateService {
   private readonly http = inject(HttpClient);
+  private readonly dictionaries = new Map<Language, TranslationDictionary>();
   private dictionary: TranslationDictionary = {};
+  private fallback: TranslationDictionary = {};
   private readonly missing = new Set<string>();
 
-  /** Vrai une fois le dictionnaire chargé. */
+  /** Vrai une fois le dictionnaire de la langue active chargé. */
   readonly loaded = signal(false);
 
   /**
-   * Charge le dictionnaire depuis `public/i18n/fr.json`.
-   * En cas d'échec, l'application démarre avec un dictionnaire vide
-   * (les clés sont alors affichées telles quelles).
+   * Langue actuellement active (RG-022-12). Lue par `translate()` elle-même
+   * (voir plus bas) : tout appelant — via le pipe `| translate` ou
+   * directement dans un `computed()` de composant — dépend donc
+   * automatiquement de ce signal, sans avoir à le lire lui-même.
    */
-  async load(): Promise<void> {
-    try {
-      this.dictionary = await firstValueFrom(this.http.get<TranslationDictionary>(DICTIONARY_URL));
-    } catch {
-      console.warn('[i18n] dictionnaire introuvable, clés affichées brutes');
-      this.dictionary = {};
+  readonly language = signal<Language>(FALLBACK_LANGUAGE);
+
+  /**
+   * Charge (si nécessaire) et active le dictionnaire d'une langue depuis
+   * `public/i18n/<language>.json`. Le dictionnaire `fr` est systématiquement
+   * chargé en plus, comme repli (RG-022-07) — sans requête supplémentaire si
+   * `language` vaut déjà `'fr'`. Idempotent : une langue déjà en cache n'est
+   * jamais re-fetchée, ce qui permet d'appeler cette méthode aussi bien au
+   * démarrage qu'à chaque changement de langue en cours de session.
+   * @param language langue à activer (défaut `fr`).
+   */
+  async load(language: Language = FALLBACK_LANGUAGE): Promise<void> {
+    await Promise.all([
+      this.ensureDictionary(FALLBACK_LANGUAGE),
+      language === FALLBACK_LANGUAGE ? Promise.resolve() : this.ensureDictionary(language),
+    ]);
+    this.dictionary = this.dictionaries.get(language) ?? {};
+    this.fallback = this.dictionaries.get(FALLBACK_LANGUAGE) ?? {};
+    this.language.set(language);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
     }
     this.loaded.set(true);
   }
@@ -71,20 +95,36 @@ export class TranslateService {
   /**
    * Injecte directement un dictionnaire (tests, préchargement).
    * @param dictionary dictionnaire complet.
+   * @param language langue de ce dictionnaire (défaut `fr`) ; utilisé aussi
+   * comme repli quand `language` vaut `fr`.
    */
-  use(dictionary: TranslationDictionary): void {
+  use(dictionary: TranslationDictionary, language: Language = FALLBACK_LANGUAGE): void {
+    this.dictionaries.set(language, dictionary);
     this.dictionary = dictionary;
+    this.fallback = language === FALLBACK_LANGUAGE ? dictionary : (this.dictionaries.get(FALLBACK_LANGUAGE) ?? {});
+    this.language.set(language);
     this.loaded.set(true);
   }
 
   /**
-   * Traduit une clé avec interpolation.
-   * Une clé absente renvoie la clé elle-même et logue un avertissement (une seule fois).
+   * Traduit une clé avec interpolation. Une clé absente du dictionnaire actif
+   * retombe sur le dictionnaire français (RG-022-07) ; absente des deux, elle
+   * est renvoyée telle quelle et logue un avertissement (une seule fois).
+   *
+   * Lit le signal `language` (RG-022-12), sans utiliser sa valeur : c'est ce
+   * qui établit une dépendance réactive sur l'appelant (pipe impur ou
+   * `computed()` de composant), pour qu'Angular le recontrôle quand la
+   * langue change ailleurs dans l'application — y compris un composant déjà
+   * stable, sans aucun `@Input` ni évènement propre à lui. Sans cette
+   * lecture ici, chaque appelant devrait penser à la faire lui-même
+   * (oubli constaté : `avatar.component.ts`, `difficulty-badge.component.ts`,
+   * `filter-pill.component.ts`… avant ce correctif).
    * @param key clé de traduction.
    * @param params valeurs interpolées.
    */
   translate(key: string, params?: TranslationParams): string {
-    const value = lookupTranslation(this.dictionary, key);
+    this.language();
+    const value = lookupTranslation(this.dictionary, key) ?? lookupTranslation(this.fallback, key);
     if (value === undefined) {
       if (!this.missing.has(key)) {
         this.missing.add(key);
@@ -93,5 +133,21 @@ export class TranslateService {
       return key;
     }
     return params ? interpolateTranslation(value, params) : value;
+  }
+
+  /** Fetch mémoïsé de `i18n/<language>.json` ; un échec mémoïse un dictionnaire vide. */
+  private async ensureDictionary(language: Language): Promise<void> {
+    if (this.dictionaries.has(language)) {
+      return;
+    }
+    try {
+      const dictionary = await firstValueFrom(
+        this.http.get<TranslationDictionary>(`i18n/${language}.json`),
+      );
+      this.dictionaries.set(language, dictionary);
+    } catch {
+      console.warn(`[i18n] dictionnaire ${language} introuvable, clés affichées brutes`);
+      this.dictionaries.set(language, {});
+    }
   }
 }

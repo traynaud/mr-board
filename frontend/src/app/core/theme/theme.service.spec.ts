@@ -28,6 +28,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
+    language: 'fr',
     ...overrides,
   };
 }

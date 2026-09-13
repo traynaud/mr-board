@@ -14,10 +14,15 @@
   color: var(--color-neutral-700);
 }
 
-.theme-field mat-radio-group {
+.theme-field mat-radio-group,
+.language-field mat-radio-group {
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--space-4);
+}
+
+.language-field {
+  margin-bottom: var(--space-1);
 }
 
 .notifications-blocked {

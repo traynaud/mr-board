@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-022",
+    "title": "Support de l'anglais : choix de la langue dans les Paramètres, sous « Thème »."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-023",
     "title": "Surbrillance de mes MRs : anneau accent sur mon avatar (auteur, reviewer, affecté), désactivable dans « Moi »."
   },

@@ -20,6 +20,7 @@ import { Router, RouterLink } from '@angular/router';
 import { merge } from 'rxjs';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { LanguageService } from '../../core/language/language.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { encodeQueryParams } from '../../core/url-state/query-params.mapper';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
@@ -89,6 +90,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly themeService = inject(ThemeService);
+  private readonly languageService = inject(LanguageService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly form = buildSettingsForm();
@@ -127,6 +129,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // le guard (RG-001-07) — la destruction du composant suffit dans tous
     // les cas, sans logique dédiée dans `cancel()`.
     this.destroyRef.onDestroy(() => this.themeService.clearPreview());
+    this.destroyRef.onDestroy(() => this.languageService.clearPreview());
     effect(() => {
       const settings = this.store.settings();
       if (settings && this.form.pristine) {

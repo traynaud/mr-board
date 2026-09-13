@@ -9,6 +9,9 @@ export const DEFAULT_GITLAB_URL = 'https://gitlab.com';
 /** Theme preference (RG-018-01). */
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** UI language preference (RG-022-01). */
+export type Language = 'fr' | 'en';
+
 /**
  * Application settings (singleton row, `id = 1`).
  * Columns are added by each user story through dedicated migrations.
@@ -88,6 +91,10 @@ export class Settings {
   /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
   @Column({ name: 'highlight_me', type: 'boolean', default: true })
   highlightMe!: boolean;
+
+  /** UI language preference (RG-022-01). */
+  @Column({ name: 'language', type: 'text', default: 'fr' })
+  language!: Language;
 
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;

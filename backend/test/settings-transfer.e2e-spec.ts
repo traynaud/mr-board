@@ -80,6 +80,7 @@ describe('SettingsTransfer (e2e)', () => {
         gitlabUrl: 'https://gitlab.com',
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
       }),
     );
     expect(body(res).settings).not.toHaveProperty('tokenConfigured');
@@ -225,5 +226,32 @@ describe('SettingsTransfer (e2e)', () => {
     expect(body(res).settings).toEqual(
       expect.objectContaining({ highlightMe: false }),
     );
+  });
+
+  it('POST /settings/import should_import_the_language_when_provided', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com', language: 'en' },
+        projects: [],
+      });
+
+    expect(res.status).toBe(200);
+    expect(body(res).settings).toEqual(
+      expect.objectContaining({ language: 'en' }),
+    );
+  });
+
+  it('POST /settings/import should_reject_an_invalid_language', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com', language: 'de' },
+        projects: [],
+      });
+
+    expect(res.status).toBe(400);
   });
 });

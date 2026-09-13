@@ -14,6 +14,19 @@
     </mat-radio-group>
   </div>
 
+  <div class="language-field">
+    <div class="block-title">{{ 'settings.misc.language.title' | translate }}</div>
+    <mat-radio-group
+      formControlName="language"
+      [attr.aria-label]="'settings.misc.language.title' | translate"
+      (change)="onLanguageChange($event.value)"
+    >
+      @for (option of languageOptions; track option.value) {
+        <mat-radio-button [value]="option.value">{{ option.label }}</mat-radio-button>
+      }
+    </mat-radio-group>
+  </div>
+
   <mat-checkbox
     [checked]="form().controls.notifyAssigned.value"
     [disabled]="!notifications.isSupported()"

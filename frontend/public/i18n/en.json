@@ -1,0 +1,306 @@
+{
+  "app": {
+    "title": "MR Board"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "ok": "OK",
+    "retry": "Retry",
+    "loading": "Loading…"
+  },
+  "board": {
+    "title": "MR Board",
+    "toolbar": {
+      "settings": "Settings",
+      "refresh": "Refresh",
+      "themeToLight": "Switch to light theme",
+      "themeToDark": "Switch to dark theme"
+    },
+    "filters": {
+      "ariaLabel": "Quick filters",
+      "drafts": "Drafts",
+      "mine": "My MRs",
+      "mineDisabledTooltip": "Set up your identity in the settings",
+      "count": "{{count}} MR{{countSuffix}} · {{projects}} project{{projectsSuffix}}",
+      "clear": "Clear",
+      "add": "Add a filter",
+      "pills": {
+        "names": {
+          "project": "Project",
+          "author": "Author",
+          "assigned": "Assigned to",
+          "approved": "Approved",
+          "commented": "Commented"
+        },
+        "titles": {
+          "assigned": "Assigned to (Reviewer OR Assignee)"
+        },
+        "nobody": "Nobody",
+        "all": "all",
+        "none": "—",
+        "yes": "Yes",
+        "no": "No",
+        "search": "Search…",
+        "remove": "Remove the {{name}} filter"
+      }
+    },
+    "columns": {
+      "menuLabel": "Columns",
+      "status": "Status",
+      "opened": "Opened on",
+      "resetWidths": "Reset widths",
+      "resizeAriaLabel": "Resize the {{name}} column"
+    },
+    "mergeRequests": {
+      "loadError": "Could not load MRs.",
+      "empty": "No open MRs.",
+      "emptyFiltered": "No MR matches the filters.",
+      "clearFilters": "Clear filters",
+      "none": "—",
+      "meSuffix": "(me)",
+      "columns": {
+        "project": "Project",
+        "author": "Author",
+        "title": "Title",
+        "difficulty": "Difficulty",
+        "comments": "Comments",
+        "reviewer": "Reviewer",
+        "assignee": "Assignee",
+        "approved": "Approved",
+        "ready": "Since Ready",
+        "opened": "Opened",
+        "status": "Status"
+      },
+      "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "meta": "{{files}} f · {{lines}} l",
+        "tooltip": "{{files}} files changed · {{lines}} lines (+{{additions}} / −{{deletions}})",
+        "unavailable": "?",
+        "unavailableTooltip": "Statistics unavailable"
+      },
+      "ready": {
+        "today": "today",
+        "days": "{{days}} d",
+        "tooltip": "Ready since {{date}}",
+        "openedToday": "opened today",
+        "openedDays": "opened {{days}} d ago"
+      },
+      "opened": {
+        "tooltip": "Opened on {{date}}"
+      },
+      "mergeStatus": {
+        "mergeable": "Mergeable",
+        "unknown": "Status being checked by GitLab",
+        "blockedTitle": "Not mergeable:",
+        "reasons": {
+          "conflicts": "Merge conflicts",
+          "pipeline_failed": "Pipeline failed",
+          "pipeline_running": "Pipeline running",
+          "pipeline_missing": "No pipeline",
+          "changes_requested": "Changes requested",
+          "not_approved": "Missing approvals",
+          "not_approved_count": "Missing approvals ({{count}} remaining)",
+          "discussions_unresolved": "Unresolved discussions",
+          "discussions_unresolved_count": "{{count}} unresolved discussion(s)",
+          "need_rebase": "Rebase needed",
+          "blocked_by_mr": "Blocked by another MR",
+          "policy": "Project rule not satisfied",
+          "other": "Not mergeable (unknown reason)"
+        }
+      }
+    },
+    "footer": {
+      "legend": "Drafts after ready MRs, sorted by opening date · « My MRs » = author, reviewer or assignee",
+      "legendHighlighted": "Drafts after ready MRs, sorted by opening date · red ring = that's me (author, reviewer or assignee) · « My MRs » = author, reviewer or assignee"
+    },
+    "sync": {
+      "never": "Never synced",
+      "syncing": "Syncing…",
+      "justNow": "Synced just now",
+      "minutesAgo": "Synced {{minutes}} min ago",
+      "failedMinutesAgo": "Last sync failed {{minutes}} min ago",
+      "toastError": "Sync failed.",
+      "nextRunTooltip": "Next sync at {{time}}",
+      "manualTooltip": "Manual sync"
+    },
+    "noToken": {
+      "title": "No GitLab token configured.",
+      "description": "The data shown is from the last cache.",
+      "configure": "Configure"
+    },
+    "noRepos": {
+      "title": "No repo configured",
+      "add": "Add a repo"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "loadError": "Could not load settings.",
+    "saved": "Settings saved",
+    "saveError": "Save failed.",
+    "unsaved": {
+      "title": "Discard changes?",
+      "message": "Unsaved changes will be lost.",
+      "stay": "Stay",
+      "discard": "Discard"
+    },
+    "me": {
+      "number": "01",
+      "title": "Me",
+      "description": "Used by « My MRs » and to spot my roles.",
+      "username": "GitLab username",
+      "email": "Email (optional)",
+      "emailInvalid": "Enter a valid email.",
+      "status": {
+        "matched": "detected from the token",
+        "mismatch": "does not match the token",
+        "manual": "entered manually"
+      },
+      "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)"
+    },
+    "connection": {
+      "number": "02",
+      "title": "GitLab connection",
+      "description": "Personal token with the read_api scope. Stored encrypted server-side, never sent back to the browser.",
+      "url": "Instance URL",
+      "urlRequired": "The URL is required.",
+      "urlInvalid": "Enter a valid http(s) URL, e.g. https://gitlab.example.com",
+      "token": "Personal access token",
+      "tokenKeepPlaceholder": "Leave empty to keep the current token",
+      "tokenTooShort": "The token must be at least {{min}} characters long.",
+      "tokenConfigured": "Token configured (…{{hint}})",
+      "tokenNone": "No token",
+      "showToken": "Show token",
+      "hideToken": "Hide token",
+      "test": "Test connection",
+      "testing": "Connecting…",
+      "result": {
+        "connected": "Connected · {{name}} (@{{username}})",
+        "expires": "expires on {{date}}",
+        "noExpiry": "no expiry",
+        "unknownExpiry": "expiry unknown"
+      }
+    },
+    "projects": {
+      "number": "03",
+      "title": "Repos to scan",
+      "description": "The alias is what's shown in the Project column and the filter.",
+      "pathHeader": "Project path",
+      "aliasHeader": "Alias",
+      "pathPlaceholder": "group/project or GitLab URL",
+      "aliasPlaceholder": "alias",
+      "add": "Add",
+      "remove": "Remove {{alias}}",
+      "added": "Repo added",
+      "removed": "Repo removed",
+      "loadError": "Could not load repos.",
+      "deleteConfirm": {
+        "title": "Remove this repo?",
+        "message": "Its MRs will no longer be shown.",
+        "confirm": "Remove",
+        "cancel": "Stay"
+      }
+    },
+    "refresh": {
+      "number": "04",
+      "title": "Refresh",
+      "description": "Automatic sync frequency with GitLab.",
+      "frequency": "Sync frequency",
+      "options": {
+        "minutes": "{{minutes}} min",
+        "manual": "Manual"
+      },
+      "pauseWhenHidden": "Pause when the tab is inactive",
+      "hint": "Automatic sync ; the Refresh button always forces one."
+    },
+    "thresholds": {
+      "number": "05",
+      "title": "Thresholds",
+      "description": "Rules for computing difficulty and the Ready delay.",
+      "difficulty": {
+        "title": "Difficulty",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "filesSuffix": "files",
+        "linesSuffix": "l.",
+        "between": "in between"
+      },
+      "ready": {
+        "title": "Time since Ready",
+        "green": "Green",
+        "orange": "Orange",
+        "red": "Red",
+        "daysSuffix": "days",
+        "beyond": "beyond"
+      },
+      "workdaysOnly": "Count working days only",
+      "errors": {
+        "required": "This field is required.",
+        "min": "Must be an integer ≥ {{min}}.",
+        "integer": "Must be a whole number.",
+        "mustExceedEasy": "Must be greater than Easy",
+        "mustExceedReadyGreen": "Must be greater than Green"
+      }
+    },
+    "misc": {
+      "number": "06",
+      "title": "Miscellaneous",
+      "description": "Convenience options and configuration backup.",
+      "theme": {
+        "title": "Theme",
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "language": {
+        "title": "Language"
+      },
+      "openInNewTab": "Open MRs in a new tab",
+      "ignoreWip": "Ignore MRs with the wip / on-hold label",
+      "notifyAssigned": "Browser notification when an MR is assigned to me",
+      "notificationsBlocked": "Notifications blocked by the browser",
+      "tabBadge": "Tab counter badge (red MRs)",
+      "export": "Export config (JSON)",
+      "import": "Import",
+      "importInvalid": "Invalid configuration file.",
+      "importConfirm": {
+        "title": "Import the configuration?",
+        "message": "{{settingsCount}} settings, {{totalRepos}} repos ({{newRepos}} new)",
+        "confirm": "Import",
+        "cancel": "Cancel"
+      },
+      "importSuccess": "Configuration imported.",
+      "importSkipped": "Skipped repos: {{paths}}"
+    },
+    "reset": {
+      "button": "Reset",
+      "done": "Defaults restored (not saved)"
+    }
+  },
+  "errors": {
+    "network": "The server is unreachable.",
+    "unexpected": "An unexpected error occurred.",
+    "gitlab": {
+      "auth": "Failed: token rejected (401)",
+      "unavailable": "Failed: instance unreachable",
+      "scope": "Failed: insufficient scope (read_api required)"
+    },
+    "settings": {
+      "tokenMissing": "Configure a GitLab token in the settings first.",
+      "invalidUrl": "Invalid instance URL.",
+      "hardFilesTooLow": "The Hard threshold (files) must exceed the Easy threshold.",
+      "hardLinesTooLow": "The Hard threshold (lines) must exceed the Easy threshold.",
+      "readyOrangeTooLow": "The Ready delay's orange threshold must exceed the green threshold."
+    },
+    "projects": {
+      "notFound": "Project not found or not accessible with this token.",
+      "alreadyConfigured": "This project is already configured.",
+      "aliasDuplicate": "This alias is already in use."
+    }
+  }
+}

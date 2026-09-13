@@ -22,7 +22,7 @@ import {
   SETTINGS_ID,
   Settings,
 } from './entities/settings.entity';
-import type { ThemePreference } from './entities/settings.entity';
+import type { Language, ThemePreference } from './entities/settings.entity';
 
 /** Fields shared by a full update (`UpdateSettingsDto`) and a config import — never the GitLab token. */
 export interface MergeableSettingsFields {
@@ -43,6 +43,7 @@ export interface MergeableSettingsFields {
   tabBadge?: boolean;
   theme?: ThemePreference;
   highlightMe?: boolean;
+  language?: Language;
 }
 
 /** Every setting except the GitLab token, as exported/imported by US-015. */
@@ -65,6 +66,7 @@ export interface ExportableSettings {
   tabBadge: boolean;
   theme: ThemePreference;
   highlightMe: boolean;
+  language: Language;
 }
 
 /** Manages the settings singleton and the GitLab connection test. */
@@ -247,6 +249,7 @@ export class SettingsService {
       tabBadge: settings.tabBadge,
       theme: settings.theme,
       highlightMe: settings.highlightMe,
+      language: settings.language,
     };
   }
 
@@ -310,6 +313,9 @@ export class SettingsService {
     if (dto.highlightMe !== undefined) {
       settings.highlightMe = dto.highlightMe;
     }
+    if (dto.language !== undefined) {
+      settings.language = dto.language;
+    }
   }
 
   private async load(): Promise<Settings> {
@@ -340,6 +346,7 @@ export class SettingsService {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -408,6 +415,7 @@ export class SettingsService {
       tabBadge: settings.tabBadge,
       theme: settings.theme,
       highlightMe: settings.highlightMe,
+      language: settings.language,
     };
   }
 }

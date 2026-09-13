@@ -90,6 +90,7 @@ describe('settings form helpers', () => {
     tabBadge: true,
     theme: 'dark' as const,
     highlightMe: false,
+    language: 'en' as const,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -119,6 +120,7 @@ describe('settings form helpers', () => {
       tabBadge: true,
       theme: 'dark',
       highlightMe: false,
+      language: 'en',
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -164,6 +166,7 @@ describe('settings form helpers', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
   });
 
@@ -190,6 +193,7 @@ describe('settings form helpers', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      language: 'fr',
     });
   });
 
@@ -308,6 +312,21 @@ describe('settings form helpers', () => {
 
     expect(form.controls.highlightMe.value).toBe(false);
   });
+
+  it('should_include_the_language_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ gitlabUrl: 'https://gitlab.com', language: 'en' });
+
+    expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ language: 'en' }));
+  });
+
+  it('should_reset_the_language_from_settings', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.language.value).toBe('en');
+  });
 });
 
 describe('resetSettingsFormToDefaults', () => {
@@ -326,6 +345,7 @@ describe('resetSettingsFormToDefaults', () => {
       tabBadge: true,
       theme: 'dark',
       highlightMe: false,
+      language: 'en',
     });
 
     resetSettingsFormToDefaults(form);
@@ -344,6 +364,7 @@ describe('resetSettingsFormToDefaults', () => {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        language: 'fr',
       }),
     );
   });

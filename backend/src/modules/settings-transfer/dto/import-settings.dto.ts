@@ -13,11 +13,15 @@ import {
 } from 'class-validator';
 import { GITLAB_URL_OPTIONS } from '../../settings/dto/gitlab-credentials.dto';
 import {
+  LANGUAGE_OPTIONS,
   ME_USERNAME_MAX_LENGTH,
   REFRESH_INTERVAL_OPTIONS,
   THEME_OPTIONS,
 } from '../../settings/dto/update-settings.dto';
-import type { ThemePreference } from '../../settings/entities/settings.entity';
+import type {
+  Language,
+  ThemePreference,
+} from '../../settings/entities/settings.entity';
 
 /**
  * The `settings` section of an imported config file (RG-015-04). Mirrors
@@ -108,4 +112,8 @@ export class ImportSettingsDto {
   @IsOptional()
   @IsBoolean()
   highlightMe?: boolean;
+
+  @IsOptional()
+  @IsIn(LANGUAGE_OPTIONS)
+  language?: Language;
 }

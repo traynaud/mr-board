@@ -17,4 +17,12 @@ describe('formatThousands', () => {
   it('should_keep_the_sign_of_a_negative_number', () => {
     expect(formatThousands(-1240)).toBe('-1 240');
   });
+
+  it('should_add_a_comma_separator_in_english', () => {
+    expect(formatThousands(1240, 'en')).toBe('1,240');
+  });
+
+  it('should_keep_the_sign_of_a_negative_number_in_english', () => {
+    expect(formatThousands(-1234567, 'en')).toBe('-1,234,567');
+  });
 });

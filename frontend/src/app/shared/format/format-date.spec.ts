@@ -12,6 +12,14 @@ describe('formatShortDate', () => {
   it('should_return_input_when_not_a_date', () => {
     expect(formatShortDate('bientôt')).toBe('bientôt');
   });
+
+  it('should_format_iso_date_in_english_as_iso_yyyy_mm_dd', () => {
+    expect(formatShortDate('2027-03-12', 'en')).toBe('2027-03-12');
+  });
+
+  it('should_format_iso_datetime_in_english_as_iso_yyyy_mm_dd', () => {
+    expect(formatShortDate('2026-09-05T14:30:00.000Z', 'en')).toBe('2026-09-05');
+  });
 });
 
 describe('formatDateTime', () => {
@@ -31,6 +39,12 @@ describe('formatDateTime', () => {
 
   it('should_return_input_when_not_a_date', () => {
     expect(formatDateTime('bientôt')).toBe('bientôt');
+  });
+
+  it('should_format_a_datetime_in_english_as_iso_yyyy_mm_dd', () => {
+    const local = new Date(2027, 2, 5, 9, 5);
+
+    expect(formatDateTime(local.toISOString(), 'en')).toBe('2027-03-05 09:05');
   });
 });
 
