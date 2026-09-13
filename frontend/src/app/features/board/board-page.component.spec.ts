@@ -7,6 +7,7 @@ import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
+import { stubMatchMedia } from '../../core/theme/testing';
 import { MergeRequestView } from '../../models/merge-request.model';
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
@@ -39,6 +40,7 @@ const NO_TOKEN_SETTINGS: Settings = {
   ignoredLabels: [],
   notifyAssigned: false,
   tabBadge: false,
+  theme: 'system',
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
@@ -152,12 +154,16 @@ describe('BoardPageComponent', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    stubMatchMedia(false);
     await configureBoardTestingModule();
   });
 
   afterEach(() => {
     TestBed.inject(SyncStore).stopPolling();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.documentElement.removeAttribute('data-theme');
+    vi.unstubAllGlobals();
+    localStorage.clear();
     http.verify();
   });
 
@@ -750,6 +756,39 @@ describe('BoardPageComponent', () => {
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     await settle();
+  });
+
+  it('should_apply_and_persist_the_theme_immediately_when_clicking_the_toolbar_toggle', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
+    await settle();
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    const req = http.expectOne('/api/v1/settings');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ gitlabUrl: WITH_TOKEN_SETTINGS.gitlabUrl, theme: 'dark' });
+    req.flush({ ...WITH_TOKEN_SETTINGS, theme: 'dark' });
+    await settle();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+  });
+
+  it('should_toast_an_error_and_keep_the_optimistic_theme_when_the_toggle_save_fails', async () => {
+    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
+    await settle();
+
+    http.expectOne('/api/v1/settings').flush('down', { status: 500, statusText: 'KO' });
+    await settle();
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('errors.unexpected'),
+      t('common.ok'),
+      expect.anything(),
+    );
   });
 
   it('should_not_toast_for_a_run_that_already_failed_before_the_page_was_opened', async () => {

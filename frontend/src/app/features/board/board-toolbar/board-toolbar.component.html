@@ -16,6 +16,15 @@
     <mat-icon svgIcon="refresh-cw" />
     {{ 'board.toolbar.refresh' | translate }}
   </button>
+  <button
+    mat-icon-button
+    type="button"
+    [matTooltip]="themeToggleLabel()"
+    [attr.aria-label]="themeToggleLabel()"
+    (click)="themeToggle.emit()"
+  >
+    <mat-icon [svgIcon]="themeIcon()" />
+  </button>
   <a
     mat-icon-button
     routerLink="/settings"

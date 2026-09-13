@@ -70,6 +70,7 @@ const SETTINGS: Settings = {
   ignoredLabels: [],
   notifyAssigned: true,
   tabBadge: false,
+  theme: 'system',
 };
 
 describe('MergeRequestsStore', () => {

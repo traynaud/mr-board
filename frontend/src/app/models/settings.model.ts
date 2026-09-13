@@ -1,3 +1,6 @@
+/** Préférence de thème (RG-018-01) : `system` suit l'OS, `light`/`dark` la forcent. */
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 /** Miroir de `SettingsResponseDto` (backend). Ne contient jamais le jeton. */
 export interface Settings {
   gitlabUrl: string;
@@ -29,6 +32,8 @@ export interface Settings {
   notifyAssigned: boolean;
   /** Badge dans le titre de l'onglet comptant les MRs au niveau Ready rouge (RG-016-04). */
   tabBadge: boolean;
+  /** Préférence de thème (RG-018-01). */
+  theme: ThemePreference;
 }
 
 /**
@@ -54,6 +59,7 @@ export interface UpdateSettingsRequest {
   ignoredLabels?: string[];
   notifyAssigned?: boolean;
   tabBadge?: boolean;
+  theme?: ThemePreference;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

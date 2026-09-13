@@ -33,6 +33,7 @@ describe('SettingsService', () => {
     ignoredLabels: '[]',
     notifyAssigned: false,
     tabBadge: false,
+    theme: 'system',
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -92,6 +93,7 @@ describe('SettingsService', () => {
         ignoredLabels: [],
         notifyAssigned: false,
         tabBadge: false,
+        theme: 'system',
       });
     });
 
@@ -164,6 +166,7 @@ describe('SettingsService', () => {
         ignoredLabels: [],
         notifyAssigned: false,
         tabBadge: false,
+        theme: 'system',
       });
     });
 
@@ -450,6 +453,26 @@ describe('SettingsService', () => {
         expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
       );
     });
+
+    it('should_set_the_theme_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        theme: 'dark',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ theme: 'dark' }),
+      );
+      expect(result).toEqual(expect.objectContaining({ theme: 'dark' }));
+    });
+
+    it('should_keep_the_theme_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({ ...row(), theme: 'dark' });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(expect.objectContaining({ theme: 'dark' }));
+    });
   });
 
   describe('applyImportedSettings', () => {
@@ -466,6 +489,7 @@ describe('SettingsService', () => {
         ignoredLabels: ['wip'],
         notifyAssigned: true,
         tabBadge: true,
+        theme: 'dark',
       });
 
       expect(cipher.encrypt).not.toHaveBeenCalled();
@@ -478,6 +502,7 @@ describe('SettingsService', () => {
           ignoredLabels: JSON.stringify(['wip']),
           notifyAssigned: true,
           tabBadge: true,
+          theme: 'dark',
         }),
       );
       expect(result).toEqual(
@@ -489,6 +514,7 @@ describe('SettingsService', () => {
           ignoredLabels: ['wip'],
           notifyAssigned: true,
           tabBadge: true,
+          theme: 'dark',
         }),
       );
     });
@@ -772,6 +798,7 @@ describe('SettingsService', () => {
         ignoredLabels: ['wip'],
         notifyAssigned: false,
         tabBadge: false,
+        theme: 'system',
       });
       expect(result).not.toHaveProperty('gitlabTokenEncrypted');
       expect(JSON.stringify(result)).not.toContain('should-not-appear');

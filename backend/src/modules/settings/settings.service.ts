@@ -22,6 +22,7 @@ import {
   SETTINGS_ID,
   Settings,
 } from './entities/settings.entity';
+import type { ThemePreference } from './entities/settings.entity';
 
 /** Fields shared by a full update (`UpdateSettingsDto`) and a config import — never the GitLab token. */
 export interface MergeableSettingsFields {
@@ -40,6 +41,7 @@ export interface MergeableSettingsFields {
   ignoredLabels?: string[];
   notifyAssigned?: boolean;
   tabBadge?: boolean;
+  theme?: ThemePreference;
 }
 
 /** Every setting except the GitLab token, as exported/imported by US-015. */
@@ -60,6 +62,7 @@ export interface ExportableSettings {
   ignoredLabels: string[];
   notifyAssigned: boolean;
   tabBadge: boolean;
+  theme: ThemePreference;
 }
 
 /** Manages the settings singleton and the GitLab connection test. */
@@ -240,6 +243,7 @@ export class SettingsService {
       ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
       notifyAssigned: settings.notifyAssigned,
       tabBadge: settings.tabBadge,
+      theme: settings.theme,
     };
   }
 
@@ -297,6 +301,9 @@ export class SettingsService {
     if (dto.tabBadge !== undefined) {
       settings.tabBadge = dto.tabBadge;
     }
+    if (dto.theme !== undefined) {
+      settings.theme = dto.theme;
+    }
   }
 
   private async load(): Promise<Settings> {
@@ -325,6 +332,7 @@ export class SettingsService {
         ignoredLabels: '[]',
         notifyAssigned: false,
         tabBadge: false,
+        theme: 'system',
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -391,6 +399,7 @@ export class SettingsService {
       ignoredLabels: JSON.parse(settings.ignoredLabels) as string[],
       notifyAssigned: settings.notifyAssigned,
       tabBadge: settings.tabBadge,
+      theme: settings.theme,
     };
   }
 }

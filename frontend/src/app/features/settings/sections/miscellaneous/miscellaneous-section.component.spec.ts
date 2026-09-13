@@ -10,6 +10,8 @@ import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.interceptor';
 import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
+import { stubMatchMedia } from '../../../../core/theme/testing';
+import { ThemeService } from '../../../../core/theme/theme.service';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
 import { SettingsForm, buildSettingsForm } from '../../settings-form';
 import { MiscellaneousSectionComponent } from './miscellaneous-section.component';
@@ -42,6 +44,7 @@ const FULL_SETTINGS = {
   ignoredLabels: [],
   notifyAssigned: false,
   tabBadge: false,
+  theme: 'system',
 };
 
 describe('MiscellaneousSectionComponent', () => {
@@ -60,6 +63,7 @@ describe('MiscellaneousSectionComponent', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    stubMatchMedia(false);
     notifications.isSupported.mockReturnValue(true);
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:mock'), revokeObjectURL: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
@@ -84,7 +88,9 @@ describe('MiscellaneousSectionComponent', () => {
 
   afterEach(() => {
     http.verify();
+    document.documentElement.removeAttribute('data-theme');
     vi.unstubAllGlobals();
+    localStorage.clear();
   });
 
   const settle = async () => {
@@ -108,6 +114,35 @@ describe('MiscellaneousSectionComponent', () => {
     expect(boxes[1].querySelector('input')?.disabled).toBe(false);
     expect(boxes[2].querySelector('input')?.disabled).toBe(false);
     expect(boxes[3].querySelector('input')?.disabled).toBe(false);
+  });
+
+  describe('theme radio group', () => {
+    const radioInput = (index: number) =>
+      el.querySelectorAll('mat-radio-button')[index].querySelector<HTMLInputElement>('input')!;
+
+    it('should_render_the_three_theme_options', () => {
+      const labels = Array.from(el.querySelectorAll('mat-radio-button')).map((node) =>
+        node.textContent?.trim(),
+      );
+
+      expect(labels).toEqual([
+        t('settings.misc.theme.system'),
+        t('settings.misc.theme.light'),
+        t('settings.misc.theme.dark'),
+      ]);
+    });
+
+    it('should_update_the_form_and_preview_the_theme_immediately', async () => {
+      const themeService = TestBed.inject(ThemeService);
+
+      radioInput(2).click();
+      await settle();
+
+      expect(host.form.controls.theme.value).toBe('dark');
+      expect(host.form.controls.theme.dirty).toBe(true);
+      expect(themeService.preference()).toBe('dark');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
   });
 
   it('should_disable_the_notify_checkbox_when_the_notification_api_is_unsupported', () => {

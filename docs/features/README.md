@@ -54,6 +54,7 @@ configurée dans les paramètres.
 | **Synchronisation**  | Récupération des MRs depuis l'API GitLab et mise à jour du cache local (SQLite)                         |
 | **Moi**              | Identité GitLab de l'utilisateur courant (username, email) utilisée par « Mes MRs »                     |
 | **Jeton**            | Personal Access Token GitLab (scope `read_api`) utilisé par le backend                                  |
+| **Thème**            | Préférence d'affichage `system` / `light` / `dark` (US-018)                                             |
 
 ---
 
@@ -64,7 +65,7 @@ Maquettes : `docs/design/MR Board - Wireframes.dc.html` (1a, 1b, 1c) et `docs/de
 ### 4.1 Tableau (route `/`)
 
 Zones, de haut en bas :
-1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », icône « Paramètres »
+1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », bascule rapide clair/sombre (US-018), icône « Paramètres »
 2. **Barre de progression** 2 px pendant une synchronisation
 3. **Bandeau** « Aucun jeton GitLab configuré » avec bouton « Configurer » (si applicable)
 4. **Barre de filtres** : chips « Drafts » et « Mes MRs » (toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
@@ -81,7 +82,7 @@ contenu à droite), sections :
 - `03 · Repos à scanner` — tableau chemin / alias / supprimer, ligne d'ajout
 - `04 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
 - `05 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
-- `06 · Divers` — notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `06 · Divers` — thème (système / clair / sombre, US-018), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -164,7 +165,7 @@ une fois ses dépendances réalisées.
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ✅ |
 | US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ✅ |
 | US-017 | Colonne « Statut » (mergeabilité : pipeline, conflits, approbations, discussions) | Should | M | US-004, US-011, US-012 | ✅ |
-| US-018 | Thème sombre (système / clair / sombre)                  | Could    | M          | US-015                 | ☐ |
+| US-018 | Thème sombre (système / clair / sombre)                  | Could    | M          | US-015                 | ✅ |
 | US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ☐ |
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
 | US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
@@ -203,22 +204,22 @@ codes de RG-017-04).
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées (à l'exception de **US-017**, livrée — son terme « Statut » a rejoint le
-glossaire, §3). Les termes ci-dessous rejoindront le glossaire à la livraison des US concernées.
+Spécifiées en septembre 2026, non validées (à l'exception de **US-017** et **US-018**, livrées — leurs termes
+« Statut » et « Thème » ont rejoint le glossaire, §3). Les termes ci-dessous rejoindront le glossaire à la livraison
+des US concernées.
 
 | Terme          | Définition                                                                                                  | US     |
 |----------------|-------------------------------------------------------------------------------------------------------------|--------|
-| **Thème**      | Préférence d'affichage `system` / `light` / `dark`                                                          | US-018 |
 | **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
 | **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
 
-Impacts documentaires déjà appliqués (US-017) : §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
-« Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits »).
+Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
+« Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
+« Thème »), §4.1 (bascule toolbar), §4.2 (option Thème en 06), §9 (retrait de « Thème sombre »), §7 roadmap (✅).
 
-Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres,
-option Thème en 06), RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de
-« Thème sombre », « GitHub »).
+Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
+RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
 
 ---
 
@@ -230,5 +231,4 @@ option Thème en 06), RG-G09/G17/G18 (jetons et identités au pluriel), §6 (mod
   livré par **US-017** (colonne Statut).
 - Multi-utilisateurs avec comptes et rôles
 - Historique / statistiques (temps moyen de relecture…)
-- Thème sombre → **proposé en v2 : US-018**
 - Support d'autres forges → **GitHub proposé en v2 : EPIC-001 (US-019 → US-021)** ; Bitbucket, Gitea, Azure DevOps : hors périmètre (QO-E01-03)

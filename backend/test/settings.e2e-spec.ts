@@ -73,6 +73,7 @@ describe('Settings (e2e)', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
   });
 
@@ -136,6 +137,7 @@ describe('Settings (e2e)', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -172,6 +174,7 @@ describe('Settings (e2e)', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
   });
 
@@ -502,6 +505,36 @@ describe('Settings (e2e)', () => {
     expect(res.body).toEqual(
       expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
     );
+  });
+
+  it('PUT /settings should_store_the_theme', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', theme: 'dark' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ theme: 'dark' }));
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_keep_the_theme_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ theme: 'dark' }));
+  });
+
+  it('PUT /settings should_reject_an_invalid_theme', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', theme: 'blue' });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([expect.stringContaining('theme')]);
   });
 
   it('PUT /settings should_reject_a_non_array_ignored_labels', async () => {

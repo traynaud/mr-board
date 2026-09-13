@@ -20,6 +20,7 @@ import { Router, RouterLink } from '@angular/router';
 import { merge } from 'rxjs';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { encodeQueryParams } from '../../core/url-state/query-params.mapper';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
 import { ColumnsStore } from '../../stores/columns.store';
@@ -87,6 +88,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
+  private readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly form = buildSettingsForm();
@@ -120,6 +122,11 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   });
 
   constructor() {
+    // RG-018-03 : restaure le thème enregistré à la sortie de l'écran, que
+    // ce soit via Annuler, une navigation directe ou l'abandon confirmé par
+    // le guard (RG-001-07) — la destruction du composant suffit dans tous
+    // les cas, sans logique dédiée dans `cancel()`.
+    this.destroyRef.onDestroy(() => this.themeService.clearPreview());
     effect(() => {
       const settings = this.store.settings();
       if (settings && this.form.pristine) {

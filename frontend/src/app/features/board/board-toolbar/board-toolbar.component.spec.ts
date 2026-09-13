@@ -28,7 +28,10 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
       [lastRun]="lastRun()"
       [nextRunAt]="nextRunAt()"
       [refreshDisabled]="refreshDisabled()"
+      [themeIcon]="themeIcon()"
+      [themeToggleLabel]="themeToggleLabel()"
       (refresh)="refreshCount.set(refreshCount() + 1)"
+      (themeToggle)="themeToggleCount.set(themeToggleCount() + 1)"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +42,9 @@ class HostComponent {
   readonly nextRunAt = signal<string | null>(null);
   readonly refreshDisabled = signal(false);
   readonly refreshCount = signal(0);
+  readonly themeIcon = signal<'sun' | 'moon'>('moon');
+  readonly themeToggleLabel = signal('Passer en thème sombre');
+  readonly themeToggleCount = signal(0);
 }
 
 describe('BoardToolbarComponent', () => {
@@ -122,5 +128,29 @@ describe('BoardToolbarComponent', () => {
     const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button]');
     expect(link?.getAttribute('href')).toBe('/settings');
     expect(link?.getAttribute('aria-label')).toBe(t('board.toolbar.settings'));
+  });
+
+  it('should_show_the_theme_toggle_icon_and_label_from_inputs', async () => {
+    const { fixture, el } = await setup();
+
+    const button = el.querySelector<HTMLButtonElement>('button[mat-icon-button]');
+    expect(button?.getAttribute('aria-label')).toBe('Passer en thème sombre');
+    expect(button?.querySelector('mat-icon')?.getAttribute('data-mat-icon-name')).toBe('moon');
+
+    fixture.componentInstance.themeIcon.set('sun');
+    fixture.componentInstance.themeToggleLabel.set('Passer en thème clair');
+    await fixture.whenStable();
+
+    expect(button?.getAttribute('aria-label')).toBe('Passer en thème clair');
+    expect(button?.querySelector('mat-icon')?.getAttribute('data-mat-icon-name')).toBe('sun');
+  });
+
+  it('should_emit_theme_toggle_on_button_click', async () => {
+    const { fixture, el } = await setup();
+
+    el.querySelector<HTMLButtonElement>('button[mat-icon-button]')?.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.themeToggleCount()).toBe(1);
   });
 });

@@ -7,7 +7,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { Settings, UpdateSettingsRequest } from '../../models/settings.model';
+import { Settings, ThemePreference, UpdateSettingsRequest } from '../../models/settings.model';
 import { RepoAliasForm } from './repos-form';
 
 /** Longueur minimale d'un jeton saisi (RG-001-02, identique au backend). */
@@ -57,6 +57,8 @@ export interface SettingsFormControls {
   notifyAssigned: FormControl<boolean>;
   /** Badge dans le titre de l'onglet comptant les MRs au niveau Ready rouge (RG-016-04). */
   tabBadge: FormControl<boolean>;
+  /** Préférence de thème (RG-018-01/02). */
+  theme: FormControl<ThemePreference>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -186,6 +188,7 @@ export function buildSettingsForm(): SettingsForm {
       ignoreWip: new FormControl(false, { nonNullable: true }),
       notifyAssigned: new FormControl(false, { nonNullable: true }),
       tabBadge: new FormControl(false, { nonNullable: true }),
+      theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
       // touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -219,6 +222,7 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.ignoreWip.reset(settings.ignoredLabels.length > 0);
   form.controls.notifyAssigned.reset(settings.notifyAssigned);
   form.controls.tabBadge.reset(settings.tabBadge);
+  form.controls.theme.reset(settings.theme);
 }
 
 /**
@@ -246,6 +250,7 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.ignoreWip.setValue(false);
   controls.notifyAssigned.setValue(false);
   controls.tabBadge.setValue(false);
+  controls.theme.setValue('system');
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'gitlabToken' && name !== 'repos') {
       controls[name].markAsDirty();
@@ -279,6 +284,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     ignoreWip,
     notifyAssigned,
     tabBadge,
+    theme,
   } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
@@ -298,5 +304,6 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     ignoredLabels: ignoreWip ? [...DEFAULT_IGNORED_LABELS] : [],
     notifyAssigned,
     tabBadge,
+    theme,
   };
 }

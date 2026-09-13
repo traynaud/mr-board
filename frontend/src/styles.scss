@@ -58,11 +58,70 @@
 }
 
 // ---------------------------------------------------------------------------
+// Thème sombre — US-018 (RG-018-07/08). Deux sélecteurs : la préférence
+// système (media query, tant que l'utilisateur n'a pas forcé le clair) et la
+// préférence explicite (`data-theme`, posée par `ThemeService`).
+// ---------------------------------------------------------------------------
+@mixin dark-tokens {
+  --color-bg: #161514;
+  --color-surface: #201e1d;
+  --color-text: #f3f2f2;
+  --color-divider: color-mix(in srgb, #f3f2f2 32%, transparent);
+
+  --color-neutral-100: #242221;
+  --color-neutral-200: #2d2b2b;
+  --color-neutral-300: #444141;
+  --color-neutral-400: #605d5d;
+  --color-neutral-500: #7d7979;
+  --color-neutral-600: #a8a4a4;
+  --color-neutral-700: #bab6b6;
+  --color-neutral-800: #d7d3d3;
+  --color-neutral-900: #eae7e7;
+
+  --color-accent-100: #3a1510;
+  --color-accent-200: #4d170e;
+  --color-accent-300: #7c1405;
+  --color-accent-400: #ae1800;
+  --color-accent-500: #dd2b0f;
+  --color-accent-600: #ff563c;
+  --color-accent-700: #ff9783;
+  --color-accent-800: #ffc4b8;
+  --color-accent-900: #ffe0d9;
+
+  --color-success: #4fb26f;
+  --color-warning: #e9a03a;
+
+  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 3px 10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
+  }
+}
+:root[data-theme='dark'] {
+  @include dark-tokens;
+}
+
+// `color-scheme` pilote les contrôles natifs du navigateur (barres de
+// défilement, champs) : par défaut il suit le système (mode `system`,
+// aucun attribut) ; une préférence explicite doit aussi forcer les
+// contrôles natifs, même si l'OS penche pour l'autre thème.
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+// ---------------------------------------------------------------------------
 // Thème Material
 // ---------------------------------------------------------------------------
 html {
   height: 100%;
-  color-scheme: light;
+  color-scheme: light dark;
 
   @include mat.theme(
     (
@@ -100,6 +159,31 @@ html {
   --mat-sys-outline: #7d7979;
   --mat-sys-outline-variant: #bab6b6;
   --mat-sys-error: #ec3013;
+}
+
+// Surcharges --mat-sys-* en sombre (US-018, RG-018-07/08), même logique de
+// sélecteurs double que les tokens du design system ci-dessus.
+@mixin dark-mat-sys-tokens {
+  --mat-sys-surface: #161514;
+  --mat-sys-on-surface: #f3f2f2;
+  --mat-sys-on-surface-variant: #bab6b6;
+  --mat-sys-surface-container-lowest: #0f0e0e;
+  --mat-sys-surface-container-low: #1b1a19;
+  --mat-sys-surface-container: #242221;
+  --mat-sys-surface-container-high: #2d2b2b;
+  --mat-sys-surface-container-highest: #383535;
+  --mat-sys-outline: #9b9797;
+  --mat-sys-outline-variant: #605d5d;
+  --mat-sys-error: #ff563c;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme='light']) {
+    @include dark-mat-sys-tokens;
+  }
+}
+html[data-theme='dark'] {
+  @include dark-mat-sys-tokens;
 }
 
 body {
@@ -148,7 +232,7 @@ a {
 // Toast (MatSnackBar) — bas gauche, fond sombre, action accent
 .mrb-toast {
   --mat-snack-bar-container-color: var(--color-neutral-900);
-  --mat-snack-bar-supporting-text-color: #fff;
+  --mat-snack-bar-supporting-text-color: var(--color-bg);
   --mat-snack-bar-button-color: var(--color-accent-400);
   --mat-snack-bar-container-shape: 0px;
 }

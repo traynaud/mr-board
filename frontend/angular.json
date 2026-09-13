@@ -88,7 +88,8 @@
               "src/main.ts",
               "src/environments/**",
               "**/*.spec.ts",
-              "src/app/core/i18n/testing.ts"
+              "src/app/core/i18n/testing.ts",
+              "src/app/core/theme/testing.ts"
             ]
           }
         },

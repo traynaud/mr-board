@@ -14,6 +14,23 @@
     />
   </head>
   <body>
+    <!-- Anti-flash (RG-018-05) : lit la même clé que THEME_STORAGE_KEY
+         (frontend/src/app/core/theme/theme-storage.ts) — un import est
+         impossible ici, ce script s'exécute avant tout bundle JS. Garder les
+         deux synchronisés en cas de renommage. -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('mrboard.theme.v1');
+          var theme = raw === 'light' || raw === 'dark' ? raw : null;
+          if (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+        } catch (e) {
+          // localStorage indisponible : reste en mode système (aucun attribut posé), RG-018-05.
+        }
+      })();
+    </script>
     <app-root></app-root>
   </body>
 </html>

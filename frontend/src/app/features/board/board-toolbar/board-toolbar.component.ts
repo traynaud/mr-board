@@ -50,6 +50,11 @@ export class BoardToolbarComponent implements OnDestroy {
   readonly refreshDisabled = input<boolean>(false);
   readonly refresh = output<void>();
 
+  /** Icône de la bascule rapide (RG-018-12) : indique la destination, pas l'état courant. */
+  readonly themeIcon = input.required<'sun' | 'moon'>();
+  readonly themeToggleLabel = input.required<string>();
+  readonly themeToggle = output<void>();
+
   private readonly nowTick = signal(Date.now());
   private readonly tickHandle = setInterval(
     () => this.nowTick.set(Date.now()),

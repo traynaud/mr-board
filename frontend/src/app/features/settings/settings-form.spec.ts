@@ -88,6 +88,7 @@ describe('settings form helpers', () => {
     ignoredLabels: ['wip', 'on-hold'],
     notifyAssigned: true,
     tabBadge: true,
+    theme: 'dark' as const,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -115,6 +116,7 @@ describe('settings form helpers', () => {
       ignoreWip: true,
       notifyAssigned: true,
       tabBadge: true,
+      theme: 'dark',
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -158,6 +160,7 @@ describe('settings form helpers', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
   });
 
@@ -182,6 +185,7 @@ describe('settings form helpers', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
   });
 
@@ -270,6 +274,21 @@ describe('settings form helpers', () => {
     expect(form.controls.notifyAssigned.value).toBe(true);
     expect(form.controls.tabBadge.value).toBe(true);
   });
+
+  it('should_include_the_theme_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ gitlabUrl: 'https://gitlab.com', theme: 'dark' });
+
+    expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ theme: 'dark' }));
+  });
+
+  it('should_reset_the_theme_from_settings', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.theme.value).toBe('dark');
+  });
 });
 
 describe('resetSettingsFormToDefaults', () => {
@@ -286,6 +305,7 @@ describe('resetSettingsFormToDefaults', () => {
       ignoreWip: true,
       notifyAssigned: true,
       tabBadge: true,
+      theme: 'dark',
     });
 
     resetSettingsFormToDefaults(form);
@@ -302,6 +322,7 @@ describe('resetSettingsFormToDefaults', () => {
         ignoreWip: false,
         notifyAssigned: false,
         tabBadge: false,
+        theme: 'system',
       }),
     );
   });

@@ -4,6 +4,22 @@
   gap: var(--space-3);
 }
 
+.theme-field {
+  margin-bottom: var(--space-1);
+}
+
+.block-title {
+  font-size: 12px;
+  margin-bottom: var(--space-2);
+  color: var(--color-neutral-700);
+}
+
+.theme-field mat-radio-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
 .notifications-blocked {
   margin: calc(var(--space-3) * -1) 0 0;
   color: var(--color-warning);

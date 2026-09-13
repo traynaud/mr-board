@@ -15,7 +15,9 @@ import { GITLAB_URL_OPTIONS } from '../../settings/dto/gitlab-credentials.dto';
 import {
   ME_USERNAME_MAX_LENGTH,
   REFRESH_INTERVAL_OPTIONS,
+  THEME_OPTIONS,
 } from '../../settings/dto/update-settings.dto';
+import type { ThemePreference } from '../../settings/entities/settings.entity';
 
 /**
  * The `settings` section of an imported config file (RG-015-04). Mirrors
@@ -98,4 +100,8 @@ export class ImportSettingsDto {
   @IsOptional()
   @IsBoolean()
   tabBadge?: boolean;
+
+  @IsOptional()
+  @IsIn(THEME_OPTIONS)
+  theme?: ThemePreference;
 }

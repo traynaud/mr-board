@@ -6,6 +6,8 @@ import { Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
+import { stubMatchMedia } from '../../core/theme/testing';
+import { ThemeService } from '../../core/theme/theme.service';
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
@@ -33,6 +35,7 @@ describe('SettingsPageComponent', () => {
     ignoredLabels: [],
     notifyAssigned: false,
     tabBadge: false,
+    theme: 'system',
   };
   const projectApi: Project = {
     id: 1,
@@ -54,6 +57,7 @@ describe('SettingsPageComponent', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    stubMatchMedia(false);
     await TestBed.configureTestingModule({
       imports: [SettingsPageComponent],
       providers: [
@@ -73,7 +77,12 @@ describe('SettingsPageComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-theme');
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    http.verify();
+  });
 
   const settle = async () => {
     await fixture.whenStable();
@@ -183,6 +192,7 @@ describe('SettingsPageComponent', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -203,6 +213,7 @@ describe('SettingsPageComponent', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
     await settle();
     await flushSync();
@@ -246,6 +257,7 @@ describe('SettingsPageComponent', () => {
       ignoredLabels: [],
       notifyAssigned: false,
       tabBadge: false,
+      theme: 'system',
     });
   });
 
@@ -505,5 +517,27 @@ describe('SettingsPageComponent', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     expect(repoAliasInputs()).toHaveLength(2);
     expect(repoAliasInputs()[0].value).toBe('api');
+  });
+
+  it('should_preview_the_theme_immediately_and_restore_it_when_the_page_is_left', async () => {
+    await loadSettings();
+    const themeService = TestBed.inject(ThemeService);
+    TestBed.flushEffects();
+
+    const darkRadio = Array.from(
+      el.querySelectorAll<HTMLElement>('app-miscellaneous-section mat-radio-button'),
+    )[2].querySelector<HTMLInputElement>('input')!;
+    darkRadio.click();
+    await settle();
+
+    expect(themeService.preference()).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    fixture.destroy();
+    TestBed.flushEffects();
+
+    expect(themeService.preference()).toBe('system');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
   });
 });

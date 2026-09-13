@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-018",
+    "title": "Thème sombre : réglage clair/sombre/système dans les Paramètres et bascule rapide dans la toolbar."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-017",
     "title": "Colonne « Statut » affichant la mergeabilité GitLab (fusionnable, bloquée avec raisons, ou indéterminée)."
   },

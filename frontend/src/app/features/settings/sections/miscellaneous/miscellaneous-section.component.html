@@ -1,4 +1,19 @@
 <div class="fields" [formGroup]="form()">
+  <div class="theme-field">
+    <div class="block-title">{{ 'settings.misc.theme.title' | translate }}</div>
+    <mat-radio-group
+      formControlName="theme"
+      [attr.aria-label]="'settings.misc.theme.title' | translate"
+      (change)="onThemeChange($event.value)"
+    >
+      @for (option of themeOptions; track option) {
+        <mat-radio-button [value]="option">
+          {{ 'settings.misc.theme.' + option | translate }}
+        </mat-radio-button>
+      }
+    </mat-radio-group>
+  </div>
+
   <mat-checkbox
     [checked]="form().controls.notifyAssigned.value"
     [disabled]="!notifications.isSupported()"

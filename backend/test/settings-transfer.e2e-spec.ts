@@ -76,7 +76,10 @@ describe('SettingsTransfer (e2e)', () => {
     expect(res.status).toBe(200);
     expect(body(res).version).toBe(1);
     expect(body(res).settings).toEqual(
-      expect.objectContaining({ gitlabUrl: 'https://gitlab.com' }),
+      expect.objectContaining({
+        gitlabUrl: 'https://gitlab.com',
+        theme: 'system',
+      }),
     );
     expect(body(res).settings).not.toHaveProperty('tokenConfigured');
     expect(body(res).settings).not.toHaveProperty('tokenHint');
@@ -161,5 +164,32 @@ describe('SettingsTransfer (e2e)', () => {
     expect(body(res).projectsSkipped).toEqual([
       { pathWithNamespace: 'equipe/introuvable', reason: 'projects.notFound' },
     ]);
+  });
+
+  it('POST /settings/import should_import_the_theme_when_provided', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com', theme: 'dark' },
+        projects: [],
+      });
+
+    expect(res.status).toBe(200);
+    expect(body(res).settings).toEqual(
+      expect.objectContaining({ theme: 'dark' }),
+    );
+  });
+
+  it('POST /settings/import should_reject_an_invalid_theme', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com', theme: 'blue' },
+        projects: [],
+      });
+
+    expect(res.status).toBe(400);
   });
 });

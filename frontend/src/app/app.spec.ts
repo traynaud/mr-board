@@ -6,10 +6,12 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
 import { routes } from './app.routes';
 import { provideI18nTesting, t } from './core/i18n/testing';
+import { stubMatchMedia } from './core/theme/testing';
 import { provideIcons } from './shared/icons/provide-icons';
 
 describe('App', () => {
   beforeEach(async () => {
+    stubMatchMedia(false);
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -20,6 +22,12 @@ describe('App', () => {
         provideIcons(),
       ],
     }).compileComponents();
+  });
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-theme');
+    vi.unstubAllGlobals();
+    localStorage.clear();
   });
 
   it('should_create_the_app', () => {

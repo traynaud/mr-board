@@ -3,7 +3,10 @@
   [lastRun]="syncStore.lastRun()"
   [nextRunAt]="syncStore.nextRunAt()"
   [refreshDisabled]="refreshDisabled()"
+  [themeIcon]="themeIcon()"
+  [themeToggleLabel]="themeToggleLabelKey() | translate"
   (refresh)="refresh()"
+  (themeToggle)="onThemeToggle()"
 />
 
 @if (noToken()) {

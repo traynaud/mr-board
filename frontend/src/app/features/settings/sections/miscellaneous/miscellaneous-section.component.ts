@@ -3,10 +3,13 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslateService, TranslationParams } from '../../../../core/i18n/translate.service';
 import { BrowserNotificationService } from '../../../../core/notifications/browser-notification.service';
+import { ThemeService } from '../../../../core/theme/theme.service';
+import { ThemePreference } from '../../../../models/settings.model';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -15,6 +18,9 @@ import { ProjectsStore } from '../../../../stores/projects.store';
 import { SettingsStore } from '../../../../stores/settings.store';
 import { ImportSummary, parseImportFile, summarizeImport } from '../../config-transfer';
 import { SettingsForm, resetSettingsForm } from '../../settings-form';
+
+/** Options du contrôle « Thème » (RG-018-02), même pattern que la fréquence de RG-013. */
+export const THEME_OPTIONS: readonly ThemePreference[] = ['system', 'light', 'dark'];
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'écran Paramètres. */
 const TOAST_DURATION_MS = 3500;
@@ -28,7 +34,13 @@ const TOAST_DURATION_MS = 3500;
  */
 @Component({
   selector: 'app-miscellaneous-section',
-  imports: [ReactiveFormsModule, MatCheckboxModule, MatButtonModule, TranslatePipe],
+  imports: [
+    ReactiveFormsModule,
+    MatCheckboxModule,
+    MatRadioModule,
+    MatButtonModule,
+    TranslatePipe,
+  ],
   templateUrl: './miscellaneous-section.component.html',
   styleUrl: './miscellaneous-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +51,7 @@ export class MiscellaneousSectionComponent {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
+  private readonly themeService = inject(ThemeService);
   protected readonly notifications = inject(BrowserNotificationService);
 
   readonly form = input.required<SettingsForm>();
@@ -46,6 +59,13 @@ export class MiscellaneousSectionComponent {
   protected readonly importing = signal(false);
   /** Vrai quand l'utilisateur vient de refuser la permission de notification (RG-016-02). */
   protected readonly permissionBlocked = signal(false);
+
+  protected readonly themeOptions = THEME_OPTIONS;
+
+  /** Aperçu immédiat du thème choisi, sans attendre « Enregistrer » (RG-018-03). */
+  protected onThemeChange(theme: ThemePreference): void {
+    this.themeService.setPreview(theme);
+  }
 
   /**
    * Coche/décoche `notifyAssigned` manuellement (RG-016-02) : la case

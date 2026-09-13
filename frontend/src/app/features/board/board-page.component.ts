@@ -15,6 +15,7 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import {
   decodeQueryParams,
   encodeQueryParams,
@@ -67,6 +68,7 @@ export class BoardPageComponent implements OnInit {
   protected readonly filtersStore = inject(FiltersStore);
   protected readonly columnsStore = inject(ColumnsStore);
   protected readonly columnWidthsStore = inject(ColumnWidthsStore);
+  private readonly themeService = inject(ThemeService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -164,6 +166,14 @@ export class BoardPageComponent implements OnInit {
     () => this.mrStore.mergeRequests().filter((mr) => mr.readyLevel === 'red').length,
   );
 
+  /** RG-018-12 : icône et clé i18n de l'infobulle de la bascule rapide, indiquant la destination du clic. */
+  protected readonly themeIcon = computed<'sun' | 'moon'>(() =>
+    this.themeService.effective() === 'dark' ? 'sun' : 'moon',
+  );
+  protected readonly themeToggleLabelKey = computed(() =>
+    this.themeService.effective() === 'dark' ? 'board.toolbar.themeToLight' : 'board.toolbar.themeToDark',
+  );
+
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
     // re-déclencher au montage pour un échec déjà présent avant l'ouverture.
@@ -259,6 +269,14 @@ export class BoardPageComponent implements OnInit {
   /** Déclenché par le bouton Rafraîchir de la toolbar (RG-004-09). */
   protected refresh(): void {
     void this.syncStore.trigger();
+  }
+
+  /** RG-018-12 : bascule rapide clair/sombre, persistée immédiatement en tâche de fond. */
+  protected async onThemeToggle(): Promise<void> {
+    const errorKey = await this.themeService.quickToggle();
+    if (errorKey) {
+      this.toast(errorKey);
+    }
   }
 
   /** RG-009-01/07 : bascule « Drafts » puis recharge (débounce dans le store). */

@@ -6,6 +6,9 @@ export const SETTINGS_ID = 1;
 /** Default GitLab instance. */
 export const DEFAULT_GITLAB_URL = 'https://gitlab.com';
 
+/** Theme preference (RG-018-01). */
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 /**
  * Application settings (singleton row, `id = 1`).
  * Columns are added by each user story through dedicated migrations.
@@ -77,6 +80,10 @@ export class Settings {
   /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
   @Column({ name: 'tab_badge', type: 'boolean', default: false })
   tabBadge!: boolean;
+
+  /** Theme preference : `system` follows the OS, `light`/`dark` force it (RG-018-01). */
+  @Column({ name: 'theme', type: 'text', default: 'system' })
+  theme!: ThemePreference;
 
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;

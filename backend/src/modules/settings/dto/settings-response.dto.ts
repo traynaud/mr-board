@@ -1,3 +1,5 @@
+import { ThemePreference } from '../entities/settings.entity';
+
 /** Response of `GET|PUT /api/v1/settings`. Never carries the token itself. */
 export class SettingsResponseDto {
   gitlabUrl!: string;
@@ -31,4 +33,6 @@ export class SettingsResponseDto {
   notifyAssigned!: boolean;
   /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
   tabBadge!: boolean;
+  /** Theme preference (RG-018-01) : `system` follows the OS, `light`/`dark` force it. */
+  theme!: ThemePreference;
 }

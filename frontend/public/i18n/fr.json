@@ -14,7 +14,9 @@
     "title": "MR Board",
     "toolbar": {
       "settings": "Paramètres",
-      "refresh": "Rafraîchir"
+      "refresh": "Rafraîchir",
+      "themeToLight": "Passer en thème clair",
+      "themeToDark": "Passer en thème sombre"
     },
     "filters": {
       "ariaLabel": "Filtres rapides",
@@ -246,6 +248,12 @@
       "number": "06",
       "title": "Divers",
       "description": "Options de confort et sauvegarde de la configuration.",
+      "theme": {
+        "title": "Thème",
+        "system": "Système",
+        "light": "Clair",
+        "dark": "Sombre"
+      },
       "openInNewTab": "Ouvrir les MRs dans un nouvel onglet",
       "ignoreWip": "Ignorer les MRs avec le label wip / on-hold",
       "notifyAssigned": "Notification navigateur quand une MR m'est affectée",

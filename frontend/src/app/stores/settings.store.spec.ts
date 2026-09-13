@@ -25,6 +25,7 @@ describe('SettingsStore', () => {
     ignoredLabels: [],
     notifyAssigned: false,
     tabBadge: false,
+    theme: 'system',
   };
   const api = {
     getSettings: vi.fn(),
