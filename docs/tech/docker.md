@@ -18,6 +18,22 @@ docker compose logs -f
 docker compose down           # la base SQLite est conservée sur l'hôte, dans ./data/mr-board.sqlite
 ```
 
+### Build et lancement séparés
+
+`docker-compose.yml` déclare à la fois `image: mr-board:local` et `build:` : si une image portant déjà ce tag existe
+localement, `docker compose up` (sans `--build`) la réutilise telle quelle au lieu de la reconstruire. Ça permet de
+séparer les deux étapes :
+
+```bash
+docker build -t mr-board:local .   # construit et tague l'image à partir du Dockerfile
+docker compose up -d               # lance ce même tag, avec les variables de ./.env injectées
+```
+
+> ⚠️ Ne pas lancer l'image avec un `docker run` direct (ou l'action « Run Dockerfile » d'un IDE) : contrairement à
+> `docker compose`, `docker run` ne lit jamais `.env` automatiquement, donc `APP_SECRET` reste absent et le
+> bootstrap NestJS échoue avec `Config validation error: "APP_SECRET" is required`. Toujours lancer via
+> `docker compose up` (ou `docker run --env-file .env ...` si un lancement hors compose est vraiment nécessaire).
+
 ## Persistance de la base SQLite
 
 `./data` (racine du projet) est monté en bind mount sur `/app/data` dans le container : le fichier
