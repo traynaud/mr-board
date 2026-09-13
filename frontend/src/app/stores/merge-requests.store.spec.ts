@@ -33,6 +33,7 @@ const MR: MergeRequestView = {
   readyLevel: 'red',
   openedDays: 6,
   isMine: false,
+  mergeStatus: { state: 'mergeable', reasons: [] },
 };
 const RESPONSE = { mergeRequests: [MR], warnings: [] };
 const EMPTY_COMPOSABLE_FILTERS = { project: [], author: [], assigned: [], approved: null, commented: null };

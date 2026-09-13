@@ -32,6 +32,15 @@ export interface MappedGitlabMergeRequest {
   author: MappedGitlabUser;
   reviewers: MappedGitlabUser[];
   assignees: MappedGitlabUser[];
+  /** Raw GitLab mergeability data (US-017), consumed by `computeMergeStatus`. */
+  detailedMergeStatus: string;
+  conflicts: boolean;
+  /** `null` when GitLab reports no pipeline for this merge request. */
+  headPipelineStatus: string | null;
+  approvalsRequired: number;
+  approvalsLeft: number;
+  resolvableDiscussionsCount: number;
+  resolvedDiscussionsCount: number;
 }
 
 /**
@@ -82,5 +91,12 @@ export function mapGraphqlMergeRequest(
     author: mapGraphqlUser(node.author),
     reviewers: node.reviewers.nodes.map(mapGraphqlUser),
     assignees: node.assignees.nodes.map(mapGraphqlUser),
+    detailedMergeStatus: node.detailedMergeStatus,
+    conflicts: node.conflicts,
+    headPipelineStatus: node.headPipeline?.status ?? null,
+    approvalsRequired: node.approvalsRequired,
+    approvalsLeft: node.approvalsLeft,
+    resolvableDiscussionsCount: node.resolvableDiscussionsCount,
+    resolvedDiscussionsCount: node.resolvedDiscussionsCount,
   };
 }

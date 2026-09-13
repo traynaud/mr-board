@@ -42,6 +42,13 @@ const MERGE_REQUESTS_QUERY = `
           author { id username name avatarUrl webUrl }
           reviewers { nodes { id username name avatarUrl webUrl } }
           assignees { nodes { id username name avatarUrl webUrl } }
+          detailedMergeStatus
+          conflicts
+          headPipeline { status }
+          approvalsRequired
+          approvalsLeft
+          resolvableDiscussionsCount
+          resolvedDiscussionsCount
         }
       }
     }

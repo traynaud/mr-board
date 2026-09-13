@@ -46,6 +46,7 @@
     },
     "columns": {
       "menuLabel": "Colonnes",
+      "status": "Statut",
       "opened": "Date d'ouverture",
       "resetWidths": "Réinitialiser les largeurs",
       "resizeAriaLabel": "Redimensionner la colonne {{name}}"
@@ -66,7 +67,8 @@
         "assignee": "Affecté",
         "approved": "Approved",
         "ready": "Depuis Ready",
-        "opened": "Ouverte"
+        "opened": "Ouverte",
+        "status": "Statut"
       },
       "difficulty": {
         "easy": "Easy",
@@ -86,6 +88,26 @@
       },
       "opened": {
         "tooltip": "Ouverte le {{date}}"
+      },
+      "mergeStatus": {
+        "mergeable": "Fusionnable",
+        "unknown": "Statut en cours de vérification par GitLab",
+        "blockedTitle": "Non fusionnable :",
+        "reasons": {
+          "conflicts": "Conflits de merge",
+          "pipeline_failed": "Pipeline en échec",
+          "pipeline_running": "Pipeline en cours",
+          "pipeline_missing": "Aucune pipeline",
+          "changes_requested": "Modifications demandées",
+          "not_approved": "Approbations manquantes",
+          "not_approved_count": "Approbations manquantes ({{count}} restantes)",
+          "discussions_unresolved": "Discussions non résolues",
+          "discussions_unresolved_count": "{{count}} discussion(s) non résolue(s)",
+          "need_rebase": "Rebase nécessaire",
+          "blocked_by_mr": "Bloquée par une autre MR",
+          "policy": "Règle du projet non satisfaite",
+          "other": "Non fusionnable (raison inconnue)"
+        }
       }
     },
     "footer": {

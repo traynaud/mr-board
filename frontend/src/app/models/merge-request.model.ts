@@ -9,6 +9,34 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type ReadyLevel = 'green' | 'orange' | 'red';
 
+export type MergeStatusState = 'mergeable' | 'blocked' | 'unknown';
+
+/** Les 11 codes de raison de blocage possibles (RG-017-04), génériques par forge (RG-017-02). */
+export type MergeStatusReasonCode =
+  | 'conflicts'
+  | 'pipeline_failed'
+  | 'pipeline_running'
+  | 'pipeline_missing'
+  | 'changes_requested'
+  | 'not_approved'
+  | 'discussions_unresolved'
+  | 'need_rebase'
+  | 'blocked_by_mr'
+  | 'policy'
+  | 'other';
+
+/** Une raison de blocage, avec un compteur uniquement pour certains codes (RG-017-06). */
+export interface MergeStatusReason {
+  code: MergeStatusReasonCode;
+  count?: number;
+}
+
+/** Mergeabilité GitLab d'une MR (RG-017-06). `reasons` est ordonné (RG-017-04), sans texte traduit. */
+export interface MergeStatus {
+  state: MergeStatusState;
+  reasons: MergeStatusReason[];
+}
+
 export type SortKey = 'ready' | 'diff';
 export type SortDirection = 'asc' | 'desc';
 
@@ -58,6 +86,8 @@ export interface MergeRequestView {
   openedDays: number;
   /** `true` si je suis auteur, reviewer ou affecté (RG-G09). Non affiché visuellement dans cette US. */
   isMine: boolean;
+  /** Mergeabilité GitLab (RG-017-06). `unknown` si la MR a été synchronisée avant l'US-017 (RG-017-11). */
+  mergeStatus: MergeStatus;
 }
 
 /** Réponse de `GET /merge-requests` (RG-009-02) : les MRs et d'éventuels avertissements non bloquants. */

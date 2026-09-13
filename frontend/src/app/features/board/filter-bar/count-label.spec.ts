@@ -25,6 +25,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     readyLevel: 'green',
     openedDays: 1,
     isMine: false,
+    mergeStatus: { state: 'mergeable', reasons: [] },
     ...overrides,
   };
 }

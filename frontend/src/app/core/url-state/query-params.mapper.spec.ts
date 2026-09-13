@@ -11,6 +11,7 @@ const DEFAULT_STATE: UrlState = {
   approved: null,
   commented: null,
   sort: DEFAULT_SORT,
+  showStatus: true,
   showOpened: false,
 };
 
@@ -100,16 +101,38 @@ describe('decodeQueryParams', () => {
     expect(decodeQueryParams({})).toMatchObject({ sort: DEFAULT_SORT });
   });
 
-  it('should_decode_cols_opened_as_showOpened_true', () => {
-    expect(decodeQueryParams({ cols: 'opened' })).toMatchObject({ showOpened: true });
+  it('should_decode_absent_cols_as_the_default_optional_columns', () => {
+    // Scenario: URL sans cols
+    expect(decodeQueryParams({})).toMatchObject({ showStatus: true, showOpened: false });
   });
 
-  it('should_decode_an_unknown_cols_value_as_showOpened_false', () => {
-    expect(decodeQueryParams({ cols: 'other' })).toMatchObject({ showOpened: false });
+  it('should_decode_cols_none_as_every_optional_column_hidden', () => {
+    expect(decodeQueryParams({ cols: 'none' })).toMatchObject({
+      showStatus: false,
+      showOpened: false,
+    });
   });
 
-  it('should_decode_absent_cols_as_showOpened_false', () => {
-    expect(decodeQueryParams({})).toMatchObject({ showOpened: false });
+  it('should_decode_cols_opened_as_status_hidden_and_opened_visible', () => {
+    // Scenario: Restauration depuis l'URL
+    expect(decodeQueryParams({ cols: 'opened' })).toMatchObject({
+      showStatus: false,
+      showOpened: true,
+    });
+  });
+
+  it('should_decode_cols_status_opened_as_both_visible', () => {
+    expect(decodeQueryParams({ cols: 'status,opened' })).toMatchObject({
+      showStatus: true,
+      showOpened: true,
+    });
+  });
+
+  it('should_ignore_an_unknown_token_in_cols', () => {
+    expect(decodeQueryParams({ cols: 'foo,opened' })).toMatchObject({
+      showStatus: false,
+      showOpened: true,
+    });
   });
 });
 
@@ -154,9 +177,29 @@ describe('encodeQueryParams', () => {
     expect(params['sort']).toBe('diff:desc');
   });
 
-  it('should_include_cols_only_when_showOpened_is_true', () => {
-    expect(encodeQueryParams({ ...DEFAULT_STATE, showOpened: true })['cols']).toBe('opened');
-    expect(encodeQueryParams({ ...DEFAULT_STATE, showOpened: false })['cols']).toBeUndefined();
+  it('should_omit_cols_for_the_default_state_of_status_visible_and_opened_hidden', () => {
+    // Scenario: URL sans cols (état par défaut)
+    expect(encodeQueryParams(DEFAULT_STATE)['cols']).toBeUndefined();
+  });
+
+  it('should_encode_cols_as_none_when_every_optional_column_is_hidden', () => {
+    // Scenario: Masquer la colonne
+    expect(
+      encodeQueryParams({ ...DEFAULT_STATE, showStatus: false, showOpened: false })['cols'],
+    ).toBe('none');
+  });
+
+  it('should_encode_cols_as_status_opened_when_both_are_visible', () => {
+    // Scenario: Afficher Ouverte en gardant Statut
+    expect(
+      encodeQueryParams({ ...DEFAULT_STATE, showStatus: true, showOpened: true })['cols'],
+    ).toBe('status,opened');
+  });
+
+  it('should_encode_cols_as_opened_when_only_opened_is_visible', () => {
+    expect(
+      encodeQueryParams({ ...DEFAULT_STATE, showStatus: false, showOpened: true })['cols'],
+    ).toBe('opened');
   });
 
   it('should_produce_keys_in_the_canonical_order_of_rg_011_01', () => {
@@ -168,6 +211,7 @@ describe('encodeQueryParams', () => {
       assigned: ['nobody'],
       approved: 'yes',
       commented: 'no',
+      showStatus: true,
       showOpened: true,
     });
     expect(Object.keys(params)).toEqual([
@@ -193,6 +237,9 @@ describe('round-trip (RG-011-08)', () => {
     { ...DEFAULT_STATE, active: ['assigned'], assigned: ['nobody', 'mdupont'] },
     { ...DEFAULT_STATE, active: ['approved'], approved: 'yes' },
     { ...DEFAULT_STATE, active: ['commented'], commented: null },
+    { ...DEFAULT_STATE, showStatus: false, showOpened: false },
+    { ...DEFAULT_STATE, showStatus: false, showOpened: true },
+    { ...DEFAULT_STATE, showStatus: true, showOpened: true },
     {
       ...DEFAULT_STATE,
       active: ['project', 'author', 'assigned', 'approved', 'commented'],
@@ -202,6 +249,7 @@ describe('round-trip (RG-011-08)', () => {
       approved: 'no',
       commented: 'yes',
       sort: { key: 'diff', direction: 'desc' },
+      showStatus: true,
       showOpened: true,
     },
   ];

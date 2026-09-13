@@ -11,13 +11,14 @@ import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/mer
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
 import { formatDateTime, formatShortDate } from '../../../shared/format/format-date';
+import { MergeStatusIconComponent } from '../../../shared/merge-status-icon/merge-status-icon.component';
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { ResizableColumnDirective } from '../../../shared/resizable-column/resizable-column.directive';
 import type { ResizableColumnKey } from '../../../stores/column-widths.store';
 import { summarizeUsers } from './summarize-users';
 
-/** Colonnes toujours affichées, dans l'ordre (RG-005-02, RG-007-*). */
-const BASE_COLUMNS = [
+/** Colonnes toujours affichées avant la colonne optionnelle « Statut » (RG-005-02). */
+const COLUMNS_BEFORE_STATUS = [
   'project',
   'author',
   'title',
@@ -26,8 +27,10 @@ const BASE_COLUMNS = [
   'reviewer',
   'assignee',
   'approved',
-  'ready',
 ];
+
+/** Colonnes toujours affichées après la colonne optionnelle « Statut » (RG-017-07). */
+const COLUMNS_AFTER_STATUS = ['ready'];
 
 /**
  * Tableau des MRs ouvertes — 8 colonnes (RG-005-02, RG-007-*), largeurs
@@ -50,6 +53,7 @@ const BASE_COLUMNS = [
     MatTooltipModule,
     AvatarComponent,
     DifficultyBadgeComponent,
+    MergeStatusIconComponent,
     ReadyDelayComponent,
     ResizableColumnDirective,
     TranslatePipe,
@@ -63,6 +67,8 @@ export class MrTableComponent {
 
   readonly rows = input.required<MergeRequestView[]>();
   readonly sort = input.required<MergeRequestSort>();
+  /** RG-017-09 : visibilité de la colonne optionnelle « Statut ». */
+  readonly showStatus = input.required<boolean>();
   /** RG-011-09 : visibilité de la colonne optionnelle « Date d'ouverture ». */
   readonly showOpened = input.required<boolean>();
   /** RG-012-01/02/03 : largeurs effectives (défauts + overrides), déjà résolues par l'appelant. */
@@ -71,6 +77,8 @@ export class MrTableComponent {
   readonly openInNewTab = input(false);
 
   readonly sortChange = output<SortKey>();
+  /** RG-017-09 : bascule la visibilité de la colonne « Statut ». */
+  readonly toggleStatusColumn = output<void>();
   /** RG-011-09 : bascule la visibilité de la colonne « Date d'ouverture ». */
   readonly toggleOpenedColumn = output<void>();
   /** RG-012-01/07 : nouvelle largeur (glisser ou clavier), déjà bornée. */
@@ -81,7 +89,9 @@ export class MrTableComponent {
   readonly resetAllWidths = output<void>();
 
   protected readonly displayedColumns = computed(() => [
-    ...BASE_COLUMNS,
+    ...COLUMNS_BEFORE_STATUS,
+    ...(this.showStatus() ? ['status'] : []),
+    ...COLUMNS_AFTER_STATUS,
     ...(this.showOpened() ? ['opened'] : []),
     'columnsMenu',
   ]);

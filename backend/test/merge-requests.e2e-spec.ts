@@ -33,6 +33,10 @@ interface MergeRequestViewBody {
   readyLevel: 'green' | 'orange' | 'red' | null;
   openedDays: number;
   isMine: boolean;
+  mergeStatus: {
+    state: 'mergeable' | 'blocked' | 'unknown';
+    reasons: { code: string; count?: number }[];
+  };
 }
 interface MergeRequestsResponseBody {
   mergeRequests: MergeRequestViewBody[];
@@ -115,6 +119,13 @@ function rawNode(
     author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
     reviewers: { nodes: [] },
     assignees: { nodes: [] },
+    detailedMergeStatus: 'MERGEABLE',
+    conflicts: false,
+    headPipeline: { status: 'SUCCESS' },
+    approvalsRequired: 0,
+    approvalsLeft: 0,
+    resolvableDiscussionsCount: 0,
+    resolvedDiscussionsCount: 0,
     ...overrides,
   };
 }
@@ -228,6 +239,7 @@ describe('MergeRequests (e2e)', () => {
         readyLevel: 'red',
         openedDays: 9,
         isMine: false,
+        mergeStatus: { state: 'mergeable', reasons: [] },
       });
       expect(Object.keys(view).sort()).toEqual(
         [
@@ -253,6 +265,7 @@ describe('MergeRequests (e2e)', () => {
           'readyLevel',
           'openedDays',
           'isMine',
+          'mergeStatus',
         ].sort(),
       );
       expect(JSON.stringify(res.body)).not.toContain('token');
@@ -779,6 +792,72 @@ describe('MergeRequests (e2e)', () => {
       value: 'nobody',
       label: 'Nobody',
       count: 0,
+    });
+  });
+
+  describe('mergeStatus (US-017)', () => {
+    it('GET /merge-requests should_report_a_blocked_merge_status_with_ordered_reasons', async () => {
+      gitlab.getOpenMergeRequests.mockResolvedValue([
+        rawNode(200, {
+          detailedMergeStatus: 'CONFLICT',
+          conflicts: true,
+          headPipeline: { status: 'FAILED' },
+          approvalsLeft: 2,
+        }),
+      ]);
+
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 200,
+      );
+      expect(view?.mergeStatus).toEqual({
+        state: 'blocked',
+        reasons: [
+          { code: 'conflicts' },
+          { code: 'pipeline_failed' },
+          { code: 'not_approved', count: 2 },
+        ],
+      });
+    });
+
+    it('GET /merge-requests should_report_an_unknown_merge_status_while_gitlab_is_still_checking', async () => {
+      gitlab.getOpenMergeRequests.mockResolvedValue([
+        rawNode(201, { detailedMergeStatus: 'CHECKING' }),
+      ]);
+
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 201,
+      );
+      expect(view?.mergeStatus).toEqual({ state: 'unknown', reasons: [] });
+    });
+
+    it('GET /merge-requests should_report_blocked_with_a_single_reason_for_a_draft_with_conflicts', async () => {
+      gitlab.getOpenMergeRequests.mockResolvedValue([
+        rawNode(202, {
+          draft: true,
+          detailedMergeStatus: 'DRAFT_STATUS',
+          conflicts: true,
+        }),
+      ]);
+
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests?drafts=1');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 202,
+      );
+      expect(view?.mergeStatus).toEqual({
+        state: 'blocked',
+        reasons: [{ code: 'conflicts' }],
+      });
     });
   });
 });

@@ -29,6 +29,15 @@ export interface GitlabGraphqlMergeRequestNode {
   author: GitlabGraphqlUserNode;
   reviewers: { nodes: GitlabGraphqlUserNode[] };
   assignees: { nodes: GitlabGraphqlUserNode[] };
+  /** Raw GitLab mergeability enum (US-017, RG-017-01). */
+  detailedMergeStatus: string;
+  conflicts: boolean;
+  /** `null` when the merge request has no pipeline yet. */
+  headPipeline: { status: string } | null;
+  approvalsRequired: number;
+  approvalsLeft: number;
+  resolvableDiscussionsCount: number;
+  resolvedDiscussionsCount: number;
 }
 
 export interface GitlabGraphqlMergeRequestsPage {

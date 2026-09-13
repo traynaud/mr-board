@@ -152,3 +152,12 @@ a {
   --mat-snack-bar-button-color: var(--color-accent-400);
   --mat-snack-bar-container-shape: 0px;
 }
+
+// Infobulle multi-lignes de la colonne « Statut » (US-017, RG-017-08) —
+// matTooltip tronque son contenu sur une seule ligne par défaut ; l'overlay
+// CDK est rendu hors de l'arbre du composant, donc cette règle doit être globale.
+.mrb-status-tooltip {
+  white-space: pre-line;
+  max-width: 280px;
+  text-align: left;
+}

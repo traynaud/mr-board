@@ -36,6 +36,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyLevel: 'red',
     openedDays: 6,
     isMine: false,
+    mergeStatus: { state: 'mergeable', reasons: [] },
     ...overrides,
   };
 }
@@ -46,10 +47,12 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     <app-mr-table
       [rows]="rows()"
       [sort]="sort()"
+      [showStatus]="showStatus()"
       [showOpened]="showOpened()"
       [columnWidths]="columnWidths()"
       [openInNewTab]="openInNewTab()"
       (sortChange)="lastSortChange = $event"
+      (toggleStatusColumn)="toggleStatusColumnCount = toggleStatusColumnCount + 1"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
       (widthChange)="lastWidthChange = $event"
       (resetColumnWidth)="lastResetColumn = $event"
@@ -61,10 +64,12 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
 class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
+  readonly showStatus = signal(true);
   readonly showOpened = signal(false);
   readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   readonly openInNewTab = signal(false);
   lastSortChange: SortKey | null = null;
+  toggleStatusColumnCount = 0;
   toggleOpenedColumnCount = 0;
   lastWidthChange: { key: ResizableColumnKey; width: number } | null = null;
   lastResetColumn: ResizableColumnKey | null = null;
@@ -182,9 +187,39 @@ describe('MrTableComponent', () => {
       t('board.mergeRequests.columns.reviewer'),
       t('board.mergeRequests.columns.assignee'),
       t('board.mergeRequests.columns.approved'),
+      t('board.mergeRequests.columns.status'),
       `${t('board.mergeRequests.columns.ready')} ↑`,
       '',
     ]);
+  });
+
+  it('should_show_the_status_column_by_default_and_hide_it_when_showStatus_is_false', async () => {
+    const { fixture, el } = await setup();
+
+    expect(
+      Array.from(el.querySelectorAll('th')).some(
+        (th) => th.textContent?.trim() === t('board.mergeRequests.columns.status'),
+      ),
+    ).toBe(true);
+
+    fixture.componentInstance.showStatus.set(false);
+    await fixture.whenStable();
+
+    expect(
+      Array.from(el.querySelectorAll('th')).some(
+        (th) => th.textContent?.trim() === t('board.mergeRequests.columns.status'),
+      ),
+    ).toBe(false);
+  });
+
+  it('should_render_the_merge_status_icon_for_each_row', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({ mergeStatus: { state: 'blocked', reasons: [{ code: 'conflicts' }] } }),
+    ]);
+    await fixture.whenStable();
+
+    expect(el.querySelector('app-merge-status-icon .danger')).not.toBeNull();
   });
 
   it('should_hide_the_opened_column_by_default_and_show_it_when_showOpened_is_true', async () => {
@@ -214,7 +249,31 @@ describe('MrTableComponent', () => {
   });
 
   describe('columns menu', () => {
-    it('should_show_the_checkbox_reflecting_showOpened', async () => {
+    function menuOptions(): HTMLElement[] {
+      return Array.from(document.querySelectorAll<HTMLElement>('.menu-option'));
+    }
+
+    it('should_list_the_status_option_before_the_opened_option', async () => {
+      const { loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      const labels = menuOptions().map((option) => option.querySelector('.option-label')?.textContent?.trim());
+      expect(labels).toEqual([t('board.columns.status'), t('board.columns.opened')]);
+    });
+
+    it('should_show_the_status_checkbox_reflecting_showStatus', async () => {
+      const { fixture, loader } = await setup();
+      fixture.componentInstance.showStatus.set(false);
+      await fixture.whenStable();
+
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      expect(menuOptions()[0].getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('should_show_the_opened_checkbox_reflecting_showOpened', async () => {
       const { fixture, loader } = await setup();
       fixture.componentInstance.showOpened.set(true);
       await fixture.whenStable();
@@ -222,19 +281,32 @@ describe('MrTableComponent', () => {
       const menu = await loader.getHarness(MatMenuHarness);
       await menu.open();
 
-      const checked = document.querySelector('.menu-option[aria-checked]')?.getAttribute('aria-checked');
-      expect(checked).toBe('true');
+      expect(menuOptions()[1].getAttribute('aria-checked')).toBe('true');
     });
 
-    it('should_emit_toggleOpenedColumn_and_keep_the_menu_open_when_the_option_is_clicked', async () => {
+    it('should_emit_toggleStatusColumn_and_keep_the_menu_open_when_the_status_option_is_clicked', async () => {
       const { fixture, loader } = await setup();
       const menu = await loader.getHarness(MatMenuHarness);
       await menu.open();
 
-      document.querySelector<HTMLElement>('.menu-option')?.click();
+      menuOptions()[0].click();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.toggleStatusColumnCount).toBe(1);
+      expect(fixture.componentInstance.toggleOpenedColumnCount).toBe(0);
+      expect(await menu.isOpen()).toBe(true);
+    });
+
+    it('should_emit_toggleOpenedColumn_and_keep_the_menu_open_when_the_opened_option_is_clicked', async () => {
+      const { fixture, loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      menuOptions()[1].click();
       await fixture.whenStable();
 
       expect(fixture.componentInstance.toggleOpenedColumnCount).toBe(1);
+      expect(fixture.componentInstance.toggleStatusColumnCount).toBe(0);
       expect(await menu.isOpen()).toBe(true);
     });
   });

@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-017",
+    "title": "Colonne « Statut » affichant la mergeabilité GitLab (fusionnable, bloquée avec raisons, ou indéterminée)."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-016",
     "title": "Notification navigateur à l'affectation d'une MR et badge de comptage des MRs rouges dans le titre de l'onglet."
   },

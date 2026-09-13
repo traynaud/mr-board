@@ -1,11 +1,12 @@
 import { Difficulty } from '../domain/calculate-difficulty';
 import { ReadyLevel } from '../domain/calculate-ready-delay';
 import { MergeRequestUserDto } from './merge-request-user.dto';
+import { MergeStatusDto } from './merge-status.dto';
 
 /**
  * Response of `GET /api/v1/merge-requests` (RG-005-11, extended by
- * RG-006-01 and RG-007-01). Still no `labels` — added by the US that
- * displays them (US-015).
+ * RG-006-01, RG-007-01 and RG-017-06). Still no `labels` — added by the US
+ * that displays them (US-015).
  */
 export class MergeRequestViewDto {
   id!: number;
@@ -38,4 +39,6 @@ export class MergeRequestViewDto {
   openedDays!: number;
   /** `true` si je suis auteur, reviewer ou affecté (RG-G09) ; toujours calculé (RG-009-06). */
   isMine!: boolean;
+  /** Mergeabilité GitLab (US-017, RG-017-06). `unknown` si la MR a été synchronisée avant cette US (RG-017-11). */
+  mergeStatus!: MergeStatusDto;
 }

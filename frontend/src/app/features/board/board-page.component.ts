@@ -136,6 +136,7 @@ export class BoardPageComponent implements OnInit {
       approved: this.filtersStore.approved(),
       commented: this.filtersStore.commented(),
       sort: this.mrStore.sort(),
+      showStatus: this.columnsStore.showStatus(),
       showOpened: this.columnsStore.showOpened(),
     }),
   );
@@ -307,6 +308,14 @@ export class BoardPageComponent implements OnInit {
   }
 
   /**
+   * RG-017-09 : bascule la colonne « Statut ». Purement local — ne recharge
+   * pas les MRs (aucun paramètre API concerné).
+   */
+  protected onToggleStatusColumn(): void {
+    this.columnsStore.toggleStatus();
+  }
+
+  /**
    * RG-011-09 : bascule la colonne « Date d'ouverture ». Purement local — ne
    * recharge pas les MRs (aucun paramètre API concerné).
    */
@@ -351,7 +360,7 @@ export class BoardPageComponent implements OnInit {
       commented: state.commented,
     });
     this.mrStore.restoreSort(state.sort);
-    this.columnsStore.restore(state.showOpened);
+    this.columnsStore.restore(state.showStatus, state.showOpened);
   }
 
   /**

@@ -17,6 +17,7 @@ import {
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
 import { ConfiguredProject, buildFacets } from './domain/build-facets';
+import { computeMergeStatus } from './domain/compute-merge-status';
 import {
   ComposableFilters,
   EMPTY_COMPOSABLE_FILTERS,
@@ -269,6 +270,13 @@ export class MergeRequestsService {
     entity.readyAt = readyAt;
     entity.updatedAtGitlab = mergeRequest.updatedAt;
     entity.syncedAt = syncedAt;
+    entity.detailedMergeStatus = mergeRequest.detailedMergeStatus;
+    entity.conflicts = mergeRequest.conflicts;
+    entity.headPipelineStatus = mergeRequest.headPipelineStatus;
+    entity.approvalsRequired = mergeRequest.approvalsRequired;
+    entity.approvalsLeft = mergeRequest.approvalsLeft;
+    entity.resolvableDiscussionsCount = mergeRequest.resolvableDiscussionsCount;
+    entity.resolvedDiscussionsCount = mergeRequest.resolvedDiscussionsCount;
 
     const saved = await this.mergeRequests.save(entity);
 
@@ -378,7 +386,26 @@ function toMergeRequestView(
       },
       identity,
     ),
+    mergeStatus: toMergeStatusField(mergeRequest),
   };
+}
+
+/**
+ * Assembles `mergeStatus` from the raw columns persisted at sync time
+ * (US-017, RG-017-06), delegating the actual mergeability rules to the pure
+ * `computeMergeStatus` (RG-017-02).
+ */
+function toMergeStatusField(
+  mergeRequest: MergeRequest,
+): MergeRequestViewDto['mergeStatus'] {
+  return computeMergeStatus({
+    detailedMergeStatus: mergeRequest.detailedMergeStatus,
+    conflicts: mergeRequest.conflicts,
+    headPipelineStatus: mergeRequest.headPipelineStatus,
+    approvalsLeft: mergeRequest.approvalsLeft,
+    resolvableDiscussionsCount: mergeRequest.resolvableDiscussionsCount,
+    resolvedDiscussionsCount: mergeRequest.resolvedDiscussionsCount,
+  });
 }
 
 /**

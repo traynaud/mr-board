@@ -114,6 +114,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyLevel: 'red',
     openedDays: 6,
     isMine: false,
+    mergeStatus: { state: 'mergeable', reasons: [] },
     ...overrides,
   };
 }
@@ -467,6 +468,9 @@ describe('BoardPageComponent', () => {
 
       expect(TestBed.inject(FiltersStore).active()).toEqual(['project']);
       expect(TestBed.inject(FiltersStore).project()).toEqual(['api', 'web']);
+      // Scenario: Restauration depuis l'URL (RG-017-09) — `cols=opened`
+      // masque Statut et affiche Ouverte.
+      expect(TestBed.inject(ColumnsStore).showStatus()).toBe(false);
       expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
     });
 
@@ -578,8 +582,32 @@ describe('BoardPageComponent', () => {
       mrTable.toggleOpenedColumn.emit();
       await settle();
 
+      // Scenario: Afficher Ouverte en gardant Statut (RG-017-09) — Statut
+      // reste visible (défaut), donc `cols` liste les deux colonnes.
       expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
-      expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toContain('cols=opened');
+      expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toContain(
+        'cols=status,opened',
+      );
+    });
+
+    it('should_toggle_the_status_column_from_the_mr_table_menu_output', async () => {
+      await bootstrap({
+        settings: WITH_TOKEN_SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      expect(TestBed.inject(ColumnsStore).showStatus()).toBe(true);
+
+      const mrTable = fixture.debugElement.query(By.directive(MrTableComponent))
+        .componentInstance as MrTableComponent;
+      mrTable.toggleStatusColumn.emit();
+      await settle();
+
+      // Scenario: Masquer la colonne (RG-017-09).
+      expect(TestBed.inject(ColumnsStore).showStatus()).toBe(false);
+      expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toContain('cols=none');
     });
   });
 

@@ -46,6 +46,13 @@ function graphqlNode(
     },
     reviewers: { nodes: [] },
     assignees: { nodes: [] },
+    detailedMergeStatus: 'MERGEABLE',
+    conflicts: false,
+    headPipeline: { status: 'SUCCESS' },
+    approvalsRequired: 0,
+    approvalsLeft: 0,
+    resolvableDiscussionsCount: 0,
+    resolvedDiscussionsCount: 0,
     ...overrides,
   };
 }

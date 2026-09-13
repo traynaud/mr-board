@@ -9,10 +9,11 @@ export type ResizableColumnKey =
   | 'reviewer'
   | 'assignee'
   | 'approved'
+  | 'status'
   | 'ready'
   | 'opened';
 
-/** RG-005-02 : largeurs initiales des colonnes, reprises du prototype de référence. */
+/** RG-005-02, RG-017-07 : largeurs initiales des colonnes, reprises du prototype de référence. */
 export const DEFAULT_COLUMN_WIDTHS: Record<ResizableColumnKey, number> = {
   project: 64,
   author: 52,
@@ -21,6 +22,7 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ResizableColumnKey, number> = {
   reviewer: 72,
   assignee: 72,
   approved: 76,
+  status: 64,
   ready: 118,
   opened: 120,
 };

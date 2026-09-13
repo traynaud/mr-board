@@ -65,4 +65,48 @@ export class MergeRequest {
 
   @Column({ name: 'synced_at', type: 'text' })
   syncedAt!: string;
+
+  /**
+   * Raw GitLab `detailedMergeStatus` enum value (US-017, RG-017-01).
+   * `null` for a merge request synced before this US (RG-017-11) — treated
+   * as `state: 'unknown'` by `computeMergeStatus`.
+   */
+  @Column({ name: 'detailed_merge_status', type: 'text', nullable: true })
+  detailedMergeStatus!: string | null;
+
+  /** `null` iff `detailedMergeStatus` is `null` (same sync, RG-017-11). */
+  @Column({ type: 'boolean', nullable: true })
+  conflicts!: boolean | null;
+
+  /** GitLab head pipeline status, `null` when there is no pipeline or no data (RG-017-01). */
+  @Column({ name: 'head_pipeline_status', type: 'text', nullable: true })
+  headPipelineStatus!: string | null;
+
+  /**
+   * Approvals still required by the project's rules. Persisted for
+   * information/future use but never read by `computeMergeStatus`
+   * (RG-017-04 uses `approvalsLeft` only).
+   */
+  @Column({ name: 'approvals_required', type: 'integer', nullable: true })
+  approvalsRequired!: number | null;
+
+  /** `null` iff `detailedMergeStatus` is `null` (same sync, RG-017-11). */
+  @Column({ name: 'approvals_left', type: 'integer', nullable: true })
+  approvalsLeft!: number | null;
+
+  /** `null` iff `detailedMergeStatus` is `null` (same sync, RG-017-11). */
+  @Column({
+    name: 'resolvable_discussions_count',
+    type: 'integer',
+    nullable: true,
+  })
+  resolvableDiscussionsCount!: number | null;
+
+  /** `null` iff `detailedMergeStatus` is `null` (same sync, RG-017-11). */
+  @Column({
+    name: 'resolved_discussions_count',
+    type: 'integer',
+    nullable: true,
+  })
+  resolvedDiscussionsCount!: number | null;
 }

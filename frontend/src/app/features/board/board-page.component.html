@@ -56,10 +56,12 @@
       <app-mr-table
         [rows]="mrStore.mergeRequests()"
         [sort]="mrStore.sort()"
+        [showStatus]="columnsStore.showStatus()"
         [showOpened]="columnsStore.showOpened()"
         [columnWidths]="columnWidthsStore.widths()"
         [openInNewTab]="settingsStore.settings()?.openInNewTab ?? false"
         (sortChange)="mrStore.setSort($event)"
+        (toggleStatusColumn)="onToggleStatusColumn()"
         (toggleOpenedColumn)="onToggleOpenedColumn()"
         (widthChange)="onWidthChange($event)"
         (resetColumnWidth)="onResetColumnWidth($event)"

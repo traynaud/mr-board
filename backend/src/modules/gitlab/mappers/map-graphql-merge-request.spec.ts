@@ -41,6 +41,13 @@ function buildMergeRequest(
       ],
     },
     assignees: { nodes: [buildUser('gid://gitlab/User/2', 'kbenali')] },
+    detailedMergeStatus: 'MERGEABLE',
+    conflicts: false,
+    headPipeline: { status: 'SUCCESS' },
+    approvalsRequired: 0,
+    approvalsLeft: 0,
+    resolvableDiscussionsCount: 0,
+    resolvedDiscussionsCount: 0,
     ...overrides,
   };
 }
@@ -99,7 +106,23 @@ describe('mapGraphqlMergeRequest', () => {
         expect.objectContaining({ username: 'lrousseau' }),
       ],
       assignees: [expect.objectContaining({ username: 'kbenali' })],
+      detailedMergeStatus: 'MERGEABLE',
+      conflicts: false,
+      headPipelineStatus: 'SUCCESS',
+      approvalsRequired: 0,
+      approvalsLeft: 0,
+      resolvableDiscussionsCount: 0,
+      resolvedDiscussionsCount: 0,
     });
+  });
+
+  it('should_map_a_null_head_pipeline_status_when_there_is_no_pipeline', () => {
+    // US-017, RG-017-04 (`pipeline_missing`) : distingue "pas de pipeline"
+    // d'un statut de pipeline connu — ne jamais substituer une valeur.
+    const mapped = mapGraphqlMergeRequest(
+      buildMergeRequest({ headPipeline: null }),
+    );
+    expect(mapped.headPipelineStatus).toBeNull();
   });
 
   it('should_return_null_diff_stats_when_summary_is_absent', () => {

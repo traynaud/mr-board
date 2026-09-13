@@ -38,6 +38,13 @@ function mappedMergeRequest(
     },
     reviewers: [],
     assignees: [],
+    detailedMergeStatus: 'MERGEABLE',
+    conflicts: false,
+    headPipelineStatus: 'SUCCESS',
+    approvalsRequired: 0,
+    approvalsLeft: 0,
+    resolvableDiscussionsCount: 0,
+    resolvedDiscussionsCount: 0,
     ...overrides,
   };
 }
@@ -183,6 +190,13 @@ describe('MergeRequestsService', () => {
       readyAt: '2026-09-01T10:00:00.000Z',
       updatedAtGitlab: '2026-09-01T10:00:00.000Z',
       syncedAt: '2026-09-11T08:00:00.000Z',
+      detailedMergeStatus: 'MERGEABLE',
+      conflicts: false,
+      headPipelineStatus: 'SUCCESS',
+      approvalsRequired: 0,
+      approvalsLeft: 0,
+      resolvableDiscussionsCount: 0,
+      resolvedDiscussionsCount: 0,
       ...overrides,
     };
   }
@@ -443,12 +457,60 @@ describe('MergeRequestsService', () => {
             readyLevel: 'red',
             openedDays: 9,
             isMine: false,
+            mergeStatus: { state: 'mergeable', reasons: [] },
           },
         ],
         warnings: [],
       });
       expect(projectsService.findByIds).toHaveBeenCalledWith([1]);
       expect(usersService.findByIds).toHaveBeenCalledWith([10]);
+    });
+
+    it('should_report_an_unknown_merge_status_for_a_merge_request_synced_before_this_us', async () => {
+      // US-017, RG-017-11 : colonnes de statut à `null`, jamais de recalcul rétroactif.
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          detailedMergeStatus: null,
+          conflicts: null,
+          headPipelineStatus: null,
+          approvalsRequired: null,
+          approvalsLeft: null,
+          resolvableDiscussionsCount: null,
+          resolvedDiscussionsCount: null,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.mergeStatus).toEqual({ state: 'unknown', reasons: [] });
+    });
+
+    it('should_report_a_blocked_merge_status_with_its_reasons', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          detailedMergeStatus: 'CONFLICT',
+          conflicts: true,
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.mergeStatus).toEqual({
+        state: 'blocked',
+        reasons: [{ code: 'conflicts' }],
+      });
     });
 
     it('should_compute_changed_lines_and_difficulty_from_the_diff_stats', async () => {

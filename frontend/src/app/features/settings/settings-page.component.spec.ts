@@ -303,7 +303,8 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLButtonElement>('button.cancel')!.click();
 
     expect(router.navigate).toHaveBeenCalledWith(['/'], {
-      queryParams: { drafts: '0', mine: '1', sort: 'ready:asc', cols: 'opened' },
+      // RG-017-09 : « Statut » reste visible (défaut), donc `cols` liste les deux colonnes.
+      queryParams: { drafts: '0', mine: '1', sort: 'ready:asc', cols: 'status,opened' },
     });
   });
 
