@@ -1,16 +1,21 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 /**
- * A GitLab user encountered while synchronising merge requests (author,
- * reviewer or assignee). Upserted by `gitlab_user_id`. See US-004.
+ * A user encountered on a connection while synchronising merge requests
+ * (author, reviewer or assignee). Upserted by (`connectionId`,
+ * `remoteUserId`) — RG-019-05. See US-004.
  */
 @Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'gitlab_user_id', type: 'integer' })
-  gitlabUserId!: number;
+  @Column({ name: 'connection_id', type: 'integer' })
+  connectionId!: number;
+
+  /** Text because GitHub exposes string `node_id`s (RG-019-05). */
+  @Column({ name: 'remote_user_id', type: 'text' })
+  remoteUserId!: string;
 
   @Column({ type: 'text' })
   username!: string;

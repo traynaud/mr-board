@@ -1,4 +1,4 @@
-import { TestConnectionState } from '../../stores/settings.store';
+import { TestConnectionState } from '../../models/connection.model';
 import { resolveMeIdentity } from './me-identity';
 
 const IDLE: TestConnectionState = { status: 'idle', result: null, errorKey: null };

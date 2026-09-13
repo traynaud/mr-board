@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConnectionsService } from '../connections/connections.service';
 import { SettingsService } from '../settings/settings.service';
 import { computeNextRunAt } from './domain/compute-next-run-at';
 import { SyncRun } from './entities/sync-run.entity';
@@ -23,6 +24,7 @@ export class SyncScheduler {
     @InjectRepository(SyncRun)
     private readonly syncRuns: Repository<SyncRun>,
     private readonly settings: SettingsService,
+    private readonly connections: ConnectionsService,
     private readonly sync: SyncService,
   ) {}
 
@@ -40,8 +42,8 @@ export class SyncScheduler {
     if (refreshIntervalMin === 0) {
       return;
     }
-    const token = await this.settings.getToken();
-    if (!token) {
+    const connections = await this.connections.findAll();
+    if (connections.length === 0) {
       return;
     }
     const lastRun = await this.syncRuns.findOne({

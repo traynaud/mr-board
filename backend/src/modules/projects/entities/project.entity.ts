@@ -1,17 +1,22 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 /**
- * A GitLab repository configured to be scanned (singleton settings live in
- * `Settings`; there can be many of these). See RG-003-*.
+ * A repository configured to be scanned, belonging to exactly one
+ * `Connection` (RG-019-04). See RG-003-*.
  */
 @Entity({ name: 'projects' })
 export class Project {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'gitlab_project_id', type: 'integer' })
-  gitlabProjectId!: number;
+  @Column({ name: 'connection_id', type: 'integer' })
+  connectionId!: number;
 
+  /** Text because GitHub exposes string `node_id`s (RG-019-05). Unique per connection. */
+  @Column({ name: 'remote_project_id', type: 'text' })
+  remoteProjectId!: string;
+
+  /** Unique per connection, case-insensitive (RG-019-04). */
   @Column({ name: 'path_with_namespace', type: 'text' })
   pathWithNamespace!: string;
 

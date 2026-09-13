@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ConnectionsService } from '../connections/connections.service';
 import { SettingsService } from '../settings/settings.service';
 import { SyncRun } from './entities/sync-run.entity';
 import { SyncScheduler } from './sync-scheduler.service';
@@ -8,7 +9,8 @@ import { SyncService } from './sync.service';
 describe('SyncScheduler', () => {
   let scheduler: SyncScheduler;
   let syncRunsRepo: { findOne: jest.Mock };
-  let settings: { getRefreshIntervalMin: jest.Mock; getToken: jest.Mock };
+  let settings: { getRefreshIntervalMin: jest.Mock };
+  let connections: { findAll: jest.Mock };
   let sync: { trigger: jest.Mock };
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -23,10 +25,11 @@ describe('SyncScheduler', () => {
         },
         {
           provide: SettingsService,
-          useValue: {
-            getRefreshIntervalMin: jest.fn().mockResolvedValue(5),
-            getToken: jest.fn().mockResolvedValue('glpat-token'),
-          },
+          useValue: { getRefreshIntervalMin: jest.fn().mockResolvedValue(5) },
+        },
+        {
+          provide: ConnectionsService,
+          useValue: { findAll: jest.fn().mockResolvedValue([{ id: 1 }]) },
         },
         { provide: SyncService, useValue: { trigger: jest.fn() } },
       ],
@@ -35,6 +38,7 @@ describe('SyncScheduler', () => {
     scheduler = module.get(SyncScheduler);
     syncRunsRepo = module.get(getRepositoryToken(SyncRun));
     settings = module.get(SettingsService);
+    connections = module.get(ConnectionsService);
     sync = module.get(SyncService);
   });
 
@@ -56,12 +60,12 @@ describe('SyncScheduler', () => {
 
     await scheduler.tick();
 
-    expect(settings.getToken).not.toHaveBeenCalled();
+    expect(connections.findAll).not.toHaveBeenCalled();
     expect(sync.trigger).not.toHaveBeenCalled();
   });
 
-  it('should_do_nothing_silently_when_no_token_is_configured', async () => {
-    settings.getToken.mockResolvedValue(null);
+  it('should_do_nothing_silently_when_no_connection_is_configured', async () => {
+    connections.findAll.mockResolvedValue([]);
 
     await scheduler.tick();
 

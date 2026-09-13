@@ -9,13 +9,18 @@
   (themeToggle)="onThemeToggle()"
 />
 
-@if (noToken()) {
+@if (noConnections()) {
   <div class="no-token-banner">
     <mat-icon svgIcon="alert-circle" />
-    <span class="title">{{ 'board.noToken.title' | translate }}</span>
-    <span>{{ 'board.noToken.description' | translate }}</span>
+    <span class="title">{{ 'board.noConnections.title' | translate }}</span>
+    <span>{{ 'board.noConnections.description' | translate }}</span>
     <span class="spacer"></span>
-    <a mat-button routerLink="/settings">{{ 'board.noToken.configure' | translate }}</a>
+    <a mat-button routerLink="/settings">{{ 'board.noConnections.configure' | translate }}</a>
+  </div>
+} @else if (connectionsWithoutToken().length > 0) {
+  <div class="no-token-banner">
+    <mat-icon svgIcon="alert-circle" />
+    <span>{{ 'board.connectionsWithoutToken' | translate: { names: connectionsWithoutTokenNames() } }}</span>
   </div>
 }
 

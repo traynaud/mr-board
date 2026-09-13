@@ -1,8 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
 import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { GitlabGraphqlMergeRequestNode } from '../src/modules/gitlab/types/gitlab-merge-request';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
 import { createTestApp } from './utils/create-test-app';
 
 interface SyncRunBody {
@@ -23,38 +24,41 @@ interface ProjectBody {
   pathWithNamespace: string;
 }
 
-function rawNode(iid: number): GitlabGraphqlMergeRequestNode {
+function forgeMergeRequest(iid: number): ForgeMergeRequest {
   return {
-    id: `gid://gitlab/MergeRequest/${iid * 100}`,
-    iid: String(iid),
+    remoteId: String(iid * 100),
+    iid,
     title: `MR ${iid}`,
     webUrl: `https://gitlab.com/-/merge_requests/${iid}`,
     draft: false,
     createdAt: '2026-09-01T10:00:00Z',
     updatedAt: '2026-09-01T10:00:00Z',
-    userNotesCount: 0,
+    commentsCount: 0,
     approved: false,
-    labels: { nodes: [] },
-    diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+    labels: [],
+    changedFiles: 1,
+    additions: 1,
+    deletions: 0,
     author: {
-      id: 'gid://gitlab/User/1',
+      remoteUserId: '1',
       username: 'mdupont',
       name: 'Marie Dupont',
       avatarUrl: null,
       webUrl: 'https://gitlab.com/mdupont',
     },
-    reviewers: { nodes: [] },
-    assignees: { nodes: [] },
+    reviewers: [],
+    assignees: [],
+    mergeStatus: { state: 'mergeable', reasons: [] },
   };
 }
 
 describe('Sync (e2e)', () => {
   let app: INestApplication<App>;
   const gitlab = {
-    getCurrentUser: jest.fn(),
-    getTokenInfo: jest.fn(),
-    getProject: jest.fn(),
-    getOpenMergeRequests: jest.fn(),
+    normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    testConnection: jest.fn(),
+    resolveProject: jest.fn(),
+    fetchOpenMergeRequests: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -82,10 +86,10 @@ describe('Sync (e2e)', () => {
   }
 
   async function addProject(path: string, alias: string): Promise<ProjectBody> {
-    gitlab.getProject.mockResolvedValueOnce({
-      id: Math.floor(Math.random() * 100_000),
-      path_with_namespace: path,
-      web_url: `https://gitlab.com/${path}`,
+    gitlab.resolveProject.mockResolvedValueOnce({
+      remoteProjectId: String(Math.floor(Math.random() * 100_000)),
+      pathWithNamespace: path,
+      webUrl: `https://gitlab.com/${path}`,
     });
     const res = await api().post('/api/v1/projects').send({ path, alias });
     return res.body as ProjectBody;
@@ -93,6 +97,9 @@ describe('Sync (e2e)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    gitlab.normalizeUrl.mockImplementation((url: string) =>
+      normalizeGitlabUrl(url),
+    );
   });
 
   it('GET /sync/status should_report_never_synced_initially', async () => {
@@ -113,7 +120,7 @@ describe('Sync (e2e)', () => {
     expect(nextRunAtTime).toBeLessThanOrEqual(after);
   });
 
-  it('POST /sync should_report_an_error_run_when_no_token_is_configured', async () => {
+  it('POST /sync should_report_a_success_run_when_no_connection_is_configured', async () => {
     const res = await api().post('/api/v1/sync');
 
     expect(res.status).toBe(202);
@@ -121,21 +128,20 @@ describe('Sync (e2e)', () => {
 
     const status = await waitUntilIdle();
     expect(status.lastRun).toEqual(
-      expect.objectContaining({
-        status: 'error',
-        errorMessage: 'settings.tokenMissing',
-      }),
+      expect.objectContaining({ status: 'success', mrCount: 0 }),
     );
-    expect(gitlab.getOpenMergeRequests).not.toHaveBeenCalled();
+    expect(gitlab.fetchOpenMergeRequests).not.toHaveBeenCalled();
   });
 
-  it('PUT /settings should_configure_a_token_for_the_rest_of_this_suite', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-sync-e2e-token',
+  it('POST /connections should_create_a_connection_for_the_rest_of_this_suite', async () => {
+    const res = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'GitLab',
+      url: 'https://gitlab.com',
+      token: 'glpat-sync-e2e-token',
     });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect((res.body as { tokenConfigured: boolean }).tokenConfigured).toBe(
       true,
     );
@@ -144,12 +150,12 @@ describe('Sync (e2e)', () => {
   it('POST /sync should_synchronise_every_active_project_successfully', async () => {
     const api1 = await addProject('equipe/api', 'api');
     const web1 = await addProject('equipe/web', 'web');
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, path: string) =>
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
         Promise.resolve(
-          path === api1.pathWithNamespace
-            ? [rawNode(1), rawNode(2)]
-            : [rawNode(3)],
+          project.pathWithNamespace === api1.pathWithNamespace
+            ? [forgeMergeRequest(1), forgeMergeRequest(2)]
+            : [forgeMergeRequest(3)],
         ),
     );
 
@@ -165,24 +171,24 @@ describe('Sync (e2e)', () => {
         trigger: 'manual',
       }),
     );
-    expect(gitlab.getOpenMergeRequests).toHaveBeenCalledWith(
+    expect(gitlab.fetchOpenMergeRequests).toHaveBeenCalledWith(
       'https://gitlab.com',
       'glpat-sync-e2e-token',
-      'equipe/api',
+      expect.objectContaining({ pathWithNamespace: 'equipe/api' }),
       expect.anything(),
     );
-    expect(gitlab.getOpenMergeRequests).toHaveBeenCalledWith(
+    expect(gitlab.fetchOpenMergeRequests).toHaveBeenCalledWith(
       'https://gitlab.com',
       'glpat-sync-e2e-token',
-      'equipe/web',
+      expect.objectContaining({ pathWithNamespace: 'equipe/web' }),
       expect.anything(),
     );
     expect(web1.alias).toBe('web');
   });
 
   it('POST /sync should_not_start_a_second_run_while_one_is_in_progress', async () => {
-    let resolvePending!: (nodes: GitlabGraphqlMergeRequestNode[]) => void;
-    gitlab.getOpenMergeRequests.mockReturnValue(
+    let resolvePending!: (mergeRequests: ForgeMergeRequest[]) => void;
+    gitlab.fetchOpenMergeRequests.mockReturnValue(
       new Promise((resolve) => {
         resolvePending = resolve;
       }),
@@ -200,7 +206,7 @@ describe('Sync (e2e)', () => {
     resolvePending([]);
     await waitUntilIdle();
     // Two projects (api, web) but a single run: one call per project, not per POST.
-    expect(gitlab.getOpenMergeRequests).toHaveBeenCalledTimes(2);
+    expect(gitlab.fetchOpenMergeRequests).toHaveBeenCalledTimes(2);
   });
 
   it('POST /sync?projectId should_synchronise_only_the_targeted_project', async () => {
@@ -208,17 +214,17 @@ describe('Sync (e2e)', () => {
     const apiProject = (list.body as ProjectBody[]).find(
       (p) => p.alias === 'api',
     );
-    gitlab.getOpenMergeRequests.mockResolvedValue([rawNode(1)]);
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([forgeMergeRequest(1)]);
 
     const res = await api().post(`/api/v1/sync?projectId=${apiProject?.id}`);
     expect(res.status).toBe(202);
 
     await waitUntilIdle();
-    expect(gitlab.getOpenMergeRequests).toHaveBeenCalledTimes(1);
-    expect(gitlab.getOpenMergeRequests).toHaveBeenCalledWith(
+    expect(gitlab.fetchOpenMergeRequests).toHaveBeenCalledTimes(1);
+    expect(gitlab.fetchOpenMergeRequests).toHaveBeenCalledWith(
       'https://gitlab.com',
       'glpat-sync-e2e-token',
-      'equipe/api',
+      expect.objectContaining({ pathWithNamespace: 'equipe/api' }),
       expect.anything(),
     );
   });
@@ -230,10 +236,10 @@ describe('Sync (e2e)', () => {
   });
 
   it('POST /sync should_report_partial_when_one_project_fails_and_another_succeeds', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, path: string) =>
-        path === 'equipe/api'
-          ? Promise.resolve([rawNode(1)])
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([forgeMergeRequest(1)])
           : Promise.reject(new Error('GitLab is unavailable')),
     );
 
@@ -247,7 +253,7 @@ describe('Sync (e2e)', () => {
   });
 
   it('POST /sync should_report_error_when_every_project_fails', async () => {
-    gitlab.getOpenMergeRequests.mockRejectedValue(
+    gitlab.fetchOpenMergeRequests.mockRejectedValue(
       new Error('GitLab rejected the token (401)'),
     );
 
@@ -260,11 +266,8 @@ describe('Sync (e2e)', () => {
   });
 
   it('GET /sync/status should_compute_nextRunAt_from_the_configured_interval', async () => {
-    await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      refreshIntervalMin: 30,
-    });
-    gitlab.getOpenMergeRequests.mockResolvedValue([]);
+    await api().put('/api/v1/settings').send({ refreshIntervalMin: 30 });
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([]);
 
     await api().post('/api/v1/sync');
     const status = await waitUntilIdle();
@@ -277,9 +280,7 @@ describe('Sync (e2e)', () => {
   });
 
   it('GET /sync/status should_report_no_next_run_in_manual_mode', async () => {
-    await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', refreshIntervalMin: 0 });
+    await api().put('/api/v1/settings').send({ refreshIntervalMin: 0 });
 
     const res = await api().get('/api/v1/sync/status');
 

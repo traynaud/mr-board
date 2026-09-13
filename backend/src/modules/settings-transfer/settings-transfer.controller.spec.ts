@@ -17,18 +17,18 @@ describe('SettingsTransferController', () => {
   });
 
   it('should_get_export', async () => {
-    const dto = { version: 1, settings: {}, projects: [] };
+    const dto = { version: 2, settings: {}, connections: [], projects: [] };
     service.export.mockResolvedValue(dto);
 
     await expect(controller.getExport()).resolves.toBe(dto);
   });
 
   it('should_post_import', async () => {
-    const body = {
+    const body: ImportConfigDto = Object.assign(new ImportConfigDto(), {
       version: 1,
       settings: { gitlabUrl: 'https://gitlab.com' },
       projects: [],
-    } as ImportConfigDto;
+    });
     service.import.mockResolvedValue({
       settings: {},
       projectsAdded: 0,

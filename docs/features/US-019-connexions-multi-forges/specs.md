@@ -1,5 +1,8 @@
 # US-019 — Connexions multi-forges (socle)
 
+Version : 1.1 — 2026-09-14 (relecture PO avant lancement de l'épique : mise à jour des dépendances et des impacts
+suite à la livraison de US-017, US-018, US-022 et US-023 depuis la rédaction initiale — voir §3 « Cohérence avec
+les US livrées depuis »).
 Fait partie de l'épique `docs/features/EPIC-001-multi-forges/README.md` (§5 : inventaire des impacts).
 
 ## 1. Reformulation
@@ -17,9 +20,40 @@ forme et sa configuration est migrée automatiquement.
   un seul tableau des MRs venant de plusieurs sources.
     - Priorité : Must (prérequis de US-020)
     - Complexité estimée : L
-    - Dépendances : US-015 (export/import), US-016 (dernière US touchant `settings`)
+    - Dépendances : US-015 (export/import), US-016 → US-023 (toutes les US ayant touché `settings` depuis
+      — `theme` (US-018), `highlightMe` (US-023), `language` (US-022) — voir §3)
 
 ## 3. Règles de gestion
+
+### Cohérence avec les US livrées depuis la rédaction initiale de cette US
+
+Cette US a été spécifiée avant la livraison de US-017 (colonne Statut), US-018 (thème), US-022 (langue) et US-023
+(surbrillance « moi »), qui ont toutes étendu `Settings` et/ou le DTO `MergeRequestView`. Règles ajoutées à la
+relecture pour que l'Architecte et le Dev ne les redécouvrent pas en cours de route :
+
+- **RG-019-23** : Les colonnes de `Settings` ajoutées par ces US (`theme`, `highlightMe`, `language`, ainsi que
+  `notifyAssigned`, `tabBadge`, les seuils de difficulté/Ready, `refreshIntervalMin`, `pauseWhenHidden`,
+  `workdaysOnly`, `openInNewTab`, `ignoredLabels`) sont des **préférences globales, indépendantes de toute
+  connexion** : la migration RG-019-06 ne les touche pas, `SettingsResponseDto`/`UpdateSettingsDto` les conservent
+  telles quelles, seuls `gitlabUrl`, `gitlabTokenEncrypted` et `meUsername` migrent vers `connections`.
+- **RG-019-24** : La case « Surligner mes MRs dans le tableau » (US-023, RG-023-02) reste dans la section `01 · Moi`,
+  **au même niveau que l'email global** (RG-019-08) — elle ne dépend d'aucune connexion et reste affichée et
+  fonctionnelle même quand la section affiche « Ajoutez d'abord une connexion » (RG-019-08) : dans cet état, aucun
+  champ « Nom d'utilisateur sur <connexion> » n'existe encore, donc aucun `isMe` ne peut être vrai, et l'anneau ne
+  s'affichera sur aucun avatar — comportement identique à l'état « identité vide » déjà spécifié par RG-023-03/05,
+  sans changement de code dans US-023 elle-même.
+- **RG-019-25** : Le calcul `isMe` par utilisateur (US-023, `domain/is-mine.ts`) doit être amendé en cohérence avec
+  RG-019-07 : la comparaison se fait contre le `meUsername` (et, à défaut, l'email global RG-019-07) **de la
+  connexion du projet de la MR**, jamais contre une identité globale unique. Concrètement, `isMe(username, identity)`
+  reste une fonction pure à un seul argument d'identité, mais l'appelant (`merge-requests.service.ts`) doit résoudre
+  cette `identity` **par MR** (via `project.connectionId → connection.meUsername`) plutôt qu'une seule fois pour
+  toute la réponse. `isMine` (RG-G09) et la promotion d'avatar (RG-023-06) n'ont besoin d'aucun changement au-delà
+  de cette résolution d'identité, car ils sont déjà exprimés en termes de `isMe`.
+- **RG-019-26** : Toute nouvelle clé i18n introduite par cette US (section 02 renommée, formulaire de connexion,
+  champs d'identité par connexion, messages `connections.*`/`forge.*`) doit être ajoutée **à la fois** dans
+  `frontend/public/i18n/fr.json` et `frontend/public/i18n/en.json` (US-022, RG-022-06) — le test de parité
+  `dictionary-parity.spec.ts` échoue sinon. Les clés supprimées ou renommées (`settings.connection.*` →
+  `settings.connections.*`) doivent l'être dans les deux fichiers simultanément, jamais dans un seul.
 
 ### Modèle et migration
 
@@ -260,6 +294,24 @@ Scenario: Import v2 avec connexion inconnue
 Scenario: Aucune fuite de jeton
   When j'appelle GET /api/v1/connections, GET /api/v1/settings/export et que je consulte les logs
   Then aucun jeton en clair n'apparaît
+
+Scenario: isMe par connexion (US-023)
+  Given deux connexions « gitlab.com » (meUsername = « mdupont ») et « gitlab.exemple.fr » (meUsername = « marie.d »)
+  And une MR sur gitlab.com dont le reviewer est « mdupont »
+  And une MR sur gitlab.exemple.fr dont le reviewer est « mdupont » (un autre utilisateur, homonyme)
+  When j'ouvre le tableau avec highlightMe actif
+  Then l'avatar reviewer de la première MR porte l'anneau (isMe = true)
+  And l'avatar reviewer de la seconde MR ne porte pas l'anneau (isMe = false, mdupont n'est pas mon identité sur gitlab.exemple.fr)
+
+Scenario: Préférences globales non affectées par la migration
+  Given une base v1.2 avec theme = « dark », highlightMe = false et language = « en »
+  When le backend démarre et migre vers les connexions
+  Then GET /api/v1/settings renvoie toujours theme = « dark », highlightMe = false et language = « en »
+
+Scenario: Parité des dictionnaires après renommage des clés
+  When j'exécute les tests unitaires du frontend après cette US
+  Then dictionary-parity.spec.ts passe toujours : fr.json et en.json ont le même ensemble de clés
+  And aucune clé settings.connection.* ne subsiste (renommées en settings.connections.*) dans l'un des deux fichiers sans l'être dans l'autre
 ```
 
 ## 6. Questions ouvertes

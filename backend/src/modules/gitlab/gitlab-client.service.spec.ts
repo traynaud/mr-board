@@ -1,14 +1,21 @@
 import { Logger } from '@nestjs/common';
 import {
-  GitlabAuthException,
-  GitlabTimeoutException,
-  GitlabUnavailableException,
+  ForgeAuthException,
+  ForgeScopeException,
+  ForgeTimeoutException,
+  ForgeUnavailableException,
 } from '../../common/exceptions';
+import { ForgeProject } from '../forges/types/forge-project';
 import { GitlabGraphqlMergeRequestNode } from './types/gitlab-merge-request';
 import { GitlabClientService } from './gitlab-client.service';
 
 const BASE = 'https://gitlab.example.com';
 const TOKEN = 'glpat-secret-token-value';
+const PROJECT: ForgeProject = {
+  remoteProjectId: '42',
+  pathWithNamespace: 'equipe/api',
+  webUrl: `${BASE}/equipe/api`,
+};
 
 function jsonResponse(
   status: number,
@@ -93,128 +100,186 @@ describe('GitlabClientService', () => {
     warnSpy.mockRestore();
   });
 
-  it('should_get_current_user_with_private_token_header', async () => {
-    const user = { id: 1, username: 'mdupont', name: 'Marie Dupont' };
-    fetchSpy.mockResolvedValue(jsonResponse(200, user));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).resolves.toEqual(user);
-
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${BASE}/api/v4/user`);
-    expect((init.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe(
-      TOKEN,
-    );
-    expect(init.signal).toBeInstanceOf(AbortSignal);
+  describe('normalizeUrl', () => {
+    it('should_delegate_to_the_pure_normalizer', () => {
+      expect(service.normalizeUrl('https://gitlab.exemple.fr/')).toBe(
+        'https://gitlab.exemple.fr',
+      );
+      expect(service.normalizeUrl('not a url')).toBeNull();
+    });
   });
 
-  it('should_get_token_info', async () => {
-    const info = { id: 7, scopes: ['read_api'], expires_at: '2027-03-12' };
-    fetchSpy.mockResolvedValue(jsonResponse(200, info));
+  describe('testConnection', () => {
+    it('should_resolve_the_identity_with_private_token_header', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            id: 1,
+            username: 'mdupont',
+            name: 'Marie Dupont',
+            avatar_url: null,
+          }),
+        )
+        .mockResolvedValueOnce(jsonResponse(404, {}));
 
-    await expect(service.getTokenInfo(BASE, TOKEN)).resolves.toEqual(info);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      `${BASE}/api/v4/personal_access_tokens/self`,
-      expect.anything(),
-    );
+      await expect(service.testConnection(BASE, TOKEN)).resolves.toEqual({
+        username: 'mdupont',
+        name: 'Marie Dupont',
+        avatarUrl: null,
+        expiresAt: null,
+        expirationKnown: false,
+      });
+
+      const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE}/api/v4/user`);
+      expect((init.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe(
+        TOKEN,
+      );
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('should_report_the_token_expiry_and_scopes_when_available', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            id: 1,
+            username: 'mdupont',
+            name: 'Marie Dupont',
+          }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            id: 7,
+            scopes: ['read_api'],
+            expires_at: '2027-03-12',
+          }),
+        );
+
+      await expect(service.testConnection(BASE, TOKEN)).resolves.toEqual(
+        expect.objectContaining({
+          expiresAt: '2027-03-12',
+          expirationKnown: true,
+        }),
+      );
+    });
+
+    it('should_throw_scope_exception_when_the_token_lacks_read_api', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            id: 1,
+            username: 'mdupont',
+            name: 'Marie Dupont',
+          }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(200, { id: 7, scopes: ['read_user'], expires_at: null }),
+        );
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeScopeException,
+      );
+    });
+
+    it.each([401, 403])('should_throw_auth_exception_on_%i', async (status) => {
+      fetchSpy.mockResolvedValue(jsonResponse(status, { message: 'nope' }));
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeAuthException,
+      );
+    });
+
+    it('should_throw_unavailable_on_404_for_user', async () => {
+      fetchSpy.mockResolvedValue(jsonResponse(404, {}));
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeUnavailableException,
+      );
+    });
+
+    it('should_throw_unavailable_on_server_error', async () => {
+      fetchSpy.mockResolvedValue(jsonResponse(500, {}));
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeUnavailableException,
+      );
+    });
+
+    it('should_throw_unavailable_on_network_error_without_leaking_token', async () => {
+      fetchSpy.mockRejectedValue(new TypeError('fetch failed'));
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeUnavailableException,
+      );
+      expect(warnSpy).toHaveBeenCalledWith(expect.not.stringContaining(TOKEN));
+    });
+
+    it('should_throw_unavailable_on_timeout', async () => {
+      const abort = new Error('timeout');
+      abort.name = 'TimeoutError';
+      fetchSpy.mockRejectedValue(abort);
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeUnavailableException,
+      );
+    });
+
+    it('should_throw_unavailable_on_invalid_json', async () => {
+      fetchSpy.mockResolvedValue(new Response('<html>', { status: 200 }));
+
+      await expect(service.testConnection(BASE, TOKEN)).rejects.toBeInstanceOf(
+        ForgeUnavailableException,
+      );
+    });
   });
 
-  it('should_return_null_when_token_info_endpoint_is_missing', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse(404, { message: '404' }));
+  describe('resolveProject', () => {
+    it('should_resolve_a_project_by_url_encoded_path', async () => {
+      fetchSpy.mockResolvedValue(
+        jsonResponse(200, {
+          id: 42,
+          path_with_namespace: 'equipe/backend-api',
+          web_url: `${BASE}/equipe/backend-api`,
+        }),
+      );
 
-    await expect(service.getTokenInfo(BASE, TOKEN)).resolves.toBeNull();
+      await expect(
+        service.resolveProject(BASE, TOKEN, 'equipe/backend-api'),
+      ).resolves.toEqual({
+        remoteProjectId: '42',
+        pathWithNamespace: 'equipe/backend-api',
+        webUrl: `${BASE}/equipe/backend-api`,
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${BASE}/api/v4/projects/equipe%2Fbackend-api`,
+        expect.anything(),
+      );
+    });
+
+    it('should_return_null_when_project_is_not_found', async () => {
+      fetchSpy.mockResolvedValue(jsonResponse(404, {}));
+
+      await expect(
+        service.resolveProject(BASE, TOKEN, 'equipe/inexistant'),
+      ).resolves.toBeNull();
+    });
+
+    it('should_throw_auth_exception_on_forbidden_project', async () => {
+      fetchSpy.mockResolvedValue(jsonResponse(403, {}));
+
+      await expect(
+        service.resolveProject(BASE, TOKEN, 'equipe/prive'),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+    });
   });
 
-  it('should_get_project_by_url_encoded_path', async () => {
-    const project = {
-      id: 42,
-      path_with_namespace: 'equipe/backend-api',
-      web_url: `${BASE}/equipe/backend-api`,
-    };
-    fetchSpy.mockResolvedValue(jsonResponse(200, project));
-
-    await expect(
-      service.getProject(BASE, TOKEN, 'equipe/backend-api'),
-    ).resolves.toEqual(project);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      `${BASE}/api/v4/projects/equipe%2Fbackend-api`,
-      expect.anything(),
-    );
-  });
-
-  it('should_return_null_when_project_is_not_found', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse(404, {}));
-
-    await expect(
-      service.getProject(BASE, TOKEN, 'equipe/inexistant'),
-    ).resolves.toBeNull();
-  });
-
-  it('should_throw_auth_exception_on_forbidden_project', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse(403, {}));
-
-    await expect(
-      service.getProject(BASE, TOKEN, 'equipe/prive'),
-    ).rejects.toBeInstanceOf(GitlabAuthException);
-  });
-
-  it.each([401, 403])('should_throw_auth_exception_on_%i', async (status) => {
-    fetchSpy.mockResolvedValue(jsonResponse(status, { message: 'nope' }));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabAuthException,
-    );
-  });
-
-  it('should_throw_unavailable_on_404_for_user', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse(404, {}));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabUnavailableException,
-    );
-  });
-
-  it('should_throw_unavailable_on_server_error', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse(500, {}));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabUnavailableException,
-    );
-  });
-
-  it('should_throw_unavailable_on_network_error_without_leaking_token', async () => {
-    fetchSpy.mockRejectedValue(new TypeError('fetch failed'));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabUnavailableException,
-    );
-    expect(warnSpy).toHaveBeenCalledWith(expect.not.stringContaining(TOKEN));
-  });
-
-  it('should_throw_unavailable_on_timeout', async () => {
-    const abort = new Error('timeout');
-    abort.name = 'TimeoutError';
-    fetchSpy.mockRejectedValue(abort);
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabUnavailableException,
-    );
-  });
-
-  it('should_throw_unavailable_on_invalid_json', async () => {
-    fetchSpy.mockResolvedValue(new Response('<html>', { status: 200 }));
-
-    await expect(service.getCurrentUser(BASE, TOKEN)).rejects.toBeInstanceOf(
-      GitlabUnavailableException,
-    );
-  });
-
-  describe('getOpenMergeRequests', () => {
+  describe('fetchOpenMergeRequests', () => {
     const deadlineAt = () => Date.now() + 60_000;
 
     it('should_post_a_graphql_query_with_the_private_token_header', async () => {
       fetchSpy.mockResolvedValue(graphqlPageResponse([graphqlNode(1)]));
 
-      await service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+      await service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
         deadlineAt: deadlineAt(),
       });
 
@@ -230,6 +295,22 @@ describe('GitlabClientService', () => {
       expect(body.variables).toEqual({ fullPath: 'equipe/api', cursor: null });
     });
 
+    it('should_map_every_node_to_a_forge_merge_request_with_its_merge_status', async () => {
+      fetchSpy.mockResolvedValue(graphqlPageResponse([graphqlNode(1)]));
+
+      const [mr] = await service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
+        deadlineAt: deadlineAt(),
+      });
+
+      expect(mr).toEqual(
+        expect.objectContaining({
+          remoteId: '1',
+          iid: 1,
+          mergeStatus: { state: 'mergeable', reasons: [] },
+        }),
+      );
+    });
+
     it('should_aggregate_every_page_following_the_cursor', async () => {
       fetchSpy
         .mockResolvedValueOnce(
@@ -240,16 +321,14 @@ describe('GitlabClientService', () => {
         )
         .mockResolvedValueOnce(graphqlPageResponse([graphqlNode(3)]));
 
-      const nodes = await service.getOpenMergeRequests(
+      const mergeRequests = await service.fetchOpenMergeRequests(
         BASE,
         TOKEN,
-        'equipe/api',
-        {
-          deadlineAt: deadlineAt(),
-        },
+        PROJECT,
+        { deadlineAt: deadlineAt() },
       );
 
-      expect(nodes.map((n) => n.iid)).toEqual(['1', '2', '3']);
+      expect(mergeRequests.map((mr) => mr.iid)).toEqual([1, 2, 3]);
       const [, secondInit] = fetchSpy.mock.calls[1] as [string, RequestInit];
       const secondBody = JSON.parse(secondInit.body as string) as {
         variables: { cursor: string | null };
@@ -261,10 +340,10 @@ describe('GitlabClientService', () => {
       fetchSpy.mockResolvedValue(jsonResponse(status, {}));
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: deadlineAt(),
         }),
-      ).rejects.toBeInstanceOf(GitlabAuthException);
+      ).rejects.toBeInstanceOf(ForgeAuthException);
     });
 
     it('should_retry_once_after_a_429_and_succeed', async () => {
@@ -272,16 +351,14 @@ describe('GitlabClientService', () => {
         .mockResolvedValueOnce(jsonResponse(429, {}, { 'Retry-After': '2' }))
         .mockResolvedValueOnce(graphqlPageResponse([graphqlNode(1)]));
 
-      const nodes = await service.getOpenMergeRequests(
+      const mergeRequests = await service.fetchOpenMergeRequests(
         BASE,
         TOKEN,
-        'equipe/api',
-        {
-          deadlineAt: deadlineAt(),
-        },
+        PROJECT,
+        { deadlineAt: deadlineAt() },
       );
 
-      expect(nodes).toHaveLength(1);
+      expect(mergeRequests).toHaveLength(1);
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
@@ -289,19 +366,19 @@ describe('GitlabClientService', () => {
       fetchSpy.mockResolvedValue(jsonResponse(429, {}, { 'Retry-After': '1' }));
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: deadlineAt(),
         }),
-      ).rejects.toBeInstanceOf(GitlabUnavailableException);
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should_throw_timeout_exception_when_the_deadline_is_already_passed', async () => {
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: Date.now() - 1,
         }),
-      ).rejects.toBeInstanceOf(GitlabTimeoutException);
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
@@ -316,10 +393,10 @@ describe('GitlabClientService', () => {
       );
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: 5_000,
         }),
-      ).rejects.toBeInstanceOf(GitlabTimeoutException);
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
 
       dateSpy.mockRestore();
     });
@@ -330,30 +407,30 @@ describe('GitlabClientService', () => {
       );
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: deadlineAt(),
         }),
-      ).rejects.toBeInstanceOf(GitlabUnavailableException);
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
     });
 
     it('should_throw_unavailable_on_a_non_2xx_response', async () => {
       fetchSpy.mockResolvedValue(jsonResponse(500, {}));
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: deadlineAt(),
         }),
-      ).rejects.toBeInstanceOf(GitlabUnavailableException);
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
     });
 
     it('should_throw_unavailable_on_network_error', async () => {
       fetchSpy.mockRejectedValue(new TypeError('fetch failed'));
 
       await expect(
-        service.getOpenMergeRequests(BASE, TOKEN, 'equipe/api', {
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
           deadlineAt: deadlineAt(),
         }),
-      ).rejects.toBeInstanceOf(GitlabUnavailableException);
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
     });
   });
 });

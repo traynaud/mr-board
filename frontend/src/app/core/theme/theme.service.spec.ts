@@ -8,10 +8,6 @@ import { ThemeService } from './theme.service';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
   return {
-    gitlabUrl: 'https://gitlab.com',
-    tokenConfigured: false,
-    tokenHint: null,
-    meUsername: null,
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
@@ -144,7 +140,7 @@ describe('ThemeService', () => {
     it('should_apply_the_opposite_theme_immediately_and_save_it', async () => {
       stubMatchMedia(false);
       const service = create();
-      settingsSignal.set(settings({ gitlabUrl: 'https://gitlab.exemple.fr', theme: 'light' }));
+      settingsSignal.set(settings({ theme: 'light' }));
       flush();
       save.mockResolvedValue(null);
 
@@ -152,7 +148,7 @@ describe('ThemeService', () => {
 
       expect(service.preference()).toBe('dark');
       expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
-      expect(save).toHaveBeenCalledWith({ gitlabUrl: 'https://gitlab.exemple.fr', theme: 'dark' });
+      expect(save).toHaveBeenCalledWith({ theme: 'dark' });
       expect(errorKey).toBeNull();
     });
 

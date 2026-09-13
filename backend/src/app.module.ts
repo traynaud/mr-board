@@ -4,6 +4,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { DatabaseModule } from './database/database.module';
+import { ConnectionsModule } from './modules/connections/connections.module';
+import { ForgesModule } from './modules/forges/forges.module';
 import { HealthModule } from './modules/health/health.module';
 import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module';
 import { ProjectsModule } from './modules/projects/projects.module';
@@ -25,6 +27,8 @@ import { StaticModule } from './static/static.module';
     DatabaseModule,
     StaticModule,
     HealthModule,
+    ForgesModule,
+    ConnectionsModule,
     SettingsModule,
     SettingsTransferModule,
     ProjectsModule,

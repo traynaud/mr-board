@@ -10,6 +10,8 @@ import { FiltersStore } from './filters.store';
 import { MergeRequestsStore } from './merge-requests.store';
 import { SettingsStore } from './settings.store';
 
+const CONNECTION = { id: 1, name: 'GitLab', type: 'gitlab' as const };
+
 const MR: MergeRequestView = {
   id: 1,
   projectAlias: 'api',
@@ -34,6 +36,7 @@ const MR: MergeRequestView = {
   openedDays: 6,
   isMine: false,
   mergeStatus: { state: 'mergeable', reasons: [] },
+  connection: CONNECTION,
 };
 const RESPONSE = { mergeRequests: [MR], warnings: [] };
 const EMPTY_COMPOSABLE_FILTERS = { project: [], author: [], assigned: [], approved: null, commented: null };
@@ -52,10 +55,6 @@ const EMPTY_FACETS: MergeRequestsFacets = {
 };
 
 const SETTINGS: Settings = {
-  gitlabUrl: 'https://gitlab.com',
-  tokenConfigured: false,
-  tokenHint: null,
-  meUsername: 'mdupont',
   meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
@@ -80,7 +79,6 @@ describe('MergeRequestsStore', () => {
   const settingsApi = {
     getSettings: vi.fn(),
     putSettings: vi.fn(),
-    postTestConnection: vi.fn(),
     getExportConfig: vi.fn(),
     postImportConfig: vi.fn(),
   };
@@ -323,7 +321,7 @@ describe('MergeRequestsStore', () => {
 
     const ASSIGNED_MR: MergeRequestView = {
       ...MR,
-      reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false }],
+      reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true }],
     };
 
     it('should_not_notify_on_the_first_load_of_the_session', async () => {

@@ -14,9 +14,10 @@ describe('ProjectsStore', () => {
   };
   const project: Project = {
     id: 1,
+    connectionId: 1,
     pathWithNamespace: 'equipe/backend-api',
     alias: 'api',
-    gitlabProjectId: 42,
+    remoteProjectId: '42',
   };
   let store: InstanceType<typeof ProjectsStore>;
 

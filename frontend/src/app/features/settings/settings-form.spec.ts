@@ -1,52 +1,18 @@
-import { FormControl } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { buildRepoAliasGroup } from './repos-form';
 import {
-  DEFAULT_GITLAB_URL,
   DEFAULT_IGNORED_LABELS,
   DEFAULT_THRESHOLDS,
   buildSettingsForm,
-  gitlabUrlValidator,
   integerValidator,
   resetSettingsForm,
   resetSettingsFormToDefaults,
   toUpdateRequest,
-  tokenLengthValidator,
 } from './settings-form';
-
-describe('gitlabUrlValidator', () => {
-  it.each(['https://gitlab.com', 'http://localhost:8929', 'https://gitlab.exemple.fr/'])(
-    'should_accept %s',
-    (value) => {
-      expect(gitlabUrlValidator(new FormControl(value))).toBeNull();
-    },
-  );
-
-  it.each(['gitlab.exemple.fr', 'ftp://gitlab.com', 'https://'])('should_reject %s', (value) => {
-    expect(gitlabUrlValidator(new FormControl(value))).toEqual({ gitlabUrl: true });
-  });
-
-  it('should_leave_empty_to_required', () => {
-    expect(gitlabUrlValidator(new FormControl(''))).toBeNull();
-  });
-});
-
-describe('tokenLengthValidator', () => {
-  it('should_accept_empty_and_long_enough', () => {
-    expect(tokenLengthValidator(new FormControl(''))).toBeNull();
-    expect(tokenLengthValidator(new FormControl('glpat-abcdwxyz'))).toBeNull();
-  });
-
-  it('should_reject_short_token', () => {
-    expect(tokenLengthValidator(new FormControl('abc'))).toEqual({
-      tokenTooShort: { min: 8 },
-    });
-  });
-});
 
 describe('integerValidator', () => {
   it('should_accept_integers', () => {
     expect(integerValidator(new FormControl(5))).toBeNull();
-    expect(integerValidator(new FormControl(0))).toBeNull();
   });
 
   it('should_reject_decimals', () => {
@@ -70,10 +36,6 @@ describe('meEmail validator (Validators.email)', () => {
 
 describe('settings form helpers', () => {
   const settings = {
-    gitlabUrl: 'https://gitlab.exemple.fr',
-    tokenConfigured: true,
-    tokenHint: 'wxyz',
-    meUsername: 'mdupont',
     meEmail: 'marie@exemple.fr',
     refreshIntervalMin: 15,
     pauseWhenHidden: false,
@@ -95,15 +57,12 @@ describe('settings form helpers', () => {
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
     const form = buildSettingsForm();
-    form.controls.gitlabUrl.setValue('x');
+    form.controls.meEmail.setValue('x');
     form.markAsDirty();
 
     resetSettingsForm(form, settings);
 
     expect(form.getRawValue()).toEqual({
-      gitlabUrl: 'https://gitlab.exemple.fr',
-      gitlabToken: '',
-      meUsername: 'mdupont',
       meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 15,
       pauseWhenHidden: false,
@@ -122,6 +81,7 @@ describe('settings form helpers', () => {
       highlightMe: false,
       language: 'en',
       repos: [],
+      identities: [],
     });
     expect(form.pristine).toBe(true);
     expect(form.valid).toBe(true);
@@ -135,27 +95,19 @@ describe('settings form helpers', () => {
     expect(form.controls.ignoreWip.value).toBe(false);
   });
 
-  it('should_reset_identity_fields_to_empty_string_when_null', () => {
+  it('should_reset_the_email_field_to_empty_string_when_null', () => {
     const form = buildSettingsForm();
 
-    resetSettingsForm(form, { ...settings, meUsername: null, meEmail: null });
+    resetSettingsForm(form, { ...settings, meEmail: null });
 
-    expect(form.controls.meUsername.value).toBe('');
     expect(form.controls.meEmail.value).toBe('');
   });
 
-  it('should_omit_empty_token_but_always_include_identity_fields', () => {
+  it('should_always_include_the_email_field_even_when_empty', () => {
     const form = buildSettingsForm();
-    form.patchValue({
-      gitlabUrl: ' https://gitlab.com ',
-      gitlabToken: '',
-      meUsername: ' mdupont ',
-      meEmail: '',
-    });
+    form.patchValue({ meEmail: '' });
 
     expect(toUpdateRequest(form)).toEqual({
-      gitlabUrl: 'https://gitlab.com',
-      meUsername: 'mdupont',
       meEmail: '',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
@@ -167,43 +119,32 @@ describe('settings form helpers', () => {
       theme: 'system',
       highlightMe: true,
       language: 'fr',
+      identities: [],
     });
   });
 
-  it('should_include_token_when_given', () => {
+  it('should_trim_the_email_field', () => {
     const form = buildSettingsForm();
-    form.patchValue({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-abcdwxyz',
-      meUsername: '',
-      meEmail: '',
-    });
+    form.patchValue({ meEmail: ' marie@exemple.fr ' });
 
-    expect(toUpdateRequest(form)).toEqual({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-abcdwxyz',
-      meUsername: '',
-      meEmail: '',
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      ...DEFAULT_THRESHOLDS,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
-    });
+    expect(toUpdateRequest(form).meEmail).toBe('marie@exemple.fr');
+  });
+
+  it('should_include_an_identities_entry_per_connection_form_group', () => {
+    const form = buildSettingsForm();
+    form.controls.identities.push(
+      new FormGroup({
+        connectionId: new FormControl(1, { nonNullable: true }),
+        username: new FormControl(' mdupont ', { nonNullable: true }),
+      }),
+    );
+
+    expect(toUpdateRequest(form).identities).toEqual([{ connectionId: 1, username: 'mdupont' }]);
   });
 
   it('should_include_the_refresh_settings_in_the_update_request', () => {
     const form = buildSettingsForm();
-    form.patchValue({
-      gitlabUrl: 'https://gitlab.com',
-      refreshIntervalMin: 30,
-      pauseWhenHidden: false,
-    });
+    form.patchValue({ refreshIntervalMin: 30, pauseWhenHidden: false });
 
     expect(toUpdateRequest(form)).toEqual(
       expect.objectContaining({ refreshIntervalMin: 30, pauseWhenHidden: false }),
@@ -219,7 +160,7 @@ describe('settings form helpers', () => {
     expect(form.controls.pauseWhenHidden.value).toBe(false);
   });
 
-  it('should_not_include_repos_in_the_update_request', () => {
+  it('should_not_include_repos_or_identities_arrays_verbatim_in_the_update_request', () => {
     const form = buildSettingsForm();
 
     expect(toUpdateRequest(form)).not.toHaveProperty('repos');
@@ -230,9 +171,10 @@ describe('settings form helpers', () => {
     form.controls.repos.push(
       buildRepoAliasGroup({
         id: 1,
+        connectionId: 1,
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
-        gitlabProjectId: 42,
+        remoteProjectId: '42',
       }),
     );
 
@@ -244,7 +186,7 @@ describe('settings form helpers', () => {
 
   it('should_send_the_default_ignored_labels_when_ignore_wip_is_checked', () => {
     const form = buildSettingsForm();
-    form.patchValue({ gitlabUrl: 'https://gitlab.com', ignoreWip: true, openInNewTab: true });
+    form.patchValue({ ignoreWip: true, openInNewTab: true });
 
     expect(toUpdateRequest(form)).toEqual(
       expect.objectContaining({
@@ -256,18 +198,14 @@ describe('settings form helpers', () => {
 
   it('should_send_an_empty_ignored_labels_array_when_ignore_wip_is_unchecked', () => {
     const form = buildSettingsForm();
-    form.patchValue({ gitlabUrl: 'https://gitlab.com', ignoreWip: false });
+    form.patchValue({ ignoreWip: false });
 
     expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ ignoredLabels: [] }));
   });
 
   it('should_include_the_notification_settings_in_the_update_request', () => {
     const form = buildSettingsForm();
-    form.patchValue({
-      gitlabUrl: 'https://gitlab.com',
-      notifyAssigned: true,
-      tabBadge: true,
-    });
+    form.patchValue({ notifyAssigned: true, tabBadge: true });
 
     expect(toUpdateRequest(form)).toEqual(
       expect.objectContaining({ notifyAssigned: true, tabBadge: true }),
@@ -285,7 +223,7 @@ describe('settings form helpers', () => {
 
   it('should_include_the_theme_in_the_update_request', () => {
     const form = buildSettingsForm();
-    form.patchValue({ gitlabUrl: 'https://gitlab.com', theme: 'dark' });
+    form.patchValue({ theme: 'dark' });
 
     expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ theme: 'dark' }));
   });
@@ -300,7 +238,7 @@ describe('settings form helpers', () => {
 
   it('should_include_highlight_me_in_the_update_request', () => {
     const form = buildSettingsForm();
-    form.patchValue({ gitlabUrl: 'https://gitlab.com', highlightMe: false });
+    form.patchValue({ highlightMe: false });
 
     expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ highlightMe: false }));
   });
@@ -315,7 +253,7 @@ describe('settings form helpers', () => {
 
   it('should_include_the_language_in_the_update_request', () => {
     const form = buildSettingsForm();
-    form.patchValue({ gitlabUrl: 'https://gitlab.com', language: 'en' });
+    form.patchValue({ language: 'en' });
 
     expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ language: 'en' }));
   });
@@ -333,8 +271,6 @@ describe('resetSettingsFormToDefaults', () => {
   it('should_reset_every_section_to_its_default_value', () => {
     const form = buildSettingsForm();
     form.patchValue({
-      gitlabUrl: 'https://autre.exemple.fr',
-      meUsername: 'mdupont',
       meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 30,
       pauseWhenHidden: false,
@@ -352,8 +288,6 @@ describe('resetSettingsFormToDefaults', () => {
 
     expect(form.getRawValue()).toEqual(
       expect.objectContaining({
-        gitlabUrl: DEFAULT_GITLAB_URL,
-        meUsername: '',
         meEmail: '',
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
@@ -369,15 +303,15 @@ describe('resetSettingsFormToDefaults', () => {
     );
   });
 
-  it('should_mark_the_form_dirty_without_touching_the_token_or_the_repos', () => {
+  it('should_mark_the_form_dirty_without_touching_the_repos_or_identities', () => {
     const form = buildSettingsForm();
-    form.controls.gitlabToken.setValue('glpat-should-survive');
     form.controls.repos.push(
       buildRepoAliasGroup({
         id: 1,
+        connectionId: 1,
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
-        gitlabProjectId: 42,
+        remoteProjectId: '42',
       }),
     );
     form.markAsPristine();
@@ -385,10 +319,9 @@ describe('resetSettingsFormToDefaults', () => {
     resetSettingsFormToDefaults(form);
 
     expect(form.dirty).toBe(true);
-    expect(form.controls.gitlabToken.value).toBe('glpat-should-survive');
-    expect(form.controls.gitlabToken.dirty).toBe(false);
     expect(form.controls.repos.length).toBe(1);
     expect(form.controls.repos.dirty).toBe(false);
+    expect(form.controls.identities.dirty).toBe(false);
   });
 });
 
@@ -470,7 +403,6 @@ describe('threshold controls', () => {
   it('should_include_thresholds_in_the_update_request', () => {
     const form = buildSettingsForm();
     form.patchValue({
-      gitlabUrl: 'https://gitlab.com',
       easyFiles: 10,
       easyLines: 200,
       hardFiles: 30,

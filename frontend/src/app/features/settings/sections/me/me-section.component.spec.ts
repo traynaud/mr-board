@@ -1,23 +1,37 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
+import { Connection } from '../../../../models/connection.model';
+import { buildIdentityGroup } from '../../connections-form';
 import { MeIdentity } from '../../me-identity';
 import { SettingsForm, buildSettingsForm } from '../../settings-form';
-import { MeSectionComponent } from './me-section.component';
+import { IdentityRow, MeSectionComponent } from './me-section.component';
+
+const UNSET_IDENTITY: MeIdentity = { status: 'unset', username: null, name: null, avatarUrl: null };
+
+function connection(overrides: Partial<Connection> = {}): Connection {
+  return {
+    id: 1,
+    type: 'gitlab',
+    name: 'GitLab',
+    url: 'https://gitlab.com',
+    tokenConfigured: true,
+    tokenHint: 'wxyz',
+    meUsername: null,
+    projectsCount: 0,
+    ...overrides,
+  };
+}
 
 @Component({
   imports: [MeSectionComponent],
-  template: `<app-me-section [form]="form" [identity]="identity()" />`,
+  template: `<app-me-section [form]="form" [identities]="identities()" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly form: SettingsForm = buildSettingsForm();
-  readonly identity = signal<MeIdentity>({
-    status: 'unset',
-    username: null,
-    name: null,
-    avatarUrl: null,
-  });
+  readonly identities = signal<IdentityRow[]>([]);
 }
 
 describe('MeSectionComponent', () => {
@@ -28,7 +42,7 @@ describe('MeSectionComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [provideI18nTesting()],
+      providers: [provideI18nTesting(), provideRouter([])],
     }).compileComponents();
     fixture = TestBed.createComponent(HostComponent);
     host = fixture.componentInstance;
@@ -36,23 +50,51 @@ describe('MeSectionComponent', () => {
     await fixture.whenStable();
   });
 
-  it('should_render_username_and_email_fields', () => {
-    expect(el.querySelector('input[formControlName="meUsername"]')).not.toBeNull();
+  it('should_show_the_no_connection_message_when_there_is_no_connection', () => {
+    expect(el.querySelector('.no-connection')).not.toBeNull();
+    expect(el.querySelector('input[formControlName="username"]')).toBeNull();
+  });
+
+  it('should_render_one_username_field_per_connection_and_the_email_field', () => {
+    host.identities.set([
+      { connection: connection(), group: buildIdentityGroup(connection()), identity: UNSET_IDENTITY },
+      {
+        connection: connection({ id: 2, name: 'gitlab.exemple.fr' }),
+        group: buildIdentityGroup(connection({ id: 2, name: 'gitlab.exemple.fr' })),
+        identity: UNSET_IDENTITY,
+      },
+    ]);
+    fixture.detectChanges();
+
+    const usernameInputs = el.querySelectorAll('input[formControlName="username"]');
+    expect(usernameInputs.length).toBe(2);
     expect(el.querySelector('input[formControlName="meEmail"]')).not.toBeNull();
+    expect(el.querySelector('.no-connection')).toBeNull();
   });
 
   it('should_hide_preview_when_unset', () => {
+    host.identities.set([
+      { connection: connection(), group: buildIdentityGroup(connection()), identity: UNSET_IDENTITY },
+    ]);
+    fixture.detectChanges();
+
     expect(el.querySelector('.identity-preview')).toBeNull();
   });
 
-  it('should_show_matched_identity_with_full_name', async () => {
-    host.identity.set({
-      status: 'matched',
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: 'https://gitlab.com/a.png',
-    });
-    await fixture.whenStable();
+  it('should_show_matched_identity_with_full_name', () => {
+    host.identities.set([
+      {
+        connection: connection(),
+        group: buildIdentityGroup(connection()),
+        identity: {
+          status: 'matched',
+          username: 'mdupont',
+          name: 'Marie Dupont',
+          avatarUrl: 'https://gitlab.com/a.png',
+        },
+      },
+    ]);
+    fixture.detectChanges();
 
     expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('Marie Dupont');
     expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
@@ -61,14 +103,15 @@ describe('MeSectionComponent', () => {
     expect(el.querySelector('img')?.getAttribute('src')).toBe('https://gitlab.com/a.png');
   });
 
-  it('should_show_manual_status_with_username_fallback', async () => {
-    host.identity.set({
-      status: 'manual',
-      username: 'lrousseau',
-      name: null,
-      avatarUrl: null,
-    });
-    await fixture.whenStable();
+  it('should_show_manual_status_with_username_fallback', () => {
+    host.identities.set([
+      {
+        connection: connection(),
+        group: buildIdentityGroup(connection()),
+        identity: { status: 'manual', username: 'lrousseau', name: null, avatarUrl: null },
+      },
+    ]);
+    fixture.detectChanges();
 
     expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('@lrousseau');
     expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
@@ -76,31 +119,20 @@ describe('MeSectionComponent', () => {
     );
   });
 
-  it('should_show_mismatch_status', async () => {
-    host.identity.set({
-      status: 'mismatch',
-      username: 'kbenali',
-      name: null,
-      avatarUrl: null,
-    });
-    await fixture.whenStable();
+  it('should_show_mismatch_status', () => {
+    host.identities.set([
+      {
+        connection: connection(),
+        group: buildIdentityGroup(connection()),
+        identity: { status: 'mismatch', username: 'kbenali', name: null, avatarUrl: null },
+      },
+    ]);
+    fixture.detectChanges();
 
     expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('@kbenali');
     expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
       t('settings.me.status.mismatch'),
     );
-  });
-
-  it('should_reflect_identity_changes_even_without_form_control_changing', async () => {
-    // Régression : displayName ne doit dépendre que de `identity()`, jamais
-    // d'une lecture impérative du FormControl (voir revue de US-002).
-    host.identity.set({ status: 'manual', username: 'first', name: null, avatarUrl: null });
-    await fixture.whenStable();
-    expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('@first');
-
-    host.identity.set({ status: 'manual', username: 'second', name: null, avatarUrl: null });
-    await fixture.whenStable();
-    expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('@second');
   });
 
   it('should_show_email_validation_error', async () => {

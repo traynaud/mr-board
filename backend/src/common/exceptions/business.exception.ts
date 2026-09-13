@@ -35,30 +35,58 @@ export class MissingConfigurationException extends BusinessException {
   }
 }
 
-/** GitLab rejected the token (502). */
-export class GitlabAuthException extends BusinessException {
-  constructor(message = 'GitLab rejected the token') {
-    super('gitlab.auth', message, HttpStatus.BAD_GATEWAY);
+/** The forge rejected the token (502). */
+export class ForgeAuthException extends BusinessException {
+  constructor(message = 'The forge rejected the token') {
+    super('forge.auth', message, HttpStatus.BAD_GATEWAY);
   }
 }
 
-/** The GitLab token lacks the `read_api` scope (400). */
-export class GitlabScopeException extends BusinessValidationException {
-  constructor(message = 'GitLab token requires the read_api scope') {
-    super('gitlab.scope', message);
+/** The token lacks the scope required to read merge/pull requests (400). */
+export class ForgeScopeException extends BusinessValidationException {
+  constructor(message = 'Token requires the read_api scope') {
+    super('forge.scope', message);
   }
 }
 
-/** GitLab is unreachable or returned a server error (502). */
-export class GitlabUnavailableException extends BusinessException {
-  constructor(message = 'GitLab is unavailable') {
-    super('gitlab.unavailable', message, HttpStatus.BAD_GATEWAY);
+/** The forge is unreachable or returned a server error (502). */
+export class ForgeUnavailableException extends BusinessException {
+  constructor(message = 'The forge is unavailable') {
+    super('forge.unavailable', message, HttpStatus.BAD_GATEWAY);
   }
 }
 
-/** A GitLab request exceeded its allotted time budget (502). See RG-004-14. */
-export class GitlabTimeoutException extends BusinessException {
-  constructor(message = 'GitLab request timed out') {
-    super('gitlab.timeout', message, HttpStatus.BAD_GATEWAY);
+/** A forge request exceeded its allotted time budget (502). See RG-004-14. */
+export class ForgeTimeoutException extends BusinessException {
+  constructor(message = 'Forge request timed out') {
+    super('forge.timeout', message, HttpStatus.BAD_GATEWAY);
+  }
+}
+
+/** The connection's forge type is not supported yet (400). See RG-019-01. */
+export class ForgeTypeUnsupportedException extends BusinessValidationException {
+  constructor(message = 'This forge type is not supported yet') {
+    super('connections.typeUnsupported', message);
+  }
+}
+
+/** A connection name is already used by another connection (400). See RG-019-02. */
+export class ConnectionNameDuplicateException extends BusinessValidationException {
+  constructor(message = 'This connection name is already used') {
+    super('connections.nameDuplicate', message);
+  }
+}
+
+/** No connection is configured yet (409). See RG-019-15. */
+export class ConnectionMissingException extends BusinessException {
+  constructor(message = 'No connection configured') {
+    super('connections.missing', message, HttpStatus.CONFLICT);
+  }
+}
+
+/** The targeted connection has no token configured (409). See RG-019-15. */
+export class ConnectionTokenMissingException extends BusinessException {
+  constructor(message = 'No token configured for this connection') {
+    super('connections.tokenMissing', message, HttpStatus.CONFLICT);
   }
 }

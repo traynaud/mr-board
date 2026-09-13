@@ -54,7 +54,7 @@ function buildMergeRequest(
 
 describe('extractNumericId', () => {
   it('should_extract_trailing_digits_from_a_global_id', () => {
-    expect(extractNumericId('gid://gitlab/MergeRequest/123')).toBe(123);
+    expect(extractNumericId('gid://gitlab/MergeRequest/123')).toBe('123');
   });
 
   it('should_throw_on_a_malformed_global_id', () => {
@@ -67,7 +67,7 @@ describe('mapGraphqlUser', () => {
     expect(
       mapGraphqlUser(buildUser('gid://gitlab/User/42', 'mdupont')),
     ).toEqual({
-      gitlabUserId: 42,
+      remoteUserId: '42',
       username: 'mdupont',
       name: 'Name mdupont',
       avatarUrl: 'https://gitlab.example.com/mdupont.png',
@@ -81,7 +81,7 @@ describe('mapGraphqlMergeRequest', () => {
     const mapped = mapGraphqlMergeRequest(buildMergeRequest());
 
     expect(mapped).toEqual({
-      gitlabMrId: 123,
+      remoteId: '123',
       iid: 7,
       title: 'Refonte du module de facturation',
       webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
@@ -95,7 +95,7 @@ describe('mapGraphqlMergeRequest', () => {
       additions: 340,
       deletions: 58,
       author: {
-        gitlabUserId: 1,
+        remoteUserId: '1',
         username: 'mdupont',
         name: 'Name mdupont',
         avatarUrl: 'https://gitlab.example.com/mdupont.png',
@@ -106,23 +106,20 @@ describe('mapGraphqlMergeRequest', () => {
         expect.objectContaining({ username: 'lrousseau' }),
       ],
       assignees: [expect.objectContaining({ username: 'kbenali' })],
-      detailedMergeStatus: 'MERGEABLE',
-      conflicts: false,
-      headPipelineStatus: 'SUCCESS',
-      approvalsRequired: 0,
-      approvalsLeft: 0,
-      resolvableDiscussionsCount: 0,
-      resolvedDiscussionsCount: 0,
+      mergeStatus: { state: 'mergeable', reasons: [] },
     });
   });
 
-  it('should_map_a_null_head_pipeline_status_when_there_is_no_pipeline', () => {
-    // US-017, RG-017-04 (`pipeline_missing`) : distingue "pas de pipeline"
-    // d'un statut de pipeline connu — ne jamais substituer une valeur.
+  it('should_compute_the_merge_status_from_the_raw_gitlab_signals', () => {
+    // RG-017-04, RG-019-21 : le mapper calcule mergeStatus une fois, ici,
+    // plutôt que de laisser des colonnes brutes à interpréter plus tard.
     const mapped = mapGraphqlMergeRequest(
-      buildMergeRequest({ headPipeline: null }),
+      buildMergeRequest({ conflicts: true, detailedMergeStatus: 'CONFLICT' }),
     );
-    expect(mapped.headPipelineStatus).toBeNull();
+    expect(mapped.mergeStatus).toEqual({
+      state: 'blocked',
+      reasons: [{ code: 'conflicts' }],
+    });
   });
 
   it('should_return_null_diff_stats_when_summary_is_absent', () => {

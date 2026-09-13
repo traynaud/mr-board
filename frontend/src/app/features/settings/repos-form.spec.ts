@@ -10,8 +10,8 @@ import {
 } from './repos-form';
 
 const projects: Project[] = [
-  { id: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', gitlabProjectId: 42 },
-  { id: 2, pathWithNamespace: 'equipe/front-web', alias: 'web', gitlabProjectId: 7 },
+  { id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' },
+  { id: 2, connectionId: 1, pathWithNamespace: 'equipe/front-web', alias: 'web', remoteProjectId: '7' },
 ];
 
 describe('aliasFormatValidator', () => {
@@ -107,7 +107,10 @@ describe('syncReposFormArray', () => {
     syncReposFormArray(array, [projects[0]]);
     expect(array.length).toBe(1);
 
-    syncReposFormArray(array, [...projects, { id: 3, pathWithNamespace: 'x/y', alias: 'xy', gitlabProjectId: 9 }]);
+    syncReposFormArray(array, [
+      ...projects,
+      { id: 3, connectionId: 1, pathWithNamespace: 'x/y', alias: 'xy', remoteProjectId: '9' },
+    ]);
     expect(array.length).toBe(3);
   });
 });

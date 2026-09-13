@@ -1,7 +1,7 @@
 import {
   MergeStatusReasonCode,
   MergeStatusState,
-} from '../domain/compute-merge-status';
+} from '../../forges/types/merge-status';
 
 /** One blocking reason of `MergeStatusDto.reasons` (RG-017-06). */
 export class MergeStatusReasonDto {

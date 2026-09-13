@@ -1,6 +1,11 @@
-import { MergeStatusInput, computeMergeStatus } from './compute-merge-status';
+import {
+  GitlabMergeStatusInput,
+  computeGitlabMergeStatus,
+} from './compute-gitlab-merge-status';
 
-function input(overrides: Partial<MergeStatusInput> = {}): MergeStatusInput {
+function input(
+  overrides: Partial<GitlabMergeStatusInput> = {},
+): GitlabMergeStatusInput {
   return {
     detailedMergeStatus: 'MERGEABLE',
     conflicts: false,
@@ -12,10 +17,10 @@ function input(overrides: Partial<MergeStatusInput> = {}): MergeStatusInput {
   };
 }
 
-describe('computeMergeStatus', () => {
+describe('computeGitlabMergeStatus', () => {
   it('should_report_mergeable_when_gitlab_reports_mergeable_and_nothing_blocks', () => {
     // Scenario: MR fusionnable
-    expect(computeMergeStatus(input())).toEqual({
+    expect(computeGitlabMergeStatus(input())).toEqual({
       state: 'mergeable',
       reasons: [],
     });
@@ -24,7 +29,7 @@ describe('computeMergeStatus', () => {
   it('should_report_unknown_when_data_is_absent', () => {
     // Scenario: MR synchronisée avant la mise à jour
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({
           detailedMergeStatus: null,
           conflicts: null,
@@ -42,7 +47,7 @@ describe('computeMergeStatus', () => {
     (status) => {
       // Scenario: Statut indéterminé
       expect(
-        computeMergeStatus(input({ detailedMergeStatus: status })),
+        computeGitlabMergeStatus(input({ detailedMergeStatus: status })),
       ).toEqual({ state: 'unknown', reasons: [] });
     },
   );
@@ -51,7 +56,7 @@ describe('computeMergeStatus', () => {
     // RG-017-03 : priorité de l'état « en cours de vérification » sur les
     // signaux bruts déjà connus.
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ detailedMergeStatus: 'CHECKING', conflicts: true }),
       ),
     ).toEqual({ state: 'unknown', reasons: [] });
@@ -59,7 +64,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_blocked_with_the_conflicts_reason', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ conflicts: true, detailedMergeStatus: 'CONFLICT' }),
       ),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'conflicts' }] });
@@ -67,7 +72,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_conflicts_from_the_boolean_flag_alone', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ conflicts: true, detailedMergeStatus: 'MERGEABLE' }),
       ),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'conflicts' }] });
@@ -78,7 +83,7 @@ describe('computeMergeStatus', () => {
     (status) => {
       // Scenario: Pipeline en échec sur un projet qui ne l'exige pas
       expect(
-        computeMergeStatus(
+        computeGitlabMergeStatus(
           input({
             detailedMergeStatus: 'MERGEABLE',
             headPipelineStatus: status,
@@ -99,7 +104,7 @@ describe('computeMergeStatus', () => {
     'should_report_pipeline_running_from_the_pipeline_status_alone (%s)',
     (status) => {
       expect(
-        computeMergeStatus(
+        computeGitlabMergeStatus(
           input({
             detailedMergeStatus: 'CI_STILL_RUNNING',
             headPipelineStatus: status,
@@ -112,7 +117,7 @@ describe('computeMergeStatus', () => {
   it('should_report_pipeline_running_from_ci_still_running_alone', () => {
     // Scenario: Pipeline en cours
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({
           detailedMergeStatus: 'CI_STILL_RUNNING',
           headPipelineStatus: 'RUNNING',
@@ -123,7 +128,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_pipeline_missing_when_ci_must_pass_and_no_pipeline', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({
           detailedMergeStatus: 'CI_MUST_PASS',
           headPipelineStatus: null,
@@ -134,13 +139,15 @@ describe('computeMergeStatus', () => {
 
   it('should_report_changes_requested', () => {
     expect(
-      computeMergeStatus(input({ detailedMergeStatus: 'REQUESTED_CHANGES' })),
+      computeGitlabMergeStatus(
+        input({ detailedMergeStatus: 'REQUESTED_CHANGES' }),
+      ),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'changes_requested' }] });
   });
 
   it('should_report_not_approved_with_the_remaining_count', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ detailedMergeStatus: 'NOT_APPROVED', approvalsLeft: 2 }),
       ),
     ).toEqual({
@@ -151,7 +158,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_not_approved_without_a_count_when_approvals_left_is_unavailable', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ detailedMergeStatus: 'NOT_APPROVED', approvalsLeft: null }),
       ),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'not_approved' }] });
@@ -160,7 +167,7 @@ describe('computeMergeStatus', () => {
   it('should_report_discussions_unresolved_with_the_remaining_count', () => {
     // Scenario: Discussions non résolues comptées
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ resolvableDiscussionsCount: 5, resolvedDiscussionsCount: 3 }),
       ),
     ).toEqual({
@@ -171,7 +178,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_discussions_unresolved_without_a_count_when_the_counts_are_unavailable', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({
           detailedMergeStatus: 'DISCUSSIONS_NOT_RESOLVED',
           resolvableDiscussionsCount: null,
@@ -186,7 +193,7 @@ describe('computeMergeStatus', () => {
 
   it('should_not_report_discussions_unresolved_when_everything_is_resolved', () => {
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({ resolvableDiscussionsCount: 3, resolvedDiscussionsCount: 3 }),
       ),
     ).toEqual({ state: 'mergeable', reasons: [] });
@@ -194,7 +201,7 @@ describe('computeMergeStatus', () => {
 
   it('should_report_need_rebase', () => {
     expect(
-      computeMergeStatus(input({ detailedMergeStatus: 'NEED_REBASE' })),
+      computeGitlabMergeStatus(input({ detailedMergeStatus: 'NEED_REBASE' })),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'need_rebase' }] });
   });
 
@@ -202,7 +209,7 @@ describe('computeMergeStatus', () => {
     'should_report_blocked_by_mr (%s)',
     (status) => {
       expect(
-        computeMergeStatus(input({ detailedMergeStatus: status })),
+        computeGitlabMergeStatus(input({ detailedMergeStatus: status })),
       ).toEqual({
         state: 'blocked',
         reasons: [{ code: 'blocked_by_mr' }],
@@ -220,7 +227,9 @@ describe('computeMergeStatus', () => {
     'LOCKED_LFS_FILES',
     'COMMITS_STATUS',
   ])('should_report_policy (%s)', (status) => {
-    expect(computeMergeStatus(input({ detailedMergeStatus: status }))).toEqual({
+    expect(
+      computeGitlabMergeStatus(input({ detailedMergeStatus: status })),
+    ).toEqual({
       state: 'blocked',
       reasons: [{ code: 'policy' }],
     });
@@ -229,7 +238,7 @@ describe('computeMergeStatus', () => {
   it('should_report_other_for_an_unrecognised_future_gitlab_status', () => {
     // Scenario: Valeur inconnue de GitLab
     expect(
-      computeMergeStatus(input({ detailedMergeStatus: 'SOMETHING_NEW' })),
+      computeGitlabMergeStatus(input({ detailedMergeStatus: 'SOMETHING_NEW' })),
     ).toEqual({ state: 'blocked', reasons: [{ code: 'other' }] });
   });
 
@@ -237,7 +246,7 @@ describe('computeMergeStatus', () => {
     'should_never_report_a_reason_for_an_ignored_status_with_no_blocking_signal (%s)',
     (status) => {
       expect(
-        computeMergeStatus(input({ detailedMergeStatus: status })),
+        computeGitlabMergeStatus(input({ detailedMergeStatus: status })),
       ).toEqual({
         state: 'unknown',
         reasons: [],
@@ -248,7 +257,7 @@ describe('computeMergeStatus', () => {
   it('should_report_multiple_reasons_in_the_rg_017_04_order_without_duplicates', () => {
     // Scenario: MR bloquée pour plusieurs raisons
     expect(
-      computeMergeStatus(
+      computeGitlabMergeStatus(
         input({
           detailedMergeStatus: 'CONFLICT',
           conflicts: true,
@@ -270,7 +279,7 @@ describe('computeMergeStatus', () => {
     it('should_report_blocked_with_the_conflicts_reason_for_a_draft_with_conflicts', () => {
       // Scenario: Draft avec conflits
       expect(
-        computeMergeStatus(
+        computeGitlabMergeStatus(
           input({
             detailedMergeStatus: 'DRAFT_STATUS',
             conflicts: true,
@@ -283,7 +292,7 @@ describe('computeMergeStatus', () => {
     it('should_report_unknown_for_a_draft_with_no_blocking_signal', () => {
       // Scenario: Draft sans signal bloquant
       expect(
-        computeMergeStatus(
+        computeGitlabMergeStatus(
           input({
             detailedMergeStatus: 'DRAFT_STATUS',
             conflicts: false,

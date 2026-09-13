@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ConnectionsService } from '../connections/connections.service';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
 import { ImportConfigDto } from './dto/import-config.dto';
@@ -10,6 +11,10 @@ describe('SettingsTransferService', () => {
     getExportableSettings: jest.fn(),
     applyImportedSettings: jest.fn(),
   };
+  const connections = {
+    findAll: jest.fn(),
+    importUpsert: jest.fn(),
+  };
   const projects = {
     list: jest.fn(),
     importMany: jest.fn(),
@@ -17,10 +22,15 @@ describe('SettingsTransferService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    connections.importUpsert.mockResolvedValue({
+      name: 'GitLab',
+      created: false,
+    });
     const moduleRef = await Test.createTestingModule({
       providers: [
         SettingsTransferService,
         { provide: SettingsService, useValue: settings },
+        { provide: ConnectionsService, useValue: connections },
         { provide: ProjectsService, useValue: projects },
       ],
     }).compile();
@@ -28,40 +38,61 @@ describe('SettingsTransferService', () => {
   });
 
   describe('export', () => {
-    it('should_combine_exportable_settings_and_repo_list', async () => {
+    it('should_combine_exportable_settings_connections_and_repo_list', async () => {
       settings.getExportableSettings.mockResolvedValue({
-        gitlabUrl: 'https://gitlab.com',
-        meUsername: 'mdupont',
+        meEmail: 'marie@exemple.fr',
       });
+      connections.findAll.mockResolvedValue([
+        {
+          id: 1,
+          type: 'gitlab',
+          name: 'GitLab',
+          url: 'https://gitlab.com',
+          meUsername: 'mdupont',
+        },
+      ]);
       projects.list.mockResolvedValue([
         {
           id: 1,
+          connectionId: 1,
           pathWithNamespace: 'equipe/backend-api',
           alias: 'api',
-          gitlabProjectId: 42,
+          remoteProjectId: '42',
         },
       ]);
 
       const result = await service.export();
 
       expect(result).toEqual({
-        version: 1,
-        settings: { gitlabUrl: 'https://gitlab.com', meUsername: 'mdupont' },
-        projects: [{ pathWithNamespace: 'equipe/backend-api', alias: 'api' }],
+        version: 2,
+        settings: { meEmail: 'marie@exemple.fr' },
+        connections: [
+          {
+            type: 'gitlab',
+            name: 'GitLab',
+            url: 'https://gitlab.com',
+            meUsername: 'mdupont',
+          },
+        ],
+        projects: [
+          {
+            connection: 'GitLab',
+            pathWithNamespace: 'equipe/backend-api',
+            alias: 'api',
+          },
+        ],
       });
     });
   });
 
-  describe('import', () => {
-    it('should_apply_settings_then_merge_repos_and_combine_the_result', async () => {
+  describe('import — version 1', () => {
+    it('should_apply_settings_and_merge_the_legacy_connection_then_the_repos', async () => {
       const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
         version: 1,
-        settings: { gitlabUrl: 'https://gitlab.com' },
+        settings: { gitlabUrl: 'https://gitlab.com', meUsername: 'mdupont' },
         projects: [{ pathWithNamespace: 'equipe/backend-api', alias: 'api' }],
       });
-      settings.applyImportedSettings.mockResolvedValue({
-        gitlabUrl: 'https://gitlab.com',
-      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
       projects.importMany.mockResolvedValue({
         added: 1,
         updated: 0,
@@ -71,31 +102,147 @@ describe('SettingsTransferService', () => {
       const result = await service.import(dto);
 
       expect(settings.applyImportedSettings).toHaveBeenCalledWith(dto.settings);
-      expect(projects.importMany).toHaveBeenCalledWith(dto.projects);
+      expect(connections.importUpsert).toHaveBeenCalledWith({
+        type: 'gitlab',
+        name: 'GitLab',
+        url: 'https://gitlab.com',
+        meUsername: 'mdupont',
+      });
+      expect(projects.importMany).toHaveBeenCalledWith([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'GitLab',
+        },
+      ]);
       expect(result).toEqual({
-        settings: { gitlabUrl: 'https://gitlab.com' },
+        settings: { meEmail: null },
+        connectionsAdded: 0,
+        connectionsUpdated: 1,
+        newConnectionNames: [],
         projectsAdded: 1,
         projectsUpdated: 0,
         projectsSkipped: [],
       });
     });
 
-    it('should_report_skipped_repos', async () => {
+    it('should_pass_a_null_username_when_absent', async () => {
       const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
         version: 1,
         settings: { gitlabUrl: 'https://gitlab.com' },
-        projects: [{ pathWithNamespace: 'equipe/introuvable', alias: 'x' }],
+        projects: [],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+
+      await service.import(dto);
+
+      expect(connections.importUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({ meUsername: null }),
+      );
+    });
+  });
+
+  describe('import — version 2', () => {
+    it('should_apply_settings_merge_every_connection_then_the_repos_by_connection_name', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: { meEmail: 'marie@exemple.fr' },
+        connections: [
+          {
+            type: 'gitlab',
+            name: 'gitlab.com',
+            url: 'https://gitlab.com',
+            meUsername: 'mdupont',
+          },
+        ],
+        projects: [
+          {
+            connection: 'gitlab.com',
+            pathWithNamespace: 'equipe/backend-api',
+            alias: 'api',
+          },
+        ],
       });
       settings.applyImportedSettings.mockResolvedValue({
-        gitlabUrl: 'https://gitlab.com',
+        meEmail: 'marie@exemple.fr',
       });
+      connections.importUpsert.mockResolvedValue({
+        name: 'gitlab.com',
+        created: true,
+      });
+      projects.importMany.mockResolvedValue({
+        added: 1,
+        updated: 0,
+        skipped: [],
+      });
+
+      const result = await service.import(dto);
+
+      expect(connections.importUpsert).toHaveBeenCalledWith({
+        type: 'gitlab',
+        name: 'gitlab.com',
+        url: 'https://gitlab.com',
+        meUsername: 'mdupont',
+      });
+      expect(projects.importMany).toHaveBeenCalledWith([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'gitlab.com',
+        },
+      ]);
+      expect(result.projectsAdded).toBe(1);
+      expect(result.connectionsAdded).toBe(1);
+      expect(result.connectionsUpdated).toBe(0);
+      expect(result.newConnectionNames).toEqual(['gitlab.com']);
+    });
+
+    it('should_import_no_connection_when_the_array_is_absent', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+
+      const result = await service.import(dto);
+
+      expect(connections.importUpsert).not.toHaveBeenCalled();
+      expect(result.connectionsAdded).toBe(0);
+      expect(result.connectionsUpdated).toBe(0);
+      expect(result.newConnectionNames).toEqual([]);
+    });
+
+    it('should_report_skipped_repos', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [
+          {
+            connection: 'inexistante',
+            pathWithNamespace: 'equipe/introuvable',
+            alias: 'x',
+          },
+        ],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
         skipped: [
           {
             pathWithNamespace: 'equipe/introuvable',
-            reason: 'projects.notFound',
+            reason: 'connections.unknown',
           },
         ],
       });
@@ -105,7 +252,7 @@ describe('SettingsTransferService', () => {
       expect(result.projectsSkipped).toEqual([
         {
           pathWithNamespace: 'equipe/introuvable',
-          reason: 'projects.notFound',
+          reason: 'connections.unknown',
         },
       ]);
     });

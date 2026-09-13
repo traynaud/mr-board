@@ -3,12 +3,14 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   EntityNotFoundException,
-  GitlabTimeoutException,
+  ForgeAuthException,
+  ForgeTimeoutException,
 } from '../../common/exceptions';
-import { GitlabGraphqlMergeRequestNode } from '../gitlab/types/gitlab-merge-request';
+import { ConnectionsService } from '../connections/connections.service';
+import { ForgeClientFactory } from '../forges/forge-client.factory';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
 import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service';
 import { SettingsService } from '../settings/settings.service';
 import { SyncRun } from './entities/sync-run.entity';
@@ -21,7 +23,8 @@ function flush(): Promise<void> {
 function project(overrides: Partial<Project> = {}): Project {
   return {
     id: 1,
-    gitlabProjectId: 42,
+    connectionId: 1,
+    remoteProjectId: '42',
     pathWithNamespace: 'equipe/api',
     alias: 'api',
     webUrl: 'https://gitlab.example.com/equipe/api',
@@ -31,28 +34,38 @@ function project(overrides: Partial<Project> = {}): Project {
   };
 }
 
-function rawNode(iid: number): GitlabGraphqlMergeRequestNode {
+const CONNECTION = {
+  id: 1,
+  name: 'GitLab',
+  type: 'gitlab' as const,
+  url: 'https://gitlab.example.com',
+};
+
+function mergeRequest(iid: number): ForgeMergeRequest {
   return {
-    id: `gid://gitlab/MergeRequest/${iid}`,
-    iid: String(iid),
+    remoteId: String(iid),
+    iid,
     title: `MR ${iid}`,
     webUrl: `https://gitlab.example.com/equipe/api/-/merge_requests/${iid}`,
     draft: false,
     createdAt: '2026-09-01T10:00:00Z',
     updatedAt: '2026-09-01T10:00:00Z',
-    userNotesCount: 0,
+    commentsCount: 0,
     approved: false,
-    labels: { nodes: [] },
-    diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+    labels: [],
+    changedFiles: 1,
+    additions: 1,
+    deletions: 0,
     author: {
-      id: 'gid://gitlab/User/1',
+      remoteUserId: '1',
       username: 'mdupont',
       name: 'Marie Dupont',
       avatarUrl: null,
       webUrl: 'https://gitlab.example.com/mdupont',
     },
-    reviewers: { nodes: [] },
-    assignees: { nodes: [] },
+    reviewers: [],
+    assignees: [],
+    mergeStatus: { state: 'mergeable', reasons: [] },
   };
 }
 
@@ -62,16 +75,16 @@ interface SyncRunRepoMock {
   findOne: jest.Mock;
 }
 interface SettingsServiceMock {
-  getToken: jest.Mock;
-  getGitlabUrl: jest.Mock;
   getRefreshIntervalMin: jest.Mock;
+}
+interface ConnectionsServiceMock {
+  findAll: jest.Mock;
+  findOrThrow: jest.Mock;
+  getToken: jest.Mock;
 }
 interface ProjectsServiceMock {
   findById: jest.Mock;
-  listActive: jest.Mock;
-}
-interface GitlabClientServiceMock {
-  getOpenMergeRequests: jest.Mock;
+  listActiveByConnection: jest.Mock;
 }
 interface MergeRequestsServiceMock {
   upsertForProject: jest.Mock;
@@ -82,14 +95,16 @@ describe('SyncService', () => {
   let service: SyncService;
   let syncRunsRepo: SyncRunRepoMock;
   let settings: SettingsServiceMock;
+  let connections: ConnectionsServiceMock;
   let projects: ProjectsServiceMock;
-  let gitlab: GitlabClientServiceMock;
+  let gitlabForge: { fetchOpenMergeRequests: jest.Mock };
   let mergeRequests: MergeRequestsServiceMock;
 
   beforeEach(async () => {
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const savedRuns: Partial<SyncRun>[] = [];
+    gitlabForge = { fetchOpenMergeRequests: jest.fn().mockResolvedValue([]) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -107,24 +122,26 @@ describe('SyncService', () => {
         },
         {
           provide: SettingsService,
+          useValue: { getRefreshIntervalMin: jest.fn().mockResolvedValue(0) },
+        },
+        {
+          provide: ConnectionsService,
           useValue: {
+            findAll: jest.fn().mockResolvedValue([CONNECTION]),
+            findOrThrow: jest.fn().mockResolvedValue(CONNECTION),
             getToken: jest.fn().mockResolvedValue('glpat-token'),
-            getGitlabUrl: jest
-              .fn()
-              .mockResolvedValue('https://gitlab.example.com'),
-            getRefreshIntervalMin: jest.fn().mockResolvedValue(0),
           },
         },
         {
           provide: ProjectsService,
           useValue: {
             findById: jest.fn().mockResolvedValue(null),
-            listActive: jest.fn().mockResolvedValue([]),
+            listActiveByConnection: jest.fn().mockResolvedValue([]),
           },
         },
         {
-          provide: GitlabClientService,
-          useValue: { getOpenMergeRequests: jest.fn().mockResolvedValue([]) },
+          provide: ForgeClientFactory,
+          useValue: { forType: jest.fn().mockReturnValue(gitlabForge) },
         },
         {
           provide: MergeRequestsService,
@@ -139,8 +156,8 @@ describe('SyncService', () => {
     service = module.get(SyncService);
     syncRunsRepo = module.get(getRepositoryToken(SyncRun));
     settings = module.get(SettingsService);
+    connections = module.get(ConnectionsService);
     projects = module.get(ProjectsService);
-    gitlab = module.get(GitlabClientService);
     mergeRequests = module.get(MergeRequestsService);
   });
 
@@ -155,14 +172,14 @@ describe('SyncService', () => {
       await expect(service.trigger('manual', 99)).rejects.toBeInstanceOf(
         EntityNotFoundException,
       );
-      expect(settings.getToken).not.toHaveBeenCalled();
+      expect(connections.findAll).not.toHaveBeenCalled();
     });
 
     it('should_return_running_true_without_waiting_for_the_sync_to_finish', async () => {
-      let resolveToken!: (token: string) => void;
-      settings.getToken.mockReturnValue(
+      let resolveConnections!: (connections: (typeof CONNECTION)[]) => void;
+      connections.findAll.mockReturnValue(
         new Promise((resolve) => {
-          resolveToken = resolve;
+          resolveConnections = resolve;
         }),
       );
 
@@ -170,15 +187,15 @@ describe('SyncService', () => {
 
       expect(result).toEqual({ running: true });
       expect(syncRunsRepo.save).not.toHaveBeenCalled();
-      resolveToken('glpat-token');
+      resolveConnections([]);
       await flush();
     });
 
     it('should_not_start_a_second_sync_while_one_is_already_running', async () => {
-      let resolveToken!: (token: string) => void;
-      settings.getToken.mockReturnValue(
+      let resolveConnections!: (connections: (typeof CONNECTION)[]) => void;
+      connections.findAll.mockReturnValue(
         new Promise((resolve) => {
-          resolveToken = resolve;
+          resolveConnections = resolve;
         }),
       );
 
@@ -186,8 +203,8 @@ describe('SyncService', () => {
       const second = await service.trigger('manual');
 
       expect(second).toEqual({ running: true });
-      expect(settings.getToken).toHaveBeenCalledTimes(1);
-      resolveToken('glpat-token');
+      expect(connections.findAll).toHaveBeenCalledTimes(1);
+      resolveConnections([]);
       await flush();
     });
 
@@ -198,34 +215,38 @@ describe('SyncService', () => {
       await service.trigger('manual');
       await flush();
 
-      expect(settings.getToken).toHaveBeenCalledTimes(2);
+      expect(connections.findAll).toHaveBeenCalledTimes(2);
     });
 
-    it('should_write_an_error_run_without_calling_gitlab_when_no_token_is_configured', async () => {
-      settings.getToken.mockResolvedValue(null);
+    it('should_write_an_error_run_without_calling_the_forge_when_the_connection_has_no_token', async () => {
+      projects.listActiveByConnection.mockResolvedValue([
+        project({ id: 1, alias: 'api' }),
+        project({ id: 2, alias: 'web' }),
+      ]);
+      connections.getToken.mockResolvedValue(null);
 
       await service.trigger('manual');
       await flush();
 
-      expect(gitlab.getOpenMergeRequests).not.toHaveBeenCalled();
+      expect(gitlabForge.fetchOpenMergeRequests).not.toHaveBeenCalled();
       expect(syncRunsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'error',
           mrCount: 0,
-          errorMessage: 'settings.tokenMissing',
+          errorMessage: 'Aucun jeton (GitLab) : api, web',
           trigger: 'manual',
         }),
       );
     });
 
-    it('should_sync_every_active_project_when_no_project_id_is_given', async () => {
-      projects.listActive.mockResolvedValue([
+    it('should_sync_every_active_project_of_every_connection_when_no_project_id_is_given', async () => {
+      projects.listActiveByConnection.mockResolvedValue([
         project({ id: 1, alias: 'api' }),
         project({ id: 2, alias: 'web' }),
       ]);
-      gitlab.getOpenMergeRequests
-        .mockResolvedValueOnce([rawNode(1), rawNode(2)])
-        .mockResolvedValueOnce([rawNode(3)]);
+      gitlabForge.fetchOpenMergeRequests
+        .mockResolvedValueOnce([mergeRequest(1), mergeRequest(2)])
+        .mockResolvedValueOnce([mergeRequest(3)]);
       mergeRequests.upsertForProject
         .mockResolvedValueOnce(2)
         .mockResolvedValueOnce(1);
@@ -233,7 +254,13 @@ describe('SyncService', () => {
       await service.trigger('manual');
       await flush();
 
-      expect(mergeRequests.upsertForProject).toHaveBeenCalledTimes(2);
+      expect(mergeRequests.upsertForProject).toHaveBeenNthCalledWith(
+        1,
+        1,
+        1,
+        expect.anything(),
+        expect.anything(),
+      );
       expect(mergeRequests.deleteMissing).toHaveBeenNthCalledWith(1, 1, [1, 2]);
       expect(mergeRequests.deleteMissing).toHaveBeenNthCalledWith(2, 2, [3]);
       expect(syncRunsRepo.save).toHaveBeenCalledWith(
@@ -245,35 +272,35 @@ describe('SyncService', () => {
       projects.findById.mockResolvedValue(
         project({ id: 5, alias: 'infra', pathWithNamespace: 'equipe/infra' }),
       );
-      gitlab.getOpenMergeRequests.mockResolvedValue([rawNode(1)]);
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(1)]);
       mergeRequests.upsertForProject.mockResolvedValue(1);
 
       await service.trigger('manual', 5);
       await flush();
 
-      expect(projects.listActive).not.toHaveBeenCalled();
-      expect(gitlab.getOpenMergeRequests).toHaveBeenCalledWith(
+      expect(projects.listActiveByConnection).not.toHaveBeenCalled();
+      expect(gitlabForge.fetchOpenMergeRequests).toHaveBeenCalledWith(
         'https://gitlab.example.com',
         'glpat-token',
-        'equipe/infra',
+        {
+          remoteProjectId: '42',
+          pathWithNamespace: 'equipe/infra',
+          webUrl: 'https://gitlab.example.com/equipe/api',
+        },
         expect.anything(),
       );
-      const [, , , options] = gitlab.getOpenMergeRequests.mock.calls[0] as [
-        string,
-        string,
-        string,
-        { deadlineAt: number },
-      ];
+      const [, , , options] = gitlabForge.fetchOpenMergeRequests.mock
+        .calls[0] as [string, string, unknown, { deadlineAt: number }];
       expect(typeof options.deadlineAt).toBe('number');
     });
 
     it('should_mark_the_run_partial_when_one_project_fails_and_another_succeeds', async () => {
-      projects.listActive.mockResolvedValue([
+      projects.listActiveByConnection.mockResolvedValue([
         project({ id: 1, alias: 'api' }),
         project({ id: 2, alias: 'infra' }),
       ]);
-      gitlab.getOpenMergeRequests
-        .mockResolvedValueOnce([rawNode(1)])
+      gitlabForge.fetchOpenMergeRequests
+        .mockResolvedValueOnce([mergeRequest(1)])
         .mockRejectedValueOnce(new Error('GitLab is unavailable'));
       mergeRequests.upsertForProject.mockResolvedValue(1);
 
@@ -289,24 +316,41 @@ describe('SyncService', () => {
       expect(saved.errorMessage).toContain('infra');
     });
 
+    it('should_report_a_dedicated_message_when_the_forge_rejects_the_token', async () => {
+      projects.listActiveByConnection.mockResolvedValue([
+        project({ id: 1, alias: 'api' }),
+      ]);
+      gitlabForge.fetchOpenMergeRequests.mockRejectedValue(
+        new ForgeAuthException(),
+      );
+
+      await service.trigger('manual');
+      await flush();
+
+      const [saved] = syncRunsRepo.save.mock.calls[0] as [
+        { errorMessage: string },
+      ];
+      expect(saved.errorMessage).toBe('api: Jeton refusé (GitLab)');
+    });
+
     it('should_not_interrupt_other_projects_when_one_times_out', async () => {
       // RG-004-14 : le dépassement du délai par projet (matérialisé ici par
-      // GitlabTimeoutException, levée par GitlabClientService) suit le même
+      // ForgeTimeoutException, levée par le client de forge) suit le même
       // chemin générique de gestion d'erreur par projet que les autres
       // échecs (RG-004-07) — vérifié explicitement pour ce cas précis.
-      projects.listActive.mockResolvedValue([
+      projects.listActiveByConnection.mockResolvedValue([
         project({ id: 1, alias: 'infra' }),
         project({ id: 2, alias: 'api' }),
       ]);
-      gitlab.getOpenMergeRequests
-        .mockRejectedValueOnce(new GitlabTimeoutException())
-        .mockResolvedValueOnce([rawNode(1)]);
+      gitlabForge.fetchOpenMergeRequests
+        .mockRejectedValueOnce(new ForgeTimeoutException())
+        .mockResolvedValueOnce([mergeRequest(1)]);
       mergeRequests.upsertForProject.mockResolvedValue(1);
 
       await service.trigger('manual');
       await flush();
 
-      expect(gitlab.getOpenMergeRequests).toHaveBeenCalledTimes(2);
+      expect(gitlabForge.fetchOpenMergeRequests).toHaveBeenCalledTimes(2);
       expect(mergeRequests.deleteMissing).toHaveBeenCalledTimes(1);
       expect(mergeRequests.deleteMissing).toHaveBeenCalledWith(2, [1]);
       const [saved] = syncRunsRepo.save.mock.calls[0] as [
@@ -315,11 +359,11 @@ describe('SyncService', () => {
       expect(saved.status).toBe('partial');
       expect(saved.mrCount).toBe(1);
       expect(saved.errorMessage).toContain('infra');
-      expect(saved.errorMessage).toContain('GitLab request timed out');
+      expect(saved.errorMessage).toContain('Forge request timed out');
     });
 
     it('should_write_an_error_run_when_an_unexpected_failure_occurs', async () => {
-      settings.getGitlabUrl.mockRejectedValue(new Error('boom'));
+      connections.findAll.mockRejectedValue(new Error('boom'));
 
       await service.trigger('manual');
       await flush();
@@ -340,10 +384,10 @@ describe('SyncService', () => {
     });
 
     it('should_report_running_true_while_a_sync_is_in_flight', async () => {
-      let resolveToken!: (token: string) => void;
-      settings.getToken.mockReturnValue(
+      let resolveConnections!: (connections: (typeof CONNECTION)[]) => void;
+      connections.findAll.mockReturnValue(
         new Promise((resolve) => {
-          resolveToken = resolve;
+          resolveConnections = resolve;
         }),
       );
 
@@ -352,7 +396,7 @@ describe('SyncService', () => {
         expect.objectContaining({ running: true }),
       );
 
-      resolveToken('glpat-token');
+      resolveConnections([]);
       await flush();
       await expect(service.getStatus()).resolves.toEqual(
         expect.objectContaining({ running: false }),

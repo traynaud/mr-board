@@ -1,3 +1,12 @@
+import { ConnectionType } from './connection.model';
+
+/** Connexion à laquelle appartient le projet d'une MR (RG-019-22). */
+export interface MergeRequestConnection {
+  id: number;
+  name: string;
+  type: ConnectionType;
+}
+
 /** Auteur, reviewer ou affecté, tel qu'embarqué dans `MergeRequestView`. */
 export interface MergeRequestUser {
   username: string;
@@ -90,6 +99,8 @@ export interface MergeRequestView {
   isMine: boolean;
   /** Mergeabilité GitLab (RG-017-06). `unknown` si la MR a été synchronisée avant l'US-017 (RG-017-11). */
   mergeStatus: MergeStatus;
+  /** Connexion à laquelle appartient le projet de cette MR (RG-019-22). */
+  connection: MergeRequestConnection;
 }
 
 /** Réponse de `GET /merge-requests` (RG-009-02) : les MRs et d'éventuels avertissements non bloquants. */

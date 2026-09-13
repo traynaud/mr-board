@@ -6,8 +6,6 @@ import {
   ImportConfig,
   ImportResult,
   Settings,
-  TestConnectionRequest,
-  TestConnectionResult,
   UpdateSettingsRequest,
 } from '../../models/settings.model';
 
@@ -24,11 +22,6 @@ export class SettingsService {
   /** `PUT /api/v1/settings` */
   putSettings(request: UpdateSettingsRequest): Observable<Settings> {
     return this.http.put<Settings>('api://settings', request);
-  }
-
-  /** `POST /api/v1/settings/test-connection` */
-  postTestConnection(request: TestConnectionRequest): Observable<TestConnectionResult> {
-    return this.http.post<TestConnectionResult>('api://settings/test-connection', request);
   }
 
   /** `GET /api/v1/settings/export` */

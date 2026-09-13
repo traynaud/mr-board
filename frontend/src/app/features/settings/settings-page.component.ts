@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +17,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
-import { merge } from 'rxjs';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
 import { LanguageService } from '../../core/language/language.service';
@@ -25,15 +24,17 @@ import { ThemeService } from '../../core/theme/theme.service';
 import { encodeQueryParams } from '../../core/url-state/query-params.mapper';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
 import { ColumnsStore } from '../../stores/columns.store';
+import { ConnectionsStore } from '../../stores/connections.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
+import { syncIdentitiesFormArray } from './connections-form';
 import { resolveMeIdentity } from './me-identity';
 import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
-import { GitlabConnectionSectionComponent } from './sections/gitlab-connection/gitlab-connection-section.component';
-import { MeSectionComponent } from './sections/me/me-section.component';
+import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
+import { IdentityRow, MeSectionComponent } from './sections/me/me-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import {
   RepoRow,
@@ -52,6 +53,8 @@ import { HasUnsavedChanges } from './unsaved-changes.guard';
 /** Durée d'affichage des toasts (ms). */
 export const TOAST_DURATION_MS = 3500;
 
+const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
+
 /**
  * Écran Paramètres (route `/settings`) : chargement, sections, Enregistrer /
  * Annuler. La confirmation d'abandon est gérée par `unsavedChangesGuard`.
@@ -68,7 +71,7 @@ export const TOAST_DURATION_MS = 3500;
     RouterLink,
     TranslatePipe,
     SettingsSectionComponent,
-    GitlabConnectionSectionComponent,
+    ConnectionsSectionComponent,
     MeSectionComponent,
     RefreshSectionComponent,
     RepositoriesSectionComponent,
@@ -82,6 +85,7 @@ export const TOAST_DURATION_MS = 3500;
 export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly store = inject(SettingsStore);
   protected readonly projectsStore = inject(ProjectsStore);
+  protected readonly connectionsStore = inject(ConnectionsStore);
   private readonly syncStore = inject(SyncStore);
   private readonly filtersStore = inject(FiltersStore);
   private readonly mrStore = inject(MergeRequestsStore);
@@ -110,17 +114,22 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     return this.form.valid && this.form.dirty && !this.store.saving();
   });
 
-  protected readonly canTest = computed(() => {
+  /** Une ligne d'identité résolue par connexion (RG-019-08), pour la section « 01 · Moi ». */
+  protected readonly identityRows = computed<IdentityRow[]>(() => {
     this.formEvents();
-    const { gitlabUrl, gitlabToken } = this.form.controls;
-    const hasToken = gitlabToken.value.length > 0 || (this.store.settings()?.tokenConfigured ?? false);
-    return gitlabUrl.valid && gitlabToken.valid && hasToken && this.store.test().status !== 'pending';
-  });
-
-  /** Identité résolue pour l'aperçu de la section « 01 · Moi » (RG-002-03). */
-  protected readonly meIdentity = computed(() => {
-    this.formEvents();
-    return resolveMeIdentity(this.form.controls.meUsername.value, this.store.test());
+    const testedConnectionId = this.connectionsStore.testedConnectionId();
+    const test = this.connectionsStore.test();
+    return this.connectionsStore.connections().map((connection, i) => {
+      const group = this.form.controls.identities.at(i);
+      return {
+        connection,
+        group,
+        identity: resolveMeIdentity(
+          group.controls.username.value,
+          testedConnectionId === connection.id ? test : IDLE_TEST,
+        ),
+      };
+    });
   });
 
   constructor() {
@@ -136,28 +145,6 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
         resetSettingsForm(this.form, settings);
       }
     });
-    // Pré-remplissage du username après un test de connexion réussi, si le
-    // champ est encore vide (RG-002-04). Un username déjà saisi n'est jamais
-    // écrasé ; le formulaire passe en modifié (non enregistré).
-    effect(() => {
-      const test = this.store.test();
-      if (test.status === 'success' && test.result) {
-        const control = this.form.controls.meUsername;
-        if (!control.value.trim()) {
-          control.setValue(test.result.username);
-          control.markAsDirty();
-        }
-      }
-    });
-    // Le résultat du test n'est effacé que par un changement d'URL ou de
-    // jeton (RG-001-05) — pas par la saisie de l'identité (US-002) ni des
-    // alias de repos (US-003), qui partagent désormais le même formulaire.
-    merge(
-      this.form.controls.gitlabUrl.valueChanges,
-      this.form.controls.gitlabToken.valueChanges,
-    )
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.store.resetTest());
     // Reconstruit inconditionnellement le FormArray des alias à chaque
     // changement de la liste des repos (ajout/suppression immédiats,
     // renommage sauvegardé) — RG-003-07 : une modification d'alias non
@@ -165,15 +152,31 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // temps (cas rare, assumé).
     effect(() => {
       const projects = this.projectsStore.projects();
+      const connectionsById = new Map(
+        this.connectionsStore.connections().map((c) => [c.id, c]),
+      );
       syncReposFormArray(this.form.controls.repos, projects);
       this.repoRows.set(
-        projects.map((project, i) => ({ project, group: this.form.controls.repos.at(i) })),
+        projects.map((project, i) => ({
+          project,
+          group: this.form.controls.repos.at(i),
+          connectionName: connectionsById.get(project.connectionId)?.name ?? '',
+        })),
       );
+    });
+    // Reconstruit le FormArray des identités à chaque changement de la liste
+    // des connexions (ajout/suppression immédiats, RG-019-08) — même
+    // principe que pour les repos.
+    effect(() => {
+      syncIdentitiesFormArray(this.form.controls.identities, this.connectionsStore.connections());
     });
   }
 
   ngOnInit(): void {
     void this.store.load();
+    // `ConnectionsStore`/`ProjectsStore` sont chargés par leurs sections
+    // propriétaires (`ConnectionsSectionComponent`/`RepositoriesSectionComponent`)
+    // — jamais ici, pour éviter un chargement redondant du même singleton.
   }
 
   /** Contrat du guard d'abandon (RG-001-07). */
@@ -183,14 +186,6 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
 
   protected retry(): void {
     void this.store.load();
-  }
-
-  protected testConnection(): void {
-    const { gitlabUrl, gitlabToken } = this.form.getRawValue();
-    void this.store.testConnection({
-      gitlabUrl: gitlabUrl.trim(),
-      ...(gitlabToken ? { gitlabToken } : {}),
-    });
   }
 
   protected async save(): Promise<void> {
@@ -221,6 +216,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // immédiatement pristine avant la navigation, sans dépendre du moment où
     // l'effect sera exécuté.
     syncReposFormArray(this.form.controls.repos, this.projectsStore.projects());
+    syncIdentitiesFormArray(this.form.controls.identities, this.connectionsStore.connections());
     const settings = this.store.settings();
     if (settings) {
       resetSettingsForm(this.form, settings);

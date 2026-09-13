@@ -1,15 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
-import { MappedGitlabUser } from '../gitlab/mappers/map-graphql-merge-request';
+import { ForgeUser } from '../forges/types/forge-user';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
-function mappedUser(
-  overrides: Partial<MappedGitlabUser> = {},
-): MappedGitlabUser {
+function forgeUser(overrides: Partial<ForgeUser> = {}): ForgeUser {
   return {
-    gitlabUserId: 42,
+    remoteUserId: '42',
     username: 'mdupont',
     name: 'Marie Dupont',
     avatarUrl: 'https://gitlab.example.com/mdupont.png',
@@ -57,11 +55,22 @@ describe('UsersService', () => {
   it('should_create_a_new_user_when_not_found', async () => {
     repository.findOneBy.mockResolvedValue(null);
 
-    const user = await service.upsert(mappedUser());
+    const user = await service.upsert(1, forgeUser());
 
-    expect(repository.create).toHaveBeenCalledWith({ gitlabUserId: 42 });
+    expect(repository.findOneBy).toHaveBeenCalledWith({
+      connectionId: 1,
+      remoteUserId: '42',
+    });
+    expect(repository.create).toHaveBeenCalledWith({
+      connectionId: 1,
+      remoteUserId: '42',
+    });
     expect(repository.save).toHaveBeenCalledWith(
-      expect.objectContaining({ gitlabUserId: 42, username: 'mdupont' }),
+      expect.objectContaining({
+        connectionId: 1,
+        remoteUserId: '42',
+        username: 'mdupont',
+      }),
     );
     expect(user).toEqual(expect.objectContaining({ username: 'mdupont' }));
   });
@@ -69,7 +78,8 @@ describe('UsersService', () => {
   it('should_refresh_profile_fields_of_an_existing_user', async () => {
     const existing: User = {
       id: 7,
-      gitlabUserId: 42,
+      connectionId: 1,
+      remoteUserId: '42',
       username: 'old-username',
       name: 'Old Name',
       avatarUrl: null,
@@ -77,7 +87,7 @@ describe('UsersService', () => {
     };
     repository.findOneBy.mockResolvedValue(existing);
 
-    await service.upsert(mappedUser({ username: 'mdupont-new' }));
+    await service.upsert(1, forgeUser({ username: 'mdupont-new' }));
 
     expect(repository.create).not.toHaveBeenCalled();
     expect(repository.save).toHaveBeenCalledWith(
@@ -85,11 +95,23 @@ describe('UsersService', () => {
     );
   });
 
+  it('should_scope_the_same_remote_id_to_different_connections', async () => {
+    repository.findOneBy.mockResolvedValue(null);
+
+    await service.upsert(2, forgeUser());
+
+    expect(repository.findOneBy).toHaveBeenCalledWith({
+      connectionId: 2,
+      remoteUserId: '42',
+    });
+  });
+
   describe('findByIds', () => {
     it('should_return_matching_entities', async () => {
       const user: User = {
         id: 1,
-        gitlabUserId: 42,
+        connectionId: 1,
+        remoteUserId: '42',
         username: 'mdupont',
         name: 'Marie Dupont',
         avatarUrl: null,

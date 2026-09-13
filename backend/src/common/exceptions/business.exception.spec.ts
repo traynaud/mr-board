@@ -1,10 +1,15 @@
 import { HttpStatus } from '@nestjs/common';
 import {
   BusinessValidationException,
+  ConnectionMissingException,
+  ConnectionNameDuplicateException,
+  ConnectionTokenMissingException,
   EntityNotFoundException,
-  GitlabAuthException,
-  GitlabTimeoutException,
-  GitlabUnavailableException,
+  ForgeAuthException,
+  ForgeScopeException,
+  ForgeTimeoutException,
+  ForgeTypeUnsupportedException,
+  ForgeUnavailableException,
   MissingConfigurationException,
 } from './business.exception';
 
@@ -17,9 +22,14 @@ describe('Business exceptions', () => {
       409,
       'token.missing',
     ],
-    [new GitlabAuthException(), 502, 'gitlab.auth'],
-    [new GitlabUnavailableException(), 502, 'gitlab.unavailable'],
-    [new GitlabTimeoutException(), 502, 'gitlab.timeout'],
+    [new ForgeAuthException(), 502, 'forge.auth'],
+    [new ForgeScopeException(), 400, 'forge.scope'],
+    [new ForgeUnavailableException(), 502, 'forge.unavailable'],
+    [new ForgeTimeoutException(), 502, 'forge.timeout'],
+    [new ForgeTypeUnsupportedException(), 400, 'connections.typeUnsupported'],
+    [new ConnectionNameDuplicateException(), 400, 'connections.nameDuplicate'],
+    [new ConnectionMissingException(), 409, 'connections.missing'],
+    [new ConnectionTokenMissingException(), 409, 'connections.tokenMissing'],
   ])('should_expose_status_and_code (%#)', (exception, status, code) => {
     expect(exception.getStatus()).toBe(status);
     expect(exception.code).toBe(code);

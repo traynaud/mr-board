@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
+import { ConnectionsService } from '../connections/connections.service';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
@@ -12,11 +13,18 @@ import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
 import { MergeRequestsService } from './merge-requests.service';
 
-function mappedMergeRequest(
-  overrides: Partial<MappedGitlabMergeRequest> = {},
-): MappedGitlabMergeRequest {
+const CONNECTION = {
+  id: 1,
+  name: 'GitLab',
+  type: 'gitlab' as const,
+  meUsername: null as string | null,
+};
+
+function forgeMergeRequest(
+  overrides: Partial<ForgeMergeRequest> = {},
+): ForgeMergeRequest {
   return {
-    gitlabMrId: 123,
+    remoteId: '123',
     iid: 7,
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
@@ -30,7 +38,7 @@ function mappedMergeRequest(
     additions: 340,
     deletions: 58,
     author: {
-      gitlabUserId: 1,
+      remoteUserId: '1',
       username: 'mdupont',
       name: 'Marie Dupont',
       avatarUrl: null,
@@ -38,13 +46,7 @@ function mappedMergeRequest(
     },
     reviewers: [],
     assignees: [],
-    detailedMergeStatus: 'MERGEABLE',
-    conflicts: false,
-    headPipelineStatus: 'SUCCESS',
-    approvalsRequired: 0,
-    approvalsLeft: 0,
-    resolvableDiscussionsCount: 0,
-    resolvedDiscussionsCount: 0,
+    mergeStatus: { state: 'mergeable', reasons: [] },
     ...overrides,
   };
 }
@@ -70,10 +72,11 @@ describe('MergeRequestsService', () => {
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock; list: jest.Mock };
   let settingsService: {
-    getIdentity: jest.Mock;
+    getMeEmail: jest.Mock;
     getThresholds: jest.Mock;
     getIgnoredLabels: jest.Mock;
   };
+  let connectionsService: { findAll: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -129,8 +132,9 @@ describe('MergeRequestsService', () => {
         {
           provide: UsersService,
           useValue: {
-            upsert: jest.fn((user: { gitlabUserId: number }) =>
-              Promise.resolve({ id: user.gitlabUserId * 10 }),
+            upsert: jest.fn(
+              (_connectionId: number, user: { remoteUserId: string }) =>
+                Promise.resolve({ id: Number(user.remoteUserId) * 10 }),
             ),
             findByIds: jest.fn().mockResolvedValue([]),
           },
@@ -145,15 +149,19 @@ describe('MergeRequestsService', () => {
         {
           provide: SettingsService,
           useValue: {
-            getIdentity: jest
-              .fn()
-              .mockResolvedValue({ username: null, email: null }),
+            getMeEmail: jest.fn().mockResolvedValue(null),
             getThresholds: jest.fn().mockResolvedValue({
               difficulty: DEFAULT_DIFFICULTY_THRESHOLDS,
               readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
               workdaysOnly: false,
             }),
             getIgnoredLabels: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: ConnectionsService,
+          useValue: {
+            findAll: jest.fn().mockResolvedValue([{ ...CONNECTION }]),
           },
         },
       ],
@@ -166,6 +174,7 @@ describe('MergeRequestsService', () => {
     usersService = module.get(UsersService);
     projectsService = module.get(ProjectsService);
     settingsService = module.get(SettingsService);
+    connectionsService = module.get(ConnectionsService);
   });
 
   function persistedMergeRequest(
@@ -173,7 +182,7 @@ describe('MergeRequestsService', () => {
   ): MergeRequest {
     return {
       id: 1,
-      gitlabMrId: 123,
+      remoteId: '123',
       iid: 7,
       projectId: 1,
       title: 'Refonte facturation',
@@ -190,22 +199,26 @@ describe('MergeRequestsService', () => {
       readyAt: '2026-09-01T10:00:00.000Z',
       updatedAtGitlab: '2026-09-01T10:00:00.000Z',
       syncedAt: '2026-09-11T08:00:00.000Z',
-      detailedMergeStatus: 'MERGEABLE',
-      conflicts: false,
-      headPipelineStatus: 'SUCCESS',
-      approvalsRequired: 0,
-      approvalsLeft: 0,
-      resolvableDiscussionsCount: 0,
-      resolvedDiscussionsCount: 0,
+      mergeStatusState: 'mergeable',
+      mergeStatusReasons: '[]',
       ...overrides,
     };
   }
+
+  /** Default project row used across `listOpen`/`getFacets` tests. */
+  const projectRow = (overrides: Record<string, unknown> = {}) => ({
+    id: 1,
+    alias: 'api',
+    connectionId: 1,
+    ...overrides,
+  });
 
   describe('upsertForProject', () => {
     it('should_insert_a_new_merge_request_with_ready_at_from_gitlab_created_at', async () => {
       const count = await service.upsertForProject(
         1,
-        [mappedMergeRequest()],
+        1,
+        [forgeMergeRequest()],
         '2026-09-11T08:00:00.000Z',
       );
 
@@ -214,9 +227,12 @@ describe('MergeRequestsService', () => {
         expect.objectContaining({
           projectId: 1,
           iid: 7,
+          remoteId: '123',
           readyAt: '2026-09-01T10:00:00.000Z',
           labels: JSON.stringify(['backend']),
           syncedAt: '2026-09-11T08:00:00.000Z',
+          mergeStatusState: 'mergeable',
+          mergeStatusReasons: '[]',
         }),
       );
     });
@@ -224,7 +240,8 @@ describe('MergeRequestsService', () => {
     it('should_return_null_ready_at_for_a_new_draft_merge_request', async () => {
       await service.upsertForProject(
         1,
-        [mappedMergeRequest({ draft: true })],
+        1,
+        [forgeMergeRequest({ draft: true })],
         '2026-09-11T08:00:00.000Z',
       );
 
@@ -242,7 +259,8 @@ describe('MergeRequestsService', () => {
 
       await service.upsertForProject(
         1,
-        [mappedMergeRequest({ draft: false })],
+        1,
+        [forgeMergeRequest({ draft: false })],
         '2026-09-11T08:00:00.000Z',
       );
 
@@ -260,7 +278,8 @@ describe('MergeRequestsService', () => {
 
       await service.upsertForProject(
         1,
-        [mappedMergeRequest({ draft: false })],
+        1,
+        [forgeMergeRequest({ draft: false })],
         '2026-09-11T08:00:00.000Z',
       );
 
@@ -269,21 +288,22 @@ describe('MergeRequestsService', () => {
       );
     });
 
-    it('should_upsert_each_reviewer_and_assignee_and_replace_the_association_rows', async () => {
+    it('should_upsert_each_reviewer_and_assignee_on_the_projects_connection_and_replace_the_association_rows', async () => {
       await service.upsertForProject(
         1,
+        7,
         [
-          mappedMergeRequest({
+          forgeMergeRequest({
             reviewers: [
               {
-                gitlabUserId: 2,
+                remoteUserId: '2',
                 username: 'kbenali',
                 name: 'Karim Benali',
                 avatarUrl: null,
                 webUrl: 'https://gitlab.example.com/kbenali',
               },
               {
-                gitlabUserId: 3,
+                remoteUserId: '3',
                 username: 'lrousseau',
                 name: 'Léa Rousseau',
                 avatarUrl: null,
@@ -292,7 +312,7 @@ describe('MergeRequestsService', () => {
             ],
             assignees: [
               {
-                gitlabUserId: 2,
+                remoteUserId: '2',
                 username: 'kbenali',
                 name: 'Karim Benali',
                 avatarUrl: null,
@@ -305,6 +325,10 @@ describe('MergeRequestsService', () => {
       );
 
       expect(usersService.upsert).toHaveBeenCalledTimes(4); // author + 2 reviewers + 1 assignee
+      expect(usersService.upsert).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ username: 'mdupont' }),
+      );
       expect(reviewersRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
       expect(reviewersRepo.insert).toHaveBeenCalledWith([
         { mergeRequestId: 99, userId: 20 },
@@ -319,7 +343,8 @@ describe('MergeRequestsService', () => {
     it('should_not_insert_association_rows_when_there_is_no_reviewer_or_assignee', async () => {
       await service.upsertForProject(
         1,
-        [mappedMergeRequest()],
+        1,
+        [forgeMergeRequest()],
         '2026-09-11T08:00:00.000Z',
       );
 
@@ -400,7 +425,7 @@ describe('MergeRequestsService', () => {
 
     it('should_query_only_non_draft_merge_requests', async () => {
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -412,10 +437,10 @@ describe('MergeRequestsService', () => {
       });
     });
 
-    it('should_assemble_the_view_with_project_alias_and_author', async () => {
+    it('should_assemble_the_view_with_project_alias_author_and_connection', async () => {
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
       projectsService.findByIds.mockResolvedValue([
-        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+        projectRow({ pathWithNamespace: 'equipe/api' }),
       ]);
       usersService.findByIds.mockResolvedValue([
         {
@@ -459,6 +484,7 @@ describe('MergeRequestsService', () => {
             openedDays: 9,
             isMine: false,
             mergeStatus: { state: 'mergeable', reasons: [] },
+            connection: { id: 1, name: 'GitLab', type: 'gitlab' },
           },
         ],
         warnings: [],
@@ -467,20 +493,14 @@ describe('MergeRequestsService', () => {
       expect(usersService.findByIds).toHaveBeenCalledWith([10]);
     });
 
-    it('should_report_an_unknown_merge_status_for_a_merge_request_synced_before_this_us', async () => {
-      // US-017, RG-017-11 : colonnes de statut à `null`, jamais de recalcul rétroactif.
+    it('should_read_the_merge_status_computed_and_persisted_at_sync_time', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({
-          detailedMergeStatus: null,
-          conflicts: null,
-          headPipelineStatus: null,
-          approvalsRequired: null,
-          approvalsLeft: null,
-          resolvableDiscussionsCount: null,
-          resolvedDiscussionsCount: null,
+          mergeStatusState: 'unknown',
+          mergeStatusReasons: '[]',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -495,11 +515,11 @@ describe('MergeRequestsService', () => {
     it('should_report_a_blocked_merge_status_with_its_reasons', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({
-          detailedMergeStatus: 'CONFLICT',
-          conflicts: true,
+          mergeStatusState: 'blocked',
+          mergeStatusReasons: JSON.stringify([{ code: 'conflicts' }]),
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -522,7 +542,7 @@ describe('MergeRequestsService', () => {
           deletions: 340,
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -546,7 +566,7 @@ describe('MergeRequestsService', () => {
           deletions: null,
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -566,7 +586,7 @@ describe('MergeRequestsService', () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ changedFiles: 0, additions: 0, deletions: 0 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -594,7 +614,7 @@ describe('MergeRequestsService', () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ changedFiles: 6, additions: 50, deletions: 0 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -618,7 +638,7 @@ describe('MergeRequestsService', () => {
       assigneesRepo.findBy.mockResolvedValue([
         { mergeRequestId: 2, userId: 20 },
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
         { id: 20, username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
@@ -654,9 +674,20 @@ describe('MergeRequestsService', () => {
       await expect(service.listOpen({})).rejects.toThrow(/Project 1/);
     });
 
+    it('should_throw_when_a_referenced_connection_is_missing', async () => {
+      connectionsService.findAll.mockResolvedValue([]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      await expect(service.listOpen({})).rejects.toThrow(/Connection 1/);
+    });
+
     it('should_throw_when_a_referenced_author_is_missing', async () => {
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([]);
 
       await expect(service.listOpen({})).rejects.toThrow(/User 10/);
@@ -669,7 +700,7 @@ describe('MergeRequestsService', () => {
           readyAt: '2026-09-10T08:00:00.000Z',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -691,7 +722,7 @@ describe('MergeRequestsService', () => {
           readyAt: '2026-09-08T08:00:00.000Z',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -716,7 +747,7 @@ describe('MergeRequestsService', () => {
           readyAt: '2026-09-08T08:00:00.000Z',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -741,7 +772,7 @@ describe('MergeRequestsService', () => {
           readyAt: '2026-09-04T08:00:00.000Z',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -761,7 +792,7 @@ describe('MergeRequestsService', () => {
           readyAt: null,
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -790,7 +821,7 @@ describe('MergeRequestsService', () => {
           readyAt: '2026-09-01T00:00:00.000Z',
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -817,7 +848,7 @@ describe('MergeRequestsService', () => {
           deletions: 0,
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -845,15 +876,14 @@ describe('MergeRequestsService', () => {
     });
 
     it('should_report_is_mine_true_when_my_username_matches_the_author', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, meUsername: 'mdupont' },
+      ]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
-      settingsService.getIdentity.mockResolvedValue({
-        username: 'mdupont',
-        email: null,
-      });
 
       const {
         mergeRequests: [view],
@@ -864,6 +894,9 @@ describe('MergeRequestsService', () => {
 
     it('should_report_is_me_true_on_the_author_and_false_on_reviewers_and_assignees_who_do_not_match', async () => {
       // RG-023-04/05 : `isMe` is computed per role, independently of `isMine`.
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, meUsername: 'mdupont' },
+      ]);
       reviewersRepo.findBy.mockResolvedValue([
         { mergeRequestId: 1, userId: 20 },
       ]);
@@ -871,16 +904,12 @@ describe('MergeRequestsService', () => {
         { mergeRequestId: 1, userId: 30 },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
         { id: 20, username: 'tgirard', name: 'Thomas Girard', avatarUrl: null },
         { id: 30, username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
       ]);
-      settingsService.getIdentity.mockResolvedValue({
-        username: 'mdupont',
-        email: null,
-      });
 
       const {
         mergeRequests: [view],
@@ -892,6 +921,9 @@ describe('MergeRequestsService', () => {
     });
 
     it('should_report_is_me_true_on_a_reviewer_and_an_assignee_case_insensitively', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, meUsername: 'mdupont' },
+      ]);
       reviewersRepo.findBy.mockResolvedValue([
         { mergeRequestId: 1, userId: 20 },
       ]);
@@ -899,15 +931,11 @@ describe('MergeRequestsService', () => {
         { mergeRequestId: 1, userId: 20 },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
         { id: 20, username: 'MDupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
-      settingsService.getIdentity.mockResolvedValue({
-        username: 'mdupont',
-        email: null,
-      });
 
       const {
         mergeRequests: [view],
@@ -922,7 +950,7 @@ describe('MergeRequestsService', () => {
 
     it('should_report_is_me_false_everywhere_when_no_identity_is_configured', async () => {
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -935,20 +963,50 @@ describe('MergeRequestsService', () => {
       expect(view.isMine).toBe(false);
     });
 
+    it('should_resolve_identity_per_connection_rather_than_globally', async () => {
+      // RG-019-25 : « mdupont » est mon identité sur la connexion 1, mais pas
+      // sur la connexion 2 — un homonyme n'y déclenche jamais isMe.
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, id: 1, meUsername: 'mdupont' },
+        {
+          id: 2,
+          name: 'gitlab.exemple.fr',
+          type: 'gitlab' as const,
+          meUsername: null,
+        },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, projectId: 1, authorId: 10 }),
+        persistedMergeRequest({ id: 2, iid: 2, projectId: 2, authorId: 20 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([
+        projectRow({ id: 1, connectionId: 1 }),
+        projectRow({ id: 2, alias: 'web', connectionId: 2 }),
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        { id: 20, username: 'mdupont', name: 'Un homonyme', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({});
+
+      expect(result.find((v) => v.iid === 1)?.author.isMe).toBe(true);
+      expect(result.find((v) => v.iid === 2)?.author.isMe).toBe(false);
+    });
+
     it('should_filter_to_merge_requests_where_i_have_a_role_when_mine_only_is_requested', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, meUsername: 'mdupont' },
+      ]);
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1, authorId: 10 }),
         persistedMergeRequest({ id: 2, iid: 2, authorId: 20 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
         { id: 20, username: 'tgirard', name: 'Thomas Girard', avatarUrl: null },
       ]);
-      settingsService.getIdentity.mockResolvedValue({
-        username: 'mdupont',
-        email: null,
-      });
 
       const { mergeRequests: result, warnings } = await service.listOpen({
         mineOnly: true,
@@ -958,12 +1016,12 @@ describe('MergeRequestsService', () => {
       expect(warnings).toEqual([]);
     });
 
-    it('should_ignore_mine_only_and_warn_when_no_identity_is_configured', async () => {
+    it('should_ignore_mine_only_and_warn_when_no_connection_has_a_username', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1 }),
         persistedMergeRequest({ id: 2, iid: 2 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -976,14 +1034,22 @@ describe('MergeRequestsService', () => {
       expect(warnings).toEqual(['identity.missing']);
     });
 
+    it('should_not_warn_when_the_global_email_is_configured_even_without_any_connection_username', async () => {
+      settingsService.getMeEmail.mockResolvedValue('marie@exemple.fr');
+
+      await expect(service.listOpen({ mineOnly: true })).resolves.toEqual(
+        expect.objectContaining({ warnings: [] }),
+      );
+    });
+
     it('should_apply_the_project_composable_filter', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1, projectId: 1 }),
         persistedMergeRequest({ id: 2, iid: 2, projectId: 2 }),
       ]);
       projectsService.findByIds.mockResolvedValue([
-        { id: 1, alias: 'api' },
-        { id: 2, alias: 'web' },
+        projectRow(),
+        projectRow({ id: 2, alias: 'web' }),
       ]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
@@ -1004,7 +1070,7 @@ describe('MergeRequestsService', () => {
       reviewersRepo.findBy.mockResolvedValue([
         { mergeRequestId: 1, userId: 10 },
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -1035,7 +1101,7 @@ describe('MergeRequestsService', () => {
           labels: JSON.stringify(['backend']),
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -1053,7 +1119,7 @@ describe('MergeRequestsService', () => {
           labels: JSON.stringify(['wip']),
         }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
@@ -1087,7 +1153,7 @@ describe('MergeRequestsService', () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, projectId: 1 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       projectsService.list.mockResolvedValue([
         { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
         { id: 2, alias: 'web', pathWithNamespace: 'equipe/web' },
@@ -1105,20 +1171,19 @@ describe('MergeRequestsService', () => {
     });
 
     it('should_scope_the_base_set_to_drafts_and_mine_before_counting_facets', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, meUsername: 'someone-else' },
+      ]);
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, authorId: 10 }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       projectsService.list.mockResolvedValue([
         { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
       ]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
       ]);
-      settingsService.getIdentity.mockResolvedValue({
-        username: 'someone-else',
-        email: null,
-      });
 
       const facets = await service.getFacets({ mineOnly: true });
 
@@ -1132,7 +1197,7 @@ describe('MergeRequestsService', () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, labels: JSON.stringify(['wip']) }),
       ]);
-      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
       projectsService.list.mockResolvedValue([
         { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
       ]);

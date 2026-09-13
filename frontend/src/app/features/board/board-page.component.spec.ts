@@ -8,6 +8,7 @@ import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../core/interceptors/http-error.interceptor';
 import { stubMatchMedia } from '../../core/theme/testing';
+import { Connection } from '../../models/connection.model';
 import { MergeRequestView } from '../../models/merge-request.model';
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
@@ -21,11 +22,7 @@ import { BoardPageComponent } from './board-page.component';
 import { FilterBarComponent } from './filter-bar/filter-bar.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
 
-const NO_TOKEN_SETTINGS: Settings = {
-  gitlabUrl: 'https://gitlab.exemple.fr',
-  tokenConfigured: false,
-  tokenHint: null,
-  meUsername: null,
+const SETTINGS: Settings = {
   meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
@@ -44,22 +41,31 @@ const NO_TOKEN_SETTINGS: Settings = {
   highlightMe: true,
   language: 'fr',
 };
-const WITH_TOKEN_SETTINGS: Settings = {
-  ...NO_TOKEN_SETTINGS,
+const CONNECTION: Connection = {
+  id: 1,
+  type: 'gitlab',
+  name: 'GitLab',
+  url: 'https://gitlab.exemple.fr',
   tokenConfigured: true,
   tokenHint: 'wxyz',
+  meUsername: null,
+  projectsCount: 1,
 };
-const WITH_IDENTITY_SETTINGS: Settings = {
-  ...WITH_TOKEN_SETTINGS,
-  meUsername: 'mdupont',
-};
+const NO_CONNECTIONS: Connection[] = [];
+const WITH_TOKEN_CONNECTIONS: Connection[] = [CONNECTION];
+const WITHOUT_TOKEN_CONNECTIONS: Connection[] = [
+  { ...CONNECTION, tokenConfigured: false, tokenHint: null },
+];
+const WITH_IDENTITY_CONNECTIONS: Connection[] = [{ ...CONNECTION, meUsername: 'mdupont' }];
 const PROJECT: Project = {
   id: 1,
+  connectionId: 1,
   pathWithNamespace: 'equipe/backend-api',
   alias: 'api',
-  gitlabProjectId: 42,
+  remoteProjectId: '42',
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
+const CONNECTIONS_URL = '/api/v1/connections';
 const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc';
 const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0';
 const EMPTY_FACETS = {
@@ -81,6 +87,7 @@ const FACETS_WITH_API = {
   ...EMPTY_FACETS,
   project: [{ value: 'api', label: 'api · equipe/backend-api', count: 0 }],
 };
+const MR_CONNECTION = { id: 1, name: 'GitLab', type: 'gitlab' as const };
 
 function run(overrides: Partial<SyncRun> = {}): SyncRun {
   return {
@@ -119,6 +126,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     openedDays: 6,
     isMine: false,
     mergeStatus: { state: 'mergeable', reasons: [] },
+    connection: MR_CONNECTION,
     ...overrides,
   };
 }
@@ -182,6 +190,7 @@ describe('BoardPageComponent', () => {
 
   async function bootstrap(options: {
     settings: Settings;
+    connections?: Connection[];
     projects: Project[];
     status: SyncStatus;
     mergeRequests?: MergeRequestView[];
@@ -192,6 +201,7 @@ describe('BoardPageComponent', () => {
     fixture.detectChanges();
     await settle();
     http.expectOne('/api/v1/settings').flush(options.settings);
+    http.expectOne(CONNECTIONS_URL).flush(options.connections ?? WITH_TOKEN_CONNECTIONS);
     http.expectOne('/api/v1/projects').flush(options.projects);
     http
       .expectOne(MERGE_REQUESTS_URL)
@@ -201,8 +211,8 @@ describe('BoardPageComponent', () => {
     await settle();
   }
 
-  it('should_show_the_no_token_banner_and_disable_refresh_when_no_token_is_configured', async () => {
-    await bootstrap({ settings: NO_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
+  it('should_show_the_no_token_banner_and_disable_refresh_when_no_connection_is_configured', async () => {
+    await bootstrap({ settings: SETTINGS, connections: NO_CONNECTIONS, projects: [], status: IDLE_STATUS });
 
     expect(el.querySelector('.no-token-banner')).not.toBeNull();
     expect(el.querySelector('.empty-state')).toBeNull();
@@ -211,8 +221,24 @@ describe('BoardPageComponent', () => {
     ).toBe(true);
   });
 
+  it('should_show_a_non_blocking_banner_when_a_connection_has_no_token', async () => {
+    await bootstrap({
+      settings: SETTINGS,
+      connections: WITHOUT_TOKEN_CONNECTIONS,
+      projects: [],
+      status: IDLE_STATUS,
+    });
+
+    expect(el.querySelector('.no-token-banner')).not.toBeNull();
+    // RG-019-17 : contrairement à l'absence totale de connexion, Rafraîchir
+    // reste actif quand seule une connexion existante manque de jeton.
+    expect(
+      el.querySelector<HTMLButtonElement>('button[mat-stroked-button]')?.disabled,
+    ).toBe(false);
+  });
+
   it('should_show_the_no_repos_empty_state_when_a_token_is_configured_but_no_repo_exists', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [], status: IDLE_STATUS });
 
     expect(el.querySelector('.no-token-banner')).toBeNull();
     expect(el.querySelector('.empty-state')).not.toBeNull();
@@ -227,7 +253,7 @@ describe('BoardPageComponent', () => {
 
   it('should_show_the_filter_bar_and_the_mr_table_when_merge_requests_are_returned', async () => {
     await bootstrap({
-      settings: WITH_TOKEN_SETTINGS,
+      settings: SETTINGS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [mergeRequest()],
@@ -242,7 +268,7 @@ describe('BoardPageComponent', () => {
 
   it('should_open_the_title_link_in_a_new_tab_when_configured', async () => {
     await bootstrap({
-      settings: { ...WITH_TOKEN_SETTINGS, openInNewTab: true },
+      settings: { ...SETTINGS, openInNewTab: true },
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [mergeRequest()],
@@ -255,7 +281,7 @@ describe('BoardPageComponent', () => {
 
   it('should_show_the_no_merge_requests_empty_state_without_a_clear_button_when_no_filter_is_active', async () => {
     await bootstrap({
-      settings: WITH_TOKEN_SETTINGS,
+      settings: SETTINGS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [],
@@ -271,7 +297,8 @@ describe('BoardPageComponent', () => {
 
   it('should_pass_identity_configured_to_the_filter_bar', async () => {
     await bootstrap({
-      settings: WITH_IDENTITY_SETTINGS,
+      settings: SETTINGS,
+      connections: WITH_IDENTITY_CONNECTIONS,
       projects: [PROJECT],
       status: IDLE_STATUS,
     });
@@ -282,7 +309,7 @@ describe('BoardPageComponent', () => {
 
   it('should_disable_the_mine_chip_when_identity_is_not_configured', async () => {
     await bootstrap({
-      settings: WITH_TOKEN_SETTINGS,
+      settings: SETTINGS,
       projects: [PROJECT],
       status: IDLE_STATUS,
     });
@@ -294,7 +321,7 @@ describe('BoardPageComponent', () => {
   const waitForDebounce = () => new Promise((resolve) => setTimeout(resolve, 200));
 
   it('should_reload_with_drafts_1_after_toggling_the_drafts_chip', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     el.querySelector<HTMLElement>('app-filter-bar mat-chip-option button')?.click();
     await waitForDebounce();
@@ -309,7 +336,8 @@ describe('BoardPageComponent', () => {
 
   it('should_reload_with_mine_1_after_toggling_the_mine_chip', async () => {
     await bootstrap({
-      settings: WITH_IDENTITY_SETTINGS,
+      settings: SETTINGS,
+      connections: WITH_IDENTITY_CONNECTIONS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [mergeRequest()],
@@ -338,7 +366,8 @@ describe('BoardPageComponent', () => {
 
   it('should_reload_with_mine_0_when_the_clear_filters_button_is_clicked', async () => {
     await bootstrap({
-      settings: WITH_IDENTITY_SETTINGS,
+      settings: SETTINGS,
+      connections: WITH_IDENTITY_CONNECTIONS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [],
@@ -366,7 +395,7 @@ describe('BoardPageComponent', () => {
 
   it('should_show_the_empty_state_with_a_clear_button_when_a_composable_filter_is_active_but_matches_nothing', async () => {
     await bootstrap({
-      settings: WITH_TOKEN_SETTINGS,
+      settings: SETTINGS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [],
@@ -387,7 +416,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_reload_after_adding_removing_toggling_or_selecting_a_composable_filter', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
     const filterBar = fixture.debugElement.query(By.directive(FilterBarComponent))
       .componentInstance as FilterBarComponent;
 
@@ -451,7 +480,8 @@ describe('BoardPageComponent', () => {
       el = fixture.nativeElement as HTMLElement;
       fixture.detectChanges();
       await settle();
-      http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+      http.expectOne('/api/v1/settings').flush(SETTINGS);
+      http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
       http.expectOne('/api/v1/projects').flush([PROJECT]);
       const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
       expect(mrReq.request.params.get('drafts')).toBe('1');
@@ -489,7 +519,7 @@ describe('BoardPageComponent', () => {
       const router = TestBed.inject(Router);
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
       expect(navigateSpy).toHaveBeenCalledWith(
         [],
@@ -501,7 +531,7 @@ describe('BoardPageComponent', () => {
     });
 
     it('should_write_the_url_without_pushing_history_when_a_filter_changes', async () => {
-      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
       const router = TestBed.inject(Router);
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
@@ -530,7 +560,8 @@ describe('BoardPageComponent', () => {
       el = fixture.nativeElement as HTMLElement;
       fixture.detectChanges();
       await settle();
-      http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+      http.expectOne('/api/v1/settings').flush(SETTINGS);
+      http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
       http.expectOne('/api/v1/projects').flush([PROJECT]);
       const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
       expect(mrReq.request.params.get('project')).toBe('api');
@@ -558,7 +589,7 @@ describe('BoardPageComponent', () => {
 
     it('should_show_the_current_query_string_in_the_footer', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -570,14 +601,14 @@ describe('BoardPageComponent', () => {
     });
 
     it('should_not_show_the_footer_in_the_no_repos_empty_state', async () => {
-      await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
+      await bootstrap({ settings: SETTINGS, projects: [], status: IDLE_STATUS });
 
       expect(el.querySelector('.board-footer')).toBeNull();
     });
 
     it('should_mention_the_highlight_ring_in_the_footer_when_highlight_me_is_enabled', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, highlightMe: true },
+        settings: { ...SETTINGS, highlightMe: true },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -590,7 +621,7 @@ describe('BoardPageComponent', () => {
 
     it('should_not_mention_the_highlight_ring_in_the_footer_when_highlight_me_is_disabled', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, highlightMe: false },
+        settings: { ...SETTINGS, highlightMe: false },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -603,7 +634,7 @@ describe('BoardPageComponent', () => {
 
     it('should_toggle_the_opened_column_from_the_mr_table_menu_output', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -626,7 +657,7 @@ describe('BoardPageComponent', () => {
 
     it('should_toggle_the_status_column_from_the_mr_table_menu_output', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -654,7 +685,7 @@ describe('BoardPageComponent', () => {
 
     it('should_pass_the_effective_column_widths_to_the_mr_table', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -673,7 +704,7 @@ describe('BoardPageComponent', () => {
       // chaque re-rendu, donc chaque pression part bien de la largeur mise à
       // jour par la précédente (RG-012-07 : « 3 fois » → +24px cumulés).
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -695,7 +726,7 @@ describe('BoardPageComponent', () => {
 
     it('should_forward_widthChange_from_the_mr_table_to_the_store', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -711,7 +742,7 @@ describe('BoardPageComponent', () => {
 
     it('should_forward_resetColumnWidth_from_the_mr_table_to_the_store', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -731,7 +762,7 @@ describe('BoardPageComponent', () => {
 
     it('should_forward_resetAllWidths_from_the_mr_table_to_the_store', async () => {
       await bootstrap({
-        settings: WITH_TOKEN_SETTINGS,
+        settings: SETTINGS,
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest()],
@@ -753,7 +784,8 @@ describe('BoardPageComponent', () => {
     el = fixture.nativeElement as HTMLElement;
     fixture.detectChanges();
     await settle();
-    http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+    http.expectOne('/api/v1/settings').flush(SETTINGS);
+    http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
     http.expectOne(MERGE_REQUESTS_URL).flush('down', { status: 500, statusText: 'KO' });
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
@@ -768,7 +800,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_trigger_an_unscoped_sync_and_reload_status_and_merge_requests_when_clicking_refresh', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     el.querySelector<HTMLButtonElement>('button[mat-stroked-button]')?.click();
     await settle();
@@ -787,7 +819,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_apply_and_persist_the_theme_immediately_when_clicking_the_toolbar_toggle', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
     await settle();
@@ -795,15 +827,15 @@ describe('BoardPageComponent', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     const req = http.expectOne('/api/v1/settings');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ gitlabUrl: WITH_TOKEN_SETTINGS.gitlabUrl, theme: 'dark' });
-    req.flush({ ...WITH_TOKEN_SETTINGS, theme: 'dark' });
+    expect(req.request.body).toEqual({ theme: 'dark' });
+    req.flush({ ...SETTINGS, theme: 'dark' });
     await settle();
 
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 
   it('should_toast_an_error_and_keep_the_optimistic_theme_when_the_toggle_save_fails', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
     await settle();
@@ -821,7 +853,7 @@ describe('BoardPageComponent', () => {
 
   it('should_not_toast_for_a_run_that_already_failed_before_the_page_was_opened', async () => {
     await bootstrap({
-      settings: WITH_TOKEN_SETTINGS,
+      settings: SETTINGS,
       projects: [PROJECT],
       status: { running: false, lastRun: run({ status: 'error' }), nextRunAt: null },
     });
@@ -830,7 +862,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_toast_and_reload_merge_requests_when_a_new_run_finishes_as_partial_or_error', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
     const syncStore = TestBed.inject(SyncStore);
     void syncStore.loadStatus();
@@ -862,7 +894,8 @@ describe('BoardPageComponent', () => {
 
     fixture.detectChanges();
     await settle();
-    http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+    http.expectOne('/api/v1/settings').flush(SETTINGS);
+    http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
@@ -877,7 +910,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_pause_polling_when_the_tab_becomes_hidden_and_pauseWhenHidden_is_enabled', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
     const stopSpy = vi.spyOn(TestBed.inject(SyncStore), 'stopPolling');
 
     setHidden(true);
@@ -886,7 +919,7 @@ describe('BoardPageComponent', () => {
   });
 
   it('should_resume_polling_and_reload_merge_requests_when_the_tab_becomes_visible_again', async () => {
-    await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
     const syncStore = TestBed.inject(SyncStore);
     const startSpy = vi.spyOn(syncStore, 'startPolling');
     setHidden(true);
@@ -907,7 +940,7 @@ describe('BoardPageComponent', () => {
 
   it('should_not_pause_when_pauseWhenHidden_is_disabled', async () => {
     await bootstrap({
-      settings: { ...WITH_TOKEN_SETTINGS, pauseWhenHidden: false },
+      settings: { ...SETTINGS, pauseWhenHidden: false },
       projects: [PROJECT],
       status: IDLE_STATUS,
     });
@@ -928,7 +961,8 @@ describe('BoardPageComponent', () => {
 
     expect(stopSpy).not.toHaveBeenCalled();
 
-    http.expectOne('/api/v1/settings').flush(WITH_TOKEN_SETTINGS);
+    http.expectOne('/api/v1/settings').flush(SETTINGS);
+    http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
     http.expectOne('/api/v1/projects').flush([PROJECT]);
     http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
@@ -943,7 +977,7 @@ describe('BoardPageComponent', () => {
 
     it('should_leave_the_default_title_when_tab_badge_is_disabled', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: false },
+        settings: { ...SETTINGS, tabBadge: false },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest({ readyLevel: 'red' })],
@@ -954,7 +988,7 @@ describe('BoardPageComponent', () => {
 
     it('should_show_the_red_count_in_the_title_when_tab_badge_is_enabled', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        settings: { ...SETTINGS, tabBadge: true },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [
@@ -969,7 +1003,7 @@ describe('BoardPageComponent', () => {
 
     it('should_use_the_default_title_when_no_merge_request_is_red', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        settings: { ...SETTINGS, tabBadge: true },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest({ readyLevel: 'green' })],
@@ -980,7 +1014,7 @@ describe('BoardPageComponent', () => {
 
     it('should_restore_the_default_title_when_the_component_is_destroyed', async () => {
       await bootstrap({
-        settings: { ...WITH_TOKEN_SETTINGS, tabBadge: true },
+        settings: { ...SETTINGS, tabBadge: true },
         projects: [PROJECT],
         status: IDLE_STATUS,
         mergeRequests: [mergeRequest({ readyLevel: 'red' })],

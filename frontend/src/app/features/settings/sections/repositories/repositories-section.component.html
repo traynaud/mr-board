@@ -11,6 +11,9 @@
   <table class="repos-table">
     <thead>
       <tr>
+        @if (showConnectionSelector()) {
+          <th>{{ 'settings.projects.connectionHeader' | translate }}</th>
+        }
         <th>{{ 'settings.projects.pathHeader' | translate }}</th>
         <th class="alias-col">{{ 'settings.projects.aliasHeader' | translate }}</th>
         <th class="delete-col"></th>
@@ -19,6 +22,9 @@
     <tbody>
       @for (row of rows(); track row.project.id) {
         <tr [formGroup]="row.group">
+          @if (showConnectionSelector()) {
+            <td class="connection-col">{{ row.connectionName }}</td>
+          }
           <td>{{ row.project.pathWithNamespace }}</td>
           <td class="alias-col">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -38,8 +44,18 @@
         </tr>
       }
       <tr class="add-row" [formGroup]="addForm">
-        <td colspan="3">
+        <td [attr.colspan]="showConnectionSelector() ? 4 : 3">
           <div class="add-fields">
+            @if (showConnectionSelector()) {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="connection-field">
+                <mat-label>{{ 'settings.projects.connectionHeader' | translate }}</mat-label>
+                <mat-select formControlName="connectionId">
+                  @for (connection of connectionsStore.connections(); track connection.id) {
+                    <mat-option [value]="connection.id">{{ connection.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="path-field">
               <input
                 matInput

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { MappedGitlabMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
+import { Connection } from '../connections/entities/connection.entity';
+import { ConnectionsService } from '../connections/connections.service';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
+import { MergeStatusResult } from '../forges/types/merge-status';
 import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
@@ -17,7 +20,6 @@ import {
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
 import { ConfiguredProject, buildFacets } from './domain/build-facets';
-import { computeMergeStatus } from './domain/compute-merge-status';
 import {
   ComposableFilters,
   EMPTY_COMPOSABLE_FILTERS,
@@ -31,6 +33,7 @@ import {
   SortParam,
   sortMergeRequests,
 } from './domain/sort-merge-requests';
+import { ConnectionSummaryDto } from './dto/connection-summary.dto';
 import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
 import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
@@ -56,7 +59,7 @@ export interface FacetsOptions {
 }
 
 /**
- * Persists merge requests synchronised from GitLab: upsert by
+ * Persists merge requests synchronised from a forge: upsert by
  * (`project_id`, `iid`), `ready_at` computation (RG-004-04), and full
  * replacement of the reviewer/assignee association rows on every sync
  * (RG-004-02).
@@ -73,6 +76,7 @@ export class MergeRequestsService {
     private readonly users: UsersService,
     private readonly projects: ProjectsService,
     private readonly settings: SettingsService,
+    private readonly connections: ConnectionsService,
   ) {}
 
   /**
@@ -80,7 +84,8 @@ export class MergeRequestsService {
    * `ready:asc`), narrowed by the 5 composable filters (RG-010-01/02) on
    * top of the `drafts`/`mine` base (RG-009). `mineOnly` restricts to
    * merge requests where I have a role (RG-G09) — silently ignored, with a
-   * `warnings` entry, when no identity is configured (RG-009-02).
+   * `warnings` entry, when no connection has a username configured
+   * (RG-019-09).
    */
   async listOpen(
     options: ListOpenOptions = {},
@@ -125,6 +130,10 @@ export class MergeRequestsService {
    * null for the returned rows (see `resolveReadyAt`). Merge requests
    * carrying an ignored label (RG-015-02) are dropped first, so both
    * `listOpen` and `getFacets` (and their counts) never see them.
+   *
+   * The identity used for `isMe`/`isMine` is resolved per merge request,
+   * from the `meUsername` of *its own project's connection* (RG-019-25) —
+   * never a single identity for the whole response.
    */
   private async loadBase(
     includeDrafts: boolean,
@@ -133,13 +142,17 @@ export class MergeRequestsService {
     const allMergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
     });
-    const ignoredLabels = await this.settings.getIgnoredLabels();
+    const [ignoredLabels, meEmail, allConnections] = await Promise.all([
+      this.settings.getIgnoredLabels(),
+      this.settings.getMeEmail(),
+      this.connections.findAll(),
+    ]);
     const mergeRequests = allMergeRequests.filter(
       (mr) => !isIgnoredByLabel(mr.labels, ignoredLabels),
     );
-    const identity = await this.settings.getIdentity();
+    const connectionsById = new Map(allConnections.map((c) => [c.id, c]));
     const identityMissing =
-      identity.username === null && identity.email === null;
+      meEmail === null && allConnections.every((c) => c.meUsername === null);
     const warnings: string[] =
       mineOnly && identityMissing ? ['identity.missing'] : [];
 
@@ -177,10 +190,11 @@ export class MergeRequestsService {
         mr,
         projectsById,
         usersById,
+        connectionsById,
+        meEmail,
         reviewerIdsByMr.get(mr.id) ?? [],
         assigneeIdsByMr.get(mr.id) ?? [],
         now,
-        identity,
         thresholds,
       ),
     );
@@ -194,26 +208,28 @@ export class MergeRequestsService {
   /**
    * Upserts every merge request of a project synchronisation batch.
    * @param projectId internal id of the project these MRs belong to.
-   * @param mergeRequests merge requests mapped from the GitLab GraphQL response.
+   * @param connectionId connection this project belongs to (RG-019-05).
+   * @param mergeRequests merge requests mapped from the forge's response.
    * @param syncedAt timestamp of this synchronisation, used both as `synced_at`
    * and, when relevant, as the new `ready_at` (RG-004-04).
    * @returns the number of merge requests processed.
    */
   async upsertForProject(
     projectId: number,
-    mergeRequests: MappedGitlabMergeRequest[],
+    connectionId: number,
+    mergeRequests: ForgeMergeRequest[],
     syncedAt: string,
   ): Promise<number> {
     for (const mergeRequest of mergeRequests) {
-      await this.upsertOne(projectId, mergeRequest, syncedAt);
+      await this.upsertOne(projectId, connectionId, mergeRequest, syncedAt);
     }
     return mergeRequests.length;
   }
 
   /**
    * Deletes the merge requests of a project that were not part of the
-   * latest GitLab response (RG-004-03). Reviewer/assignee rows cascade.
-   * @param keepIids `iid`s returned by GitLab for this project in this sync.
+   * latest forge response (RG-004-03). Reviewer/assignee rows cascade.
+   * @param keepIids `iid`s returned by the forge for this project in this sync.
    */
   async deleteMissing(projectId: number, keepIids: number[]): Promise<void> {
     const query = this.mergeRequests
@@ -228,15 +244,20 @@ export class MergeRequestsService {
 
   private async upsertOne(
     projectId: number,
-    mergeRequest: MappedGitlabMergeRequest,
+    connectionId: number,
+    mergeRequest: ForgeMergeRequest,
     syncedAt: string,
   ): Promise<void> {
-    const author = await this.users.upsert(mergeRequest.author);
+    const author = await this.users.upsert(connectionId, mergeRequest.author);
     const reviewerUsers = await Promise.all(
-      mergeRequest.reviewers.map((reviewer) => this.users.upsert(reviewer)),
+      mergeRequest.reviewers.map((reviewer) =>
+        this.users.upsert(connectionId, reviewer),
+      ),
     );
     const assigneeUsers = await Promise.all(
-      mergeRequest.assignees.map((assignee) => this.users.upsert(assignee)),
+      mergeRequest.assignees.map((assignee) =>
+        this.users.upsert(connectionId, assignee),
+      ),
     );
 
     const existing = await this.mergeRequests.findOneBy({
@@ -255,7 +276,7 @@ export class MergeRequestsService {
     const entity =
       existing ??
       this.mergeRequests.create({ projectId, iid: mergeRequest.iid });
-    entity.gitlabMrId = mergeRequest.gitlabMrId;
+    entity.remoteId = mergeRequest.remoteId;
     entity.title = mergeRequest.title;
     entity.webUrl = mergeRequest.webUrl;
     entity.draft = mergeRequest.draft;
@@ -270,13 +291,10 @@ export class MergeRequestsService {
     entity.readyAt = readyAt;
     entity.updatedAtGitlab = mergeRequest.updatedAt;
     entity.syncedAt = syncedAt;
-    entity.detailedMergeStatus = mergeRequest.detailedMergeStatus;
-    entity.conflicts = mergeRequest.conflicts;
-    entity.headPipelineStatus = mergeRequest.headPipelineStatus;
-    entity.approvalsRequired = mergeRequest.approvalsRequired;
-    entity.approvalsLeft = mergeRequest.approvalsLeft;
-    entity.resolvableDiscussionsCount = mergeRequest.resolvableDiscussionsCount;
-    entity.resolvedDiscussionsCount = mergeRequest.resolvedDiscussionsCount;
+    entity.mergeStatusState = mergeRequest.mergeStatus.state;
+    entity.mergeStatusReasons = JSON.stringify(
+      mergeRequest.mergeStatus.reasons,
+    );
 
     const saved = await this.mergeRequests.save(entity);
 
@@ -329,6 +347,23 @@ function mustGet<T>(byId: Map<number, T>, id: number, label: string): T {
   return value;
 }
 
+/**
+ * The identity a merge request's `isMe`/`isMine` are resolved against: the
+ * `meUsername` of *its own project's connection*, falling back to the global
+ * email (RG-019-07, RG-019-25) — never a single identity for the whole
+ * response.
+ */
+function resolveIdentity(
+  connectionId: number,
+  connectionsById: Map<number, Connection>,
+  meEmail: string | null,
+): Identity {
+  return {
+    username: connectionsById.get(connectionId)?.meUsername ?? null,
+    email: meEmail,
+  };
+}
+
 /** @see RG-023-05 : `isMe` is computed independently of the `highlightMe` display preference. */
 function toMergeRequestUser(
   user: User,
@@ -346,10 +381,11 @@ function toMergeRequestView(
   mergeRequest: MergeRequest,
   projectsById: Map<number, Project>,
   usersById: Map<number, User>,
+  connectionsById: Map<number, Connection>,
+  meEmail: string | null,
   reviewerIds: number[],
   assigneeIds: number[],
   now: string,
-  identity: Identity,
   thresholds: {
     difficulty: DifficultyThresholds;
     readyDelay: ReadyDelayThresholds;
@@ -357,6 +393,16 @@ function toMergeRequestView(
   },
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
+  const connection = mustGet(
+    connectionsById,
+    project.connectionId,
+    'Connection',
+  );
+  const identity = resolveIdentity(
+    project.connectionId,
+    connectionsById,
+    meEmail,
+  );
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
   const reviewers = reviewerIds.map((id) =>
     toMergeRequestUser(mustGet(usersById, id, 'User'), identity),
@@ -392,25 +438,27 @@ function toMergeRequestView(
       identity,
     ),
     mergeStatus: toMergeStatusField(mergeRequest),
+    connection: toConnectionSummary(connection),
   };
 }
 
+function toConnectionSummary(connection: Connection): ConnectionSummaryDto {
+  return { id: connection.id, name: connection.name, type: connection.type };
+}
+
 /**
- * Assembles `mergeStatus` from the raw columns persisted at sync time
- * (US-017, RG-017-06), delegating the actual mergeability rules to the pure
- * `computeMergeStatus` (RG-017-02).
+ * Reads the mergeability already computed and persisted at sync time by the
+ * forge's own mapper (RG-017-*, RG-019-21) — never recomputed here.
  */
 function toMergeStatusField(
   mergeRequest: MergeRequest,
 ): MergeRequestViewDto['mergeStatus'] {
-  return computeMergeStatus({
-    detailedMergeStatus: mergeRequest.detailedMergeStatus,
-    conflicts: mergeRequest.conflicts,
-    headPipelineStatus: mergeRequest.headPipelineStatus,
-    approvalsLeft: mergeRequest.approvalsLeft,
-    resolvableDiscussionsCount: mergeRequest.resolvableDiscussionsCount,
-    resolvedDiscussionsCount: mergeRequest.resolvedDiscussionsCount,
-  });
+  return {
+    state: mergeRequest.mergeStatusState,
+    reasons: JSON.parse(
+      mergeRequest.mergeStatusReasons,
+    ) as MergeStatusResult['reasons'],
+  };
 }
 
 /**

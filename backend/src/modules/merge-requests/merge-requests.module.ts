@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConnectionsModule } from '../connections/connections.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
@@ -19,6 +20,7 @@ import { MergeRequestsService } from './merge-requests.service';
     UsersModule,
     ProjectsModule,
     SettingsModule,
+    ConnectionsModule,
   ],
   controllers: [MergeRequestsController],
   providers: [MergeRequestsService],

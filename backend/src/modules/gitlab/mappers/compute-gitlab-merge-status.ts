@@ -1,38 +1,15 @@
-export type MergeStatusState = 'mergeable' | 'blocked' | 'unknown';
-
-/** The 11 reason codes of RG-017-04, generic across forges (RG-017-02). */
-export type MergeStatusReasonCode =
-  | 'conflicts'
-  | 'pipeline_failed'
-  | 'pipeline_running'
-  | 'pipeline_missing'
-  | 'changes_requested'
-  | 'not_approved'
-  | 'discussions_unresolved'
-  | 'need_rebase'
-  | 'blocked_by_mr'
-  | 'policy'
-  | 'other';
-
-export interface MergeStatusReason {
-  code: MergeStatusReasonCode;
-  /** Only set for `not_approved` and `discussions_unresolved` (RG-017-06). */
-  count?: number;
-}
-
-export interface MergeStatusResult {
-  state: MergeStatusState;
-  /** Ordered per RG-017-04, deduplicated (each code appears at most once by construction). */
-  reasons: MergeStatusReason[];
-}
+import {
+  MergeStatusReason,
+  MergeStatusResult,
+} from '../../forges/types/merge-status';
 
 /**
- * Raw mergeability data of a merge request, as persisted on `MergeRequest`
- * (US-017, RG-017-01). All fields are `null` together for a merge request
- * synchronised before this US (RG-017-11) — `approvalsRequired` plays no
- * role in the computation (kept for information/future use only).
+ * Raw GitLab mergeability signals for one merge request (US-017, RG-017-01).
+ * All fields are `null` together for a merge request synchronised before
+ * this US (RG-017-11) — `approvalsRequired` plays no role in the computation
+ * (kept for information/future use only).
  */
-export interface MergeStatusInput {
+export interface GitlabMergeStatusInput {
   detailedMergeStatus: string | null;
   conflicts: boolean | null;
   headPipelineStatus: string | null;
@@ -98,8 +75,10 @@ const RECOGNIZED_STATUSES = new Set([
 
 /**
  * Computes a merge request's mergeability (US-017, RG-017-02) from the raw
- * GitLab signals persisted at sync time. Pure and forge-agnostic: only the
- * caller knows these values come from GitLab (RG-017-02, EPIC-001).
+ * GitLab signals fetched at sync time — GitLab's own mapper implementation
+ * of the forge-agnostic `mergeStatus` required by `ForgeMergeRequest`
+ * (RG-019-21). Pure; called once per merge request at mapping time, never at
+ * read time (see `MergeRequest.mergeStatusState`/`mergeStatusReasons`).
  *
  * State precedence (RG-017-03): a `null`/still-checking `detailedMergeStatus`
  * always wins as `unknown`, even if a raw signal (e.g. `conflicts`) is
@@ -112,7 +91,9 @@ const RECOGNIZED_STATUSES = new Set([
  * @see RG-017-04
  * @see RG-017-05
  */
-export function computeMergeStatus(input: MergeStatusInput): MergeStatusResult {
+export function computeGitlabMergeStatus(
+  input: GitlabMergeStatusInput,
+): MergeStatusResult {
   const { detailedMergeStatus } = input;
   if (
     detailedMergeStatus === null ||
@@ -132,7 +113,7 @@ export function computeMergeStatus(input: MergeStatusInput): MergeStatusResult {
 }
 
 /** Builds the ordered `reasons` list of RG-017-04, one entry per matching condition. */
-function buildReasons(input: MergeStatusInput): MergeStatusReason[] {
+function buildReasons(input: GitlabMergeStatusInput): MergeStatusReason[] {
   const {
     detailedMergeStatus,
     conflicts,

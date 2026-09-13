@@ -55,6 +55,11 @@ tbody tr:not(.add-row):hover {
   align-items: flex-start;
   gap: var(--space-2);
 
+  .connection-field {
+    width: 150px;
+    flex: none;
+  }
+
   .path-field {
     flex: 1;
   }
@@ -63,6 +68,11 @@ tbody tr:not(.add-row):hover {
     width: 150px;
     flex: none;
   }
+}
+
+.connection-col {
+  color: var(--color-neutral-600);
+  width: 130px;
 }
 
 mat-form-field {

@@ -1,6 +1,11 @@
 import { SyncRunStatus } from '../entities/sync-run.entity';
 
-/** Outcome of synchronising a single project during one run. */
+/**
+ * Outcome of synchronising a single project during one run, or of a whole
+ * connection at once when it has no token (RG-019-16) — in that case
+ * `projectAlias` is empty and `errorMessage` already names every affected
+ * repo, so it is never re-prefixed.
+ */
 export interface ProjectSyncOutcome {
   projectAlias: string;
   success: boolean;
@@ -47,7 +52,11 @@ export function summarizeSyncRun(
     failed.length === 0
       ? null
       : failed
-          .map((outcome) => `${outcome.projectAlias}: ${outcome.errorMessage}`)
+          .map((outcome) =>
+            outcome.projectAlias
+              ? `${outcome.projectAlias}: ${outcome.errorMessage}`
+              : outcome.errorMessage,
+          )
           .join('; ');
 
   return { status, mrCount, errorMessage };

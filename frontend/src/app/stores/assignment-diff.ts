@@ -9,36 +9,32 @@ export interface NewAssignment {
   webUrl: string;
 }
 
-function isAssignedTo(mr: MergeRequestView, username: string): boolean {
-  const lower = username.toLowerCase();
-  return (
-    mr.reviewers.some((u) => u.username.toLowerCase() === lower) ||
-    mr.assignees.some((u) => u.username.toLowerCase() === lower)
-  );
+/**
+ * `isMe` est déjà résolu côté serveur par connexion (RG-019-25) — jamais
+ * recomparé ici à partir d'un nom d'utilisateur.
+ */
+function isAssignedToMe(mr: MergeRequestView): boolean {
+  return mr.reviewers.some((u) => u.isMe) || mr.assignees.some((u) => u.isMe);
 }
 
 /**
- * Détecte les MRs devenues assignées (reviewer ou assigné) à `username`
- * entre deux chargements (RG-016-01), en ignorant les drafts (RG-016-03).
- * Une MR absente de `previous` compte comme nouvelle si elle est déjà
- * assignée dès le premier chargement où elle apparaît.
+ * Détecte les MRs devenues assignées (reviewer ou assigné) à moi entre deux
+ * chargements (RG-016-01), en ignorant les drafts (RG-016-03). Une MR
+ * absente de `previous` compte comme nouvelle si elle est déjà assignée dès
+ * le premier chargement où elle apparaît.
  */
 export function findNewAssignments(
   previous: MergeRequestView[],
   current: MergeRequestView[],
-  username: string,
 ): NewAssignment[] {
-  if (!username) {
-    return [];
-  }
   const previousById = new Map(previous.map((mr) => [mr.id, mr]));
   const newAssignments: NewAssignment[] = [];
   for (const mr of current) {
-    if (mr.draft || !isAssignedTo(mr, username)) {
+    if (mr.draft || !isAssignedToMe(mr)) {
       continue;
     }
     const before = previousById.get(mr.id);
-    if (before && isAssignedTo(before, username)) {
+    if (before && isAssignedToMe(before)) {
       continue;
     }
     newAssignments.push({

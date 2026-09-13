@@ -15,6 +15,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
+import { ConnectionsStore } from '../../../../stores/connections.store';
 import { ProjectsStore } from '../../../../stores/projects.store';
 import { SettingsStore } from '../../../../stores/settings.store';
 import { ImportSummary, parseImportFile, summarizeImport } from '../../config-transfer';
@@ -59,6 +60,7 @@ const TOAST_DURATION_MS = 3500;
 export class MiscellaneousSectionComponent {
   private readonly settingsStore = inject(SettingsStore);
   private readonly projectsStore = inject(ProjectsStore);
+  private readonly connectionsStore = inject(ConnectionsStore);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
@@ -136,7 +138,8 @@ export class MiscellaneousSectionComponent {
       return;
     }
     const currentPaths = this.projectsStore.projects().map((project) => project.pathWithNamespace);
-    const summary = summarizeImport(config, currentPaths);
+    const currentConnectionNames = this.connectionsStore.connections().map((c) => c.name);
+    const summary = summarizeImport(config, currentPaths, currentConnectionNames);
     if (!(await this.confirmImport(summary))) {
       return;
     }
@@ -149,10 +152,18 @@ export class MiscellaneousSectionComponent {
     }
     resetSettingsForm(this.form(), result.settings);
     void this.projectsStore.load();
+    void this.connectionsStore.load();
     this.toast('settings.misc.importSuccess');
     if (result.projectsSkipped.length > 0) {
       this.toast('settings.misc.importSkipped', {
         paths: result.projectsSkipped.map((skipped) => skipped.pathWithNamespace).join(', '),
+      });
+    }
+    // RG-019-19 : rappelle de configurer le jeton des connexions créées par
+    // l'import (toujours sans jeton), après les autres toasts.
+    if (result.newConnectionNames.length > 0) {
+      this.toast('settings.misc.importTokensReminder', {
+        names: result.newConnectionNames.join(', '),
       });
     }
   }

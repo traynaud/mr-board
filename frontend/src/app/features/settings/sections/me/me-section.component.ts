@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { Connection } from '../../../../models/connection.model';
 import { AvatarComponent } from '../../../../shared/avatar/avatar.component';
+import { IdentityForm } from '../../connections-form';
 import { MeIdentity } from '../../me-identity';
 import { SettingsForm } from '../../settings-form';
 
@@ -15,11 +18,19 @@ const STATUS_KEYS: Record<Exclude<MeIdentity['status'], 'unset'>, string> = {
   manual: 'settings.me.status.manual',
 };
 
+/** Une ligne d'identité par connexion (RG-019-08), appariée par index avec `identities()`. */
+export interface IdentityRow {
+  connection: Connection;
+  group: IdentityForm;
+  identity: MeIdentity;
+}
+
 /**
- * Section « 01 · Moi » : username, email (optionnel), aperçu de l'identité
- * résolue (RG-002-03), case « Surligner mes MRs… » (RG-023-02). Composant
- * présentationnel : la résolution de l'identité est calculée par la page
- * (`resolveMeIdentity`).
+ * Section « 01 · Moi » : email global, une ligne « Nom d'utilisateur sur
+ * <connexion> » par connexion avec son aperçu d'identité (RG-002-03,
+ * RG-019-07/08), case « Surligner mes MRs… » (RG-023-02, indépendante de
+ * toute connexion, RG-019-24). Composant présentationnel : la résolution de
+ * chaque identité est calculée par la page (`resolveMeIdentity`).
  */
 @Component({
   selector: 'app-me-section',
@@ -28,6 +39,7 @@ const STATUS_KEYS: Record<Exclude<MeIdentity['status'], 'unset'>, string> = {
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
+    RouterLink,
     TranslatePipe,
     AvatarComponent,
   ],
@@ -37,16 +49,15 @@ const STATUS_KEYS: Record<Exclude<MeIdentity['status'], 'unset'>, string> = {
 })
 export class MeSectionComponent {
   readonly form = input.required<SettingsForm>();
-  readonly identity = input.required<MeIdentity>();
+  /** Une entrée par connexion existante (RG-019-08) ; vide si aucune connexion (RG-019-08). */
+  readonly identities = input.required<IdentityRow[]>();
 
   /** Nom affiché à côté de l'avatar : nom complet connu, sinon le username lui-même. */
-  protected readonly displayName = computed(() => {
-    const identity = this.identity();
+  protected displayName(identity: MeIdentity): string {
     return identity.name ?? `@${identity.username ?? ''}`;
-  });
+  }
 
-  protected readonly statusKey = computed(() => {
-    const status = this.identity().status;
-    return status === 'unset' ? null : STATUS_KEYS[status];
-  });
+  protected statusKey(identity: MeIdentity): string | null {
+    return identity.status === 'unset' ? null : STATUS_KEYS[identity.status];
+  }
 }

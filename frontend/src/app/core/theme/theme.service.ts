@@ -93,7 +93,7 @@ export class ThemeService {
     const next: EffectiveTheme = this.effective() === 'dark' ? 'light' : 'dark';
     this.persisted.set(next);
     writeStoredTheme(next);
-    const request: UpdateSettingsRequest = { gitlabUrl: settings.gitlabUrl, theme: next };
+    const request: UpdateSettingsRequest = { theme: next };
     return this.settingsStore.save(request);
   }
 }

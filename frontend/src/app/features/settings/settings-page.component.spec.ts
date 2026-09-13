@@ -9,6 +9,7 @@ import { httpErrorInterceptor } from '../../core/interceptors/http-error.interce
 import { LanguageService } from '../../core/language/language.service';
 import { stubMatchMedia } from '../../core/theme/testing';
 import { ThemeService } from '../../core/theme/theme.service';
+import { Connection } from '../../models/connection.model';
 import { Project } from '../../models/project.model';
 import { Settings } from '../../models/settings.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
@@ -18,10 +19,6 @@ import { SettingsPageComponent } from './settings-page.component';
 
 describe('SettingsPageComponent', () => {
   const settings: Settings = {
-    gitlabUrl: 'https://gitlab.exemple.fr',
-    tokenConfigured: false,
-    tokenHint: null,
-    meUsername: null,
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
@@ -38,19 +35,31 @@ describe('SettingsPageComponent', () => {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
-      language: 'fr',
+    language: 'fr',
+  };
+  const connection: Connection = {
+    id: 1,
+    type: 'gitlab',
+    name: 'GitLab',
+    url: 'https://gitlab.exemple.fr',
+    tokenConfigured: true,
+    tokenHint: 'wxyz',
+    meUsername: null,
+    projectsCount: 0,
   };
   const projectApi: Project = {
     id: 1,
+    connectionId: 1,
     pathWithNamespace: 'equipe/backend-api',
     alias: 'api',
-    gitlabProjectId: 42,
+    remoteProjectId: '42',
   };
   const projectWeb: Project = {
     id: 2,
+    connectionId: 1,
     pathWithNamespace: 'equipe/front-web',
     alias: 'web',
-    gitlabProjectId: 7,
+    remoteProjectId: '7',
   };
   let fixture: ComponentFixture<SettingsPageComponent>;
   let el: HTMLElement;
@@ -99,48 +108,59 @@ describe('SettingsPageComponent', () => {
     http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
     await settle();
   };
-  const urlInput = () => el.querySelector<HTMLInputElement>('input[formControlName="gitlabUrl"]')!;
-  const tokenInput = () =>
-    el.querySelector<HTMLInputElement>('input[formControlName="gitlabToken"]')!;
-  const usernameInput = () =>
-    el.querySelector<HTMLInputElement>('input[formControlName="meUsername"]')!;
+  const emailInput = () => el.querySelector<HTMLInputElement>('input[formControlName="meEmail"]')!;
+  const usernameInputs = () =>
+    el.querySelectorAll<HTMLInputElement>('input[formControlName="username"]');
   const repoAliasInputs = () =>
     el.querySelectorAll<HTMLInputElement>('.repos-table tbody tr:not(.add-row) input[formControlName="alias"]');
   const saveButton = () => el.querySelector<HTMLButtonElement>('button.save')!;
   const resetButton = () => el.querySelector<HTMLButtonElement>('button.reset')!;
-  const testButton = () => el.querySelector<HTMLButtonElement>('.test-button')!;
   const type = async (input: HTMLInputElement, value: string) => {
     input.value = value;
     input.dispatchEvent(new Event('input'));
     await settle();
   };
-  const loadSettings = async (value: Settings = settings, projects: Project[] = []) => {
+  const loadSettings = async (
+    value: Settings = settings,
+    connections: Connection[] = [connection],
+    projects: Project[] = [],
+  ) => {
     http.expectOne('/api/v1/settings').flush(value);
+    await settle();
+    http.expectOne('/api/v1/connections').flush(connections);
     await settle();
     http.expectOne('/api/v1/projects').flush(projects);
     await settle();
   };
-  const succeedTestConnection = async (username = 'mdupont', name = 'Marie Dupont') => {
-    testButton().click();
-    http.expectOne('/api/v1/settings/test-connection').flush({
-      username,
-      name,
-      avatarUrl: null,
-      expiresAt: null,
-      expirationKnown: true,
-    });
-    await settle();
+
+  const FULL_UPDATE_REQUEST = {
+    identities: [{ connectionId: 1, username: '' }],
+    meEmail: '',
+    refreshIntervalMin: 5,
+    pauseWhenHidden: true,
+    easyFiles: 5,
+    easyLines: 100,
+    hardFiles: 20,
+    hardLines: 800,
+    readyGreenDays: 1,
+    readyOrangeDays: 3,
+    workdaysOnly: false,
+    openInNewTab: false,
+    ignoredLabels: [],
+    notifyAssigned: false,
+    tabBadge: false,
+    theme: 'system',
+    highlightMe: true,
+    language: 'fr',
   };
 
-  it('should_show_progress_then_form_with_loaded_url', async () => {
+  it('should_show_progress_then_form_once_loaded', async () => {
     expect(el.querySelector('mat-progress-bar')).not.toBeNull();
 
     await loadSettings();
 
     expect(el.querySelector('mat-progress-bar')).toBeNull();
-    expect(urlInput().value).toBe('https://gitlab.exemple.fr');
-    expect(tokenInput().value).toBe('');
-    expect(usernameInput().value).toBe('');
+    expect(emailInput().value).toBe('');
     expect(saveButton().disabled).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
@@ -155,73 +175,33 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLButtonElement>('button.retry')!.click();
     await loadSettings();
 
-    expect(urlInput().value).toBe('https://gitlab.exemple.fr');
+    expect(emailInput().value).toBe('');
   });
 
   it('should_enable_save_when_dirty_and_valid', async () => {
     await loadSettings();
 
-    await type(urlInput(), 'https://autre.exemple.fr');
+    await type(emailInput(), 'marie@exemple.fr');
     expect(saveButton().disabled).toBe(false);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
 
-    await type(urlInput(), 'pas-une-url');
+    await type(emailInput(), 'pas-un-email');
     expect(saveButton().disabled).toBe(true);
   });
 
   it('should_save_then_toast_and_navigate_home', async () => {
     await loadSettings();
-    await type(urlInput(), 'https://autre.exemple.fr/');
-    await type(tokenInput(), 'glpat-abcdwxyz');
+
+    saveButton().click();
+    // Rien n'est modifié : le bouton est désactivé, donc `save()` ne doit
+    // rien envoyer — on force plutôt une modification avant de sauvegarder.
+    await type(emailInput(), 'marie@exemple.fr');
 
     saveButton().click();
     const req = http.expectOne('/api/v1/settings');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({
-      gitlabUrl: 'https://autre.exemple.fr/',
-      gitlabToken: 'glpat-abcdwxyz',
-      meUsername: '',
-      meEmail: '',
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      easyFiles: 5,
-      easyLines: 100,
-      hardFiles: 20,
-      hardLines: 800,
-      readyGreenDays: 1,
-      readyOrangeDays: 3,
-      workdaysOnly: false,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
-    });
-    req.flush({
-      gitlabUrl: 'https://autre.exemple.fr',
-      tokenConfigured: true,
-      tokenHint: 'wxyz',
-      meUsername: null,
-      meEmail: null,
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      easyFiles: 5,
-      easyLines: 100,
-      hardFiles: 20,
-      hardLines: 800,
-      readyGreenDays: 1,
-      readyOrangeDays: 3,
-      workdaysOnly: false,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
-    });
+    expect(req.request.body).toEqual({ ...FULL_UPDATE_REQUEST, meEmail: 'marie@exemple.fr' });
+    req.flush({ ...settings, meEmail: 'marie@exemple.fr' });
     await settle();
     await flushSync();
 
@@ -234,45 +214,25 @@ describe('SettingsPageComponent', () => {
       queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
     });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    expect(tokenInput().value).toBe('');
   });
 
   it('should_save_with_trimmed_identity_fields', async () => {
     await loadSettings();
-    await type(usernameInput(), '  mdupont  ');
-    await type(
-      el.querySelector<HTMLInputElement>('input[formControlName="meEmail"]')!,
-      'marie@exemple.fr',
-    );
+    await type(usernameInputs()[0], '  mdupont  ');
+    await type(emailInput(), 'marie@exemple.fr');
 
     saveButton().click();
     const req = http.expectOne('/api/v1/settings');
     expect(req.request.body).toEqual({
-      gitlabUrl: 'https://gitlab.exemple.fr',
-      meUsername: 'mdupont',
+      ...FULL_UPDATE_REQUEST,
       meEmail: 'marie@exemple.fr',
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      easyFiles: 5,
-      easyLines: 100,
-      hardFiles: 20,
-      hardLines: 800,
-      readyGreenDays: 1,
-      readyOrangeDays: 3,
-      workdaysOnly: false,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
+      identities: [{ connectionId: 1, username: 'mdupont' }],
     });
   });
 
   it('should_toast_error_and_stay_when_save_fails', async () => {
     await loadSettings();
-    await type(urlInput(), 'https://autre.exemple.fr');
+    await type(emailInput(), 'marie@exemple.fr');
 
     saveButton().click();
     http.expectOne('/api/v1/settings').flush({ statusCode: 500 }, { status: 500, statusText: 'KO' });
@@ -280,22 +240,17 @@ describe('SettingsPageComponent', () => {
 
     expect(snackBar.open).toHaveBeenCalledWith(t('settings.saveError'), t('common.ok'), expect.anything());
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(urlInput().value).toBe('https://autre.exemple.fr');
+    expect(emailInput().value).toBe('marie@exemple.fr');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
 
-  it('should_reset_the_whole_form_to_defaults_without_touching_the_token_or_repos', async () => {
-    await loadSettings(
-      { ...settings, gitlabUrl: 'https://autre.exemple.fr', easyFiles: 12, openInNewTab: true },
-      [projectApi],
-    );
-    await type(tokenInput(), 'glpat-should-survive');
+  it('should_reset_the_whole_form_to_defaults_without_touching_the_repos', async () => {
+    await loadSettings({ ...settings, easyFiles: 12, openInNewTab: true }, [connection], [projectApi]);
 
     resetButton().click();
     await settle();
 
-    expect(urlInput().value).toBe('https://gitlab.com');
-    expect(tokenInput().value).toBe('glpat-should-survive');
+    expect(emailInput().value).toBe('');
     expect(repoAliasInputs()).toHaveLength(1);
     expect(repoAliasInputs()[0].value).toBe('api');
     expect(saveButton().disabled).toBe(false);
@@ -337,93 +292,36 @@ describe('SettingsPageComponent', () => {
     expect(backLink?.getAttribute('href')).toContain('mine=1');
   });
 
-  it('should_disable_test_without_token_and_enable_with_stored_token', async () => {
+  it('should_render_one_identity_row_per_connection', async () => {
+    await loadSettings(settings, [
+      connection,
+      { ...connection, id: 2, name: 'gitlab.exemple.fr' },
+    ]);
+
+    expect(usernameInputs()).toHaveLength(2);
+  });
+
+  it('should_show_the_no_connection_message_when_there_is_no_connection', async () => {
+    await loadSettings(settings, []);
+
+    expect(el.querySelector('.no-connection')).not.toBeNull();
+    expect(usernameInputs()).toHaveLength(0);
+  });
+
+  it('should_show_manual_status_for_a_typed_username_without_a_matching_test', async () => {
     await loadSettings();
-    expect(testButton().disabled).toBe(true);
-
-    await type(tokenInput(), 'glpat-abcdwxyz');
-    expect(testButton().disabled).toBe(false);
-
-    await type(tokenInput(), '');
-    expect(testButton().disabled).toBe(true);
-  });
-
-  it('should_test_with_stored_token_and_reset_result_on_url_change', async () => {
-    await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
-    expect(testButton().disabled).toBe(false);
-
-    testButton().click();
-    await settle();
-    expect(testButton().disabled).toBe(true);
-    const req = http.expectOne('/api/v1/settings/test-connection');
-    expect(req.request.body).toEqual({ gitlabUrl: 'https://gitlab.exemple.fr' });
-    req.flush({
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: null,
-      expiresAt: null,
-      expirationKnown: true,
-    });
-    await settle();
-    expect(el.querySelector('.test-result')?.classList.contains('success')).toBe(true);
-
-    await type(urlInput(), 'https://gitlab.exemple.fr/x');
-    expect(el.querySelector('.test-result')).toBeNull();
-  });
-
-  it('should_show_test_error_from_backend_code', async () => {
-    await loadSettings();
-    await type(tokenInput(), 'glpat-abcdwxyz');
-
-    el.querySelector<HTMLButtonElement>('.test-button')!.click();
-    http
-      .expectOne('/api/v1/settings/test-connection')
-      .flush({ statusCode: 502, code: 'gitlab.auth', message: 'x' }, { status: 502, statusText: 'Bad Gateway' });
-    await settle();
-
-    expect(el.querySelector('.test-result')?.textContent?.trim()).toBe(t('errors.gitlab.auth'));
-  });
-
-  it('should_prefill_username_after_successful_test_when_empty', async () => {
-    await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
-    expect(usernameInput().value).toBe('');
-
-    await succeedTestConnection('mdupont', 'Marie Dupont');
-
-    expect(usernameInput().value).toBe('mdupont');
-    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    expect(el.querySelector('.identity-name')?.textContent?.trim()).toBe('Marie Dupont');
-    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
-      t('settings.me.status.matched'),
-    );
-  });
-
-  it('should_not_overwrite_username_already_filled_after_test', async () => {
-    await loadSettings({ ...settings, tokenConfigured: true, tokenHint: 'wxyz' });
-    await type(usernameInput(), 'kbenali');
-
-    await succeedTestConnection('mdupont', 'Marie Dupont');
-
-    expect(usernameInput().value).toBe('kbenali');
-    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
-      t('settings.me.status.mismatch'),
-    );
-  });
-
-  it('should_show_manual_status_when_no_test_has_run', async () => {
-    await loadSettings();
-    await type(usernameInput(), 'lrousseau');
+    await type(usernameInputs()[0], 'lrousseau');
 
     expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
       t('settings.me.status.manual'),
     );
 
-    await type(usernameInput(), '');
+    await type(usernameInputs()[0], '');
     expect(el.querySelector('.identity-preview')).toBeNull();
   });
 
   it('should_render_repo_rows_from_the_projects_store', async () => {
-    await loadSettings(settings, [projectApi, projectWeb]);
+    await loadSettings(settings, [connection], [projectApi, projectWeb]);
 
     expect(el.textContent).toContain('equipe/backend-api');
     expect(el.textContent).toContain('equipe/front-web');
@@ -433,7 +331,7 @@ describe('SettingsPageComponent', () => {
   });
 
   it('should_activate_save_when_an_alias_is_edited_and_include_it_on_save', async () => {
-    await loadSettings(settings, [projectApi]);
+    await loadSettings(settings, [connection], [projectApi]);
     expect(saveButton().disabled).toBe(true);
 
     await type(repoAliasInputs()[0], 'back');
@@ -465,13 +363,11 @@ describe('SettingsPageComponent', () => {
   });
 
   it('should_not_send_a_rename_request_when_no_alias_was_touched', async () => {
-    await loadSettings(settings, [projectApi]);
-    await type(urlInput(), 'https://autre.exemple.fr');
+    await loadSettings(settings, [connection], [projectApi]);
+    await type(emailInput(), 'marie@exemple.fr');
 
     saveButton().click();
-    http
-      .expectOne('/api/v1/settings')
-      .flush({ ...settings, gitlabUrl: 'https://autre.exemple.fr' });
+    http.expectOne('/api/v1/settings').flush({ ...settings, meEmail: 'marie@exemple.fr' });
     await settle();
     await flushSync();
 
@@ -479,7 +375,7 @@ describe('SettingsPageComponent', () => {
   });
 
   it('should_keep_form_dirty_and_not_navigate_when_a_rename_fails', async () => {
-    await loadSettings(settings, [projectApi, projectWeb]);
+    await loadSettings(settings, [connection], [projectApi, projectWeb]);
     await type(repoAliasInputs()[1], 'API');
 
     saveButton().click();
@@ -502,7 +398,7 @@ describe('SettingsPageComponent', () => {
   });
 
   it('should_discard_unsaved_alias_edit_when_another_repo_is_added_immediately', async () => {
-    await loadSettings(settings, [projectApi]);
+    await loadSettings(settings, [connection], [projectApi]);
     await type(repoAliasInputs()[0], 'back');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
 

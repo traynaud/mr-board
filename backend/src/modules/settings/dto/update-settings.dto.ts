@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -7,15 +7,12 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  MaxLength,
   Min,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import type { Language, ThemePreference } from '../entities/settings.entity';
-import { GitlabCredentialsDto } from './gitlab-credentials.dto';
-
-/** Maximum length accepted for a GitLab username (RG-002-02). */
-export const ME_USERNAME_MAX_LENGTH = 255;
+import { IdentityDto } from './identity.dto';
 
 /** RG-013-01 : `0` = manual, no other value is accepted. */
 export const REFRESH_INTERVAL_OPTIONS = [0, 1, 5, 15, 30] as const;
@@ -30,20 +27,23 @@ const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
 /**
- * Body of `PUT /api/v1/settings`.
+ * Body of `PUT /api/v1/settings` — global preferences only (RG-019-23); the
+ * per-connection identity is carried by `identities` instead of a single
+ * `meUsername` (RG-019-08).
  *
- * `meUsername`/`meEmail` follow a semantic different from `gitlabToken`
- * (RG-002-02): omitted from the body → left unchanged; empty string →
- * cleared (stored `null`); non-empty → stored trimmed. Trimming happens
- * before validation so a value like `"  marie@exemple.fr  "` still passes
- * `@IsEmail` and a value that is only whitespace is treated as empty.
+ * `meEmail` follows a semantic different from most other fields (RG-002-02):
+ * omitted from the body → left unchanged; empty string → cleared (stored
+ * `null`); non-empty → stored trimmed. Trimming happens before validation so
+ * a value like `"  marie@exemple.fr  "` still passes `@IsEmail` and a value
+ * that is only whitespace is treated as empty.
  */
-export class UpdateSettingsDto extends GitlabCredentialsDto {
-  @Transform(trim)
+export class UpdateSettingsDto {
+  /** My username per connection (RG-019-08) ; a connection absent from this array is left unchanged. */
   @IsOptional()
-  @IsString()
-  @MaxLength(ME_USERNAME_MAX_LENGTH)
-  meUsername?: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IdentityDto)
+  identities?: IdentityDto[];
 
   @Transform(trim)
   @IsOptional()

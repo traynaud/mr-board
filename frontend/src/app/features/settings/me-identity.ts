@@ -1,4 +1,4 @@
-import { TestConnectionState } from '../../stores/settings.store';
+import { TestConnectionState } from '../../models/connection.model';
 
 /** Un des 4 états de résolution de l'identité « Moi » (RG-002-03). */
 export type MeIdentityStatus = 'unset' | 'matched' | 'mismatch' | 'manual';

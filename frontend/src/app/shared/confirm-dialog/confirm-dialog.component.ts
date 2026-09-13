@@ -10,6 +10,8 @@ export interface ConfirmDialogData {
   messageKey: string;
   confirmKey: string;
   cancelKey: string;
+  /** Valeurs interpolées dans `titleKey` (ex. le nom d'une connexion, RG-019-13). */
+  titleParams?: TranslationParams;
   /** Valeurs interpolées dans `messageKey` (ex. un résumé d'import US-015). */
   messageParams?: TranslationParams;
 }
@@ -22,7 +24,7 @@ export interface ConfirmDialogData {
   selector: 'app-confirm-dialog',
   imports: [MatDialogModule, MatButtonModule, TranslatePipe],
   template: `
-    <h2 mat-dialog-title>{{ data.titleKey | translate }}</h2>
+    <h2 mat-dialog-title>{{ data.titleKey | translate: data.titleParams }}</h2>
     <mat-dialog-content>{{ data.messageKey | translate: data.messageParams }}</mat-dialog-content>
     <mat-dialog-actions class="actions">
       <button mat-button type="button" [mat-dialog-close]="false" cdkFocusInitial>

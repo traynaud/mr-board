@@ -41,21 +41,15 @@
         titleKey="settings.me.title"
         descriptionKey="settings.me.description"
       >
-        <app-me-section [form]="form" [identity]="meIdentity()" />
+        <app-me-section [form]="form" [identities]="identityRows()" />
       </app-settings-section>
       <app-settings-section
-        [number]="'settings.connection.number' | translate"
-        titleKey="settings.connection.title"
-        descriptionKey="settings.connection.description"
+        id="connections"
+        [number]="'settings.connections.number' | translate"
+        titleKey="settings.connections.title"
+        descriptionKey="settings.connections.description"
       >
-        <app-gitlab-connection-section
-          [form]="form"
-          [tokenConfigured]="settings.tokenConfigured"
-          [tokenHint]="settings.tokenHint"
-          [test]="store.test()"
-          [canTest]="canTest()"
-          (testRequested)="testConnection()"
-        />
+        <app-connections-section />
       </app-settings-section>
       <app-settings-section
         [number]="'settings.projects.number' | translate"

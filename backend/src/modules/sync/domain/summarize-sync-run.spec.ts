@@ -55,4 +55,19 @@ describe('summarizeSyncRun', () => {
       'api: GitLab rejected the token; web: GitLab rejected the token',
     );
   });
+
+  it('should_not_prefix_an_outcome_with_an_empty_alias', () => {
+    // RG-019-16 : une connexion sans jeton échoue en un seul message déjà
+    // formé, listant elle-même ses repos — jamais re-préfixé par un alias.
+    const result = summarizeSyncRun([
+      {
+        projectAlias: '',
+        success: false,
+        errorMessage: 'Aucun jeton (gitlab.exemple.fr) : api, web',
+      },
+    ]);
+    expect(result.errorMessage).toBe(
+      'Aucun jeton (gitlab.exemple.fr) : api, web',
+    );
+  });
 });

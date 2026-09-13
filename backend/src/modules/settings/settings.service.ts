@@ -1,32 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TokenCipherService } from '../../common/crypto/token-cipher.service';
-import {
-  BusinessValidationException,
-  GitlabScopeException,
-  MissingConfigurationException,
-} from '../../common/exceptions';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
+import { BusinessValidationException } from '../../common/exceptions';
+import { ConnectionsService } from '../connections/connections.service';
 import type { DifficultyThresholds } from '../merge-requests/domain/calculate-difficulty';
 import type { ReadyDelayThresholds } from '../merge-requests/domain/calculate-ready-delay';
-import { hasRequiredScope } from './domain/check-token-scopes';
-import { normalizeGitlabUrl } from './domain/normalize-gitlab-url';
-import { tokenHint } from './domain/token-hint';
 import { SettingsResponseDto } from './dto/settings-response.dto';
-import { TestConnectionResultDto } from './dto/test-connection-result.dto';
-import { TestConnectionDto } from './dto/test-connection.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
-import {
-  DEFAULT_GITLAB_URL,
-  SETTINGS_ID,
-  Settings,
-} from './entities/settings.entity';
+import { SETTINGS_ID, Settings } from './entities/settings.entity';
 import type { Language, ThemePreference } from './entities/settings.entity';
 
-/** Fields shared by a full update (`UpdateSettingsDto`) and a config import — never the GitLab token. */
+/** Fields shared by a full update (`UpdateSettingsDto`) and a config import. */
 export interface MergeableSettingsFields {
-  meUsername?: string;
   meEmail?: string;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
@@ -46,10 +31,8 @@ export interface MergeableSettingsFields {
   language?: Language;
 }
 
-/** Every setting except the GitLab token, as exported/imported by US-015. */
+/** Every global preference, as exported/imported by US-015 (RG-019-23). */
 export interface ExportableSettings {
-  gitlabUrl: string;
-  meUsername: string | null;
   meEmail: string | null;
   refreshIntervalMin: number;
   pauseWhenHidden: boolean;
@@ -69,7 +52,7 @@ export interface ExportableSettings {
   language: Language;
 }
 
-/** Manages the settings singleton and the GitLab connection test. */
+/** Manages the global application preferences singleton (RG-019-23). */
 @Injectable()
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
@@ -77,46 +60,46 @@ export class SettingsService {
   constructor(
     @InjectRepository(Settings)
     private readonly repository: Repository<Settings>,
-    private readonly cipher: TokenCipherService,
-    private readonly gitlab: GitlabClientService,
+    private readonly connections: ConnectionsService,
   ) {}
 
-  /**
-   * Current settings, token masked.
-   */
+  /** Current settings. */
   async get(): Promise<SettingsResponseDto> {
     return this.toResponse(await this.load());
   }
 
   /**
-   * Updates the GitLab URL and, when provided, the token (RG-001-01, RG-001-02),
-   * identity, refresh cadence and difficulty/Ready delay thresholds (RG-014-01).
-   * @throws BusinessValidationException when the URL cannot be normalised, or
-   * when the merged thresholds are incoherent (see `requireCoherentThresholds`).
+   * Updates the global preferences (RG-014-01) and, when given, my
+   * per-connection identities (RG-019-08).
+   * @throws BusinessValidationException when the merged thresholds are incoherent.
+   * @throws EntityNotFoundException when an `identities` entry names an unknown connection (404).
    */
   async update(dto: UpdateSettingsDto): Promise<SettingsResponseDto> {
     const settings = await this.load();
-    settings.gitlabUrl = this.requireUrl(dto.gitlabUrl);
-    if (dto.gitlabToken !== undefined) {
-      settings.gitlabTokenEncrypted = this.cipher.encrypt(dto.gitlabToken);
-    }
     this.mergeCommonFields(settings, dto);
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
-    return this.toResponse(await this.repository.save(settings));
+    const saved = await this.repository.save(settings);
+    if (dto.identities) {
+      for (const identity of dto.identities) {
+        await this.connections.updateIdentity(
+          identity.connectionId,
+          identity.username,
+        );
+      }
+    }
+    return this.toResponse(saved);
   }
 
   /**
-   * Replaces every importable setting (RG-015-04) — never the GitLab token,
-   * which `ImportSettingsDto` never declares.
-   * @throws BusinessValidationException when the URL cannot be normalised, or
-   * when the merged thresholds are incoherent.
+   * Replaces every importable preference (RG-015-04, RG-019-23) — never the
+   * identities, which follow the connections import instead (RG-019-19).
+   * @throws BusinessValidationException when the merged thresholds are incoherent.
    */
   async applyImportedSettings(
-    dto: { gitlabUrl: string } & MergeableSettingsFields,
+    dto: MergeableSettingsFields,
   ): Promise<SettingsResponseDto> {
     const settings = await this.load();
-    settings.gitlabUrl = this.requireUrl(dto.gitlabUrl);
     this.mergeCommonFields(settings, dto);
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
@@ -124,65 +107,11 @@ export class SettingsService {
   }
 
   /**
-   * Verifies a token against GitLab (RG-001-04). Uses the body token when
-   * given, otherwise the stored one.
-   * @throws MissingConfigurationException when no token is available (409).
-   * @throws GitlabScopeException when the token lacks `read_api` (400).
-   * @throws GitlabAuthException / GitlabUnavailableException from the client (502).
+   * Fallback email for role matching (RG-002-01, RG-G09, RG-019-07).
+   * `null` means it is not configured.
    */
-  async testConnection(
-    dto: TestConnectionDto,
-  ): Promise<TestConnectionResultDto> {
-    const url = this.requireUrl(dto.gitlabUrl);
-    const token = dto.gitlabToken ?? (await this.getToken());
-    if (!token) {
-      throw new MissingConfigurationException(
-        'settings.tokenMissing',
-        'No GitLab token provided or configured',
-      );
-    }
-    const user = await this.gitlab.getCurrentUser(url, token);
-    const info = await this.gitlab.getTokenInfo(url, token);
-    if (info && !hasRequiredScope(info.scopes)) {
-      throw new GitlabScopeException();
-    }
-    return {
-      username: user.username,
-      name: user.name,
-      avatarUrl: user.avatar_url ?? null,
-      expiresAt: info?.expires_at ?? null,
-      expirationKnown: info !== null,
-    };
-  }
-
-  /**
-   * Configured GitLab instance URL.
-   */
-  async getGitlabUrl(): Promise<string> {
-    return (await this.load()).gitlabUrl;
-  }
-
-  /**
-   * Current "me" identity, used for role matching (RG-G09, US-009).
-   * `null` fields mean the identity is not configured.
-   */
-  async getIdentity(): Promise<{
-    username: string | null;
-    email: string | null;
-  }> {
-    const { meUsername, meEmail } = await this.load();
-    return { username: meUsername, email: meEmail };
-  }
-
-  /**
-   * Decrypted GitLab token for server-side use only.
-   * @returns `null` when not configured or unreadable (RG-001-10).
-   */
-  async getToken(): Promise<string | null> {
-    const { gitlabTokenEncrypted } = await this.load();
-    return gitlabTokenEncrypted
-      ? this.cipher.decrypt(gitlabTokenEncrypted)
-      : null;
+  async getMeEmail(): Promise<string | null> {
+    return (await this.load()).meEmail;
   }
 
   /**
@@ -227,12 +156,10 @@ export class SettingsService {
     return JSON.parse(ignoredLabels) as string[];
   }
 
-  /** Every setting except the GitLab token, for `GET /settings/export` (RG-015-03). */
+  /** Every global preference, for `GET /settings/export` (RG-015-03, RG-019-23). */
   async getExportableSettings(): Promise<ExportableSettings> {
     const settings = await this.load();
     return {
-      gitlabUrl: settings.gitlabUrl,
-      meUsername: settings.meUsername,
       meEmail: settings.meEmail,
       refreshIntervalMin: settings.refreshIntervalMin,
       pauseWhenHidden: settings.pauseWhenHidden,
@@ -254,19 +181,18 @@ export class SettingsService {
   }
 
   /**
-   * Merges every field shared by `update()` and `applyImportedSettings()` —
-   * everything except `gitlabUrl` (validated separately by each caller) and
-   * the GitLab token (never part of an import).
+   * Merges every field shared by `update()` and `applyImportedSettings()`.
    */
   private mergeCommonFields(
     settings: Settings,
     dto: MergeableSettingsFields,
   ): void {
-    if (dto.meUsername !== undefined) {
-      settings.meUsername = dto.meUsername.trim() || null;
-    }
     if (dto.meEmail !== undefined) {
-      settings.meEmail = dto.meEmail.trim() || null;
+      // `@IsOptional()` lets `null` through validation (it only skips the
+      // remaining validators, RG-002-02) — a re-imported export whose email
+      // was never configured sends exactly that (`getExportableSettings()`
+      // returns `meEmail: null`), so it must be handled here too, not just `''`.
+      settings.meEmail = (dto.meEmail ?? '').trim() || null;
     }
     if (dto.refreshIntervalMin !== undefined) {
       settings.refreshIntervalMin = dto.refreshIntervalMin;
@@ -327,9 +253,6 @@ export class SettingsService {
     return this.repository.save(
       this.repository.create({
         id: SETTINGS_ID,
-        gitlabUrl: DEFAULT_GITLAB_URL,
-        gitlabTokenEncrypted: null,
-        meUsername: null,
         meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
@@ -350,17 +273,6 @@ export class SettingsService {
         updatedAt: new Date().toISOString(),
       }),
     );
-  }
-
-  private requireUrl(raw: string): string {
-    const url = normalizeGitlabUrl(raw);
-    if (!url) {
-      throw new BusinessValidationException(
-        'settings.invalidUrl',
-        'gitlabUrl must be an http(s) origin',
-      );
-    }
-    return url;
   }
 
   /**
@@ -391,14 +303,7 @@ export class SettingsService {
   }
 
   private toResponse(settings: Settings): SettingsResponseDto {
-    const token = settings.gitlabTokenEncrypted
-      ? this.cipher.decrypt(settings.gitlabTokenEncrypted)
-      : null;
     return {
-      gitlabUrl: settings.gitlabUrl,
-      tokenConfigured: token !== null,
-      tokenHint: token ? tokenHint(token) : null,
-      meUsername: settings.meUsername,
       meEmail: settings.meEmail,
       refreshIntervalMin: settings.refreshIntervalMin,
       pauseWhenHidden: settings.pauseWhenHidden,

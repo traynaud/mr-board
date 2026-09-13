@@ -1,6 +1,8 @@
 # EPIC-001 — Support de plusieurs forges (GitLab + GitHub)
 
-Version : 1.0 — 2026-09-13
+Version : 1.1 — 2026-09-14 (relecture PO au lancement de l'épique : US-017, US-018, US-022 et US-023 ont été
+livrées depuis la rédaction initiale — voir US-019 §3 « Cohérence avec les US livrées depuis » pour le détail des
+ajustements ; impacts ci-dessous mis à jour en conséquence).
 Statut : proposition PO, à valider avant `/project:feature US-019`.
 
 ---
@@ -26,7 +28,7 @@ Principes :
 
 | US     | Titre                                                        | Priorité | Complexité | Dépend de              | Contenu                                                                                                  |
 |--------|--------------------------------------------------------------|----------|------------|------------------------|----------------------------------------------------------------------------------------------------------|
-| US-019 | Connexions multi-forges (socle, GitLab uniquement)           | Must     | L          | US-015, US-016         | Entité `connections`, migration de la config existante, écran « 02 · Connexions », repos rattachés, identité par connexion, abstraction `ForgeClient`, export v2. **Aucune nouvelle forge** : refonte à iso-fonctionnalité pour un utilisateur GitLab. |
+| US-019 | Connexions multi-forges (socle, GitLab uniquement)           | Must     | L          | US-015 → US-023         | Entité `connections`, migration de la config existante, écran « 02 · Connexions », repos rattachés, identité par connexion, abstraction `ForgeClient`, export v2. **Aucune nouvelle forge** : refonte à iso-fonctionnalité pour un utilisateur GitLab. |
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)           | Must     | L          | US-019, US-017         | Type « GitHub » sélectionnable, test de connexion, résolution `owner/repo`, synchronisation GraphQL, mapping PR → MR, statut de mergeabilité, limites de débit. |
 | US-021 | Forges dans le tableau (indicateur, infobulle, filtre)       | Should   | S          | US-020, US-010         | Icône de forge sur le tag projet, infobulle « connexion · chemin », filtre composable « Connexion », messages de synchro nommant la connexion. |
 
@@ -79,7 +81,7 @@ changement.
 | `modules/connections/` (nouveau)                                 | Entité, service, controller (`GET/POST/PUT/DELETE /connections`, `POST /connections/test`), DTOs, chiffrement réutilisé (`common/crypto/token-cipher.service.ts`) | US-019 |
 | `modules/projects/*` (entity, service, DTOs, `domain/normalize-project-path`) | `connectionId` obligatoire à l'ajout (implicite si une seule connexion), résolution via le `ForgeClient` de la connexion, `remoteProjectId`, unicité (`connection`, chemin) ; normalisation du chemin par forge (`owner/repo` pour GitHub) | US-019 / US-020 |
 | `modules/users/*`                                                | Upsert par (`connectionId`, `remoteUserId`)                                                                | US-019 |
-| `modules/merge-requests/*` (entity, service, `domain/is-mine`, `domain/resolve-ready-at`, DTO view) | `remoteId` texte ; `isMine` compare avec le `me_username` **de la connexion du projet** ; DTO enrichi de `connection: { id, name, type }` | US-019 / US-021 |
+| `modules/merge-requests/*` (entity, service, `domain/is-mine`, `domain/resolve-ready-at`, DTO view) | `remoteId` texte ; `isMine` **et** `isMe` (US-023, livrée) comparent avec le `me_username` **de la connexion du projet**, résolu par MR et non plus une seule fois globalement ; DTO enrichi de `connection: { id, name, type }` | US-019 / US-021 |
 | `modules/sync/*`                                                 | Boucle par connexion puis par projet ; client obtenu via la factory ; erreurs d'auth agrégées par connexion ; message d'erreur nommant la connexion | US-019 |
 | `modules/settings-transfer/*`                                    | Export `version: 2` avec `connections[]` (sans jeton) et `projects[].connection` ; import v1 et v2                 | US-019 |
 | `database/migrations/`                                           | Migration `CreateConnectionsAndMigrateGitlabConfig` (création, copie de la config existante, rattachement des repos, renommages) | US-019 |
@@ -101,7 +103,7 @@ changement.
 | `features/board/board-page.component.*` (bandeau), `board-toolbar/`     | Bandeau « Aucune connexion configurée » ; statut de synchro nommant la connexion en échec  | US-019 / US-021 |
 | `features/board/mr-table/`, `shared/avatar/`, `summarize-users.ts`      | Icône de forge sur le tag projet, infobulle ; commentaires de code « ordre GitLab » → « ordre de la forge » | US-021 |
 | `features/board/filter-bar/`, `filters.store.ts`, `core/url-state/`     | Filtre composable « Connexion » (`connection=` dans l'URL)                                  | US-021 |
-| `public/i18n/fr.json`                                                   | Clés `settings.gitlab.*` → `settings.connections.*` ; textes « jeton GitLab » → neutres ; nouvelles clés GitHub | US-019 / US-020 |
+| `public/i18n/fr.json` **et** `public/i18n/en.json` (US-022, livrée) | Clés `settings.connection.*` → `settings.connections.*` ; textes « jeton GitLab » → neutres ; nouvelles clés GitHub — **toujours dans les deux fichiers**, sous peine d'échec de `dictionary-parity.spec.ts` | US-019 / US-020 |
 | `shared/icons/`                                                         | Icônes Lucide `gitlab`, `github`                                                            | US-021 |
 
 ### Documentation et design

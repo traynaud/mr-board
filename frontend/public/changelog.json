@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-019",
+    "title": "Connexions multi-forges : gestion d'une liste de connexions GitLab (jeton, identité, repos par connexion), migration automatique de l'ancienne configuration."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-022",
     "title": "Support de l'anglais : choix de la langue dans les Paramètres, sous « Thème »."
   },

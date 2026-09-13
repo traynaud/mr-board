@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GitlabModule } from '../gitlab/gitlab.module';
+import { ConnectionsModule } from '../connections/connections.module';
+import { ForgesModule } from '../forges/forges.module';
 import { MergeRequestsModule } from '../merge-requests/merge-requests.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -13,8 +14,9 @@ import { SyncService } from './sync.service';
   imports: [
     TypeOrmModule.forFeature([SyncRun]),
     SettingsModule,
+    ConnectionsModule,
     ProjectsModule,
-    GitlabModule,
+    ForgesModule,
     MergeRequestsModule,
   ],
   controllers: [SyncController],

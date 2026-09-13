@@ -1,0 +1,61 @@
+/** Forge types a connection can point to (RG-019-01). Only `gitlab` is usable in this US. */
+export type ConnectionType = 'gitlab' | 'github';
+
+/** Miroir de `ConnectionResponseDto` (backend). Ne contient jamais le jeton. */
+export interface Connection {
+  id: number;
+  type: ConnectionType;
+  name: string;
+  url: string;
+  tokenConfigured: boolean;
+  tokenHint: string | null;
+  /** Mon nom d'utilisateur sur cette connexion, utilisé par « Mes MRs » (RG-019-07). */
+  meUsername: string | null;
+  /** Nombre de repos rattachés à cette connexion (RG-019-10). */
+  projectsCount: number;
+}
+
+/** Corps de `POST /api/v1/connections`. */
+export interface CreateConnectionRequest {
+  type: ConnectionType;
+  name: string;
+  url: string;
+  token: string;
+}
+
+/** Corps de `PUT /api/v1/connections/:id`. `token` absent = jeton inchangé (RG-019-03). */
+export interface UpdateConnectionRequest {
+  name?: string;
+  url?: string;
+  token?: string;
+}
+
+/**
+ * Corps de `POST /api/v1/connections/test` (RG-001-04, RG-019-14). Depuis la
+ * liste ou le formulaire de modification : `connectionId` seul suffit (les
+ * autres champs par défaut à la connexion enregistrée). Depuis le formulaire
+ * d'ajout : `type`/`url`/`token` sont requis.
+ */
+export interface TestConnectionRequest {
+  type?: ConnectionType;
+  url?: string;
+  token?: string;
+  connectionId?: number;
+}
+
+/** Réponse de `POST /api/v1/connections/test` sur succès. */
+export interface TestConnectionResult {
+  username: string;
+  name: string;
+  avatarUrl: string | null;
+  expiresAt: string | null;
+  expirationKnown: boolean;
+}
+
+/** État du test de connexion (RG-001-04/05), partagé entre `ConnectionsStore` et ses composants. */
+export interface TestConnectionState {
+  status: 'idle' | 'pending' | 'success' | 'error';
+  result: TestConnectionResult | null;
+  /** Clé i18n de l'erreur (`errors.*`). */
+  errorKey: string | null;
+}

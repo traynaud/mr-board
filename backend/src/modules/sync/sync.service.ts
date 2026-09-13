@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EntityNotFoundException } from '../../common/exceptions';
-import { mapGraphqlMergeRequest } from '../gitlab/mappers/map-graphql-merge-request';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
+import {
+  EntityNotFoundException,
+  ForgeAuthException,
+} from '../../common/exceptions';
+import { ConnectionsService } from '../connections/connections.service';
+import { Connection } from '../connections/entities/connection.entity';
+import { ForgeClientFactory } from '../forges/forge-client.factory';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service';
 import { Project } from '../projects/entities/project.entity';
 import { ProjectsService } from '../projects/projects.service';
@@ -22,9 +26,9 @@ import { SyncRun, SyncTrigger } from './entities/sync-run.entity';
 export const PROJECT_SYNC_TIMEOUT_MS = 60_000;
 
 /**
- * Orchestrates the synchronisation of merge requests from GitLab
- * (RG-004-05 to RG-004-15). Holds the "only one sync at a time" lock in
- * memory (single process instance, RG-G16).
+ * Orchestrates the synchronisation of merge requests from every connection
+ * (RG-004-05 to RG-004-15, RG-019-16). Holds the "only one sync at a time"
+ * lock in memory (single process instance, RG-G16).
  */
 @Injectable()
 export class SyncService {
@@ -35,14 +39,15 @@ export class SyncService {
     @InjectRepository(SyncRun)
     private readonly syncRuns: Repository<SyncRun>,
     private readonly settings: SettingsService,
+    private readonly connections: ConnectionsService,
     private readonly projects: ProjectsService,
-    private readonly gitlab: GitlabClientService,
+    private readonly forges: ForgeClientFactory,
     private readonly mergeRequests: MergeRequestsService,
   ) {}
 
   /**
    * Starts a synchronisation in the background and returns immediately
-   * (RG-004-05). Never rejects because of a GitLab failure: those are
+   * (RG-004-05). Never rejects because of a forge failure: those are
    * captured per project into the resulting `sync_run` instead.
    * @param projectId when given, restricts the sync to this single project.
    * @throws EntityNotFoundException when `projectId` is given but unknown (404).
@@ -87,23 +92,7 @@ export class SyncService {
   private async run(trigger: SyncTrigger, projectId?: number): Promise<void> {
     const startedAt = new Date().toISOString();
     try {
-      const token = await this.settings.getToken();
-      if (!token) {
-        await this.saveRun(startedAt, trigger, {
-          status: 'error',
-          mrCount: 0,
-          errorMessage: 'settings.tokenMissing',
-        });
-        return;
-      }
-
-      const url = await this.settings.getGitlabUrl();
-      const targets = await this.resolveTargets(projectId);
-      const outcomes: ProjectSyncOutcome[] = [];
-      for (const project of targets) {
-        outcomes.push(await this.syncProject(project, url, token));
-      }
-
+      const outcomes = await this.syncTargets(projectId);
       await this.saveRun(startedAt, trigger, summarizeSyncRun(outcomes));
     } catch (error) {
       this.logger.error(
@@ -117,47 +106,103 @@ export class SyncService {
     }
   }
 
-  private async resolveTargets(projectId?: number): Promise<Project[]> {
-    if (projectId === undefined) {
-      return this.projects.listActive();
+  /**
+   * Resolves the targets of this run (RG-019-16) — either every active repo
+   * of every connection, or the single repo of `projectId` and its
+   * connection — and synchronises them, one connection at a time.
+   */
+  private async syncTargets(projectId?: number): Promise<ProjectSyncOutcome[]> {
+    if (projectId !== undefined) {
+      const project = await this.projects.findById(projectId);
+      if (!project) {
+        return [];
+      }
+      const connection = await this.connections.findOrThrow(
+        project.connectionId,
+      );
+      return this.syncConnectionProjects(connection, [project]);
     }
-    const project = await this.projects.findById(projectId);
-    return project ? [project] : [];
+    const outcomes: ProjectSyncOutcome[] = [];
+    for (const connection of await this.connections.findAll()) {
+      const projects = await this.projects.listActiveByConnection(
+        connection.id,
+      );
+      outcomes.push(
+        ...(await this.syncConnectionProjects(connection, projects)),
+      );
+    }
+    return outcomes;
+  }
+
+  /**
+   * Synchronises every repo of one connection, sequentially (RG-019-16). A
+   * connection without a token never reaches the forge : its repos fail as
+   * one aggregated outcome (RG-019-16, RG-019-17).
+   */
+  private async syncConnectionProjects(
+    connection: Connection,
+    projects: Project[],
+  ): Promise<ProjectSyncOutcome[]> {
+    if (projects.length === 0) {
+      return [];
+    }
+    const token = await this.connections.getToken(connection.id);
+    if (!token) {
+      return [
+        {
+          projectAlias: '',
+          success: false,
+          errorMessage: `Aucun jeton (${connection.name}) : ${projects
+            .map((project) => project.alias)
+            .join(', ')}`,
+        },
+      ];
+    }
+    const outcomes: ProjectSyncOutcome[] = [];
+    for (const project of projects) {
+      outcomes.push(await this.syncProject(connection, project, token));
+    }
+    return outcomes;
   }
 
   private async syncProject(
+    connection: Connection,
     project: Project,
-    url: string,
     token: string,
   ): Promise<ProjectSyncOutcome> {
     try {
       const now = new Date().toISOString();
-      const nodes = await this.gitlab.getOpenMergeRequests(
-        url,
+      const forge = this.forges.forType(connection.type);
+      const mergeRequests = await forge.fetchOpenMergeRequests(
+        connection.url,
         token,
-        project.pathWithNamespace,
+        {
+          remoteProjectId: project.remoteProjectId,
+          pathWithNamespace: project.pathWithNamespace,
+          webUrl: project.webUrl,
+        },
         { deadlineAt: Date.now() + PROJECT_SYNC_TIMEOUT_MS },
       );
-      const mapped = nodes.map(mapGraphqlMergeRequest);
       const mrCount = await this.mergeRequests.upsertForProject(
         project.id,
-        mapped,
+        connection.id,
+        mergeRequests,
         now,
       );
       await this.mergeRequests.deleteMissing(
         project.id,
-        mapped.map((mr) => mr.iid),
+        mergeRequests.map((mr) => mr.iid),
       );
       return { projectAlias: project.alias, success: true, mrCount };
     } catch (error) {
       this.logger.warn(
         `Sync failed for project "${project.alias}": ${describe(error)}`,
       );
-      return {
-        projectAlias: project.alias,
-        success: false,
-        errorMessage: describe(error),
-      };
+      const errorMessage =
+        error instanceof ForgeAuthException
+          ? `Jeton refusé (${connection.name})`
+          : describe(error);
+      return { projectAlias: project.alias, success: false, errorMessage };
     }
   }
 

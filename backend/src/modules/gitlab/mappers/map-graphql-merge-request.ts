@@ -1,65 +1,28 @@
+import { ForgeMergeRequest } from '../../forges/types/forge-merge-request';
+import { ForgeUser } from '../../forges/types/forge-user';
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlUserNode,
 } from '../types/gitlab-merge-request';
-
-export interface MappedGitlabUser {
-  gitlabUserId: number;
-  username: string;
-  name: string;
-  avatarUrl: string | null;
-  webUrl: string;
-}
-
-export interface MappedGitlabMergeRequest {
-  gitlabMrId: number;
-  iid: number;
-  title: string;
-  webUrl: string;
-  draft: boolean;
-  createdAt: string;
-  updatedAt: string;
-  commentsCount: number;
-  approved: boolean;
-  labels: string[];
-  /**
-   * `null` when GitLab returned no `diffStatsSummary` (RG-006-02) — always
-   * `null` together with `additions`/`deletions` (same source).
-   */
-  changedFiles: number | null;
-  additions: number | null;
-  deletions: number | null;
-  author: MappedGitlabUser;
-  reviewers: MappedGitlabUser[];
-  assignees: MappedGitlabUser[];
-  /** Raw GitLab mergeability data (US-017), consumed by `computeMergeStatus`. */
-  detailedMergeStatus: string;
-  conflicts: boolean;
-  /** `null` when GitLab reports no pipeline for this merge request. */
-  headPipelineStatus: string | null;
-  approvalsRequired: number;
-  approvalsLeft: number;
-  resolvableDiscussionsCount: number;
-  resolvedDiscussionsCount: number;
-}
+import { computeGitlabMergeStatus } from './compute-gitlab-merge-status';
 
 /**
  * Extracts the trailing numeric id from a GitLab GraphQL Global ID
  * (`gid://gitlab/MergeRequest/123` → `123`).
  * @throws Error when `gid` does not end with digits (malformed GitLab response).
  */
-export function extractNumericId(gid: string): number {
+export function extractNumericId(gid: string): string {
   const match = /(\d+)$/.exec(gid);
   if (!match) {
     throw new Error(`Unexpected GitLab global id: ${gid}`);
   }
-  return Number(match[1]);
+  return match[1];
 }
 
-/** Maps a GraphQL user node (author/reviewer/assignee) to its internal shape. */
-export function mapGraphqlUser(node: GitlabGraphqlUserNode): MappedGitlabUser {
+/** Maps a GraphQL user node (author/reviewer/assignee) to the common `ForgeUser` shape. */
+export function mapGraphqlUser(node: GitlabGraphqlUserNode): ForgeUser {
   return {
-    gitlabUserId: extractNumericId(node.id),
+    remoteUserId: extractNumericId(node.id),
     username: node.username,
     name: node.name,
     avatarUrl: node.avatarUrl,
@@ -68,14 +31,16 @@ export function mapGraphqlUser(node: GitlabGraphqlUserNode): MappedGitlabUser {
 }
 
 /**
- * Maps a raw GraphQL merge request node to the internal shape consumed by
- * `MergeRequestsService.upsertForProject` (RG-004-01, RG-004-02).
+ * Maps a raw GraphQL merge request node to the common `ForgeMergeRequest`
+ * shape consumed by `MergeRequestsService.upsertForProject` (RG-004-01,
+ * RG-004-02, RG-019-21) — `mergeStatus` is computed here, once, from
+ * GitLab's raw mergeability signals (RG-017-*).
  */
 export function mapGraphqlMergeRequest(
   node: GitlabGraphqlMergeRequestNode,
-): MappedGitlabMergeRequest {
+): ForgeMergeRequest {
   return {
-    gitlabMrId: extractNumericId(node.id),
+    remoteId: extractNumericId(node.id),
     iid: Number(node.iid),
     title: node.title,
     webUrl: node.webUrl,
@@ -91,12 +56,13 @@ export function mapGraphqlMergeRequest(
     author: mapGraphqlUser(node.author),
     reviewers: node.reviewers.nodes.map(mapGraphqlUser),
     assignees: node.assignees.nodes.map(mapGraphqlUser),
-    detailedMergeStatus: node.detailedMergeStatus,
-    conflicts: node.conflicts,
-    headPipelineStatus: node.headPipeline?.status ?? null,
-    approvalsRequired: node.approvalsRequired,
-    approvalsLeft: node.approvalsLeft,
-    resolvableDiscussionsCount: node.resolvableDiscussionsCount,
-    resolvedDiscussionsCount: node.resolvedDiscussionsCount,
+    mergeStatus: computeGitlabMergeStatus({
+      detailedMergeStatus: node.detailedMergeStatus,
+      conflicts: node.conflicts,
+      headPipelineStatus: node.headPipeline?.status ?? null,
+      approvalsLeft: node.approvalsLeft,
+      resolvableDiscussionsCount: node.resolvableDiscussionsCount,
+      resolvedDiscussionsCount: node.resolvedDiscussionsCount,
+    }),
   };
 }

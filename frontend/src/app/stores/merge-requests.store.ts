@@ -91,8 +91,7 @@ export const MergeRequestsStore = signalStore(
         if (!hasLoadedOnce || !settings?.notifyAssigned) {
           return;
         }
-        const username = settings.meUsername ?? '';
-        for (const assignment of findNewAssignments(previous, current, username)) {
+        for (const assignment of findNewAssignments(previous, current)) {
           notifications.show(
             `MR Board — ${assignment.projectAlias} !${assignment.iid}`,
             assignment.title,

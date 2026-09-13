@@ -4,12 +4,13 @@ import { In, Repository } from 'typeorm';
 import {
   BusinessException,
   BusinessValidationException,
+  ConnectionMissingException,
+  ConnectionTokenMissingException,
   EntityNotFoundException,
-  GitlabAuthException,
-  MissingConfigurationException,
+  ForgeAuthException,
 } from '../../common/exceptions';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
-import { SettingsService } from '../settings/settings.service';
+import { ConnectionsService } from '../connections/connections.service';
+import { ForgeClientFactory } from '../forges/forge-client.factory';
 import { deriveDefaultAlias } from './domain/derive-default-alias';
 import { normalizeProjectPath } from './domain/normalize-project-path';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -24,14 +25,21 @@ export interface ImportProjectsResult {
   skipped: { pathWithNamespace: string; reason: string }[];
 }
 
-/** Manages the list of GitLab repositories configured to be scanned. */
+/** One repo entry to import, already resolved to a connection by name (RG-019-19). */
+export interface ImportProjectEntry {
+  pathWithNamespace: string;
+  alias: string;
+  connectionName: string;
+}
+
+/** Manages the list of repositories configured to be scanned. */
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectRepository(Project)
     private readonly repository: Repository<Project>,
-    private readonly settings: SettingsService,
-    private readonly gitlab: GitlabClientService,
+    private readonly connections: ConnectionsService,
+    private readonly forges: ForgeClientFactory,
   ) {}
 
   /** Configured repositories, in the order they were added (RG-003-09). */
@@ -41,12 +49,13 @@ export class ProjectsService {
   }
 
   /**
-   * Active repositories, in the order they were added — used by
-   * `SyncService` to resolve the targets of an unscoped synchronisation.
+   * Active repositories of a connection, in the order they were added — used
+   * by `SyncService` to resolve the targets of an unscoped synchronisation
+   * (RG-019-16).
    */
-  async listActive(): Promise<Project[]> {
+  async listActiveByConnection(connectionId: number): Promise<Project[]> {
     return this.repository.find({
-      where: { enabled: true },
+      where: { connectionId, enabled: true },
       order: { id: 'ASC' },
     });
   }
@@ -74,11 +83,13 @@ export class ProjectsService {
   }
 
   /**
-   * Resolves and adds a repository (RG-003-01 to RG-003-06).
-   * @throws MissingConfigurationException when no GitLab token is configured (409).
-   * @throws BusinessValidationException for an unresolvable path, a duplicate
-   * alias, or a normalisation failure (400).
-   * @throws BusinessException (409) when the GitLab project is already configured.
+   * Resolves and adds a repository (RG-003-01 to RG-003-06, RG-019-15).
+   * @throws ConnectionMissingException when no connection is configured (409).
+   * @throws BusinessValidationException when `connectionId` is required (≥ 2
+   * connections) but absent, for an unresolvable path, a duplicate alias, or
+   * a normalisation failure (400).
+   * @throws ConnectionTokenMissingException when the connection has no token (409).
+   * @throws BusinessException (409) when the repo is already configured on this connection.
    */
   async add(dto: CreateProjectDto): Promise<ProjectResponseDto> {
     const path = normalizeProjectPath(dto.path);
@@ -88,44 +99,47 @@ export class ProjectsService {
         'Path could not be resolved',
       );
     }
-    const url = await this.settings.getGitlabUrl();
-    const token = await this.settings.getToken();
+    const connectionId = await this.resolveConnectionId(dto.connectionId);
+    const connection = await this.connections.findOrThrow(connectionId);
+    const token = await this.connections.getToken(connectionId);
     if (!token) {
-      throw new MissingConfigurationException(
-        'settings.tokenMissing',
-        'No GitLab token configured',
-      );
+      throw new ConnectionTokenMissingException();
     }
+    const forge = this.forges.forType(connection.type);
 
-    let gitlabProject: Awaited<ReturnType<GitlabClientService['getProject']>>;
+    let forgeProject: Awaited<ReturnType<typeof forge.resolveProject>>;
     try {
-      gitlabProject = await this.gitlab.getProject(url, token, path);
+      forgeProject = await forge.resolveProject(connection.url, token, path);
     } catch (error) {
-      if (error instanceof GitlabAuthException) {
+      if (error instanceof ForgeAuthException) {
         throw new BusinessValidationException(
           'projects.notFound',
-          'GitLab denied access to this project',
+          'The forge denied access to this project',
         );
       }
       throw error;
     }
-    if (!gitlabProject) {
+    if (!forgeProject) {
       throw new BusinessValidationException(
         'projects.notFound',
-        'Project not found on GitLab',
+        'Project not found on the forge',
       );
     }
 
-    await this.assertProjectNotConfigured(gitlabProject.id);
+    await this.assertProjectNotConfigured(
+      connectionId,
+      forgeProject.remoteProjectId,
+    );
     const alias =
-      dto.alias ?? deriveDefaultAlias(gitlabProject.path_with_namespace);
+      dto.alias ?? deriveDefaultAlias(forgeProject.pathWithNamespace);
     await this.assertAliasAvailable(alias);
 
     const project = await this.repository.save(
       this.repository.create({
-        gitlabProjectId: gitlabProject.id,
-        pathWithNamespace: gitlabProject.path_with_namespace,
-        webUrl: gitlabProject.web_url,
+        connectionId,
+        remoteProjectId: forgeProject.remoteProjectId,
+        pathWithNamespace: forgeProject.pathWithNamespace,
+        webUrl: forgeProject.webUrl,
         alias,
         enabled: true,
         createdAt: new Date().toISOString(),
@@ -157,21 +171,22 @@ export class ProjectsService {
   }
 
   /**
-   * Merges an imported repo list additively (RG-015-04): a repo already
-   * configured (matched by `pathWithNamespace`, case-insensitive) only has
-   * its alias updated ; an unmatched one is resolved against GitLab exactly
-   * like `add()`. Never removes a repo. A failure on one entry (GitLab
-   * 404, alias clash…) is collected in `skipped` instead of aborting the
-   * whole import.
+   * Merges an imported repo list additively (RG-015-04, RG-019-19): a repo
+   * already configured on the target connection (matched by
+   * `pathWithNamespace`, case-insensitive) only has its alias updated ; an
+   * unmatched one is resolved against the forge exactly like `add()`. Never
+   * removes a repo. A failure on one entry (connection unknown, no token,
+   * forge 404, alias clash…) is collected in `skipped` instead of aborting
+   * the whole import.
    */
   async importMany(
-    entries: { pathWithNamespace: string; alias: string }[],
+    entries: ImportProjectEntry[],
   ): Promise<ImportProjectsResult> {
     const existing = await this.repository.find();
-    const byPath = new Map(
-      existing.map((project) => [
-        project.pathWithNamespace.toLowerCase(),
-        project,
+    const connectionsByName = new Map(
+      (await this.connections.findAll()).map((connection) => [
+        connection.name.toLowerCase(),
+        connection,
       ]),
     );
     let added = 0;
@@ -179,7 +194,22 @@ export class ProjectsService {
     const skipped: { pathWithNamespace: string; reason: string }[] = [];
 
     for (const entry of entries) {
-      const match = byPath.get(entry.pathWithNamespace.toLowerCase());
+      const connection = connectionsByName.get(
+        entry.connectionName.toLowerCase(),
+      );
+      if (!connection) {
+        skipped.push({
+          pathWithNamespace: entry.pathWithNamespace,
+          reason: 'connections.unknown',
+        });
+        continue;
+      }
+      const match = existing.find(
+        (project) =>
+          project.connectionId === connection.id &&
+          project.pathWithNamespace.toLowerCase() ===
+            entry.pathWithNamespace.toLowerCase(),
+      );
       try {
         if (match) {
           await this.rename(match.id, { alias: entry.alias });
@@ -188,6 +218,7 @@ export class ProjectsService {
           await this.add({
             path: entry.pathWithNamespace,
             alias: entry.alias,
+            connectionId: connection.id,
           });
           added += 1;
         }
@@ -202,6 +233,30 @@ export class ProjectsService {
     return { added, updated, skipped };
   }
 
+  /**
+   * Resolves the target connection of a repo addition (RG-019-15): the sole
+   * existing connection when there is only one, the explicit `connectionId`
+   * otherwise.
+   * @throws ConnectionMissingException when no connection exists at all (409).
+   * @throws BusinessValidationException when `connectionId` is required (≥ 2 connections) but absent (400).
+   */
+  private async resolveConnectionId(connectionId?: number): Promise<number> {
+    const all = await this.connections.findAll();
+    if (all.length === 0) {
+      throw new ConnectionMissingException();
+    }
+    if (connectionId !== undefined) {
+      return connectionId;
+    }
+    if (all.length === 1) {
+      return all[0].id;
+    }
+    throw new BusinessValidationException(
+      'projects.connectionRequired',
+      'connectionId is required when more than one connection exists',
+    );
+  }
+
   private async findOrThrow(id: number): Promise<Project> {
     const project = await this.repository.findOneBy({ id });
     if (!project) {
@@ -211,13 +266,17 @@ export class ProjectsService {
   }
 
   private async assertProjectNotConfigured(
-    gitlabProjectId: number,
+    connectionId: number,
+    remoteProjectId: string,
   ): Promise<void> {
-    const existing = await this.repository.findOneBy({ gitlabProjectId });
+    const existing = await this.repository.findOneBy({
+      connectionId,
+      remoteProjectId,
+    });
     if (existing) {
       throw new BusinessException(
         'projects.alreadyConfigured',
-        `Project ${gitlabProjectId} is already configured`,
+        `Project ${remoteProjectId} is already configured on connection ${connectionId}`,
         HttpStatus.CONFLICT,
       );
     }
@@ -243,8 +302,9 @@ export class ProjectsService {
 function toResponse(project: Project): ProjectResponseDto {
   return {
     id: project.id,
+    connectionId: project.connectionId,
     pathWithNamespace: project.pathWithNamespace,
     alias: project.alias,
-    gitlabProjectId: project.gitlabProjectId,
+    remoteProjectId: project.remoteProjectId,
   };
 }

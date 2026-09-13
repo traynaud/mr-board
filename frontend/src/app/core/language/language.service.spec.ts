@@ -8,10 +8,6 @@ import { LanguageService } from './language.service';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
   return {
-    gitlabUrl: 'https://gitlab.com',
-    tokenConfigured: false,
-    tokenHint: null,
-    meUsername: null,
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,

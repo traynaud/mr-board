@@ -280,7 +280,13 @@ describe('MiscellaneousSectionComponent', () => {
       expect.anything(),
       expect.objectContaining({
         data: expect.objectContaining({
-          messageParams: { settingsCount: 2, totalRepos: 1, newRepos: 1 },
+          messageParams: {
+            settingsCount: 2,
+            connectionsCount: 1,
+            newConnections: 1,
+            totalRepos: 1,
+            newRepos: 1,
+          },
         }),
       }),
     );
@@ -301,12 +307,16 @@ describe('MiscellaneousSectionComponent', () => {
     const req = http.expectOne('/api/v1/settings/import');
     req.flush({
       settings: { ...FULL_SETTINGS, easyFiles: 12 },
+      connectionsAdded: 0,
+      connectionsUpdated: 0,
+      newConnectionNames: [],
       projectsAdded: 0,
       projectsUpdated: 0,
       projectsSkipped: [],
     });
     await settle();
     http.expectOne('/api/v1/projects').flush([]);
+    http.expectOne('/api/v1/connections').flush([]);
     await settle();
 
     expect(host.form.controls.easyFiles.value).toBe(12);
@@ -332,16 +342,61 @@ describe('MiscellaneousSectionComponent', () => {
     const req = http.expectOne('/api/v1/settings/import');
     req.flush({
       settings: FULL_SETTINGS,
+      connectionsAdded: 0,
+      connectionsUpdated: 0,
+      newConnectionNames: [],
       projectsAdded: 0,
       projectsUpdated: 0,
       projectsSkipped: [{ pathWithNamespace: 'equipe/introuvable', reason: 'projects.notFound' }],
     });
     await settle();
     http.expectOne('/api/v1/projects').flush([]);
+    http.expectOne('/api/v1/connections').flush([]);
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
       t('settings.misc.importSkipped', { paths: 'equipe/introuvable' }),
+      t('common.ok'),
+      expect.anything(),
+    );
+  });
+
+  it('should_toast_a_reminder_to_configure_the_token_of_newly_created_connections', async () => {
+    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
+
+    await selectFile(
+      JSON.stringify({
+        version: 2,
+        settings: {},
+        connections: [
+          {
+            type: 'gitlab',
+            name: 'gitlab.exemple.fr',
+            url: 'https://gitlab.exemple.fr',
+            meUsername: null,
+          },
+        ],
+        projects: [],
+      }),
+    );
+
+    const req = http.expectOne('/api/v1/settings/import');
+    req.flush({
+      settings: FULL_SETTINGS,
+      connectionsAdded: 1,
+      connectionsUpdated: 0,
+      newConnectionNames: ['gitlab.exemple.fr'],
+      projectsAdded: 0,
+      projectsUpdated: 0,
+      projectsSkipped: [],
+    });
+    await settle();
+    http.expectOne('/api/v1/projects').flush([]);
+    http.expectOne('/api/v1/connections').flush([]);
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('settings.misc.importTokensReminder', { names: 'gitlab.exemple.fr' }),
       t('common.ok'),
       expect.anything(),
     );

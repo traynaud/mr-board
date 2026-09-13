@@ -8,20 +8,33 @@ import { of } from 'rxjs';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.interceptor';
+import { Connection } from '../../../../models/connection.model';
 import { Project } from '../../../../models/project.model';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
+import { ConnectionsStore } from '../../../../stores/connections.store';
 import { RepoAliasForm, buildRepoAliasGroup } from '../../repos-form';
 import { RepoRow, RepositoriesSectionComponent } from './repositories-section.component';
 
 const project: Project = {
   id: 1,
+  connectionId: 1,
   pathWithNamespace: 'equipe/backend-api',
   alias: 'api',
-  gitlabProjectId: 42,
+  remoteProjectId: '42',
+};
+const CONNECTION: Connection = {
+  id: 1,
+  type: 'gitlab',
+  name: 'GitLab',
+  url: 'https://gitlab.com',
+  tokenConfigured: true,
+  tokenHint: 'wxyz',
+  meUsername: null,
+  projectsCount: 1,
 };
 
 function rowOf(p: Project): RepoRow {
-  return { project: p, group: buildRepoAliasGroup(p) as RepoAliasForm };
+  return { project: p, group: buildRepoAliasGroup(p) as RepoAliasForm, connectionName: 'GitLab' };
 }
 
 @Component({
@@ -70,6 +83,18 @@ describe('RepositoriesSectionComponent', () => {
     http.expectOne('/api/v1/projects').flush(projects);
     await settle();
   };
+  /**
+   * `ConnectionsStore` n'est chargé que par `ConnectionsSectionComponent`
+   * dans la vraie page — ce composant se contente de le lire. Ce test le
+   * déclenche lui-même pour simuler un chargement déjà terminé par ailleurs.
+   */
+  const seedConnections = async (connections: Connection[]) => {
+    const pending = TestBed.inject(ConnectionsStore).load();
+    http.expectOne('/api/v1/connections').flush(connections);
+    await pending;
+    fixture.detectChanges();
+    await settle();
+  };
   /** Flushe le déclenchement de synchro ciblée après un ajout réussi (RG-004-15). */
   const flushSync = async (projectId: number) => {
     const req = http.expectOne(`/api/v1/sync?projectId=${projectId}`);
@@ -98,6 +123,22 @@ describe('RepositoriesSectionComponent', () => {
     expect(addButton().disabled).toBe(true);
   });
 
+  it('should_not_show_a_connection_selector_or_column_with_a_single_connection', async () => {
+    await loadProjects();
+
+    expect(el.querySelector('.connection-col')).toBeNull();
+    expect(el.querySelector('.connection-field')).toBeNull();
+  });
+
+  it('should_show_a_connection_selector_and_column_with_two_connections', async () => {
+    await loadProjects();
+    await seedConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' }]);
+
+    expect(el.querySelector('.connection-col')).not.toBeNull();
+    expect(el.querySelector('.connection-field')).not.toBeNull();
+    expect(el.textContent).toContain('GitLab');
+  });
+
   it('should_disable_add_button_when_path_is_empty_or_an_add_is_in_flight', async () => {
     // Traçabilité explicite du scénario « Bouton Ajouter désactivé » (specs
     // US-003 §6) : déjà couvert incidemment par un autre test, mais mérite
@@ -114,9 +155,10 @@ describe('RepositoriesSectionComponent', () => {
 
     http.expectOne('/api/v1/projects').flush({
       id: 2,
+      connectionId: 1,
       pathWithNamespace: 'equipe/front-web',
       alias: 'front-web',
-      gitlabProjectId: 7,
+      remoteProjectId: '7',
     });
     await settle();
     await flushSync(2);
@@ -128,7 +170,8 @@ describe('RepositoriesSectionComponent', () => {
 
     expect(el.querySelector('.status.error')).not.toBeNull();
     el.querySelector<HTMLButtonElement>('.status.error button')!.click();
-    await loadProjects();
+    http.expectOne('/api/v1/projects').flush([project]);
+    await settle();
 
     expect(el.querySelector('.repos-table')).not.toBeNull();
   });
@@ -144,7 +187,13 @@ describe('RepositoriesSectionComponent', () => {
 
     const req = http.expectOne('/api/v1/projects');
     expect(req.request.body).toEqual({ path: 'equipe/front-web' });
-    req.flush({ id: 2, pathWithNamespace: 'equipe/front-web', alias: 'front-web', gitlabProjectId: 7 });
+    req.flush({
+      id: 2,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/front-web',
+      alias: 'front-web',
+      remoteProjectId: '7',
+    });
     await settle();
     await flushSync(2);
 
@@ -154,6 +203,27 @@ describe('RepositoriesSectionComponent', () => {
       expect.anything(),
     );
     expect(pathInput().value).toBe('');
+  });
+
+  it('should_include_the_selected_connectionId_when_more_than_one_connection_exists', async () => {
+    await loadProjects();
+    await seedConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' }]);
+    await type(pathInput(), 'equipe/front-web');
+
+    addButton().click();
+    await settle();
+
+    const req = http.expectOne('/api/v1/projects');
+    expect(req.request.body).toEqual({ path: 'equipe/front-web', connectionId: 1 });
+    req.flush({
+      id: 2,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/front-web',
+      alias: 'front-web',
+      remoteProjectId: '7',
+    });
+    await settle();
+    await flushSync(2);
   });
 
   it('should_show_inline_error_under_path_for_not_found', async () => {
@@ -200,14 +270,14 @@ describe('RepositoriesSectionComponent', () => {
     http
       .expectOne('/api/v1/projects')
       .flush(
-        { statusCode: 409, code: 'settings.tokenMissing', message: 'x' },
+        { statusCode: 409, code: 'connections.missing', message: 'x' },
         { status: 409, statusText: 'Conflict' },
       );
     await settle();
 
     expect(el.querySelector('mat-error')).toBeNull();
     expect(snackBar.open).toHaveBeenCalledWith(
-      t('errors.settings.tokenMissing'),
+      t('errors.connections.missing'),
       t('common.ok'),
       expect.anything(),
     );

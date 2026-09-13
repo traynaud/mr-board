@@ -6,15 +6,11 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUrl,
-  MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
-import { GITLAB_URL_OPTIONS } from '../../settings/dto/gitlab-credentials.dto';
 import {
   LANGUAGE_OPTIONS,
-  ME_USERNAME_MAX_LENGTH,
   REFRESH_INTERVAL_OPTIONS,
   THEME_OPTIONS,
 } from '../../settings/dto/update-settings.dto';
@@ -24,21 +20,12 @@ import type {
 } from '../../settings/entities/settings.entity';
 
 /**
- * The `settings` section of an imported config file (RG-015-04). Mirrors
- * `UpdateSettingsDto` field-for-field, minus `gitlabToken` — deliberately
- * absent, never `IsOptional`, so a file carrying one is rejected by the
- * global `ValidationPipe` (`forbidNonWhitelisted`) instead of being silently
- * accepted (RG-015-04 : "le jeton n'est jamais importé").
+ * The `settings` section of a `version: 2` imported config file (RG-015-04,
+ * RG-019-23) — global preferences only, never the GitLab token, never a
+ * connection's URL/username (those follow `connections`/RG-019-19 instead).
+ * Mirrors `UpdateSettingsDto` minus `identities`.
  */
 export class ImportSettingsDto {
-  @IsUrl(GITLAB_URL_OPTIONS)
-  gitlabUrl!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(ME_USERNAME_MAX_LENGTH)
-  meUsername?: string;
-
   @IsOptional()
   @ValidateIf(
     (o: ImportSettingsDto) => o.meEmail !== undefined && o.meEmail !== '',

@@ -8,8 +8,8 @@ import { SettingsSectionComponent } from './settings-section.component';
   template: `
     <app-settings-section
       number="02"
-      titleKey="settings.connection.title"
-      descriptionKey="settings.connection.description"
+      titleKey="settings.connections.title"
+      descriptionKey="settings.connections.description"
       [last]="true"
     >
       <span class="projected">contenu</span>
@@ -33,10 +33,10 @@ describe('SettingsSectionComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('h6')?.textContent?.trim()).toBe(
-      `02 · ${t('settings.connection.title')}`,
+      `02 · ${t('settings.connections.title')}`,
     );
     expect(el.querySelector('.heading p')?.textContent?.trim()).toBe(
-      t('settings.connection.description'),
+      t('settings.connections.description'),
     );
     expect(el.querySelector('.content .projected')?.textContent).toBe('contenu');
     expect(el.querySelector('.content')?.classList.contains('last')).toBe(true);

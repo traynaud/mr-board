@@ -1,8 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { computeGitlabMergeStatus } from '../src/modules/gitlab/mappers/compute-gitlab-merge-status';
 import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { GitlabGraphqlMergeRequestNode } from '../src/modules/gitlab/types/gitlab-merge-request';
+import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
+import { ForgeUser } from '../src/modules/forges/types/forge-user';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
 import { createTestApp } from './utils/create-test-app';
 
 interface MergeRequestUserBody {
@@ -38,6 +41,7 @@ interface MergeRequestViewBody {
     state: 'mergeable' | 'blocked' | 'unknown';
     reasons: { code: string; count?: number }[];
   };
+  connection: { id: number; name: string; type: string };
 }
 interface MergeRequestsResponseBody {
   mergeRequests: MergeRequestViewBody[];
@@ -56,13 +60,13 @@ interface MergeRequestsFacetsBody {
   commented: FacetOptionBody[];
 }
 
-function userNode(
+function forgeUser(
   id: number,
   username: string,
   overrides: Partial<{ name: string; avatarUrl: string | null }> = {},
-) {
+): ForgeUser {
   return {
-    id: `gid://gitlab/User/${id}`,
+    remoteUserId: String(id),
     username,
     name: overrides.name ?? `Name ${username}`,
     avatarUrl: overrides.avatarUrl ?? null,
@@ -101,43 +105,74 @@ async function withFrozenTime<T>(
   }
 }
 
-function rawNode(
+/** Raw GitLab-shaped signals a test wants to control ; mapped here exactly as `GitlabClientService.fetchOpenMergeRequests` would, since the client itself is mocked away. */
+interface RawOverrides {
+  draft?: boolean;
+  createdAt?: string;
+  author?: ForgeUser;
+  reviewers?: ForgeUser[];
+  assignees?: ForgeUser[];
+  approved?: boolean;
+  commentsCount?: number;
+  diffStats?: {
+    fileCount: number;
+    additions: number;
+    deletions: number;
+  } | null;
+  detailedMergeStatus?: string;
+  conflicts?: boolean;
+  headPipelineStatus?: string | null;
+  approvalsLeft?: number;
+}
+
+function mergeRequest(
   iid: number,
-  overrides: Partial<GitlabGraphqlMergeRequestNode> = {},
-): GitlabGraphqlMergeRequestNode {
+  overrides: RawOverrides = {},
+): ForgeMergeRequest {
+  const diffStats =
+    overrides.diffStats !== undefined
+      ? overrides.diffStats
+      : { fileCount: 1, additions: 1, deletions: 0 };
   return {
-    id: `gid://gitlab/MergeRequest/${iid * 100}`,
-    iid: String(iid),
+    remoteId: String(iid * 100),
+    iid,
     title: `MR ${iid}`,
     webUrl: `https://gitlab.com/equipe/api/-/merge_requests/${iid}`,
-    draft: false,
-    createdAt: `2026-09-0${iid}T10:00:00Z`,
-    updatedAt: `2026-09-0${iid}T10:00:00Z`,
-    userNotesCount: iid,
-    approved: false,
-    labels: { nodes: [] },
-    diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
-    author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
-    reviewers: { nodes: [] },
-    assignees: { nodes: [] },
-    detailedMergeStatus: 'MERGEABLE',
-    conflicts: false,
-    headPipeline: { status: 'SUCCESS' },
-    approvalsRequired: 0,
-    approvalsLeft: 0,
-    resolvableDiscussionsCount: 0,
-    resolvedDiscussionsCount: 0,
-    ...overrides,
+    draft: overrides.draft ?? false,
+    createdAt: overrides.createdAt ?? `2026-09-0${iid}T10:00:00Z`,
+    updatedAt: overrides.createdAt ?? `2026-09-0${iid}T10:00:00Z`,
+    commentsCount: overrides.commentsCount ?? iid,
+    approved: overrides.approved ?? false,
+    labels: [],
+    changedFiles: diffStats?.fileCount ?? null,
+    additions: diffStats?.additions ?? null,
+    deletions: diffStats?.deletions ?? null,
+    author:
+      overrides.author ?? forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+    reviewers: overrides.reviewers ?? [],
+    assignees: overrides.assignees ?? [],
+    mergeStatus: computeGitlabMergeStatus({
+      detailedMergeStatus: overrides.detailedMergeStatus ?? 'MERGEABLE',
+      conflicts: overrides.conflicts ?? false,
+      headPipelineStatus:
+        overrides.headPipelineStatus !== undefined
+          ? overrides.headPipelineStatus
+          : 'SUCCESS',
+      approvalsLeft: overrides.approvalsLeft ?? 0,
+      resolvableDiscussionsCount: 0,
+      resolvedDiscussionsCount: 0,
+    }),
   };
 }
 
 describe('MergeRequests (e2e)', () => {
   let app: INestApplication<App>;
+  let connectionId: number;
   const gitlab = {
-    getCurrentUser: jest.fn(),
-    getTokenInfo: jest.fn(),
-    getProject: jest.fn(),
-    getOpenMergeRequests: jest.fn(),
+    normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    testConnection: jest.fn(),
+    resolveProject: jest.fn(),
+    fetchOpenMergeRequests: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -165,6 +200,9 @@ describe('MergeRequests (e2e)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    gitlab.normalizeUrl.mockImplementation((url: string) =>
+      normalizeGitlabUrl(url),
+    );
   });
 
   it('GET /merge-requests should_be_empty_before_any_synchronisation', async () => {
@@ -174,15 +212,18 @@ describe('MergeRequests (e2e)', () => {
     expect(res.body).toEqual({ mergeRequests: [], warnings: [] });
   });
 
-  it('setup: should_configure_a_token_and_a_repo_for_the_rest_of_this_suite', async () => {
-    await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-mr-e2e-token',
+  it('setup: should_configure_a_connection_and_a_repo_for_the_rest_of_this_suite', async () => {
+    const connection = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'GitLab',
+      url: 'https://gitlab.com',
+      token: 'glpat-mr-e2e-token',
     });
-    gitlab.getProject.mockResolvedValue({
-      id: 42,
-      path_with_namespace: 'equipe/api',
-      web_url: 'https://gitlab.com/equipe/api',
+    connectionId = (connection.body as { id: number }).id;
+    gitlab.resolveProject.mockResolvedValue({
+      remoteProjectId: '42',
+      pathWithNamespace: 'equipe/api',
+      webUrl: 'https://gitlab.com/equipe/api',
     });
     const res = await api()
       .post('/api/v1/projects')
@@ -193,16 +234,12 @@ describe('MergeRequests (e2e)', () => {
 
   it('GET /merge-requests should_expose_only_the_fields_in_scope_of_this_us', async () => {
     await withFrozenTime('2026-09-11T08:00:00.000Z', async () => {
-      gitlab.getOpenMergeRequests.mockResolvedValue([
-        rawNode(1, {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(1, {
           approved: true,
-          userNotesCount: 3,
-          reviewers: {
-            nodes: [userNode(2, 'kbenali', { name: 'Karim Benali' })],
-          },
-          assignees: {
-            nodes: [userNode(3, 'lrousseau', { name: 'Léa Rousseau' })],
-          },
+          commentsCount: 3,
+          reviewers: [forgeUser(2, 'kbenali', { name: 'Karim Benali' })],
+          assignees: [forgeUser(3, 'lrousseau', { name: 'Léa Rousseau' })],
         }),
       ]);
 
@@ -256,6 +293,11 @@ describe('MergeRequests (e2e)', () => {
         openedDays: 9,
         isMine: false,
         mergeStatus: { state: 'mergeable', reasons: [] },
+        connection: {
+          id: expect.any(Number) as number,
+          name: 'GitLab',
+          type: 'gitlab',
+        },
       });
       expect(Object.keys(view).sort()).toEqual(
         [
@@ -282,6 +324,7 @@ describe('MergeRequests (e2e)', () => {
           'openedDays',
           'isMine',
           'mergeStatus',
+          'connection',
         ].sort(),
       );
       expect(JSON.stringify(res.body)).not.toContain('token');
@@ -290,8 +333,8 @@ describe('MergeRequests (e2e)', () => {
 
   it('GET /merge-requests should_expose_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {
     await withFrozenTime('2026-09-11T08:00:00.000Z', async () => {
-      gitlab.getOpenMergeRequests.mockResolvedValue([
-        rawNode(6, { createdAt: '2026-09-10T08:00:00Z' }),
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(6, { createdAt: '2026-09-10T08:00:00Z' }),
       ]);
 
       await api().post('/api/v1/sync');
@@ -308,8 +351,8 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_report_medium_difficulty_and_null_stats_when_unavailable', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1, { diffStatsSummary: null }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(1, { diffStats: null }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -325,9 +368,9 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_distinguish_a_real_zero_from_unavailable_stats', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1, {
-        diffStatsSummary: { fileCount: 0, additions: 0, deletions: 0 },
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(1, {
+        diffStats: { fileCount: 0, additions: 0, deletions: 0 },
       }),
     ]);
 
@@ -342,9 +385,9 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_exclude_draft_merge_requests_by_default', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1),
-      rawNode(2, { draft: true }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(1),
+      mergeRequest(2, { draft: true }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -358,10 +401,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?drafts=1 should_include_drafts_after_ready_sorted_by_created_at_ascending', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(20, { draft: false, createdAt: '2026-09-01T10:00:00Z' }),
-      rawNode(21, { draft: true, createdAt: '2026-09-05T10:00:00Z' }),
-      rawNode(22, { draft: true, createdAt: '2026-09-03T10:00:00Z' }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(20, { draft: false, createdAt: '2026-09-01T10:00:00Z' }),
+      mergeRequest(21, { draft: true, createdAt: '2026-09-05T10:00:00Z' }),
+      mergeRequest(22, { draft: true, createdAt: '2026-09-03T10:00:00Z' }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -377,10 +420,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_be_sorted_by_ready_at_ascending', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(5, { createdAt: '2026-09-05T10:00:00Z' }),
-      rawNode(1, { createdAt: '2026-09-01T10:00:00Z' }),
-      rawNode(3, { createdAt: '2026-09-03T10:00:00Z' }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(5, { createdAt: '2026-09-05T10:00:00Z' }),
+      mergeRequest(1, { createdAt: '2026-09-01T10:00:00Z' }),
+      mergeRequest(3, { createdAt: '2026-09-03T10:00:00Z' }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -394,10 +437,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?sort=ready:desc should_reverse_the_default_order', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(10, { createdAt: '2026-09-01T10:00:00Z' }),
-      rawNode(11, { createdAt: '2026-09-03T10:00:00Z' }),
-      rawNode(12, { createdAt: '2026-09-05T10:00:00Z' }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(10, { createdAt: '2026-09-01T10:00:00Z' }),
+      mergeRequest(11, { createdAt: '2026-09-03T10:00:00Z' }),
+      mergeRequest(12, { createdAt: '2026-09-05T10:00:00Z' }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -411,15 +454,15 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?sort=diff:asc should_sort_easy_to_hard', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1, {
-        diffStatsSummary: { fileCount: 34, additions: 900, deletions: 340 },
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(1, {
+        diffStats: { fileCount: 34, additions: 900, deletions: 340 },
       }),
-      rawNode(2, {
-        diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+      mergeRequest(2, {
+        diffStats: { fileCount: 1, additions: 1, deletions: 0 },
       }),
-      rawNode(3, {
-        diffStatsSummary: { fileCount: 9, additions: 300, deletions: 10 },
+      mergeRequest(3, {
+        diffStats: { fileCount: 9, additions: 300, deletions: 10 },
       }),
     ]);
 
@@ -437,15 +480,15 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?sort=diff:desc should_sort_hard_to_easy', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(1, {
-        diffStatsSummary: { fileCount: 34, additions: 900, deletions: 340 },
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(1, {
+        diffStats: { fileCount: 34, additions: 900, deletions: 340 },
       }),
-      rawNode(2, {
-        diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
+      mergeRequest(2, {
+        diffStats: { fileCount: 1, additions: 1, deletions: 0 },
       }),
-      rawNode(3, {
-        diffStatsSummary: { fileCount: 9, additions: 300, deletions: 10 },
+      mergeRequest(3, {
+        diffStats: { fileCount: 9, additions: 300, deletions: 10 },
       }),
     ]);
 
@@ -466,7 +509,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?mine=1 should_return_everything_and_warn_when_identity_is_not_configured', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([rawNode(30), rawNode(31)]);
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(30),
+      mergeRequest(31),
+    ]);
 
     await api().post('/api/v1/sync');
     await waitUntilIdle();
@@ -478,18 +524,21 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('setup: should_configure_my_identity_for_the_rest_of_this_suite', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      meUsername: 'mdupont',
-    });
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ identities: [{ connectionId, username: 'mdupont' }] });
 
     expect(res.status).toBe(200);
   });
 
   it('GET /merge-requests?mine=1 should_filter_to_merge_requests_where_i_am_the_author', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(40, { author: userNode(1, 'mdupont', { name: 'Marie Dupont' }) }),
-      rawNode(41, { author: userNode(5, 'jdurand', { name: 'Jean Durand' }) }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(40, {
+        author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+      }),
+      mergeRequest(41, {
+        author: forgeUser(5, 'jdurand', { name: 'Jean Durand' }),
+      }),
     ]);
 
     await api().post('/api/v1/sync');
@@ -504,15 +553,13 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests should_expose_is_mine_true_when_i_am_one_of_several_reviewers', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(50, {
-        author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
-        reviewers: {
-          nodes: [
-            userNode(6, 'tgirard', { name: 'Thomas Girard' }),
-            userNode(1, 'mdupont', { name: 'Marie Dupont' }),
-          ],
-        },
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(50, {
+        author: forgeUser(5, 'jdurand', { name: 'Jean Durand' }),
+        reviewers: [
+          forgeUser(6, 'tgirard', { name: 'Thomas Girard' }),
+          forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+        ],
       }),
     ]);
 
@@ -533,19 +580,19 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?drafts=1&mine=1 should_combine_drafts_and_mine', async () => {
-    gitlab.getOpenMergeRequests.mockResolvedValue([
-      rawNode(60, {
-        author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(60, {
+        author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
         createdAt: '2026-09-01T10:00:00Z',
       }),
-      rawNode(61, {
+      mergeRequest(61, {
         draft: true,
-        author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+        author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
         createdAt: '2026-09-02T10:00:00Z',
       }),
-      rawNode(62, {
+      mergeRequest(62, {
         draft: true,
-        author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+        author: forgeUser(5, 'jdurand', { name: 'Jean Durand' }),
         createdAt: '2026-09-03T10:00:00Z',
       }),
     ]);
@@ -561,10 +608,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('setup: should_configure_a_second_repo_for_the_composable_filters_tests', async () => {
-    gitlab.getProject.mockResolvedValue({
-      id: 43,
-      path_with_namespace: 'equipe/web',
-      web_url: 'https://gitlab.com/equipe/web',
+    gitlab.resolveProject.mockResolvedValue({
+      remoteProjectId: '43',
+      pathWithNamespace: 'equipe/web',
+      webUrl: 'https://gitlab.com/equipe/web',
     });
     const res = await api()
       .post('/api/v1/projects')
@@ -574,11 +621,11 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?project=... should_only_return_merge_requests_of_the_given_projects', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
-          ? Promise.resolve([rawNode(70), rawNode(71)])
-          : Promise.resolve([rawNode(72)]),
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([mergeRequest(70), mergeRequest(71)])
+          : Promise.resolve([mergeRequest(72)]),
     );
 
     await api().post('/api/v1/sync');
@@ -592,14 +639,12 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?assigned=nobody should_return_merge_requests_without_reviewer_or_assignee', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
           ? Promise.resolve([
-              rawNode(80),
-              rawNode(81, {
-                reviewers: { nodes: [userNode(2, 'kbenali')] },
-              }),
+              mergeRequest(80),
+              mergeRequest(81, { reviewers: [forgeUser(2, 'kbenali')] }),
             ])
           : Promise.resolve([]),
     );
@@ -615,17 +660,13 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?assigned=kbenali should_match_either_reviewer_or_assignee_role', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
           ? Promise.resolve([
-              rawNode(90, {
-                reviewers: { nodes: [userNode(2, 'kbenali')] },
-              }),
-              rawNode(91, {
-                assignees: { nodes: [userNode(2, 'kbenali')] },
-              }),
-              rawNode(92),
+              mergeRequest(90, { reviewers: [forgeUser(2, 'kbenali')] }),
+              mergeRequest(91, { assignees: [forgeUser(2, 'kbenali')] }),
+              mergeRequest(92),
             ])
           : Promise.resolve([]),
     );
@@ -641,12 +682,12 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?approved=0 should_only_return_unapproved_merge_requests', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
           ? Promise.resolve([
-              rawNode(100, { approved: true }),
-              rawNode(101, { approved: false }),
+              mergeRequest(100, { approved: true }),
+              mergeRequest(101, { approved: false }),
             ])
           : Promise.resolve([]),
     );
@@ -662,12 +703,12 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?commented=1 should_only_return_merge_requests_with_at_least_one_comment', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
           ? Promise.resolve([
-              rawNode(110, { userNotesCount: 0 }),
-              rawNode(111, { userNotesCount: 2 }),
+              mergeRequest(110, { commentsCount: 0 }),
+              mergeRequest(111, { commentsCount: 2 }),
             ])
           : Promise.resolve([]),
     );
@@ -683,28 +724,32 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?project=api&approved=1&mine=1 should_combine_all_active_filters_with_and', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) => {
-        if (pathWithNamespace === 'equipe/api') {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (
+        _url: string,
+        _token: string,
+        project: { pathWithNamespace: string },
+      ) => {
+        if (project.pathWithNamespace === 'equipe/api') {
           return Promise.resolve([
-            rawNode(120, {
+            mergeRequest(120, {
               approved: true,
-              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+              author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
             }),
-            rawNode(121, {
+            mergeRequest(121, {
               approved: false,
-              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+              author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
             }),
-            rawNode(122, {
+            mergeRequest(122, {
               approved: true,
-              author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+              author: forgeUser(5, 'jdurand', { name: 'Jean Durand' }),
             }),
           ]);
         }
         return Promise.resolve([
-          rawNode(123, {
+          mergeRequest(123, {
             approved: true,
-            author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
+            author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
           }),
         ]);
       },
@@ -729,10 +774,10 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?project=inconnu should_respond_200_with_an_empty_list_for_an_unknown_project_alias', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) =>
-        pathWithNamespace === 'equipe/api'
-          ? Promise.resolve([rawNode(130)])
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([mergeRequest(130)])
           : Promise.resolve([]),
     );
 
@@ -746,25 +791,27 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests/facets should_expose_options_and_contextual_counts_for_the_5_filters', async () => {
-    gitlab.getOpenMergeRequests.mockImplementation(
-      (_url: string, _token: string, pathWithNamespace: string) => {
-        if (pathWithNamespace === 'equipe/api') {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (
+        _url: string,
+        _token: string,
+        project: { pathWithNamespace: string },
+      ) => {
+        if (project.pathWithNamespace === 'equipe/api') {
           return Promise.resolve([
-            rawNode(140, {
-              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
-              userNotesCount: 0,
+            mergeRequest(140, {
+              author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+              commentsCount: 0,
             }),
-            rawNode(141, {
-              author: userNode(1, 'mdupont', { name: 'Marie Dupont' }),
-              reviewers: {
-                nodes: [userNode(2, 'kbenali', { name: 'Karim Benali' })],
-              },
-              userNotesCount: 0,
+            mergeRequest(141, {
+              author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+              reviewers: [forgeUser(2, 'kbenali', { name: 'Karim Benali' })],
+              commentsCount: 0,
             }),
-            rawNode(142, {
-              author: userNode(5, 'jdurand', { name: 'Jean Durand' }),
+            mergeRequest(142, {
+              author: forgeUser(5, 'jdurand', { name: 'Jean Durand' }),
               approved: true,
-              userNotesCount: 1,
+              commentsCount: 1,
             }),
           ]);
         }
@@ -820,11 +867,11 @@ describe('MergeRequests (e2e)', () => {
 
   describe('mergeStatus (US-017)', () => {
     it('GET /merge-requests should_report_a_blocked_merge_status_with_ordered_reasons', async () => {
-      gitlab.getOpenMergeRequests.mockResolvedValue([
-        rawNode(200, {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(200, {
           detailedMergeStatus: 'CONFLICT',
           conflicts: true,
-          headPipeline: { status: 'FAILED' },
+          headPipelineStatus: 'FAILED',
           approvalsLeft: 2,
         }),
       ]);
@@ -847,8 +894,8 @@ describe('MergeRequests (e2e)', () => {
     });
 
     it('GET /merge-requests should_report_an_unknown_merge_status_while_gitlab_is_still_checking', async () => {
-      gitlab.getOpenMergeRequests.mockResolvedValue([
-        rawNode(201, { detailedMergeStatus: 'CHECKING' }),
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(201, { detailedMergeStatus: 'CHECKING' }),
       ]);
 
       await api().post('/api/v1/sync');
@@ -862,8 +909,8 @@ describe('MergeRequests (e2e)', () => {
     });
 
     it('GET /merge-requests should_report_blocked_with_a_single_reason_for_a_draft_with_conflicts', async () => {
-      gitlab.getOpenMergeRequests.mockResolvedValue([
-        rawNode(202, {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(202, {
           draft: true,
           detailedMergeStatus: 'DRAFT_STATUS',
           conflicts: true,

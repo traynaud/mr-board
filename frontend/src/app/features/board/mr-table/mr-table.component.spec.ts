@@ -37,6 +37,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     openedDays: 6,
     isMine: false,
     mergeStatus: { state: 'mergeable', reasons: [] },
+    connection: { id: 1, name: 'GitLab', type: 'gitlab' },
     ...overrides,
   };
 }

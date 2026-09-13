@@ -10,6 +10,10 @@ export class ImportSkippedProjectDto {
 /** Response of `POST /api/v1/settings/import`. */
 export class ImportResultDto {
   settings!: SettingsResponseDto;
+  connectionsAdded!: number;
+  connectionsUpdated!: number;
+  /** Names of newly created connections — always without a token (RG-019-19), to prompt the user to configure them. */
+  newConnectionNames!: string[];
   projectsAdded!: number;
   projectsUpdated!: number;
   projectsSkipped!: ImportSkippedProjectDto[];

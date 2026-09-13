@@ -24,6 +24,7 @@ import {
 import { FilterKey } from '../../models/merge-request.model';
 import { ColumnWidthsStore, ResizableColumnKey } from '../../stores/column-widths.store';
 import { ColumnsStore } from '../../stores/columns.store';
+import { ConnectionsStore } from '../../stores/connections.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
@@ -62,6 +63,7 @@ const APP_TITLE = 'MR Board';
 })
 export class BoardPageComponent implements OnInit {
   protected readonly settingsStore = inject(SettingsStore);
+  protected readonly connectionsStore = inject(ConnectionsStore);
   protected readonly projectsStore = inject(ProjectsStore);
   protected readonly syncStore = inject(SyncStore);
   protected readonly mrStore = inject(MergeRequestsStore);
@@ -83,37 +85,50 @@ export class BoardPageComponent implements OnInit {
   /** Vrai si le polling a été arrêté par ce listener (et non par `ngOnDestroy`), pour ne redémarrer que ce qu'on a nous-même mis en pause. */
   private pausedByVisibility = false;
 
-  /** Sans jeton configuré (RG-004-10). `false` tant que les paramètres ne sont pas encore chargés. */
-  protected readonly noToken = computed(() => {
-    const settings = this.settingsStore.settings();
-    return settings !== null && !settings.tokenConfigured;
-  });
+  /** Aucune connexion configurée du tout (RG-019-17). `false` tant qu'elles ne sont pas encore chargées. */
+  protected readonly noConnections = computed(
+    () => this.connectionsStore.connections().length === 0 && !this.connectionsStore.loading(),
+  );
 
-  /** Avec un jeton mais aucun repo (RG-004-11) ; le bandeau RG-004-10 prend le pas (mutuellement exclusifs). */
+  /** Au moins une connexion sans jeton (RG-019-17), listées par nom dans le bandeau. */
+  protected readonly connectionsWithoutToken = computed(() =>
+    this.connectionsStore.connections().filter((c) => !c.tokenConfigured),
+  );
+
+  protected readonly connectionsWithoutTokenNames = computed(() =>
+    this.connectionsWithoutToken()
+      .map((c) => c.name)
+      .join(', '),
+  );
+
+  /** Avec des connexions mais aucun repo (RG-004-11) ; le bandeau RG-019-17 prend le pas (mutuellement exclusifs). */
   protected readonly noRepos = computed(
     () =>
-      !this.noToken() &&
+      !this.noConnections() &&
       this.projectsStore.projects().length === 0 &&
       !this.projectsStore.loading(),
   );
 
+  /** RG-019-17 : « Rafraîchir » n'est désactivé que sans aucune connexion, pas quand une seule manque de jeton. */
   protected readonly refreshDisabled = computed(
-    () => this.noToken() || this.syncStore.running(),
+    () => this.noConnections() || this.syncStore.running(),
   );
 
-  /** Jeton et repo configurés mais aucune MR ouverte (RG-005-08). */
+  /** Connexions et repo configurés mais aucune MR ouverte (RG-005-08). */
   protected readonly noMergeRequests = computed(
     () =>
-      !this.noToken() &&
+      !this.noConnections() &&
       !this.noRepos() &&
       this.mrStore.mergeRequests().length === 0 &&
       !this.mrStore.loading(),
   );
 
-  /** Identité configurée (RG-002-05) : active le chip « Mes MRs » (RG-009-03). */
+  /** Identité configurée (RG-002-05, RG-019-09) : active le chip « Mes MRs » (RG-009-03). */
   protected readonly identityConfigured = computed(() => {
     const settings = this.settingsStore.settings();
-    return !!settings?.meUsername || !!settings?.meEmail;
+    return (
+      !!settings?.meEmail || this.connectionsStore.connections().some((c) => !!c.meUsername)
+    );
   });
 
   /**
@@ -237,6 +252,7 @@ export class BoardPageComponent implements OnInit {
   ngOnInit(): void {
     this.restoreFromUrl();
     void this.settingsStore.load();
+    void this.connectionsStore.load();
     void this.projectsStore.load();
     void this.loadMergeRequests();
     this.syncStore.startPolling();

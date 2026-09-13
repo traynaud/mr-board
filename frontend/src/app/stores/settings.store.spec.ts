@@ -7,10 +7,6 @@ import { SettingsStore } from './settings.store';
 
 describe('SettingsStore', () => {
   const settings: Settings = {
-    gitlabUrl: 'https://gitlab.com',
-    tokenConfigured: false,
-    tokenHint: null,
-    meUsername: null,
     meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
@@ -32,7 +28,6 @@ describe('SettingsStore', () => {
   const api = {
     getSettings: vi.fn(),
     putSettings: vi.fn(),
-    postTestConnection: vi.fn(),
     getExportConfig: vi.fn(),
     postImportConfig: vi.fn(),
   };
@@ -66,10 +61,10 @@ describe('SettingsStore', () => {
   });
 
   it('should_save_and_update_settings', async () => {
-    const saved = { ...settings, tokenConfigured: true, tokenHint: 'wxyz' };
+    const saved = { ...settings, meEmail: 'marie@exemple.fr' };
     api.putSettings.mockReturnValue(of(saved));
 
-    const error = await store.save({ gitlabUrl: 'https://gitlab.com', gitlabToken: 'glpat-abcdwxyz' });
+    const error = await store.save({ meEmail: 'marie@exemple.fr' });
 
     expect(error).toBeNull();
     expect(store.saving()).toBe(false);
@@ -78,54 +73,17 @@ describe('SettingsStore', () => {
 
   it('should_return_error_key_when_save_fails', async () => {
     api.putSettings.mockReturnValue(
-      throwError(() => new ApiError(400, 'settings.invalidUrl', 'bad')),
+      throwError(() => new ApiError(400, 'settings.hardFilesTooLow', 'bad')),
     );
 
-    const error = await store.save({ gitlabUrl: 'nope' });
+    const error = await store.save({ easyFiles: 20 });
 
-    expect(error).toBe('errors.settings.invalidUrl');
+    expect(error).toBe('errors.settings.hardFilesTooLow');
     expect(store.saving()).toBe(false);
   });
 
-  it('should_test_connection_with_success', async () => {
-    const result = {
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: null,
-      expiresAt: '2027-03-12',
-      expirationKnown: true,
-    };
-    api.postTestConnection.mockReturnValue(of(result));
-
-    const pending = store.testConnection({ gitlabUrl: 'https://gitlab.com' });
-    expect(store.test().status).toBe('pending');
-    await pending;
-
-    expect(store.test()).toEqual({ status: 'success', result, errorKey: null });
-  });
-
-  it('should_test_connection_with_error_key', async () => {
-    api.postTestConnection.mockReturnValue(
-      throwError(() => new ApiError(502, 'gitlab.auth', 'rejected')),
-    );
-
-    await store.testConnection({ gitlabUrl: 'https://gitlab.com' });
-
-    expect(store.test()).toEqual({ status: 'error', result: null, errorKey: 'errors.gitlab.auth' });
-  });
-
-  it('should_reset_test', async () => {
-    api.postTestConnection.mockReturnValue(throwError(() => new Error('x')));
-    await store.testConnection({ gitlabUrl: 'https://gitlab.com' });
-    expect(store.test().status).toBe('error');
-
-    store.resetTest();
-
-    expect(store.test().status).toBe('idle');
-  });
-
   it('should_export_config', async () => {
-    const config = { version: 1 as const, settings: { gitlabUrl: 'https://gitlab.com' }, projects: [] };
+    const config = { version: 2 as const, settings, connections: [], projects: [] };
     api.getExportConfig.mockReturnValue(of(config));
 
     const { data, errorKey } = await store.exportConfig();
@@ -153,8 +111,8 @@ describe('SettingsStore', () => {
     api.postImportConfig.mockReturnValue(of(result));
 
     const { result: resolved, errorKey } = await store.importConfig({
-      version: 1,
-      settings: { gitlabUrl: 'https://gitlab.com' },
+      version: 2,
+      settings: {},
       projects: [],
     });
 
@@ -169,8 +127,8 @@ describe('SettingsStore', () => {
     );
 
     const { result, errorKey } = await store.importConfig({
-      version: 1,
-      settings: { gitlabUrl: 'https://gitlab.com' },
+      version: 2,
+      settings: {},
       projects: [],
     });
 

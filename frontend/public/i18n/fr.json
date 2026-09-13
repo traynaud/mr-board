@@ -127,11 +127,12 @@
       "nextRunTooltip": "Prochaine synchro à {{time}}",
       "manualTooltip": "Synchronisation manuelle"
     },
-    "noToken": {
-      "title": "Aucun jeton GitLab configuré.",
+    "noConnections": {
+      "title": "Aucune connexion configurée.",
       "description": "Les données affichées sont celles du dernier cache.",
       "configure": "Configurer"
     },
+    "connectionsWithoutToken": "Aucun jeton configuré pour {{names}}.",
     "noRepos": {
       "title": "Aucun repo configuré",
       "add": "Ajouter un repo"
@@ -152,7 +153,9 @@
       "number": "01",
       "title": "Moi",
       "description": "Utilisé par « Mes MRs » et pour repérer mes rôles.",
-      "username": "Nom d'utilisateur GitLab",
+      "usernameFor": "Nom d'utilisateur sur {{connection}}",
+      "noConnection": "Ajoutez d'abord une connexion.",
+      "noConnectionLink": "Aller à la section Connexions",
       "email": "Email (optionnel)",
       "emailInvalid": "Saisir un email valide.",
       "status": {
@@ -162,33 +165,60 @@
       },
       "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)"
     },
-    "connection": {
+    "connections": {
       "number": "02",
-      "title": "Connexion GitLab",
-      "description": "Jeton personnel avec le scope read_api. Stocké chiffré côté serveur, jamais renvoyé au navigateur.",
-      "url": "URL de l'instance",
-      "urlRequired": "L'URL est obligatoire.",
-      "urlInvalid": "Saisir une URL http(s) valide, par ex. https://gitlab.exemple.fr",
-      "token": "Jeton d'accès personnel",
-      "tokenKeepPlaceholder": "Laisser vide pour conserver le jeton actuel",
-      "tokenTooShort": "Le jeton doit contenir au moins {{min}} caractères.",
-      "tokenConfigured": "Jeton configuré (…{{hint}})",
-      "tokenNone": "Aucun jeton",
-      "showToken": "Afficher le jeton",
-      "hideToken": "Masquer le jeton",
-      "test": "Tester la connexion",
-      "testing": "Connexion…",
+      "title": "Connexions",
+      "description": "Forges interrogées par MR Board. Jeton en lecture seule, stocké chiffré côté serveur.",
+      "loadError": "Impossible de charger les connexions.",
+      "empty": "Aucune connexion. Ajoutez votre première forge.",
+      "add": "Ajouter une connexion",
+      "added": "Connexion ajoutée",
+      "updated": "Connexion modifiée",
+      "removed": "Connexion supprimée",
+      "list": {
+        "tokenConfigured": "Jeton configuré (…{{hint}})",
+        "tokenNone": "Aucun jeton",
+        "test": "Tester",
+        "edit": "Modifier",
+        "remove": "Supprimer {{name}}"
+      },
+      "form": {
+        "typeGitlab": "GitLab",
+        "typeGithub": "GitHub",
+        "typeGithubSoon": "Bientôt disponible",
+        "name": "Nom",
+        "nameDuplicate": "Nom déjà utilisé",
+        "url": "URL de l'instance",
+        "urlRequired": "L'URL est obligatoire.",
+        "urlInvalid": "Saisir une URL http(s) valide, par ex. https://gitlab.exemple.fr",
+        "token": "Jeton d'accès personnel",
+        "tokenKeepPlaceholder": "Laisser vide pour conserver le jeton actuel",
+        "tokenTooShort": "Le jeton doit contenir au moins {{min}} caractères.",
+        "showToken": "Afficher le jeton",
+        "hideToken": "Masquer le jeton",
+        "test": "Tester la connexion",
+        "testing": "Connexion…",
+        "confirm": "Valider",
+        "cancel": "Annuler"
+      },
       "result": {
         "connected": "Connecté · {{name}} (@{{username}})",
         "expires": "expire le {{date}}",
         "noExpiry": "sans expiration",
         "unknownExpiry": "expiration inconnue"
+      },
+      "deleteConfirm": {
+        "title": "Supprimer la connexion « {{name}} » ?",
+        "message": "Ses {{count}} repos et leurs MRs seront retirés du tableau.",
+        "confirm": "Supprimer",
+        "cancel": "Annuler"
       }
     },
     "projects": {
       "number": "03",
       "title": "Repos à scanner",
       "description": "L'alias est ce qui s'affiche dans la colonne Projet et le filtre.",
+      "connectionHeader": "Connexion",
       "pathHeader": "Chemin du projet",
       "aliasHeader": "Alias",
       "pathPlaceholder": "groupe/projet ou URL GitLab",
@@ -270,12 +300,13 @@
       "importInvalid": "Fichier de configuration invalide.",
       "importConfirm": {
         "title": "Importer la configuration ?",
-        "message": "{{settingsCount}} paramètres, {{totalRepos}} repos ({{newRepos}} nouveaux)",
+        "message": "{{settingsCount}} paramètres, {{connectionsCount}} connexions ({{newConnections}} nouvelles, sans jeton), {{totalRepos}} repos ({{newRepos}} nouveaux)",
         "confirm": "Importer",
         "cancel": "Annuler"
       },
       "importSuccess": "Configuration importée.",
-      "importSkipped": "Repos ignorés : {{paths}}"
+      "importSkipped": "Repos ignorés : {{paths}}",
+      "importTokensReminder": "Pensez à renseigner le jeton de {{names}}."
     },
     "reset": {
       "button": "Réinitialiser",
@@ -285,14 +316,21 @@
   "errors": {
     "network": "Le serveur est injoignable.",
     "unexpected": "Une erreur inattendue est survenue.",
-    "gitlab": {
+    "forge": {
       "auth": "Échec : jeton refusé (401)",
       "unavailable": "Échec : instance injoignable",
-      "scope": "Échec : scope insuffisant (read_api requis)"
+      "scope": "Échec : scope insuffisant (read_api requis)",
+      "timeout": "Échec : délai dépassé"
+    },
+    "connections": {
+      "nameDuplicate": "Ce nom est déjà utilisé.",
+      "typeUnsupported": "Ce type de forge n'est pas encore disponible.",
+      "missing": "Ajoutez d'abord une connexion.",
+      "tokenMissing": "Configurez d'abord le jeton de cette connexion.",
+      "unknown": "Connexion inconnue.",
+      "invalidUrl": "URL d'instance invalide."
     },
     "settings": {
-      "tokenMissing": "Configurez d'abord un jeton GitLab dans les paramètres.",
-      "invalidUrl": "URL d'instance invalide.",
       "hardFilesTooLow": "Le seuil Hard (fichiers) doit dépasser le seuil Easy.",
       "hardLinesTooLow": "Le seuil Hard (lignes) doit dépasser le seuil Easy.",
       "readyOrangeTooLow": "Le seuil orange du délai Ready doit dépasser le seuil vert."
@@ -300,7 +338,8 @@
     "projects": {
       "notFound": "Projet introuvable ou inaccessible avec ce jeton.",
       "alreadyConfigured": "Ce projet est déjà configuré.",
-      "aliasDuplicate": "Cet alias est déjà utilisé."
+      "aliasDuplicate": "Cet alias est déjà utilisé.",
+      "connectionRequired": "Choisissez une connexion."
     }
   }
 }

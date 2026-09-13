@@ -1,8 +1,14 @@
 import { ImportConfig } from '../../models/settings.model';
 
-/** Résumé affiché dans le dialog de confirmation avant import (RG-015-04). */
+/** Nom donné à la connexion d'un fichier `version: 1` (RG-019-06/19), avant qu'elle n'existe. */
+const LEGACY_CONNECTION_NAME = 'GitLab';
+
+/** Résumé affiché dans le dialog de confirmation avant import (RG-015-04, RG-019-19). */
 export interface ImportSummary {
   settingsCount: number;
+  connectionsCount: number;
+  /** Connexions qui seront créées (toujours sans jeton, RG-019-19), par nom, insensible à la casse. */
+  newConnections: number;
   totalRepos: number;
   newRepos: number;
 }
@@ -39,18 +45,35 @@ export function parseImportFile(rawText: string): ImportConfig | null {
 }
 
 /**
- * Résume un import pour le dialog de confirmation (RG-015-04) : nombre de
- * paramètres du fichier, nombre total de repos, et combien sont réellement
- * nouveaux par rapport aux repos déjà configurés (`currentPaths`, comparaison
- * insensible à la casse comme le reste des chemins de repo).
+ * Résume un import pour le dialog de confirmation (RG-015-04, RG-019-19) :
+ * nombre de paramètres du fichier, nombre de connexions (et combien seront
+ * nouvellement créées, donc sans jeton), nombre total de repos et combien
+ * sont réellement nouveaux par rapport à l'état actuel (`currentPaths`/
+ * `currentConnectionNames`, comparaison insensible à la casse).
  */
-export function summarizeImport(config: ImportConfig, currentPaths: string[]): ImportSummary {
+export function summarizeImport(
+  config: ImportConfig,
+  currentPaths: string[],
+  currentConnectionNames: string[],
+): ImportSummary {
   const currentPathsLower = new Set(currentPaths.map((path) => path.toLowerCase()));
   const newRepos = config.projects.filter(
     (project) => !currentPathsLower.has(project.pathWithNamespace.toLowerCase()),
   ).length;
+  const importedConnectionNames =
+    config.version === 2
+      ? (config.connections ?? []).map((connection) => connection.name)
+      : [LEGACY_CONNECTION_NAME];
+  const currentNamesLower = new Set(
+    currentConnectionNames.map((name) => name.toLowerCase()),
+  );
+  const newConnections = importedConnectionNames.filter(
+    (name) => !currentNamesLower.has(name.toLowerCase()),
+  ).length;
   return {
     settingsCount: Object.keys(config.settings).length,
+    connectionsCount: importedConnectionNames.length,
+    newConnections,
     totalRepos: config.projects.length,
     newRepos,
   };

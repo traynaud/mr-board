@@ -1,5 +1,6 @@
 import { Difficulty } from '../domain/calculate-difficulty';
 import { ReadyLevel } from '../domain/calculate-ready-delay';
+import { ConnectionSummaryDto } from './connection-summary.dto';
 import { MergeRequestUserDto } from './merge-request-user.dto';
 import { MergeStatusDto } from './merge-status.dto';
 
@@ -41,4 +42,6 @@ export class MergeRequestViewDto {
   isMine!: boolean;
   /** GitLab mergeability (US-017, RG-017-06). `unknown` for a merge request synced before this US (RG-017-11). */
   mergeStatus!: MergeStatusDto;
+  /** Connection the merge request's project belongs to (RG-019-22). */
+  connection!: ConnectionSummaryDto;
 }

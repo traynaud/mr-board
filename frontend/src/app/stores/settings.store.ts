@@ -8,18 +8,8 @@ import {
   ImportConfig,
   ImportResult,
   Settings,
-  TestConnectionRequest,
-  TestConnectionResult,
   UpdateSettingsRequest,
 } from '../models/settings.model';
-
-/** État du test de connexion GitLab. */
-export interface TestConnectionState {
-  status: 'idle' | 'pending' | 'success' | 'error';
-  result: TestConnectionResult | null;
-  /** Clé i18n de l'erreur (`errors.*`). */
-  errorKey: string | null;
-}
 
 export interface SettingsState {
   settings: Settings | null;
@@ -27,20 +17,16 @@ export interface SettingsState {
   /** Clé i18n de l'erreur de chargement. */
   loadError: string | null;
   saving: boolean;
-  test: TestConnectionState;
 }
-
-const IDLE_TEST: TestConnectionState = { status: 'idle', result: null, errorKey: null };
 
 const initialState: SettingsState = {
   settings: null,
   loading: false,
   loadError: null,
   saving: false,
-  test: IDLE_TEST,
 };
 
-/** État des paramètres de l'application et actions associées. */
+/** État des préférences globales de l'application et actions associées (RG-019-23). */
 export const SettingsStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
@@ -69,26 +55,6 @@ export const SettingsStore = signalStore(
       } catch (error) {
         patchState(store, { saving: false });
         return errorKeyOf(error);
-      }
-    },
-
-    /** Teste la connexion GitLab et mémorise le résultat. */
-    async testConnection(request: TestConnectionRequest): Promise<void> {
-      patchState(store, { test: { status: 'pending', result: null, errorKey: null } });
-      try {
-        const result = await firstValueFrom(api.postTestConnection(request));
-        patchState(store, { test: { status: 'success', result, errorKey: null } });
-      } catch (error) {
-        patchState(store, {
-          test: { status: 'error', result: null, errorKey: errorKeyOf(error) },
-        });
-      }
-    },
-
-    /** Efface le résultat du test (RG-001-05). */
-    resetTest(): void {
-      if (store.test().status !== 'idle') {
-        patchState(store, { test: IDLE_TEST });
       }
     },
 

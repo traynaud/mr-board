@@ -1,9 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  GitlabAuthException,
-  GitlabTimeoutException,
-  GitlabUnavailableException,
+  ForgeAuthException,
+  ForgeScopeException,
+  ForgeTimeoutException,
+  ForgeUnavailableException,
 } from '../../common/exceptions';
+import {
+  FetchOpenMergeRequestsOptions,
+  ForgeClient,
+} from '../forges/forge-client.interface';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
+import { ForgeProject } from '../forges/types/forge-project';
+import { ForgeTestResult } from '../forges/types/forge-test-result';
+import { hasRequiredScope } from './domain/check-token-scopes';
+import { normalizeGitlabUrl } from './domain/normalize-gitlab-url';
+import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request';
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlMergeRequestsPage,
@@ -60,98 +71,112 @@ interface GetOptions {
   allowNotFound?: boolean;
 }
 
-export interface GetOpenMergeRequestsOptions {
-  /** Epoch ms after which this project's sync is aborted. See RG-004-14. */
-  deadlineAt: number;
-}
-
 /**
- * Thin client over the GitLab REST API v4. No business logic: it performs
- * authenticated requests and maps transport/HTTP failures to domain
- * exceptions. The token is never logged.
+ * GitLab implementation of the `ForgeClient` contract (RG-019-21): a thin
+ * client over the GitLab REST/GraphQL APIs. No business logic beyond
+ * mapping transport/HTTP failures to domain exceptions. The token is never
+ * logged.
  */
 @Injectable()
-export class GitlabClientService {
+export class GitlabClientService implements ForgeClient {
   private readonly logger = new Logger(GitlabClientService.name);
 
-  /**
-   * `GET /api/v4/user` — the user owning the token.
-   * @param baseUrl normalised instance URL (no trailing slash).
-   * @param token personal or group access token.
-   */
-  async getCurrentUser(baseUrl: string, token: string): Promise<GitlabUser> {
-    const user = await this.get<GitlabUser>(baseUrl, '/api/v4/user', token);
-    return user as GitlabUser;
+  /** RG-001-01: trims, keeps only `scheme://host[:port]`, drops any path. */
+  normalizeUrl(input: string): string | null {
+    return normalizeGitlabUrl(input);
   }
 
   /**
-   * `GET /api/v4/personal_access_tokens/self` — scopes and expiry of the token.
-   * @returns `null` when the endpoint is unavailable (non-personal token, old instance).
+   * Verifies a token against GitLab (RG-001-04) : the identity it resolves
+   * to (`GET /api/v4/user`) and, when available, its scopes and expiry
+   * (`GET /api/v4/personal_access_tokens/self`). The caller is responsible
+   * for ensuring `token` is non-empty (`ConnectionsService`).
+   * @throws ForgeScopeException when the token lacks `read_api`/`api`.
+   * @throws ForgeAuthException / ForgeUnavailableException from the client.
    */
-  getTokenInfo(
+  async testConnection(
     baseUrl: string,
     token: string,
-  ): Promise<GitlabTokenInfo | null> {
-    return this.get<GitlabTokenInfo>(
+  ): Promise<ForgeTestResult> {
+    const user = await this.get<GitlabUser>(baseUrl, '/api/v4/user', token);
+    const info = await this.get<GitlabTokenInfo>(
       baseUrl,
       '/api/v4/personal_access_tokens/self',
       token,
       { allowNotFound: true },
     );
+    if (info && !hasRequiredScope(info.scopes)) {
+      throw new ForgeScopeException();
+    }
+    return {
+      username: (user as GitlabUser).username,
+      name: (user as GitlabUser).name,
+      avatarUrl: (user as GitlabUser).avatar_url ?? null,
+      expiresAt: info?.expires_at ?? null,
+      expirationKnown: info !== null,
+    };
   }
 
   /**
    * `GET /api/v4/projects/:id` — resolves a project by its full path
    * (`groupe/sous-groupe/projet`), URL-encoded as a single path segment.
    * @returns `null` on 404 (project not found or not visible with this token).
-   * @throws GitlabAuthException on 401/403 (up to the caller to retranslate, RG-003-03).
+   * @throws ForgeAuthException on 401/403 (up to the caller to retranslate, RG-003-03).
    */
-  getProject(
+  async resolveProject(
     baseUrl: string,
     token: string,
-    pathWithNamespace: string,
-  ): Promise<GitlabProject | null> {
-    return this.get<GitlabProject>(
+    path: string,
+  ): Promise<ForgeProject | null> {
+    const project = await this.get<GitlabProject>(
       baseUrl,
-      `/api/v4/projects/${encodeURIComponent(pathWithNamespace)}`,
+      `/api/v4/projects/${encodeURIComponent(path)}`,
       token,
       { allowNotFound: true },
     );
+    return project
+      ? {
+          remoteProjectId: String(project.id),
+          pathWithNamespace: project.path_with_namespace,
+          webUrl: project.web_url,
+        }
+      : null;
   }
 
   /**
    * `POST /api/graphql` — open merge requests of a project, paginated by
-   * cursor (RG-004-01). Aggregates every page into a single array.
+   * cursor (RG-004-01), mapped and mergeability-computed (RG-017-*,
+   * RG-019-21). Aggregates every page into a single array.
    * @param options.deadlineAt epoch ms budget for the whole call, across all
    * pages and the single retry-after wait (RG-004-14). Checked before each page.
-   * @throws GitlabAuthException on 401/403.
-   * @throws GitlabTimeoutException when `deadlineAt` is reached.
-   * @throws GitlabUnavailableException on network error, invalid body, a
+   * @throws ForgeAuthException on 401/403.
+   * @throws ForgeTimeoutException when `deadlineAt` is reached.
+   * @throws ForgeUnavailableException on network error, invalid body, a
    * second consecutive 429, or any other non-2xx response.
    */
-  async getOpenMergeRequests(
+  async fetchOpenMergeRequests(
     baseUrl: string,
     token: string,
-    pathWithNamespace: string,
-    options: GetOpenMergeRequestsOptions,
-  ): Promise<GitlabGraphqlMergeRequestNode[]> {
+    project: ForgeProject,
+    options: FetchOpenMergeRequestsOptions,
+  ): Promise<ForgeMergeRequest[]> {
     const nodes: GitlabGraphqlMergeRequestNode[] = [];
     let cursor: string | null = null;
     do {
       if (Date.now() >= options.deadlineAt) {
-        throw new GitlabTimeoutException();
+        throw new ForgeTimeoutException();
       }
       const page = await this.fetchMergeRequestsPage(
         baseUrl,
         token,
-        pathWithNamespace,
+        project.pathWithNamespace,
         cursor,
         options.deadlineAt,
       );
       nodes.push(...page.nodes);
       cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
     } while (cursor);
-    return nodes;
+    return nodes.map(mapGraphqlMergeRequest);
   }
 
   /** Fetches one page, retrying once after a 429's `Retry-After` delay. */
@@ -172,7 +197,7 @@ export class GitlabClientService {
     if (response.status === 429) {
       await this.waitForRateLimit(response);
       if (Date.now() >= deadlineAt) {
-        throw new GitlabTimeoutException();
+        throw new ForgeTimeoutException();
       }
       response = await this.postGraphql(
         baseUrl,
@@ -182,9 +207,7 @@ export class GitlabClientService {
         cursor,
       );
       if (response.status === 429) {
-        throw new GitlabUnavailableException(
-          'GitLab rate limit exceeded twice',
-        );
+        throw new ForgeUnavailableException('GitLab rate limit exceeded twice');
       }
     }
     return this.parseMergeRequestsResponse(response);
@@ -217,7 +240,7 @@ export class GitlabClientService {
       this.logger.warn(
         `GitLab GraphQL unreachable at ${baseUrl}: ${describe(error)}`,
       );
-      throw new GitlabUnavailableException();
+      throw new ForgeUnavailableException();
     }
   }
 
@@ -225,13 +248,13 @@ export class GitlabClientService {
     response: Response,
   ): Promise<GitlabGraphqlMergeRequestsPage> {
     if (response.status === 401 || response.status === 403) {
-      throw new GitlabAuthException(
+      throw new ForgeAuthException(
         `GitLab rejected the token (${response.status})`,
       );
     }
     if (!response.ok) {
       this.logger.warn(`GitLab GraphQL responded ${response.status}`);
-      throw new GitlabUnavailableException(
+      throw new ForgeUnavailableException(
         `GitLab responded ${response.status}`,
       );
     }
@@ -239,11 +262,11 @@ export class GitlabClientService {
     try {
       body = (await response.json()) as GitlabGraphqlMergeRequestsResponse;
     } catch {
-      throw new GitlabUnavailableException('GitLab returned an invalid body');
+      throw new ForgeUnavailableException('GitLab returned an invalid body');
     }
     const mergeRequests = body.data?.project?.mergeRequests;
     if (!mergeRequests) {
-      throw new GitlabUnavailableException(
+      throw new ForgeUnavailableException(
         'GitLab GraphQL response has no project data',
       );
     }
@@ -268,8 +291,8 @@ export class GitlabClientService {
 
   /**
    * Performs an authenticated GET and decodes the JSON body.
-   * @throws GitlabAuthException on 401/403.
-   * @throws GitlabUnavailableException on network error, timeout, non-JSON or other non-2xx.
+   * @throws ForgeAuthException on 401/403.
+   * @throws ForgeUnavailableException on network error, timeout, non-JSON or other non-2xx.
    */
   protected async get<T>(
     baseUrl: string,
@@ -286,10 +309,10 @@ export class GitlabClientService {
       });
     } catch (error) {
       this.logger.warn(`GitLab unreachable at ${url}: ${describe(error)}`);
-      throw new GitlabUnavailableException();
+      throw new ForgeUnavailableException();
     }
     if (response.status === 401 || response.status === 403) {
-      throw new GitlabAuthException(
+      throw new ForgeAuthException(
         `GitLab rejected the token (${response.status})`,
       );
     }
@@ -298,14 +321,14 @@ export class GitlabClientService {
     }
     if (!response.ok) {
       this.logger.warn(`GitLab ${url} responded ${response.status}`);
-      throw new GitlabUnavailableException(
+      throw new ForgeUnavailableException(
         `GitLab responded ${response.status}`,
       );
     }
     try {
       return (await response.json()) as T;
     } catch {
-      throw new GitlabUnavailableException('GitLab returned an invalid body');
+      throw new ForgeUnavailableException('GitLab returned an invalid body');
     }
   }
 }

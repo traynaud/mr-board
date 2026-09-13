@@ -127,11 +127,12 @@
       "nextRunTooltip": "Next sync at {{time}}",
       "manualTooltip": "Manual sync"
     },
-    "noToken": {
-      "title": "No GitLab token configured.",
+    "noConnections": {
+      "title": "No connection configured.",
       "description": "The data shown is from the last cache.",
       "configure": "Configure"
     },
+    "connectionsWithoutToken": "No token configured for {{names}}.",
     "noRepos": {
       "title": "No repo configured",
       "add": "Add a repo"
@@ -152,7 +153,9 @@
       "number": "01",
       "title": "Me",
       "description": "Used by « My MRs » and to spot my roles.",
-      "username": "GitLab username",
+      "usernameFor": "Username on {{connection}}",
+      "noConnection": "Add a connection first.",
+      "noConnectionLink": "Go to the Connections section",
       "email": "Email (optional)",
       "emailInvalid": "Enter a valid email.",
       "status": {
@@ -162,33 +165,60 @@
       },
       "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)"
     },
-    "connection": {
+    "connections": {
       "number": "02",
-      "title": "GitLab connection",
-      "description": "Personal token with the read_api scope. Stored encrypted server-side, never sent back to the browser.",
-      "url": "Instance URL",
-      "urlRequired": "The URL is required.",
-      "urlInvalid": "Enter a valid http(s) URL, e.g. https://gitlab.example.com",
-      "token": "Personal access token",
-      "tokenKeepPlaceholder": "Leave empty to keep the current token",
-      "tokenTooShort": "The token must be at least {{min}} characters long.",
-      "tokenConfigured": "Token configured (…{{hint}})",
-      "tokenNone": "No token",
-      "showToken": "Show token",
-      "hideToken": "Hide token",
-      "test": "Test connection",
-      "testing": "Connecting…",
+      "title": "Connections",
+      "description": "Forges queried by MR Board. Token read-only, stored encrypted server-side.",
+      "loadError": "Could not load connections.",
+      "empty": "No connection. Add your first forge.",
+      "add": "Add a connection",
+      "added": "Connection added",
+      "updated": "Connection updated",
+      "removed": "Connection removed",
+      "list": {
+        "tokenConfigured": "Token configured (…{{hint}})",
+        "tokenNone": "No token",
+        "test": "Test",
+        "edit": "Edit",
+        "remove": "Remove {{name}}"
+      },
+      "form": {
+        "typeGitlab": "GitLab",
+        "typeGithub": "GitHub",
+        "typeGithubSoon": "Coming soon",
+        "name": "Name",
+        "nameDuplicate": "Name already in use",
+        "url": "Instance URL",
+        "urlRequired": "The URL is required.",
+        "urlInvalid": "Enter a valid http(s) URL, e.g. https://gitlab.example.com",
+        "token": "Personal access token",
+        "tokenKeepPlaceholder": "Leave empty to keep the current token",
+        "tokenTooShort": "The token must be at least {{min}} characters long.",
+        "showToken": "Show token",
+        "hideToken": "Hide token",
+        "test": "Test connection",
+        "testing": "Connecting…",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
       "result": {
         "connected": "Connected · {{name}} (@{{username}})",
         "expires": "expires on {{date}}",
         "noExpiry": "no expiry",
         "unknownExpiry": "expiry unknown"
+      },
+      "deleteConfirm": {
+        "title": "Remove connection « {{name}} »?",
+        "message": "Its {{count}} repos and their MRs will be removed from the table.",
+        "confirm": "Remove",
+        "cancel": "Cancel"
       }
     },
     "projects": {
       "number": "03",
       "title": "Repos to scan",
       "description": "The alias is what's shown in the Project column and the filter.",
+      "connectionHeader": "Connection",
       "pathHeader": "Project path",
       "aliasHeader": "Alias",
       "pathPlaceholder": "group/project or GitLab URL",
@@ -270,12 +300,13 @@
       "importInvalid": "Invalid configuration file.",
       "importConfirm": {
         "title": "Import the configuration?",
-        "message": "{{settingsCount}} settings, {{totalRepos}} repos ({{newRepos}} new)",
+        "message": "{{settingsCount}} settings, {{connectionsCount}} connections ({{newConnections}} new, no token), {{totalRepos}} repos ({{newRepos}} new)",
         "confirm": "Import",
         "cancel": "Cancel"
       },
       "importSuccess": "Configuration imported.",
-      "importSkipped": "Skipped repos: {{paths}}"
+      "importSkipped": "Skipped repos: {{paths}}",
+      "importTokensReminder": "Remember to configure the token of {{names}}."
     },
     "reset": {
       "button": "Reset",
@@ -285,14 +316,21 @@
   "errors": {
     "network": "The server is unreachable.",
     "unexpected": "An unexpected error occurred.",
-    "gitlab": {
+    "forge": {
       "auth": "Failed: token rejected (401)",
       "unavailable": "Failed: instance unreachable",
-      "scope": "Failed: insufficient scope (read_api required)"
+      "scope": "Failed: insufficient scope (read_api required)",
+      "timeout": "Failed: request timed out"
+    },
+    "connections": {
+      "nameDuplicate": "This name is already in use.",
+      "typeUnsupported": "This forge type is not available yet.",
+      "missing": "Add a connection first.",
+      "tokenMissing": "Configure this connection's token first.",
+      "unknown": "Unknown connection.",
+      "invalidUrl": "Invalid instance URL."
     },
     "settings": {
-      "tokenMissing": "Configure a GitLab token in the settings first.",
-      "invalidUrl": "Invalid instance URL.",
       "hardFilesTooLow": "The Hard threshold (files) must exceed the Easy threshold.",
       "hardLinesTooLow": "The Hard threshold (lines) must exceed the Easy threshold.",
       "readyOrangeTooLow": "The Ready delay's orange threshold must exceed the green threshold."
@@ -300,7 +338,8 @@
     "projects": {
       "notFound": "Project not found or not accessible with this token.",
       "alreadyConfigured": "This project is already configured.",
-      "aliasDuplicate": "This alias is already in use."
+      "aliasDuplicate": "This alias is already in use.",
+      "connectionRequired": "Choose a connection."
     }
   }
 }

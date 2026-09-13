@@ -26,7 +26,7 @@ describe('ProjectsService', () => {
     const pending = firstValueFrom(service.getProjects());
     const req = ctrl.expectOne('/api/v1/projects');
     expect(req.request.method).toBe('GET');
-    req.flush([{ id: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', gitlabProjectId: 42 }]);
+    req.flush([{ id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' }]);
 
     await expect(pending).resolves.toEqual([
       expect.objectContaining({ alias: 'api' }),
@@ -39,7 +39,7 @@ describe('ProjectsService', () => {
     const req = ctrl.expectOne('/api/v1/projects');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(body);
-    req.flush({ id: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', gitlabProjectId: 42 });
+    req.flush({ id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' });
 
     await expect(pending).resolves.toEqual(expect.objectContaining({ id: 1 }));
   });
@@ -49,7 +49,7 @@ describe('ProjectsService', () => {
     const req = ctrl.expectOne('/api/v1/projects/1');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ alias: 'back' });
-    req.flush({ id: 1, pathWithNamespace: 'equipe/backend-api', alias: 'back', gitlabProjectId: 42 });
+    req.flush({ id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'back', remoteProjectId: '42' });
 
     await expect(pending).resolves.toEqual(expect.objectContaining({ alias: 'back' }));
   });

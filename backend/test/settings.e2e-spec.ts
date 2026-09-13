@@ -1,19 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import {
-  GitlabAuthException,
-  GitlabUnavailableException,
-} from '../src/common/exceptions';
-import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
 import { createTestApp } from './utils/create-test-app';
-
-const TOKEN = 'glpat-e2e-secret-token-wxyz';
 
 interface Body {
   code?: string;
   message?: string[];
-  tokenConfigured?: boolean;
+  meEmail?: string | null;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
 }
@@ -21,31 +14,13 @@ const body = (res: request.Response): Body => res.body as Body;
 
 describe('Settings (e2e)', () => {
   let app: INestApplication<App>;
-  const gitlab = { getCurrentUser: jest.fn(), getTokenInfo: jest.fn() };
 
   beforeAll(async () => {
-    app = await createTestApp((b) =>
-      b.overrideProvider(GitlabClientService).useValue(gitlab),
-    );
+    app = await createTestApp();
   });
 
   afterAll(async () => {
     await app.close();
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    gitlab.getCurrentUser.mockResolvedValue({
-      id: 1,
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatar_url: null,
-      web_url: '',
-    });
-    gitlab.getTokenInfo.mockResolvedValue({
-      scopes: ['read_api'],
-      expires_at: '2027-03-12',
-    });
   });
 
   const api = () => request(app.getHttpServer());
@@ -55,10 +30,6 @@ describe('Settings (e2e)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      gitlabUrl: 'https://gitlab.com',
-      tokenConfigured: false,
-      tokenHint: null,
-      meUsername: null,
       meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
@@ -77,261 +48,80 @@ describe('Settings (e2e)', () => {
       highlightMe: true,
       language: 'fr',
     });
-  });
-
-  it('POST /settings/test-connection should_be_409_without_any_token', async () => {
-    const res = await api()
-      .post('/api/v1/settings/test-connection')
-      .send({ gitlabUrl: 'https://gitlab.com' });
-
-    expect(res.status).toBe(409);
-    expect(body(res).code).toBe('settings.tokenMissing');
-  });
-
-  it('PUT /settings should_reject_url_without_scheme', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'gitlab.exemple.fr' });
-
-    expect(res.status).toBe(400);
-    expect(body(res).message).toEqual([expect.stringContaining('gitlabUrl')]);
-  });
-
-  it('PUT /settings should_reject_short_token', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', gitlabToken: 'abc' });
-
-    expect(res.status).toBe(400);
-    expect(body(res).message).toEqual([expect.stringContaining('gitlabToken')]);
   });
 
   it('PUT /settings should_reject_unknown_fields', async () => {
     const res = await api()
       .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', hack: true });
+      .send({ meEmail: 'marie@exemple.fr', hack: true });
 
     expect(res.status).toBe(400);
-  });
-
-  it('PUT /settings should_store_normalized_url_and_masked_token', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.exemple.fr/', gitlabToken: TOKEN });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      gitlabUrl: 'https://gitlab.exemple.fr',
-      tokenConfigured: true,
-      tokenHint: 'wxyz',
-      meUsername: null,
-      meEmail: null,
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      easyFiles: 5,
-      easyLines: 100,
-      hardFiles: 20,
-      hardLines: 800,
-      readyGreenDays: 1,
-      readyOrangeDays: 3,
-      workdaysOnly: false,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
-    });
-    expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
-
-    const get = await api().get('/api/v1/settings');
-    expect(get.body).toEqual(res.body);
-  });
-
-  it('PUT /settings should_keep_token_when_field_is_empty_or_absent', async () => {
-    const empty = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.exemple.fr', gitlabToken: '' });
-    expect(empty.status).toBe(200);
-    expect(body(empty).tokenConfigured).toBe(true);
-
-    const absent = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://other.exemple.fr' });
-    expect(absent.body).toEqual({
-      gitlabUrl: 'https://other.exemple.fr',
-      tokenConfigured: true,
-      tokenHint: 'wxyz',
-      meUsername: null,
-      meEmail: null,
-      refreshIntervalMin: 5,
-      pauseWhenHidden: true,
-      easyFiles: 5,
-      easyLines: 100,
-      hardFiles: 20,
-      hardLines: 800,
-      readyGreenDays: 1,
-      readyOrangeDays: 3,
-      workdaysOnly: false,
-      openInNewTab: false,
-      ignoredLabels: [],
-      notifyAssigned: false,
-      tabBadge: false,
-      theme: 'system',
-      highlightMe: true,
-      language: 'fr',
-    });
-  });
-
-  it('POST /settings/test-connection should_use_stored_token_when_omitted', async () => {
-    const res = await api()
-      .post('/api/v1/settings/test-connection')
-      .send({ gitlabUrl: 'https://other.exemple.fr' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: null,
-      expiresAt: '2027-03-12',
-      expirationKnown: true,
-    });
-    expect(gitlab.getCurrentUser).toHaveBeenCalledWith(
-      'https://other.exemple.fr',
-      TOKEN,
-    );
-  });
-
-  it('POST /settings/test-connection should_use_body_token_when_given', async () => {
-    await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com/',
-      gitlabToken: 'glpat-another-token',
-    });
-
-    expect(gitlab.getCurrentUser).toHaveBeenCalledWith(
-      'https://gitlab.com',
-      'glpat-another-token',
-    );
-  });
-
-  it('POST /settings/test-connection should_map_auth_failure_to_502', async () => {
-    gitlab.getCurrentUser.mockRejectedValue(new GitlabAuthException());
-
-    const res = await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-another-token',
-    });
-
-    expect(res.status).toBe(502);
-    expect(body(res).code).toBe('gitlab.auth');
-  });
-
-  it('POST /settings/test-connection should_map_unavailable_to_502', async () => {
-    gitlab.getCurrentUser.mockRejectedValue(new GitlabUnavailableException());
-
-    const res = await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-another-token',
-    });
-
-    expect(res.status).toBe(502);
-    expect(body(res).code).toBe('gitlab.unavailable');
-  });
-
-  it('POST /settings/test-connection should_be_400_on_insufficient_scope', async () => {
-    gitlab.getTokenInfo.mockResolvedValue({
-      scopes: ['read_user'],
-      expires_at: null,
-    });
-
-    const res = await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-another-token',
-    });
-
-    expect(res.status).toBe(400);
-    expect(body(res).code).toBe('gitlab.scope');
-  });
-
-  it('POST /settings/test-connection should_tolerate_missing_token_info', async () => {
-    gitlab.getTokenInfo.mockResolvedValue(null);
-
-    const res = await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com',
-      gitlabToken: 'glpat-another-token',
-    });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      expect.objectContaining({ expirationKnown: false, expiresAt: null }),
-    );
   });
 
   it('PUT /settings should_set_identity_fields_trimmed', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      meUsername: '  mdupont  ',
       meEmail: '  marie@exemple.fr  ',
     });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
-      expect.objectContaining({
-        meUsername: 'mdupont',
-        meEmail: 'marie@exemple.fr',
-      }),
+      expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
     );
   });
 
   it('PUT /settings should_keep_identity_fields_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
-      expect.objectContaining({
-        meUsername: 'mdupont',
-        meEmail: 'marie@exemple.fr',
-      }),
+      expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
     );
   });
 
   it('PUT /settings should_reject_invalid_email', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', meEmail: 'marie@' });
+    const res = await api().put('/api/v1/settings').send({ meEmail: 'marie@' });
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('meEmail')]);
   });
 
   it('PUT /settings should_clear_identity_fields_with_empty_strings', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      meUsername: '',
-      meEmail: '',
-    });
+    const res = await api().put('/api/v1/settings').send({ meEmail: '' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      expect.objectContaining({ meUsername: null, meEmail: null }),
-    );
+    expect(res.body).toEqual(expect.objectContaining({ meEmail: null }));
   });
 
-  it('POST /settings/test-connection should_reject_identity_fields_in_body', async () => {
-    const res = await api().post('/api/v1/settings/test-connection').send({
-      gitlabUrl: 'https://gitlab.com',
-      meUsername: 'mdupont',
+  it('PUT /settings should_apply_a_per_connection_identity', async () => {
+    const connection = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'gitlab.exemple.fr',
+      url: 'https://gitlab.exemple.fr',
+      token: 'glpat-settings-e2e-token',
     });
 
-    expect(res.status).toBe(400);
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({
+        identities: [
+          {
+            connectionId: (connection.body as { id: number }).id,
+            username: 'mdupont',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    const list = await api().get('/api/v1/connections');
+    expect(list.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ meUsername: 'mdupont' }),
+      ]),
+    );
   });
 
   it('PUT /settings should_store_refresh_settings', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       refreshIntervalMin: 15,
       pauseWhenHidden: false,
     });
@@ -354,9 +144,7 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_refresh_settings_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -369,7 +157,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_reject_an_out_of_enum_refresh_interval', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       refreshIntervalMin: 7,
     });
 
@@ -381,7 +168,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_store_valid_thresholds', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       easyFiles: 10,
       easyLines: 200,
       hardFiles: 30,
@@ -410,7 +196,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_reject_hard_files_not_greater_than_easy_files', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       easyFiles: 10,
       hardFiles: 10,
     });
@@ -421,7 +206,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_reject_hard_lines_not_greater_than_easy_lines', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       easyLines: 100,
       hardLines: 80,
     });
@@ -432,7 +216,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_reject_ready_orange_not_greater_than_ready_green', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       readyGreenDays: 4,
       readyOrangeDays: 4,
     });
@@ -442,10 +225,7 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_reject_a_non_integer_threshold', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      easyLines: 2.5,
-    });
+    const res = await api().put('/api/v1/settings').send({ easyLines: 2.5 });
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('easyLines')]);
@@ -455,7 +235,6 @@ describe('Settings (e2e)', () => {
     const res = await api()
       .put('/api/v1/settings')
       .send({
-        gitlabUrl: 'https://gitlab.com',
         openInNewTab: true,
         ignoredLabels: ['wip', 'on-hold'],
       });
@@ -473,9 +252,7 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_the_new_tab_and_ignored_labels_options_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -488,7 +265,6 @@ describe('Settings (e2e)', () => {
 
   it('PUT /settings should_store_the_notification_settings', async () => {
     const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
       notifyAssigned: true,
       tabBadge: true,
     });
@@ -503,9 +279,7 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_the_notification_settings_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -514,9 +288,7 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_store_the_theme', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', theme: 'dark' });
+    const res = await api().put('/api/v1/settings').send({ theme: 'dark' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ theme: 'dark' }));
@@ -526,18 +298,14 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_the_theme_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ theme: 'dark' }));
   });
 
   it('PUT /settings should_reject_an_invalid_theme', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', theme: 'blue' });
+    const res = await api().put('/api/v1/settings').send({ theme: 'blue' });
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('theme')]);
@@ -546,7 +314,7 @@ describe('Settings (e2e)', () => {
   it('PUT /settings should_store_highlight_me', async () => {
     const res = await api()
       .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', highlightMe: false });
+      .send({ highlightMe: false });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ highlightMe: false }));
@@ -556,18 +324,14 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_highlight_me_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ highlightMe: false }));
   });
 
   it('PUT /settings should_store_the_language', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', language: 'en' });
+    const res = await api().put('/api/v1/settings').send({ language: 'en' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ language: 'en' }));
@@ -577,28 +341,23 @@ describe('Settings (e2e)', () => {
   });
 
   it('PUT /settings should_keep_the_language_when_omitted', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com' });
+    const res = await api().put('/api/v1/settings').send({});
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ language: 'en' }));
   });
 
   it('PUT /settings should_reject_an_invalid_language', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ gitlabUrl: 'https://gitlab.com', language: 'de' });
+    const res = await api().put('/api/v1/settings').send({ language: 'de' });
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('language')]);
   });
 
   it('PUT /settings should_reject_a_non_array_ignored_labels', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      gitlabUrl: 'https://gitlab.com',
-      ignoredLabels: 'wip',
-    });
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ ignoredLabels: 'wip' });
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([
