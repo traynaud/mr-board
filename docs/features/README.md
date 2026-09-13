@@ -169,14 +169,18 @@ une fois ses dépendances réalisées.
 | US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ☐ |
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
 | US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
+| US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ☐ |
+| US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ☐ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
-**v2** : US-017 (livrée) puis, **propositions à valider**, US-018 → US-021, ordre conseillé :
-US-018 → US-019 → US-020 → US-021 (US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise les
-codes de RG-017-04).
+**v2** : US-017 et US-018 (livrées) puis, **propositions à valider**, US-019 → US-023. Ordre conseillé :
+US-023 → US-022 → US-019 → US-020 → US-021. US-022 et US-023 sont indépendantes de l'épique multi-forges et peuvent
+être livrées avant elle (US-023 avant US-019 : `isMe` sera ensuite évalué par connexion, RG-023-15 ; US-022 avant
+US-019 pour que les nouveaux libellés de l'épique naissent directement dans les deux langues). US-017 avant US-020
+pour que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -199,6 +203,8 @@ codes de RG-017-04).
 | QO-G09 | (v2) Le thème est-il une préférence backend (exportable) ou par navigateur ?                                                                                                                | Backend, `localStorage` comme cache anti-flash (QO-018-03).                                    |
 | QO-G10 | (v2) Avec plusieurs forges, l'identité « moi » est-elle globale ou par connexion ?                                                                                                          | Username par connexion, email global en repli (RG-019-07 ; RG-G09 à amender à la livraison).   |
 | QO-G11 | (v2) Sur GitHub, un reviewer ayant déjà soumis sa revue disparaît de `reviewRequests` : faut-il le garder dans la colonne Reviewer ?                                                        | Oui, reviewers demandés ∪ reviewers ayant répondu (RG-020-08, QO-020-02).                       |
+| QO-G12 | (v2) La langue de l'interface doit-elle suivre celle du navigateur au premier lancement ?                                                                                                  | Non, défaut `fr` explicite, préférence backend comme le thème (RG-022-05, QO-022-01).            |
+| QO-G13 | (v2) Quand je suis reviewer / affecté sans être le premier (RG-G06), mon avatar doit-il être promu en tête de cellule pour porter l'anneau ?                                                | Oui (RG-023-06, QO-023-01) ; RG-G06 à amender à la livraison de US-023.                           |
 
 ---
 
@@ -213,6 +219,11 @@ des US concernées.
 | **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
 | **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
+| **Langue**     | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json`         | US-022 |
+| **Anneau « moi »** | Liseré accent autour de mon avatar (auteur, reviewer, affecté) dans le tableau, désactivable (`highlightMe`) | US-023 |
+
+Spécifications hors épique multi-forges, ajoutées le 2026-09-13 : **US-022** (`docs/features/US-022-langues/specs.md`)
+et **US-023** (`docs/features/US-023-surbrillance-moi/specs.md`, design commit `36cd4b4`).
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
 « Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
@@ -220,6 +231,12 @@ Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipeli
 
 Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
 RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
+US-022 — §3 (terme « Langue »), §4.2 (option « Langue » en 06, sous « Thème »), §6 (attribut `language` de
+`Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, script de parité). US-023 — §3 (terme
+« Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de page conditionnel), §4.2
+(case « Surligner mes MRs » en 01), §6 (`isMe` sur `author` / `reviewers[]` / `assignees[]`, attribut `highlightMe`
+de `Settings`), RG-G06 (promotion de mon avatar en première position, RG-023-06), RG-009-06 (le « marquage visuel
+optionnel » devient US-023).
 
 ---
 
