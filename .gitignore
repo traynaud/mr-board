@@ -85,6 +85,8 @@ yarn-error.log*
 docker-compose.override.yml
 docker-compose-prod.yml
 
+data
+
 
 # =============================================
 # CLAUDE CODE
