@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/modernist-9cba37da-d357-42ca-b8e9-4f5b8e0165f6/styles.css">
+<script src="_ds/modernist-9cba37da-d357-42ca-b8e9-4f5b8e0165f6/_ds_bundle.js"></script>
+<style>
+:root{--color-bg:#161514;--color-surface:#201e1d;--color-text:#f3f2f2;--color-divider:color-mix(in srgb,#f3f2f2 32%,transparent);
+--color-neutral-100:#242221;--color-neutral-200:#2d2b2b;--color-neutral-300:#444141;--color-neutral-400:#605d5d;--color-neutral-500:#7d7979;--color-neutral-600:#a8a4a4;--color-neutral-700:#bab6b6;--color-neutral-800:#d7d3d3;--color-neutral-900:#eae7e7;
+--color-accent-100:#3a1510;--color-accent-200:#4d170e;--color-accent-300:#7c1405;--color-accent-400:#ae1800;--color-accent-600:#ff563c;--color-accent-700:#ff9783;--color-accent-800:#ffc4b8;--color-accent-900:#ffe0d9;
+--color-accent-2-100:#3a1510;--color-accent-2-200:#4d170e;--color-accent-2-300:#7c1405;--color-accent-2-400:#ae1800;--color-accent-2-600:#ff563c;--color-accent-2-700:#ff9783;--color-accent-2-800:#ffc4b8;--color-accent-2-900:#ffe0d9;
+--shadow-sm:0 0 0 1px rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.5);--shadow-md:0 0 0 1px rgba(255,255,255,.07),0 3px 10px rgba(0,0,0,.55);--shadow-lg:0 0 0 1px rgba(255,255,255,.08),0 12px 32px rgba(0,0,0,.65);
+--c-ok:#4fb26f;--c-warn:#e9a03a;color-scheme:dark;}
+body{margin:0;background:#0b0b0b;font-family:var(--font-body)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+.dv-turn{padding:40px 44px 32px;border-bottom:2px solid var(--color-divider);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#f3f2f2;color:#201e1d;text-decoration:none}
+.dv-tname{font:600 13px/1.2 var(--font-body);color:#f3f2f2}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.14);color:#f3f2f2;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 var(--font-body);color:rgba(255,255,255,.65)}
+.dv-card{background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:var(--shadow-md);overflow:hidden;position:relative}
+.dv-opt:target .dv-oid{background:var(--color-accent);color:#fff}
+.dv-next{margin:26px 0 0;font:12px/1.6 var(--font-body);color:rgba(255,255,255,.6)}
+.dv-note{position:absolute;font:12px/1.35 var(--font-body);color:var(--color-accent-800);background:var(--color-accent-100);border:1px solid var(--color-accent-300);padding:6px 9px;max-width:210px;z-index:5}
+.table th{position:relative;white-space:nowrap}
+.table th:not(:last-child)::after{content:"";position:absolute;right:0;top:8px;bottom:8px;width:1px;background:var(--color-divider);cursor:col-resize}
+.table td{vertical-align:middle;padding:6px 8px;font-size:13px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">MR Board · thème sombre — mêmes écrans que la version claire, jetons inversés (fond #161514, encre #f3f2f2, teintes accent sombres)</span></div>
+<div class="dv-opts">
+
+<!-- ═══ 1a — tableau par défaut ═══ -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Tableau · état par défaut — drafts masqués, tri « Depuis Ready » croissant, filtres propagés dans l'URL</div>
+<div class="dv-card" style="width:1240px">
+  <div class="dv-note" style="right:120px;top:96px">Bascule rapide clair / sombre dans la barre. La préférence (Système · Clair · Sombre) vit dans Paramètres › Divers.</div>
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--color-surface);border-bottom:1px solid var(--color-divider);font:12px ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">
+    <span style="display:inline-flex;gap:5px"><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i></span>
+    <span style="margin-left:10px;padding:2px 10px;background:var(--color-bg);border:1px solid var(--color-divider);flex:1">mrboard.local/?drafts=0&amp;mine=0&amp;project=api,web&amp;assigned=nobody&amp;sort=ready:asc</span>
+  </div>
+  <div class="nav" style="padding:10px 20px">
+    <span class="nav-brand">MR Board</span>
+    <span style="font-size:12px;color:var(--color-neutral-600)">Synchronisé il y a 2 min</span>
+    <button class="btn btn-secondary" style="justify-content:flex-start"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"></path></svg>Rafraîchir</button>
+    <button class="btn btn-icon btn-secondary" title="Thème clair"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></button>
+    <a href="#1c" class="btn btn-icon btn-secondary" title="Paramètres"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+  </div>
+  <!-- barre de filtres (option D : pastilles composables) -->
+  <div style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:2px solid var(--color-divider);flex-wrap:wrap">
+    <span class="seg"><label class="seg-opt"><input type="radio" name="a-state" checked>Ready</label><label class="seg-opt"><input type="radio" name="a-state">+ Drafts</label></span>
+    <button class="btn btn-secondary" style="font-size:13px;padding:6px 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Mes MRs</button>
+    <span style="width:1px;height:24px;background:var(--color-divider);margin:0 4px"></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent-300);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Projet :</span><b style="font-weight:600">api, web</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent-300);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Affecté à :</span><b style="font-weight:600">Nobody</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+    <button class="btn btn-ghost" style="font-size:13px;padding:6px 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un filtre</button>
+    <span style="flex:1"></span>
+    <span style="font-size:12px;color:var(--color-neutral-600)">7 MRs · 2 projets</span>
+    <button class="btn btn-ghost" style="font-size:12px;padding:4px 6px">Effacer</button>
+  </div>
+  <table class="table">
+    <thead><tr>
+      <th style="width:80px">Projet</th><th style="width:64px">Auteur</th><th>Titre</th>
+      <th style="width:150px">Difficulté <span style="opacity:.5">↕</span></th>
+      <th style="width:60px" title="Commentaires"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></th>
+      <th style="width:84px">Reviewer</th><th style="width:84px">Affecté</th><th style="width:88px">Approved</th>
+      <th style="width:130px;color:var(--color-accent)">Depuis Ready ↑</th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ rowsReady }}" as="r" hint-placeholder-count="7">
+      <tr>
+        <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
+        <td><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600;letter-spacing:.02em">{{ r.author.ini }}</span></td>
+        <td style="max-width:380px"><a href="#" title="{{ r.title }}" style="text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></td>
+        <td><span style="display:inline-flex;align-items:center;gap:8px"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
+        <td style="text-align:left">{{ r.comments }}</td>
+        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
+        <td><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></td>
+      </tr>
+      </sc-for>
+    </tbody>
+  </table>
+  <div style="display:flex;justify-content:space-between;padding:10px 20px;font-size:11px;color:var(--color-neutral-600)"><span>Colonne masquée : Date d'ouverture · clic droit sur l'en-tête pour l'afficher · poignées de redimensionnement sur chaque séparateur d'en-tête</span><span>Tri : un seul à la fois (Difficulté, Depuis Ready)</span></div>
+  
+</div></div>
+
+<!-- ═══ 1b — drafts + menus ouverts ═══ -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Tableau · « + Drafts » activé, menu « Ajouter un filtre » et pastille « Affecté à » ouverts, tooltip auteur</div>
+<div class="dv-card" style="width:1240px">
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--color-surface);border-bottom:1px solid var(--color-divider);font:12px ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">
+    <span style="display:inline-flex;gap:5px"><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i><i style="width:9px;height:9px;background:var(--color-neutral-400);display:block"></i></span>
+    <span style="margin-left:10px;padding:2px 10px;background:var(--color-bg);border:1px solid var(--color-divider);flex:1">mrboard.local/?drafts=1&amp;mine=1&amp;assigned=nobody,mdu&amp;approved=0&amp;sort=ready:asc</span>
+  </div>
+  <div class="nav" style="padding:10px 20px">
+    <span class="nav-brand">MR Board</span>
+    <span style="font-size:12px;color:var(--color-accent-700);display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"></path></svg>Synchronisation en cours…</span>
+    <button class="btn btn-secondary" disabled style="justify-content:flex-start"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"></path></svg>Rafraîchir</button>
+    <button class="btn btn-icon btn-secondary" title="Thème clair"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></button>
+    <a href="#1c" class="btn btn-icon btn-secondary" title="Paramètres"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+  </div>
+  <div style="position:relative;display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:2px solid var(--color-divider);flex-wrap:wrap">
+    <span class="seg"><label class="seg-opt"><input type="radio" name="b-state">Ready</label><label class="seg-opt"><input type="radio" name="b-state" checked>+ Drafts</label></span>
+    <button class="btn btn-primary" style="font-size:13px;padding:6px 12px;justify-content:flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Mes MRs</button>
+    <span style="width:1px;height:24px;background:var(--color-divider);margin:0 4px"></span>
+    <span style="position:relative">
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Affecté à :</span><b style="font-weight:600">Nobody, MD</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+      <div style="position:absolute;left:0;top:calc(100% + 6px);width:240px;background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:var(--shadow-lg);z-index:10;font-size:13px">
+        <div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--color-divider);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-600)"><span>Affecté à (Reviewer OU Affecté)</span></div>
+        <input class="input" placeholder="Rechercher…" style="border-left:0;border-right:0;border-top:0;min-height:32px">
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--color-neutral-200)"><span style="width:14px;height:14px;background:var(--color-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span><i style="font-style:normal;font-weight:600">Nobody</i><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">3</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--color-neutral-200)"><span style="width:14px;height:14px;background:var(--color-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span><span>Marie Dupont</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">4</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px"><span style="width:14px;height:14px;border:1.5px solid var(--color-divider)"></span><span>Karim Benali</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">2</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px"><span style="width:14px;height:14px;border:1.5px solid var(--color-divider)"></span><span>Léa Rousseau</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">5</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 10px"><span style="width:14px;height:14px;border:1.5px solid var(--color-divider)"></span><span>Tom Girard</span><span style="margin-left:auto;font-size:11px;color:var(--color-neutral-600)">1</span></label>
+      </div>
+    </span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;background:var(--color-accent-100);border:1px solid var(--color-accent-300);font-size:13px;color:var(--color-accent-800)"><span style="opacity:.7">Approved :</span><b style="font-weight:600">Non</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg><span style="width:1px;height:14px;background:var(--color-accent-300)"></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></span>
+    <span style="position:relative">
+      <button class="btn btn-ghost" style="font-size:13px;padding:6px 8px;background:var(--color-accent-100)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter un filtre</button>
+      <div style="position:absolute;left:0;top:calc(100% + 6px);width:200px;background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:var(--shadow-lg);z-index:10;font-size:13px">
+        <div style="padding:8px 10px;border-bottom:1px solid var(--color-divider);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-600)">Ajouter un filtre</div>
+        <div style="padding:7px 10px">Projet</div>
+        <div style="padding:7px 10px">Auteur</div>
+        <div style="padding:7px 10px;opacity:.4;display:flex;justify-content:space-between"><span>Affecté à</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></div>
+        <div style="padding:7px 10px;opacity:.4;display:flex;justify-content:space-between"><span>Approved</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></div>
+        <div style="padding:7px 10px;background:var(--color-neutral-200)">Commenté</div>
+      </div>
+    </span>
+    <span style="flex:1"></span>
+    <span style="font-size:12px;color:var(--color-neutral-600)">9 MRs · 3 projets</span>
+    <button class="btn btn-ghost" style="font-size:12px;padding:4px 6px">Effacer</button>
+  </div>
+  <table class="table">
+    <thead><tr>
+      <th style="width:80px">Projet</th><th style="width:64px">Auteur</th><th>Titre</th>
+      <th style="width:150px">Difficulté <span style="opacity:.5">↕</span></th>
+      <th style="width:60px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></th>
+      <th style="width:84px">Reviewer</th><th style="width:84px">Affecté</th><th style="width:88px">Approved</th>
+      <th style="width:130px;color:var(--color-accent)">Depuis Ready ↑</th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ rowsWithDrafts }}" as="r" hint-placeholder-count="9">
+      <tr style="opacity:{{ r.opacity }}">
+        <td><span class="tag tag-neutral" style="font-weight:600">{{ r.proj }}</span></td>
+        <td style="position:relative"><span title="{{ r.author.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600">{{ r.author.ini }}</span><sc-if value="{{ r.showTip }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;top:-22px;background:var(--color-neutral-900);color:var(--color-bg);font-size:12px;padding:4px 8px;white-space:nowrap;z-index:4">{{ r.author.name }}</span></sc-if></td>
+        <td style="max-width:380px"><span style="display:flex;align-items:center;gap:8px;min-width:0"><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="font-weight:600;flex:none">Draft</span></sc-if><a href="#" title="{{ r.title }}" style="text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{ r.title }}</a></span></td>
+        <td><span style="display:inline-flex;align-items:center;gap:8px"><i style="width:12px;height:12px;display:block;background:{{ r.diffColor }}"></i><span>{{ r.diffLabel }}</span><span style="font-size:11px;color:var(--color-neutral-600)">{{ r.diffMeta }}</span></span></td>
+        <td>{{ r.comments }}</td>
+        <td><sc-if value="{{ r.reviewer }}" hint-placeholder-val="{{ true }}"><span title="{{ r.reviewer.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.reviewer.ini }}</span></sc-if><sc-if value="{{ r.noReviewer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.assignee }}" hint-placeholder-val="{{ true }}"><span title="{{ r.assignee.name }}" style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border:1.5px solid var(--color-neutral-800);font-size:11px;font-weight:600">{{ r.assignee.ini }}</span></sc-if><sc-if value="{{ r.noAssignee }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-neutral-400)">—</span></sc-if></td>
+        <td><sc-if value="{{ r.approved }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if></td>
+        <td><sc-if value="{{ r.draft }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-neutral-600)">ouverte {{ r.opened }}</span></sc-if><sc-if value="{{ r.notDraft }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:{{ r.readyColor }}"><i style="width:8px;height:8px;display:block;background:{{ r.readyColor }}"></i>{{ r.readyLabel }}</span></sc-if></td>
+      </tr>
+      </sc-for>
+    </tbody>
+  </table>
+  <div style="padding:10px 20px;font-size:11px;color:var(--color-neutral-600)">Drafts : après les MRs ready, triés par date d'ouverture croissante · pas de date Ready · « Mes MRs » = j'ai au moins un rôle : auteur, reviewer ou affecté</div>
+  
+</div></div>
+
+<!-- ═══ 1c — paramètres ═══ -->
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Paramètres · écran séparé — identité, jeton, repos avec alias, fréquence, seuils</div>
+<div class="dv-card" style="width:820px">
+  <div class="nav" style="padding:10px 20px">
+    <a href="#1a" class="btn btn-icon btn-secondary" title="Retour"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></a>
+    <span class="nav-brand">Paramètres</span>
+    <button class="btn btn-secondary">Annuler</button>
+    <button class="btn btn-primary" style="justify-content:flex-start">Enregistrer</button>
+  </div>
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:0 32px;padding:0 20px">
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">01 · Moi</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Utilisé par « Mes MRs » et pour repérer mes rôles.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="field"><label>Nom d'utilisateur GitLab</label><input class="input" value="mdupont"></div>
+      <div class="field"><label>Email (optionnel)</label><input class="input" placeholder="marie@exemple.fr"></div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:var(--color-neutral-800);color:var(--color-bg);font-size:11px;font-weight:600">MD</span><span>Marie Dupont</span><span class="tag tag-neutral">détecté via le jeton</span></div>
+    </div>
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">02 · Connexion GitLab</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Jeton personnel avec le scope <code>read_api</code>. Stocké localement dans le navigateur.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="field"><label>URL de l'instance</label><input class="input" value="https://gitlab.exemple.fr"></div>
+      <div class="field"><label>Jeton d'accès personnel</label><div style="display:flex;gap:8px"><input class="input" type="password" value="glpat-xxxxxxxxxxxxxxxxxxxx"><button class="btn btn-icon btn-secondary" title="Afficher"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:12px"><button class="btn btn-secondary">Tester la connexion</button><span style="font-size:13px;display:inline-flex;align-items:center;gap:6px;color:var(--c-ok)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>Connecté · expire le 12/03/2027</span></div>
+    </div>
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">03 · Repos à scanner</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">L'alias est ce qui s'affiche dans la colonne Projet et le filtre.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)">
+      <table class="table" style="font-size:13px">
+        <thead><tr><th>Chemin du projet</th><th style="width:130px">Alias</th><th style="width:40px"></th></tr></thead>
+        <tbody>
+          <tr><td>equipe/backend-api</td><td><input class="input" value="api" style="min-height:30px;padding:3px 8px"></td><td><button class="btn btn-icon btn-ghost" style="width:30px;height:30px;color:var(--color-text)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></td></tr>
+          <tr><td>equipe/front-web</td><td><input class="input" value="web" style="min-height:30px;padding:3px 8px"></td><td><button class="btn btn-icon btn-ghost" style="width:30px;height:30px;color:var(--color-text)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></td></tr>
+          <tr><td>plateforme/infra-terraform</td><td><input class="input" value="infra" style="min-height:30px;padding:3px 8px"></td><td><button class="btn btn-icon btn-ghost" style="width:30px;height:30px;color:var(--color-text)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></td></tr>
+          <tr><td colspan="3" style="border-bottom:0;padding-top:10px"><div style="display:flex;gap:8px"><input class="input" placeholder="groupe/projet ou URL GitLab" style="flex:1"><input class="input" placeholder="alias" style="width:130px"><button class="btn btn-secondary" style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</button></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">04 · Actualisation</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Synchro automatique ; le bouton Rafraîchir force toujours.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label>Fréquence</label><span class="seg"><label class="seg-opt"><input type="radio" name="freq">1 min</label><label class="seg-opt"><input type="radio" name="freq" checked>5 min</label><label class="seg-opt"><input type="radio" name="freq">15 min</label><label class="seg-opt"><input type="radio" name="freq">30 min</label><label class="seg-opt"><input type="radio" name="freq">Manuel</label></span></div>
+      <label class="radio"><input type="checkbox" checked><span class="dot" style="border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 4px var(--color-bg)"></span>Mettre en pause quand l'onglet est inactif</label>
+    </div>
+
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider)"><h6 style="color:var(--color-accent);margin:0 0 4px">05 · Seuils</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Règles de calcul de la difficulté et du délai Ready.</p></div>
+    <div style="padding:22px 0;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:1fr 1fr;gap:16px 24px">
+      <div><div style="font-size:12px;margin-bottom:8px;color:var(--color-neutral-700)">Difficulté</div>
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 10px;align-items:center;font-size:13px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--c-ok);display:block"></i>Easy</span><input class="input" value="&lt; 5 fich." style="min-height:30px"><input class="input" value="&lt; 100 l." style="min-height:30px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--c-warn);display:block"></i>Medium</span><span style="font-size:12px;color:var(--color-neutral-600);grid-column:span 2">entre les deux</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--color-accent);display:block"></i>Hard</span><input class="input" value="&gt; 20 fich." style="min-height:30px"><input class="input" value="&gt; 800 l." style="min-height:30px">
+        </div></div>
+      <div><div style="font-size:12px;margin-bottom:8px;color:var(--color-neutral-700)">Temps depuis Ready</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--c-ok);display:block"></i>Vert</span><input class="input" value="≤ 1 jour" style="min-height:30px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--c-warn);display:block"></i>Orange</span><input class="input" value="2 – 3 jours" style="min-height:30px">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;background:var(--color-accent);display:block"></i>Rouge</span><input class="input" value="≥ 4 jours" style="min-height:30px">
+        </div>
+        <label class="radio" style="margin-top:12px"><input type="checkbox"><span class="dot"></span>Compter uniquement les jours ouvrés</label></div>
+    </div>
+
+    <div style="padding:22px 0"><h6 style="color:var(--color-accent);margin:0 0 4px">06 · Divers</h6><p style="font-size:12px;color:var(--color-neutral-600);margin:0">Suggestions — à confirmer.</p></div>
+    <div style="padding:22px 0;display:flex;flex-direction:column;gap:10px;font-size:13px">
+      <div class="field" style="margin-bottom:4px"><label>Thème</label><span class="seg"><label class="seg-opt"><input type="radio" name="theme">Système</label><label class="seg-opt"><input type="radio" name="theme">Clair</label><label class="seg-opt"><input type="radio" name="theme" checked>Sombre</label></span></div>
+      <label class="radio"><input type="checkbox" checked><span class="dot" style="border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 4px var(--color-bg)"></span>Notification navigateur quand une MR m'est affectée</label>
+      <label class="radio"><input type="checkbox" checked><span class="dot" style="border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 4px var(--color-bg)"></span>Badge de compteur sur l'onglet (MRs en rouge)</label>
+      <label class="radio"><input type="checkbox"><span class="dot"></span>Ouvrir les MRs dans un nouvel onglet</label>
+      <label class="radio"><input type="checkbox"><span class="dot"></span>Ignorer les MRs avec le label <code>wip</code> / <code>on-hold</code></label>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-secondary">Exporter la config (JSON)</button><button class="btn btn-secondary">Importer</button></div>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Version claire : <a class="dv-oid" href="MR Board - Wireframes.dc.html">MR Board - Wireframes</a> · Essayer ensuite : « dans <a class="dv-oid" href="#1a">1a</a>, montre l'état vide / erreur de jeton » · « variante de <a class="dv-oid" href="#1c">1c</a> en modale plutôt qu'en page » · « rends <a class="dv-oid" href="#1b">1b</a> interactif (filtres cliquables) »</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const U = {
+      md: { ini: 'MD', name: 'Marie Dupont' }, kb: { ini: 'KB', name: 'Karim Benali' },
+      lr: { ini: 'LR', name: 'Léa Rousseau' }, tg: { ini: 'TG', name: 'Tom Girard' }, ap: { ini: 'AP', name: 'Ana Pereira' },
+    };
+    const DIFF = { easy: ['var(--c-ok)', 'Easy'], medium: ['var(--c-warn)', 'Medium'], hard: ['var(--color-accent)', 'Hard'] };
+    const readyColor = d => d <= 1 ? 'var(--c-ok)' : d <= 3 ? 'var(--c-warn)' : 'var(--color-accent)';
+    const mk = (proj, author, title, diff, files, lines, comments, reviewer, assignee, approved, days, draft, opened, showTip) => ({
+      proj, author, title, comments, reviewer, assignee, approved, draft: !!draft, notDraft: !draft, opened, showTip: !!showTip,
+      noReviewer: !reviewer, noAssignee: !assignee,
+      diffColor: DIFF[diff][0], diffLabel: DIFF[diff][1], diffMeta: `${files} f · ${lines} l`,
+      readyLabel: draft ? '' : days < 1 ? "aujourd'hui" : `${days} j`, readyColor: draft ? '' : readyColor(days),
+      opacity: draft ? 0.72 : 1,
+    });
+    const ready = [
+      mk('api', U.kb, 'Refonte complète du module de facturation et migration des schémas Prisma vers la v5', 'hard', 34, 1240, 12, U.md, U.md, false, 6),
+      mk('web', U.lr, 'Corrige le flash blanc au chargement du dashboard', 'easy', 2, 38, 0, null, null, false, 5),
+      mk('api', U.tg, 'Pagination curseur sur /merge_requests', 'medium', 9, 310, 4, U.ap, U.ap, true, 3),
+      mk('infra', U.ap, 'Bump Terraform provider gitlab 16.x → 17.x', 'medium', 12, 420, 2, U.kb, null, false, 2),
+      mk('web', U.md, 'Ajout du filtre « Affecté à » avec option Nobody', 'easy', 4, 96, 7, U.lr, U.lr, true, 1),
+      mk('api', U.lr, 'Ajoute un index composite sur (project_id, ready_at)', 'easy', 1, 14, 1, null, U.tg, false, 1),
+      mk('web', U.kb, 'Colonnes redimensionnables et persistance des largeurs', 'medium', 7, 260, 3, U.md, null, false, 0),
+    ];
+    const drafts = [
+      mk('infra', U.tg, 'WIP: cluster staging en spot instances', 'hard', 27, 900, 0, null, null, false, 0, true, 'il y a 12 j', true),
+      mk('web', U.ap, 'Draft: nouveau système de notifications', 'medium', 11, 380, 1, U.md, null, false, 0, true, 'il y a 4 j'),
+    ];
+    return { rowsReady: ready, rowsWithDrafts: [...ready, ...drafts] };
+  }
+}
+</script>
+</body>
+</html>
