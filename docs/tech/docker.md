@@ -15,8 +15,23 @@ Pas de nginx ni de supervisord : moins de pièces mobiles, un seul port, un seul
 cp .env.example .env          # renseigner APP_SECRET (>= 16 caractères, ex : openssl rand -hex 32)
 docker compose up -d --build  # http://localhost:3000
 docker compose logs -f
-docker compose down           # la base SQLite est conservée dans le volume mr-board-data
+docker compose down           # la base SQLite est conservée sur l'hôte, dans ./data/mr-board.sqlite
 ```
+
+## Persistance de la base SQLite
+
+`./data` (racine du projet) est monté en bind mount sur `/app/data` dans le container : le fichier
+`data/mr-board.sqlite` vit directement sur l'hôte, visible et sauvegardable comme n'importe quel fichier, et survit
+à `docker compose down`, à un `docker rm` du container ou à la suppression de l'image — pas seulement à un
+redémarrage. Le dossier est ignoré par Git (`.gitignore`, sauf `.gitkeep`) et par le build (`.dockerignore`,
+`**/*.sqlite*`).
+
+> Migration depuis une version antérieure (volume nommé `mr-board-data`) : copier l'ancienne base avant de
+> supprimer le volume, par exemple :
+> ```bash
+> docker compose cp mr-board:/app/data/mr-board.sqlite ./data/mr-board.sqlite
+> docker volume rm mr-board_mr-board-data
+> ```
 
 ## Variables (docker compose)
 
@@ -27,7 +42,7 @@ docker compose down           # la base SQLite est conservée dans le volume mr-
 | `CORS_ORIGIN`   | `http://localhost:3000`  | Origine autorisée par CORS ; doit correspondre à l'URL d'accès  |
 | `LOG_LEVEL`     | `log`                    | Niveau de log Nest                                              |
 
-Fixées dans l'image : `DB_PATH=/app/data/mr-board.sqlite` (volume `mr-board-data`), `STATIC_DIR=/app/public`,
+Fixées dans l'image : `DB_PATH=/app/data/mr-board.sqlite` (bind mount `./data`), `STATIC_DIR=/app/public`,
 `NODE_ENV=production`. Le container tourne avec l'utilisateur non-root `node`.
 
 ## Étapes du Dockerfile

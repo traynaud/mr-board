@@ -85,6 +85,10 @@ yarn-error.log*
 docker-compose.override.yml
 docker-compose-prod.yml
 
+# --- Docker (base SQLite persistée hors container, bind mount ./data) ---
+/data/*
+!/data/.gitkeep
+
 
 # =============================================
 # CLAUDE CODE

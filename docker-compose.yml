@@ -14,8 +14,7 @@ services:
       # Origine autorisée par CORS (même origine que l'app : http://<hôte>:<port>)
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     volumes:
-      - mr-board-data:/app/data
+      # Bind mount (et non un volume nommé) : le fichier SQLite reste visible et persistant sur l'hôte,
+      # hors du cycle de vie du container, même après un `docker compose down` ou une suppression de l'image.
+      - ./data:/app/data
     restart: unless-stopped
-
-volumes:
-  mr-board-data:
