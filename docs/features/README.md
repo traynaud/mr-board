@@ -161,8 +161,18 @@ une fois ses dépendances réalisées.
 | US-014 | Paramètres — Seuils de difficulté et de délai Ready      | Should   | S          | US-006, US-007         | ✅ |
 | US-015 | Paramètres — Options diverses (nouvel onglet, labels ignorés, export/import/reset) | Could | M | US-011, US-014 | ✅ |
 | US-016 | Notifications navigateur et badge d'onglet               | Could    | M          | US-009, US-013         | ✅ |
+| US-017 | Colonne « Statut » (mergeabilité : pipeline, conflits, approbations, discussions) | Should | M | US-004, US-011, US-012 | ☐ |
+| US-018 | Thème sombre (système / clair / sombre)                  | Could    | M          | US-015                 | ☐ |
+| US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ☐ |
+| US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
+| US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
+
+\* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
+inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
+**v2 (propositions, à valider)** : US-017 → US-021, ordre conseillé : US-017 → US-018 → US-019 → US-020 → US-021
+(US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04).
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -181,14 +191,37 @@ Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **
 | QO-G05 | Les jours fériés doivent-ils être exclus en mode « jours ouvrés » ?                                                                                                                         | Non (lundi→vendredi uniquement).                                                               |
 | QO-G06 | Faut-il une authentification devant MR Board ?                                                                                                                                              | Non en v1 (réseau de confiance / instance locale).                                             |
 | QO-G07 | Le tri de colonne doit-il s'appliquer aussi au bloc Drafts ?                                                                                                                                | Non (RG-G10), les drafts restent triés par date d'ouverture.                                   |
+| QO-G08 | (v2) Une pipeline en échec doit-elle rendre une MR « non fusionnable » même si le projet n'exige pas de pipeline verte ?                                                                     | Oui (RG-017-03, QO-017-01).                                                                    |
+| QO-G09 | (v2) Le thème est-il une préférence backend (exportable) ou par navigateur ?                                                                                                                | Backend, `localStorage` comme cache anti-flash (QO-018-03).                                    |
+| QO-G10 | (v2) Avec plusieurs forges, l'identité « moi » est-elle globale ou par connexion ?                                                                                                          | Username par connexion, email global en repli (RG-019-07 ; RG-G09 à amender à la livraison).   |
+| QO-G11 | (v2) Sur GitHub, un reviewer ayant déjà soumis sa revue disparaît de `reviewRequests` : faut-il le garder dans la colonne Reviewer ?                                                        | Oui, reviewers demandés ∪ reviewers ayant répondu (RG-020-08, QO-020-02).                       |
+
+---
+
+## 10. Évolutions v2 (propositions)
+
+Spécifiées en septembre 2026, non validées. Les termes ci-dessous rejoindront le glossaire (§3) à la livraison des
+US concernées.
+
+| Terme          | Définition                                                                                                  | US     |
+|----------------|-------------------------------------------------------------------------------------------------------------|--------|
+| **Statut**     | Mergeabilité d'une MR : `mergeable` / `blocked` / `unknown`, avec la liste des raisons de blocage           | US-017 |
+| **Thème**      | Préférence d'affichage `system` / `light` / `dark`                                                          | US-018 |
+| **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
+| **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
+| **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
+
+Impacts documentaires prévus à la livraison : §1 (non-objectif « pipelines » nuancé par US-017), §4.1 (colonne
+Statut), §4.2 (sections 01/02/03 des Paramètres, option Thème en 06), RG-G09/G17/G18 (jetons et identités au
+pluriel), §6 (modèle : `Connections`), §9 (retrait de « Thème sombre », « pipelines / conflits », « GitHub »).
 
 ---
 
 ## 9. Hors périmètre v1
 
 - Actions d'écriture sur GitLab (approuver, assigner, commenter, fusionner)
-- Suivi des pipelines / CI, conflits de merge, issues
+- Suivi des pipelines / CI, conflits de merge → **proposé en v2 : US-017** (statut de mergeabilité) ; issues liées : toujours hors périmètre (QO-017-04)
 - Multi-utilisateurs avec comptes et rôles
 - Historique / statistiques (temps moyen de relecture…)
-- Thème sombre
-- Support d'autres forges (GitHub, Bitbucket)
+- Thème sombre → **proposé en v2 : US-018**
+- Support d'autres forges → **GitHub proposé en v2 : EPIC-001 (US-019 → US-021)** ; Bitbucket, Gitea, Azure DevOps : hors périmètre (QO-E01-03)
