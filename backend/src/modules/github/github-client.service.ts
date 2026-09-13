@@ -372,13 +372,23 @@ export class GithubClientService implements ForgeClient {
     if (!body) {
       throw new ForgeUnavailableException('GitHub returned an invalid body');
     }
-    const schemaErrors = (body.errors ?? []).filter(
+    const otherErrors = (body.errors ?? []).filter(
       (error) => error.type !== 'RATE_LIMITED',
     );
-    if (schemaErrors.length > 0) {
+    const forbiddenError = otherErrors.find(
+      (error) => error.type === 'FORBIDDEN',
+    );
+    if (forbiddenError) {
+      // RG-020-12 : jeton fine-grained sans la permission requise sur cette ressource
+      // (ex. « Pull requests » en lecture) — un 200 GraphQL peut porter ce refus.
+      throw new ForgeAuthException(
+        `GitHub rejected the token: ${forbiddenError.message}`,
+      );
+    }
+    if (otherErrors.length > 0) {
       // RG-020-12 : GHES trop ancienne pour exposer un champ de la requête.
       throw new ForgeUnavailableException(
-        `Unsupported GitHub version: ${schemaErrors[0].message}`,
+        `Unsupported GitHub version: ${otherErrors[0].message}`,
       );
     }
     const pullRequests = body.data?.repository?.pullRequests;

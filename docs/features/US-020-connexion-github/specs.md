@@ -111,9 +111,11 @@ confinée au client de forge et à son mapper ; le reste de l'application ne voi
   `Retry-After` (plafonné à 30 s) ; une seule nouvelle tentative, puis échec du repo. Une réponse GraphQL 200 contenant
   `errors[].type = RATE_LIMITED` est traitée comme un 429. Le budget de 60 s par repo (RG-004-14) est inchangé.
 - **RG-020-12** : Erreurs : 401 → `ForgeAuthException` (« Jeton refusé (<connexion>) ») ; 403 hors limite de débit →
-  idem (jeton fine-grained sans accès au dépôt) ; `repository = null` en GraphQL ou 404 → le repo échoue avec
-  « Repo introuvable ou inaccessible » **sans** supprimer ses MRs (RG-004-03) ; erreurs GraphQL de schéma (champ
-  inconnu sur une vieille GHES) → repo en échec avec « Version GitHub non supportée : <message> » (QO-020-04).
+  idem (jeton fine-grained sans accès au dépôt) ; une réponse GraphQL 200 dont `errors[].type = FORBIDDEN` (jeton
+  fine-grained sans la permission requise sur cette ressource, ex. « Pull requests » en lecture) → idem
+  `ForgeAuthException` ; `repository = null` en GraphQL ou 404 → le repo échoue avec « Repo introuvable ou
+  inaccessible » **sans** supprimer ses MRs (RG-004-03) ; autres erreurs GraphQL de schéma (champ inconnu sur une
+  vieille GHES) → repo en échec avec « Version GitHub non supportée : <message> » (QO-020-04).
 - **RG-020-13** : Les utilisateurs GitHub sont upsertés par (`connectionId`, `remoteUserId = login`) (RG-019-05),
   avec `avatarUrl` (`avatars.githubusercontent.com`, déjà autorisé par le CSP) et `webUrl`.
 

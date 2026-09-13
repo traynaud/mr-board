@@ -518,6 +518,25 @@ describe('GithubClientService', () => {
       ).rejects.toThrow(/mergeStateStatus/);
     });
 
+    it('should_throw_forge_auth_when_graphql_reports_a_forbidden_error', async () => {
+      fetchSpy.mockResolvedValue(
+        jsonResponse(200, {
+          errors: [
+            {
+              type: 'FORBIDDEN',
+              message: 'Resource not accessible by personal access token',
+            },
+          ],
+        }),
+      );
+
+      await expect(
+        service.fetchOpenMergeRequests(BASE, TOKEN, PROJECT, {
+          deadlineAt: deadlineAt(),
+        }),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+    });
+
     it('should_throw_unavailable_when_the_repository_is_null', async () => {
       fetchSpy.mockResolvedValue(
         jsonResponse(200, { data: { repository: null } }),
