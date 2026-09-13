@@ -30,8 +30,8 @@ raisons de blocage de la colonne Statut, sans jamais lister les jobs ni relancer
 | **Membre de l'équipe**     | Voir les MRs ouvertes de l'équipe, repérer celles qui l'attendent (reviewer/affecté), choisir une MR à relire |
 | **Tech lead / mainteneur** | Surveiller les MRs qui stagnent (délai Ready élevé), équilibrer les relectures, configurer l'outil |
 
-Dans les US, le persona « utilisateur » désigne indifféremment les deux ; « moi » désigne l'identité GitLab
-configurée dans les paramètres.
+Dans les US, le persona « utilisateur » désigne indifféremment les deux ; « moi » désigne mon identité — un nom
+d'utilisateur par connexion et un email global (US-019) — configurée dans les paramètres.
 
 ---
 
@@ -39,21 +39,23 @@ configurée dans les paramètres.
 
 | Terme                | Définition                                                                                              |
 |----------------------|---------------------------------------------------------------------------------------------------------|
-| **MR**               | Merge Request GitLab à l'état `opened`                                                                  |
-| **Draft**            | MR marquée comme brouillon sur GitLab (flag `draft`, anciennement WIP)                                  |
+| **MR**               | Merge Request (GitLab) ou Pull Request (GitHub, US-020) ouverte ; désignées indifféremment « MR » dans l'application et cette documentation |
+| **Draft**            | MR marquée comme brouillon par sa forge (`draft` sur GitLab, anciennement WIP)                          |
 | **Ready**            | MR ouverte et non draft                                                                                 |
 | **Date Ready**       | Date à laquelle la MR est devenue Ready (voir RG-G05)                                                   |
 | **Temps depuis Ready** | Délai écoulé entre la date Ready et maintenant, en jours                                              |
 | **Difficulté**       | Estimation de l'effort de relecture (Easy / Medium / Hard) calculée sur les fichiers et lignes modifiés |
-| **Reviewer**         | Utilisateur GitLab positionné comme reviewer de la MR                                                   |
-| **Affecté** (assignee) | Utilisateur GitLab positionné comme assignee de la MR                                                 |
+| **Reviewer**         | Utilisateur positionné comme reviewer de la MR sur sa forge                                             |
+| **Affecté** (assignee) | Utilisateur positionné comme assignee de la MR sur sa forge                                           |
 | **Approved**         | MR ayant reçu au moins une approbation                                                                  |
 | **Statut**           | Mergeabilité d'une MR : `mergeable` / `blocked` / `unknown`, avec la liste ordonnée des raisons de blocage (US-017) |
-| **Projet / Repo**    | Projet GitLab (`groupe/projet`) configuré pour être scanné                                              |
+| **Forge**            | Plateforme hébergeant des MRs : `gitlab` (GitHub proposé en v2, US-020) — voir Connexion (US-019)        |
+| **Connexion**        | Instance d'une forge configurée (type, nom, URL, jeton, mon nom d'utilisateur sur cette forge) ; possède des repos (US-019) |
+| **Projet / Repo**    | Dépôt d'une connexion (`groupe/projet` sur GitLab) configuré pour être scanné                            |
 | **Alias**            | Nom court d'un projet, choisi par l'utilisateur, affiché dans le tableau et les filtres                 |
-| **Synchronisation**  | Récupération des MRs depuis l'API GitLab et mise à jour du cache local (SQLite)                         |
-| **Moi**              | Identité GitLab de l'utilisateur courant (username, email) utilisée par « Mes MRs »                     |
-| **Jeton**            | Personal Access Token GitLab (scope `read_api`) utilisé par le backend                                  |
+| **Synchronisation**  | Récupération des MRs depuis l'API de chaque connexion et mise à jour du cache local (SQLite)            |
+| **Moi**              | Identité de l'utilisateur courant : un nom d'utilisateur **par connexion** (US-019) et un email global, utilisée par « Mes MRs » |
+| **Jeton**            | Personal Access Token d'une connexion, stocké chiffré côté backend, jamais renvoyé en clair              |
 | **Thème**            | Préférence d'affichage `system` / `light` / `dark` (US-018)                                             |
 | **Langue**           | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json` (US-022) |
 | **Anneau « moi »**   | Liseré accent autour de mon avatar (auteur, reviewer, affecté) dans le tableau, désactivable via `highlightMe` (US-023) |
@@ -69,7 +71,7 @@ Maquettes : `docs/design/MR Board - Wireframes.dc.html` (1a, 1b, 1c) et `docs/de
 Zones, de haut en bas :
 1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », bascule rapide clair/sombre (US-018), icône « Paramètres »
 2. **Barre de progression** 2 px pendant une synchronisation
-3. **Bandeau** « Aucun jeton GitLab configuré » avec bouton « Configurer » (si applicable)
+3. **Bandeau** « Aucune connexion configurée » (si aucune connexion, RG-019-17), ou « Aucun jeton configuré pour <connexions> » (si au moins une connexion sans jeton), avec bouton « Configurer » (si applicable)
 4. **Barre de filtres** : chips « Drafts » et « Mes MRs » (toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
 5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Statut (visible par défaut, US-017), Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes ; anneau accent autour de mon avatar dans les colonnes Auteur/Reviewer/Affecté (US-023, désactivable)
 6. **Pied** : rappel des règles (drafts après les ready, Mes MRs = auteur/reviewer/affecté, anneau « moi » si actif — US-023)
@@ -79,9 +81,9 @@ Zones, de haut en bas :
 
 En-tête : retour, titre « Paramètres », « Annuler », « Enregistrer ». Corps en deux colonnes (titre de section à gauche,
 contenu à droite), sections :
-- `01 · Moi` — nom d'utilisateur GitLab, email (optionnel), aperçu de l'identité détectée, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
-- `02 · Connexion GitLab` — URL de l'instance, jeton (masqué, affichable), « Tester la connexion »
-- `03 · Repos à scanner` — tableau chemin / alias / supprimer, ligne d'ajout
+- `01 · Moi` — un nom d'utilisateur **par connexion** configurée (US-019), email (optionnel), aperçu de l'identité détectée par ligne, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
+- `02 · Connexions` — liste des connexions (type, nom, URL, état du jeton, tester/modifier/supprimer) et formulaire inline d'ajout (US-019)
+- `03 · Repos à scanner` — tableau connexion (si ≥ 2, US-019) / chemin / alias / supprimer, ligne d'ajout (sélecteur de connexion si ≥ 2)
 - `04 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
 - `05 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
 - `06 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
@@ -102,7 +104,7 @@ Ces règles s'appliquent à toutes les US. Chaque US les référence par identif
 | RG-G06   | **Reviewer / Affecté** : GitLab permet plusieurs reviewers et assignees. MR Board affiche le premier (ordre GitLab) et indique « +N » avec la liste complète au survol. Les filtres et « Mes MRs » considèrent **tous** les reviewers/assignees. Amendé par **US-023** (RG-023-06) : quand l'anneau « moi » est actif (RG-023-01) et que je figure parmi les reviewers/assignees sans être le premier, mon avatar est promu en position affichée ; le « +N » et l'infobulle restent en ordre GitLab.                                                                                                                                  |
 | RG-G07   | **Approved** : une MR est approuvée si elle a au moins une approbation (`approved_by` non vide), indépendamment des règles d'approbation du projet.                                                                                                                                                                                                                              |
 | RG-G08   | **Commentaires** : nombre de notes utilisateur (`user_notes_count`), hors notes système.                                                                                                                                                                                                                                                                                       |
-| RG-G09   | **Mes MRs** : une MR est « à moi » si mon username (ou, à défaut, mon email) correspond à l'auteur, à l'un des reviewers ou à l'un des assignees. Comparaison insensible à la casse.                                                                                                                                                                                             |
+| RG-G09   | **Mes MRs** : une MR est « à moi » si mon nom d'utilisateur **sur la connexion de son projet** (US-019 ; ou, à défaut, mon email global en repli quand la forge l'expose) correspond à l'auteur, à l'un des reviewers ou à l'un des assignees. Comparaison insensible à la casse. Un même username sur deux connexions différentes désigne deux identités distinctes.               |
 | RG-G10   | **Tri par défaut** : MRs Ready par date Ready croissante (la plus ancienne en haut). Si les drafts sont affichés, ils viennent **après** toutes les MRs Ready, triés par date d'ouverture croissante. Un seul tri de colonne actif à la fois ; le tri de colonne ne s'applique qu'au bloc Ready, le bloc Drafts garde son ordre.                                                    |
 | RG-G11   | **Titre** : tronqué avec ellipse sur une ligne, titre complet au survol ; le clic ouvre la page GitLab de la MR (même onglet par défaut, nouvel onglet si l'option est activée).                                                                                                                                                                                                 |
 | RG-G12   | **Identité visuelle des utilisateurs** : avatar GitLab (carré 28 px) si disponible, sinon initiales (2 lettres max, majuscules, première lettre de chaque mot du nom). Nom complet au survol.                                                                                                                                                                                    |
@@ -110,8 +112,8 @@ Ces règles s'appliquent à toutes les US. Chaque US les référence par identif
 | RG-G14   | **Combinaison des filtres** : les différents filtres se combinent en ET ; les valeurs d'un même filtre multi-sélection en OU. Un filtre actif sans valeur (« tous ») n'exclut rien.                                                                                                                                                                                             |
 | RG-G15   | **URL** : l'état des filtres, du tri et des colonnes visibles est reflété dans les query params de l'URL et restauré au chargement (voir US-011).                                                                                                                                                                                                                                 |
 | RG-G16   | **Synchronisation** : une seule synchronisation à la fois ; le bouton « Rafraîchir » force toujours une synchronisation immédiate ; les synchronisations planifiées suivent la fréquence configurée (0 = manuel). Une erreur sur un projet n'empêche pas la synchronisation des autres.                                                                                          |
-| RG-G17   | **Sécurité du jeton** : le jeton GitLab est stocké côté backend (chiffré au repos), jamais renvoyé en clair par l'API (seulement « configuré » + 4 derniers caractères), jamais loggé. Scope minimal `read_api`.                                                                                                                                                                  |
-| RG-G18   | **Instance mono-utilisateur** (hypothèse v1) : une instance de MR Board sert un utilisateur (son jeton, son identité). Voir QO-G01.                                                                                                                                                                                                                                             |
+| RG-G17   | **Sécurité des jetons** : le jeton de chaque connexion (US-019) est stocké côté backend (chiffré au repos), jamais renvoyé en clair par l'API (seulement « configuré » + 4 derniers caractères), jamais loggé. Scope minimal en lecture seule pour chaque forge (`read_api` pour GitLab).                                                                                        |
+| RG-G18   | **Instance mono-utilisateur** (hypothèse v1) : une instance de MR Board sert un utilisateur (ses connexions, leurs jetons, ses identités par connexion). Voir QO-G01.                                                                                                                                                                                                            |
 | RG-G19   | **Compteurs de filtres** : dans chaque menu de filtre, le nombre affiché à côté d'une option est le nombre de MRs qui seraient visibles en sélectionnant cette option, tous les autres filtres actifs étant appliqués (le filtre courant exclu).                                                                                                                                  |
 | RG-G20   | **Compteur global** : « N MR(s) · M projet(s) » = nombre de lignes affichées et nombre de projets distincts parmi ces lignes.                                                                                                                                                                                                                                                    |
 
@@ -120,17 +122,22 @@ Ces règles s'appliquent à toutes les US. Chaque US les référence par identif
 ## 6. Modèle conceptuel
 
 ```
-Settings (singleton) ──── Projects (1..n) ──── MergeRequests (0..n) ──┬── author   : User
-                                                                       ├── reviewers: User (0..n)
-                                                                       └── assignees: User (0..n)
+Settings (singleton, préférences globales) ── Connections (1..n, US-019) ──── Projects (1..n) ──── MergeRequests (0..n) ──┬── author   : User
+                                                                                                                           ├── reviewers: User (0..n)
+                                                                                                                           └── assignees: User (0..n)
 SyncRuns (historique des synchronisations)
 ```
 
-Attributs d'une MR affichée (DTO `MergeRequestView`) : `id`, `projectAlias`, `iid`, `title`, `webUrl`, `draft`,
-`author`, `reviewers[]`, `assignees[]`, `approved`, `commentsCount`, `changedFiles`, `changedLines`, `difficulty`
-(`easy|medium|hard`), `createdAt`, `readyAt`, `readyDays`, `readyLevel` (`green|orange|red`), `isMine`, `labels[]`.
-Chaque utilisateur embarqué (`author`, `reviewers[]`, `assignees[]`) porte aussi `isMe` (US-023, RG-023-05) ; le
-paramètre `Settings.highlightMe` (défaut `true`) contrôle uniquement l'affichage de l'anneau, pas le calcul.
+Chaque `Connection` (type, nom, URL, jeton chiffré, mon nom d'utilisateur sur cette forge) possède ses propres
+`Projects` et `Users` (US-019) ; `Settings` ne porte plus que les préférences globales (email de repli, seuils,
+thème, langue…), jamais l'URL, le jeton ou un nom d'utilisateur.
+
+Attributs d'une MR affichée (DTO `MergeRequestView`) : `id`, `projectAlias`, `connection` (`{ id, name, type }`,
+US-019), `iid`, `title`, `webUrl`, `draft`, `author`, `reviewers[]`, `assignees[]`, `approved`, `commentsCount`,
+`changedFiles`, `changedLines`, `difficulty` (`easy|medium|hard`), `createdAt`, `readyAt`, `readyDays`, `readyLevel`
+(`green|orange|red`), `isMine`, `labels[]`. Chaque utilisateur embarqué (`author`, `reviewers[]`, `assignees[]`)
+porte aussi `isMe` (US-023, RG-023-05, résolu par connexion depuis US-019) ; le paramètre `Settings.highlightMe`
+(défaut `true`) contrôle uniquement l'affichage de l'anneau, pas le calcul.
 
 ---
 
@@ -213,14 +220,12 @@ les codes de RG-017-04.
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-022** et **US-023**,
-livrées — leurs termes « Statut », « Thème », « Langue » et « Anneau « moi » » ont rejoint le glossaire, §3. Les
-termes ci-dessous rejoindront le glossaire à la livraison des US concernées.
+Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-019**, **US-022** et
+**US-023**, livrées — leurs termes « Statut », « Thème », « Langue », « Forge »/« Connexion » et « Anneau « moi » »
+ont rejoint le glossaire, §3. Le terme ci-dessous rejoindra le glossaire à la livraison de l'US concernée.
 
 | Terme          | Définition                                                                                                  | US     |
 |----------------|-------------------------------------------------------------------------------------------------------------|--------|
-| **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
-| **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
@@ -230,7 +235,14 @@ US-022 — §3 (glossaire, terme « Langue »), §4.2 (option « Langue » en 06
 de `Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, réactivité), §7 roadmap (✅) ; US-023 — §3
 (glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de page
 conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par RG-023-06), §6 (`isMe` sur
-`author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap (✅).
+`author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap (✅) ; US-019 — §3 (glossaire,
+termes « Forge »/« Connexion », généralisation de MR/Reviewer/Affecté/Projet/Synchronisation/Moi/Jeton), §4.1
+(bandeau différenciant absence de connexion / jeton manquant), §4.2 (sections 01 « Moi » par connexion et 02
+« Connexions »), §5 (RG-G09/G17/G18 au pluriel / par connexion), §6 (entité `Connections`, attribut `connection` de
+`MergeRequestView`), §7 roadmap (✅).
+
+Impact documentaire restant prévu à la livraison de US-020 : §9 (retrait de « GitHub » de la liste des forges hors
+périmètre).
 
 Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
 RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
