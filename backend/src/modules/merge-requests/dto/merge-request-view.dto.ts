@@ -39,6 +39,6 @@ export class MergeRequestViewDto {
   openedDays!: number;
   /** `true` si je suis auteur, reviewer ou affecté (RG-G09) ; toujours calculé (RG-009-06). */
   isMine!: boolean;
-  /** Mergeabilité GitLab (US-017, RG-017-06). `unknown` si la MR a été synchronisée avant cette US (RG-017-11). */
+  /** GitLab mergeability (US-017, RG-017-06). `unknown` for a merge request synced before this US (RG-017-11). */
   mergeStatus!: MergeStatusDto;
 }

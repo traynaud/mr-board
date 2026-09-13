@@ -213,10 +213,9 @@ function buildReasons(input: MergeStatusInput): MergeStatusReason[] {
 }
 
 /**
- * RG-017-04 (ligne `other`) : une valeur de `detailedMergeStatus` que cette
- * fonction ne sait pas encore interpréter — ni `MERGEABLE`, ni « en cours de
- * vérification » (RG-017-03), ni ignorée (RG-017-05), ni déjà couverte par
- * un autre code.
+ * RG-017-04 (`other` row): a `detailedMergeStatus` value this function does
+ * not yet know how to interpret — neither `MERGEABLE`, nor "still checking"
+ * (RG-017-03), nor ignored (RG-017-05), nor already covered by another code.
  */
 function isUnknownFutureStatus(detailedMergeStatus: string | null): boolean {
   return (

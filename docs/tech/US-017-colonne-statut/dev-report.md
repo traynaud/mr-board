@@ -33,10 +33,9 @@ Aucun écart par rapport à `archi.md` / `design.md`.
 
 ### Tests
 
-- Unitaires : **401 passed** (0 failed)
-- e2e : **103 passed** (0 failed)
-- Couverture globale : **99.31 % lignes**, `compute-merge-status.ts` à 100 % lignes/fonctions (96.96 % branches —
-  2 branches d'un spread conditionnel non atteintes, sans impact fonctionnel)
+- Unitaires : **399 passed** (0 failed)
+- e2e : **100 passed** (0 failed)
+- Couverture globale : **99.31 % lignes**, `compute-merge-status.ts` à **100 % lignes/fonctions/branches**
 
 ---
 

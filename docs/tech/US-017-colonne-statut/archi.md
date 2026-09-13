@@ -130,6 +130,7 @@ number }[] }` (RG-017-06). Aucun texte traduit côté backend ; `count` uniqueme
 | `mr-table.component.ts` (`BASE_COLUMNS`, `displayedColumns`) | La colonne `status` est optionnelle **et** positionnée au milieu (contrairement à `opened`, ajoutée en fin) | Moyen | Scinder les colonnes fixes en deux groupes (avant/après `status`) : `[...avant, ...(showStatus() ? ['status'] : []), 'ready', ...(showOpened() ? ['opened'] : []), 'columnsMenu']` |
 | `mr-table.component.html` (menu Colonnes) | Ajout d'une 2ᵉ case, avant « Date d'ouverture » (RG-017-09) | Faible | Dupliquer le bloc `.menu-option` existant |
 | `board-page.component.ts` (`currentQueryParams`, `restoreFromUrl`) | Ajout de `showStatus` | Faible | Un point d'entrée unique déjà centralisé (`encodeQueryParams`/`decodeQueryParams`) |
+| `features/settings/settings-page.component.ts` (`boardQueryParams`) | **Second appelant** de `encodeQueryParams`, omis de l'analyse initiale — construit le lien « Retour au tableau » avec les filtres courants (RG-011-05) | Moyen | Ajouter `showStatus: this.columnsStore.showStatus()` à l'appel ; détecté par `tsc`/`ng test` (type `UrlState` non satisfait) plutôt qu'anticipé ici — corrigé en dev, ce risque est ajouté a posteriori pour que la prochaine US touchant `UrlState` cherche explicitly les deux appelants |
 
 #### Détail — sémantique de `cols` (RG-017-09)
 

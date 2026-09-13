@@ -18,7 +18,8 @@ Objectifs :
 - Rester simple, rapide et agréable : un tableau, une barre de filtres, un écran de paramètres
 
 Non-objectifs : MR Board ne modifie jamais rien sur GitLab (lecture seule), ne remplace pas l'interface de revue, et
-ne gère pas d'issues, de pipelines ni de commentaires.
+ne gère pas d'issues ni de commentaires. Depuis US-017, l'état de la pipeline de tête est **affiché** comme une des
+raisons de blocage de la colonne Statut, sans jamais lister les jobs ni relancer quoi que ce soit.
 
 ---
 
@@ -47,6 +48,7 @@ configurée dans les paramètres.
 | **Reviewer**         | Utilisateur GitLab positionné comme reviewer de la MR                                                   |
 | **Affecté** (assignee) | Utilisateur GitLab positionné comme assignee de la MR                                                 |
 | **Approved**         | MR ayant reçu au moins une approbation                                                                  |
+| **Statut**           | Mergeabilité d'une MR : `mergeable` / `blocked` / `unknown`, avec la liste ordonnée des raisons de blocage (US-017) |
 | **Projet / Repo**    | Projet GitLab (`groupe/projet`) configuré pour être scanné                                              |
 | **Alias**            | Nom court d'un projet, choisi par l'utilisateur, affiché dans le tableau et les filtres                 |
 | **Synchronisation**  | Récupération des MRs depuis l'API GitLab et mise à jour du cache local (SQLite)                         |
@@ -66,7 +68,7 @@ Zones, de haut en bas :
 2. **Barre de progression** 2 px pendant une synchronisation
 3. **Bandeau** « Aucun jeton GitLab configuré » avec bouton « Configurer » (si applicable)
 4. **Barre de filtres** : chips « Drafts » et « Mes MRs » (toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
-5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes
+5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Statut (visible par défaut, US-017), Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes
 6. **Pied** : rappel des règles (drafts après les ready, Mes MRs = auteur/reviewer/affecté)
 7. **État vide** : « Aucune MR ne correspond aux filtres. » + « Effacer les filtres »
 
@@ -171,8 +173,9 @@ une fois ses dépendances réalisées.
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
-**v2 (propositions, à valider)** : US-017 → US-021, ordre conseillé : US-017 → US-018 → US-019 → US-020 → US-021
-(US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04).
+**v2** : US-017 (livrée) puis, **propositions à valider**, US-018 → US-021, ordre conseillé :
+US-018 → US-019 → US-020 → US-021 (US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise les
+codes de RG-017-04).
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -200,27 +203,31 @@ Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées. Les termes ci-dessous rejoindront le glossaire (§3) à la livraison des
-US concernées.
+Spécifiées en septembre 2026, non validées (à l'exception de **US-017**, livrée — son terme « Statut » a rejoint le
+glossaire, §3). Les termes ci-dessous rejoindront le glossaire à la livraison des US concernées.
 
 | Terme          | Définition                                                                                                  | US     |
 |----------------|-------------------------------------------------------------------------------------------------------------|--------|
-| **Statut**     | Mergeabilité d'une MR : `mergeable` / `blocked` / `unknown`, avec la liste des raisons de blocage           | US-017 |
 | **Thème**      | Préférence d'affichage `system` / `light` / `dark`                                                          | US-018 |
 | **Forge**      | Plateforme hébergeant des MRs/PRs : `gitlab` ou `github`                                                     | US-019 |
 | **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
 
-Impacts documentaires prévus à la livraison : §1 (non-objectif « pipelines » nuancé par US-017), §4.1 (colonne
-Statut), §4.2 (sections 01/02/03 des Paramètres, option Thème en 06), RG-G09/G17/G18 (jetons et identités au
-pluriel), §6 (modèle : `Connections`), §9 (retrait de « Thème sombre », « pipelines / conflits », « GitHub »).
+Impacts documentaires déjà appliqués (US-017) : §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
+« Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits »).
+
+Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres,
+option Thème en 06), RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de
+« Thème sombre », « GitHub »).
 
 ---
 
 ## 9. Hors périmètre v1
 
 - Actions d'écriture sur GitLab (approuver, assigner, commenter, fusionner)
-- Suivi des pipelines / CI, conflits de merge → **proposé en v2 : US-017** (statut de mergeabilité) ; issues liées : toujours hors périmètre (QO-017-04)
+- Détail des jobs de pipeline, lien vers la pipeline, relance de pipeline (écriture) ; issues liées à une MR : hors
+  périmètre (QO-017-04). L'**affichage** de la mergeabilité (pipeline, conflits, approbations, discussions) est
+  livré par **US-017** (colonne Statut).
 - Multi-utilisateurs avec comptes et rôles
 - Historique / statistiques (temps moyen de relecture…)
 - Thème sombre → **proposé en v2 : US-018**
