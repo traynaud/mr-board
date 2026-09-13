@@ -59,6 +59,7 @@
       "emptyFiltered": "Aucune MR ne correspond aux filtres.",
       "clearFilters": "Effacer les filtres",
       "none": "—",
+      "meSuffix": "(moi)",
       "columns": {
         "project": "Projet",
         "author": "Auteur",
@@ -113,7 +114,8 @@
       }
     },
     "footer": {
-      "legend": "Drafts après les MRs ready, triés par date d'ouverture · « Mes MRs » = auteur, reviewer ou affecté"
+      "legend": "Drafts après les MRs ready, triés par date d'ouverture · « Mes MRs » = auteur, reviewer ou affecté",
+      "legendHighlighted": "Drafts après les MRs ready, triés par date d'ouverture · anneau rouge = c'est moi (auteur, reviewer ou affecté) · « Mes MRs » = auteur, reviewer ou affecté"
     },
     "sync": {
       "never": "Jamais synchronisé",
@@ -157,7 +159,8 @@
         "matched": "détecté via le jeton",
         "mismatch": "ne correspond pas au jeton",
         "manual": "saisi manuellement"
-      }
+      },
+      "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)"
     },
     "connection": {
       "number": "02",

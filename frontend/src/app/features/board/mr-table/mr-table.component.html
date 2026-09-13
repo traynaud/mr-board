@@ -27,7 +27,11 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      <app-avatar [name]="row.author.name" [avatarUrl]="row.author.avatarUrl" />
+      <app-avatar
+        [name]="row.author.name"
+        [avatarUrl]="row.author.avatarUrl"
+        [highlighted]="row.author.isMe && highlightMe()"
+      />
     </td>
   </ng-container>
 
@@ -110,10 +114,15 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      @let reviewerSummary = summarizeUsers(row.reviewers);
+      @let reviewerSummary = summarizeUsers(row.reviewers, highlightMe());
       @if (reviewerSummary.first; as first) {
         <span class="user-group" [matTooltip]="reviewerSummary.tooltip">
-          <app-avatar variant="outlined" [name]="first.name" [avatarUrl]="first.avatarUrl" />
+          <app-avatar
+            variant="outlined"
+            [name]="first.name"
+            [avatarUrl]="first.avatarUrl"
+            [highlighted]="first.isMe && highlightMe()"
+          />
           @if (reviewerSummary.extraCount > 0) {
             <span class="extra">+{{ reviewerSummary.extraCount }}</span>
           }
@@ -136,10 +145,15 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      @let assigneeSummary = summarizeUsers(row.assignees);
+      @let assigneeSummary = summarizeUsers(row.assignees, highlightMe());
       @if (assigneeSummary.first; as first) {
         <span class="user-group" [matTooltip]="assigneeSummary.tooltip">
-          <app-avatar variant="outlined" [name]="first.name" [avatarUrl]="first.avatarUrl" />
+          <app-avatar
+            variant="outlined"
+            [name]="first.name"
+            [avatarUrl]="first.avatarUrl"
+            [highlighted]="first.isMe && highlightMe()"
+          />
           @if (assigneeSummary.extraCount > 0) {
             <span class="extra">+{{ assigneeSummary.extraCount }}</span>
           }

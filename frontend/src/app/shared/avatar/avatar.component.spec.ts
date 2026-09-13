@@ -2,22 +2,32 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
+import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { AvatarComponent } from './avatar.component';
 
 @Component({
   imports: [AvatarComponent],
-  template: `<app-avatar [name]="name()" [avatarUrl]="avatarUrl()" [variant]="variant()" />`,
+  template: `<app-avatar
+    [name]="name()"
+    [avatarUrl]="avatarUrl()"
+    [variant]="variant()"
+    [highlighted]="highlighted()"
+  />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly name = signal('Marie Dupont');
   readonly avatarUrl = signal<string | null>(null);
   readonly variant = signal<'filled' | 'outlined'>('filled');
+  readonly highlighted = signal(false);
 }
 
 describe('AvatarComponent', () => {
   const setup = async () => {
-    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideI18nTesting()],
+    }).compileComponents();
     const fixture = TestBed.createComponent(HostComponent);
     await fixture.whenStable();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -58,5 +68,40 @@ describe('AvatarComponent', () => {
     await fixture.whenStable();
 
     expect(el.querySelector('.initials')?.textContent?.trim()).toBe('?');
+  });
+
+  it('should_not_apply_the_highlighted_class_by_default', async () => {
+    const { el } = await setup();
+
+    expect(el.querySelector('.avatar')?.classList.contains('highlighted')).toBe(false);
+  });
+
+  it('should_apply_the_highlighted_class_and_suffix_the_tooltip_when_highlighted', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.highlighted.set(true);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.avatar')?.classList.contains('highlighted')).toBe(true);
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe(`Marie Dupont ${t('board.mergeRequests.meSuffix')}`);
+  });
+
+  it('should_not_suffix_the_tooltip_when_not_highlighted', async () => {
+    const { fixture } = await setup();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe('Marie Dupont');
+  });
+
+  it('should_apply_the_highlighted_ring_around_a_profile_photo', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.avatarUrl.set('https://gitlab.com/a.png');
+    fixture.componentInstance.highlighted.set(true);
+    await fixture.whenStable();
+
+    expect(el.querySelector('img')).not.toBeNull();
+    expect(el.querySelector('.avatar')?.classList.contains('highlighted')).toBe(true);
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe(`Marie Dupont ${t('board.mergeRequests.meSuffix')}`);
   });
 });

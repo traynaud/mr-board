@@ -79,6 +79,7 @@ describe('SettingsTransfer (e2e)', () => {
       expect.objectContaining({
         gitlabUrl: 'https://gitlab.com',
         theme: 'system',
+        highlightMe: true,
       }),
     );
     expect(body(res).settings).not.toHaveProperty('tokenConfigured');
@@ -191,5 +192,38 @@ describe('SettingsTransfer (e2e)', () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  it('POST /settings/import should_import_highlight_me_when_provided', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com', highlightMe: false },
+        projects: [],
+      });
+
+    expect(res.status).toBe(200);
+    expect(body(res).settings).toEqual(
+      expect.objectContaining({ highlightMe: false }),
+    );
+  });
+
+  it('POST /settings/import should_keep_highlight_me_unchanged_when_absent', async () => {
+    // highlightMe was set to false by the previous test: an import omitting
+    // the field must leave it untouched (RG-015-04 semantics, same as every
+    // other importable field), not reset it to its true default.
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 1,
+        settings: { gitlabUrl: 'https://gitlab.com' },
+        projects: [],
+      });
+
+    expect(res.status).toBe(200);
+    expect(body(res).settings).toEqual(
+      expect.objectContaining({ highlightMe: false }),
+    );
   });
 });

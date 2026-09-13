@@ -55,6 +55,7 @@ configurée dans les paramètres.
 | **Moi**              | Identité GitLab de l'utilisateur courant (username, email) utilisée par « Mes MRs »                     |
 | **Jeton**            | Personal Access Token GitLab (scope `read_api`) utilisé par le backend                                  |
 | **Thème**            | Préférence d'affichage `system` / `light` / `dark` (US-018)                                             |
+| **Anneau « moi »**   | Liseré accent autour de mon avatar (auteur, reviewer, affecté) dans le tableau, désactivable via `highlightMe` (US-023) |
 
 ---
 
@@ -69,15 +70,15 @@ Zones, de haut en bas :
 2. **Barre de progression** 2 px pendant une synchronisation
 3. **Bandeau** « Aucun jeton GitLab configuré » avec bouton « Configurer » (si applicable)
 4. **Barre de filtres** : chips « Drafts » et « Mes MRs » (toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
-5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Statut (visible par défaut, US-017), Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes
-6. **Pied** : rappel des règles (drafts après les ready, Mes MRs = auteur/reviewer/affecté)
+5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Statut (visible par défaut, US-017), Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes ; anneau accent autour de mon avatar dans les colonnes Auteur/Reviewer/Affecté (US-023, désactivable)
+6. **Pied** : rappel des règles (drafts après les ready, Mes MRs = auteur/reviewer/affecté, anneau « moi » si actif — US-023)
 7. **État vide** : « Aucune MR ne correspond aux filtres. » + « Effacer les filtres »
 
 ### 4.2 Paramètres (route `/settings`)
 
 En-tête : retour, titre « Paramètres », « Annuler », « Enregistrer ». Corps en deux colonnes (titre de section à gauche,
 contenu à droite), sections :
-- `01 · Moi` — nom d'utilisateur GitLab, email (optionnel), aperçu de l'identité détectée
+- `01 · Moi` — nom d'utilisateur GitLab, email (optionnel), aperçu de l'identité détectée, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
 - `02 · Connexion GitLab` — URL de l'instance, jeton (masqué, affichable), « Tester la connexion »
 - `03 · Repos à scanner` — tableau chemin / alias / supprimer, ligne d'ajout
 - `04 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
@@ -97,7 +98,7 @@ Ces règles s'appliquent à toutes les US. Chaque US les référence par identif
 | RG-G03   | **Difficulté** : `lignes` = additions + suppressions ; `fichiers` = nombre de fichiers modifiés. Easy si `fichiers < easyFiles` **ET** `lignes < easyLines` ; Hard si `fichiers > hardFiles` **OU** `lignes > hardLines` ; Medium sinon. Défauts : easyFiles = 5, easyLines = 100, hardFiles = 20, hardLines = 800. Couleurs : Easy vert `#2f8f4e`, Medium orange `#d98a1f`, Hard rouge (accent). |
 | RG-G04   | **Temps depuis Ready** : `jours` = nombre de jours entiers écoulés entre la date Ready et maintenant (`floor`). Vert si `jours ≤ readyGreen` (défaut 1), orange si `readyGreen < jours ≤ readyOrange` (défaut 3), rouge au-delà. Libellés : « aujourd'hui » (0), « N j ». Option « jours ouvrés » : ne compter que lundi→vendredi (jours fériés ignorés).                          |
 | RG-G05   | **Date Ready** : GitLab n'expose pas cette date. Règle : si la MR a été créée non-draft, date Ready = `created_at` ; sinon date Ready = date de la première synchronisation où la MR est vue non-draft. Si une MR repasse en draft, la date Ready est effacée puis recalculée lors du prochain passage en Ready. Les drafts n'ont pas de date Ready.                                |
-| RG-G06   | **Reviewer / Affecté** : GitLab permet plusieurs reviewers et assignees. MR Board affiche le premier (ordre GitLab) et indique « +N » avec la liste complète au survol. Les filtres et « Mes MRs » considèrent **tous** les reviewers/assignees.                                                                                                                                  |
+| RG-G06   | **Reviewer / Affecté** : GitLab permet plusieurs reviewers et assignees. MR Board affiche le premier (ordre GitLab) et indique « +N » avec la liste complète au survol. Les filtres et « Mes MRs » considèrent **tous** les reviewers/assignees. Amendé par **US-023** (RG-023-06) : quand l'anneau « moi » est actif (RG-023-01) et que je figure parmi les reviewers/assignees sans être le premier, mon avatar est promu en position affichée ; le « +N » et l'infobulle restent en ordre GitLab.                                                                                                                                  |
 | RG-G07   | **Approved** : une MR est approuvée si elle a au moins une approbation (`approved_by` non vide), indépendamment des règles d'approbation du projet.                                                                                                                                                                                                                              |
 | RG-G08   | **Commentaires** : nombre de notes utilisateur (`user_notes_count`), hors notes système.                                                                                                                                                                                                                                                                                       |
 | RG-G09   | **Mes MRs** : une MR est « à moi » si mon username (ou, à défaut, mon email) correspond à l'auteur, à l'un des reviewers ou à l'un des assignees. Comparaison insensible à la casse.                                                                                                                                                                                             |
@@ -127,6 +128,8 @@ SyncRuns (historique des synchronisations)
 Attributs d'une MR affichée (DTO `MergeRequestView`) : `id`, `projectAlias`, `iid`, `title`, `webUrl`, `draft`,
 `author`, `reviewers[]`, `assignees[]`, `approved`, `commentsCount`, `changedFiles`, `changedLines`, `difficulty`
 (`easy|medium|hard`), `createdAt`, `readyAt`, `readyDays`, `readyLevel` (`green|orange|red`), `isMine`, `labels[]`.
+Chaque utilisateur embarqué (`author`, `reviewers[]`, `assignees[]`) porte aussi `isMe` (US-023, RG-023-05) ; le
+paramètre `Settings.highlightMe` (défaut `true`) contrôle uniquement l'affichage de l'anneau, pas le calcul.
 
 ---
 
@@ -170,17 +173,16 @@ une fois ses dépendances réalisées.
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
 | US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
 | US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ☐ |
-| US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ☐ |
+| US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
-**v2** : US-017 et US-018 (livrées) puis, **propositions à valider**, US-019 → US-023. Ordre conseillé :
-US-023 → US-022 → US-019 → US-020 → US-021. US-022 et US-023 sont indépendantes de l'épique multi-forges et peuvent
-être livrées avant elle (US-023 avant US-019 : `isMe` sera ensuite évalué par connexion, RG-023-15 ; US-022 avant
-US-019 pour que les nouveaux libellés de l'épique naissent directement dans les deux langues). US-017 avant US-020
-pour que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
+**v2** : US-017, US-018 et US-023 (livrées) puis, **propositions à valider**, US-019 → US-022. Ordre conseillé :
+US-022 → US-019 → US-020 → US-021. US-022 est indépendante de l'épique multi-forges et peut être livrée avant elle
+(pour que les nouveaux libellés de l'épique naissent directement dans les deux langues). US-017 avant US-020 pour
+que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -210,9 +212,9 @@ pour que le mapping GitHub de la mergeabilité réutilise les codes de RG-017-04
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées (à l'exception de **US-017** et **US-018**, livrées — leurs termes
-« Statut » et « Thème » ont rejoint le glossaire, §3). Les termes ci-dessous rejoindront le glossaire à la livraison
-des US concernées.
+Spécifiées en septembre 2026, non validées (à l'exception de **US-017**, **US-018** et **US-023**, livrées — leurs
+termes « Statut », « Thème » et « Anneau « moi » » ont rejoint le glossaire, §3). Les termes ci-dessous rejoindront
+le glossaire à la livraison des US concernées.
 
 | Terme          | Définition                                                                                                  | US     |
 |----------------|-------------------------------------------------------------------------------------------------------------|--------|
@@ -220,23 +222,20 @@ des US concernées.
 | **Connexion**  | Forge + URL + jeton + mon nom d'utilisateur sur cette forge ; possède des repos                              | US-019 |
 | **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
 | **Langue**     | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json`         | US-022 |
-| **Anneau « moi »** | Liseré accent autour de mon avatar (auteur, reviewer, affecté) dans le tableau, désactivable (`highlightMe`) | US-023 |
 
-Spécifications hors épique multi-forges, ajoutées le 2026-09-13 : **US-022** (`docs/features/US-022-langues/specs.md`)
-et **US-023** (`docs/features/US-023-surbrillance-moi/specs.md`, design commit `36cd4b4`).
+Spécification hors épique multi-forges restant à valider : **US-022** (`docs/features/US-022-langues/specs.md`).
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
 « Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
-« Thème »), §4.1 (bascule toolbar), §4.2 (option Thème en 06), §9 (retrait de « Thème sombre »), §7 roadmap (✅).
+« Thème »), §4.1 (bascule toolbar), §4.2 (option Thème en 06), §9 (retrait de « Thème sombre »), §7 roadmap (✅) ;
+US-023 — §3 (glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de
+page conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par RG-023-06), §6 (`isMe` sur
+`author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap (✅).
 
 Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
 RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
 US-022 — §3 (terme « Langue »), §4.2 (option « Langue » en 06, sous « Thème »), §6 (attribut `language` de
-`Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, script de parité). US-023 — §3 (terme
-« Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de page conditionnel), §4.2
-(case « Surligner mes MRs » en 01), §6 (`isMe` sur `author` / `reviewers[]` / `assignees[]`, attribut `highlightMe`
-de `Settings`), RG-G06 (promotion de mon avatar en première position, RG-023-06), RG-009-06 (le « marquage visuel
-optionnel » devient US-023).
+`Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, script de parité).
 
 ---
 

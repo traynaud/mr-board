@@ -85,6 +85,10 @@ export class Settings {
   @Column({ name: 'theme', type: 'text', default: 'system' })
   theme!: ThemePreference;
 
+  /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
+  @Column({ name: 'highlight_me', type: 'boolean', default: true })
+  highlightMe!: boolean;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

@@ -174,6 +174,11 @@ export class BoardPageComponent implements OnInit {
     this.themeService.effective() === 'dark' ? 'board.toolbar.themeToLight' : 'board.toolbar.themeToDark',
   );
 
+  /** RG-023-11 : pied de page mentionnant l'anneau « moi » uniquement quand `highlightMe` est actif. */
+  protected readonly footerLegendKey = computed(() =>
+    this.settingsStore.settings()?.highlightMe ? 'board.footer.legendHighlighted' : 'board.footer.legend',
+  );
+
   constructor() {
     // Toast d'erreur/partiel une fois la synchro terminée (RG-004-12), sans
     // re-déclencher au montage pour un échec déjà présent avant l'ouverture.

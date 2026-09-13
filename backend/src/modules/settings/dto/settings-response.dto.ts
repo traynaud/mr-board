@@ -35,4 +35,6 @@ export class SettingsResponseDto {
   tabBadge!: boolean;
   /** Theme preference (RG-018-01) : `system` follows the OS, `light`/`dark` force it. */
   theme!: ThemePreference;
+  /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
+  highlightMe!: boolean;
 }

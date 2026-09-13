@@ -110,4 +110,20 @@ describe('MeSectionComponent', () => {
 
     expect(el.querySelector('mat-error')?.textContent?.trim()).toBe(t('settings.me.emailInvalid'));
   });
+
+  it('should_render_the_highlight_me_checkbox_checked_by_default', () => {
+    const checkbox = el.querySelector('mat-checkbox[formControlName="highlightMe"]');
+
+    expect(checkbox).not.toBeNull();
+    expect(checkbox?.querySelector('input')?.checked).toBe(true);
+    expect(checkbox?.textContent?.trim()).toBe(t('settings.me.highlightMe'));
+  });
+
+  it('should_uncheck_highlight_me_and_mark_the_form_dirty', async () => {
+    el.querySelector<HTMLInputElement>('mat-checkbox[formControlName="highlightMe"] input')!.click();
+    await fixture.whenStable();
+
+    expect(host.form.controls.highlightMe.value).toBe(false);
+    expect(host.form.controls.highlightMe.dirty).toBe(true);
+  });
 });

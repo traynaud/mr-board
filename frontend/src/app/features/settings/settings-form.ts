@@ -59,6 +59,8 @@ export interface SettingsFormControls {
   tabBadge: FormControl<boolean>;
   /** Préférence de thème (RG-018-01/02). */
   theme: FormControl<ThemePreference>;
+  /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01/02). */
+  highlightMe: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -189,6 +191,7 @@ export function buildSettingsForm(): SettingsForm {
       notifyAssigned: new FormControl(false, { nonNullable: true }),
       tabBadge: new FormControl(false, { nonNullable: true }),
       theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
+      highlightMe: new FormControl(true, { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ; jamais
       // touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -223,6 +226,7 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.notifyAssigned.reset(settings.notifyAssigned);
   form.controls.tabBadge.reset(settings.tabBadge);
   form.controls.theme.reset(settings.theme);
+  form.controls.highlightMe.reset(settings.highlightMe);
 }
 
 /**
@@ -251,6 +255,7 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.notifyAssigned.setValue(false);
   controls.tabBadge.setValue(false);
   controls.theme.setValue('system');
+  controls.highlightMe.setValue(true);
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'gitlabToken' && name !== 'repos') {
       controls[name].markAsDirty();
@@ -285,6 +290,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     notifyAssigned,
     tabBadge,
     theme,
+    highlightMe,
   } = form.getRawValue();
   return {
     gitlabUrl: gitlabUrl.trim(),
@@ -305,5 +311,6 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     notifyAssigned,
     tabBadge,
     theme,
+    highlightMe,
   };
 }

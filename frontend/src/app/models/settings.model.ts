@@ -34,6 +34,8 @@ export interface Settings {
   tabBadge: boolean;
   /** Préférence de thème (RG-018-01). */
   theme: ThemePreference;
+  /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01). */
+  highlightMe: boolean;
 }
 
 /**
@@ -60,6 +62,7 @@ export interface UpdateSettingsRequest {
   notifyAssigned?: boolean;
   tabBadge?: boolean;
   theme?: ThemePreference;
+  highlightMe?: boolean;
 }
 
 /** Corps de `POST /settings/test-connection`. `gitlabToken` absent = jeton enregistré. */

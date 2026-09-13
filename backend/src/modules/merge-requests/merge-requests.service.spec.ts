@@ -441,6 +441,7 @@ describe('MergeRequestsService', () => {
               username: 'mdupont',
               name: 'Marie Dupont',
               avatarUrl: 'https://gitlab.example.com/mdupont.png',
+              isMe: false,
             },
             reviewers: [],
             assignees: [],
@@ -859,6 +860,79 @@ describe('MergeRequestsService', () => {
       } = await service.listOpen({});
 
       expect(view.isMine).toBe(true);
+    });
+
+    it('should_report_is_me_true_on_the_author_and_false_on_reviewers_and_assignees_who_do_not_match', async () => {
+      // RG-023-04/05 : `isMe` is computed per role, independently of `isMine`.
+      reviewersRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 20 },
+      ]);
+      assigneesRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 30 },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        { id: 20, username: 'tgirard', name: 'Thomas Girard', avatarUrl: null },
+        { id: 30, username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
+      ]);
+      settingsService.getIdentity.mockResolvedValue({
+        username: 'mdupont',
+        email: null,
+      });
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.author.isMe).toBe(true);
+      expect(view.reviewers[0].isMe).toBe(false);
+      expect(view.assignees[0].isMe).toBe(false);
+    });
+
+    it('should_report_is_me_true_on_a_reviewer_and_an_assignee_case_insensitively', async () => {
+      reviewersRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 20 },
+      ]);
+      assigneesRepo.findBy.mockResolvedValue([
+        { mergeRequestId: 1, userId: 20 },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        { id: 20, username: 'MDupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+      settingsService.getIdentity.mockResolvedValue({
+        username: 'mdupont',
+        email: null,
+      });
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.author.isMe).toBe(true);
+      expect(view.reviewers[0].isMe).toBe(true);
+      expect(view.assignees[0].isMe).toBe(true);
+      // Invariant RG-023-05 : isMine is derivable from the per-role isMe fields.
+      expect(view.isMine).toBe(true);
+    });
+
+    it('should_report_is_me_false_everywhere_when_no_identity_is_configured', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([{ id: 1, alias: 'api' }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.author.isMe).toBe(false);
+      expect(view.isMine).toBe(false);
     });
 
     it('should_filter_to_merge_requests_where_i_have_a_role_when_mine_only_is_requested', async () => {

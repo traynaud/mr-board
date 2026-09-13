@@ -1,4 +1,4 @@
-import { isMine } from './is-mine';
+import { isMe, isMine } from './is-mine';
 
 function subject(
   overrides: Partial<{
@@ -90,6 +90,39 @@ describe('isMine', () => {
     expect(
       isMine(subject({ authorUsername: 'mdupont' }), {
         username: null,
+        email: 'marie@exemple.fr',
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('isMe', () => {
+  it('should_return_true_when_the_username_matches', () => {
+    expect(isMe('mdupont', { username: 'mdupont', email: null })).toBe(true);
+  });
+
+  it('should_be_case_insensitive', () => {
+    expect(isMe('MDupont', { username: 'mdupont', email: null })).toBe(true);
+  });
+
+  it('should_return_false_when_the_username_does_not_match', () => {
+    expect(isMe('tgirard', { username: 'mdupont', email: null })).toBe(false);
+  });
+
+  it('should_return_false_when_the_identity_is_entirely_empty', () => {
+    expect(isMe('mdupont', { username: null, email: null })).toBe(false);
+  });
+
+  it('should_fall_back_to_the_email_when_the_username_is_unset', () => {
+    expect(
+      isMe('marie@exemple.fr', { username: null, email: 'marie@exemple.fr' }),
+    ).toBe(true);
+  });
+
+  it('should_prefer_the_username_over_the_email_when_both_are_set', () => {
+    expect(
+      isMe('marie@exemple.fr', {
+        username: 'mdupont',
         email: 'marie@exemple.fr',
       }),
     ).toBe(false);

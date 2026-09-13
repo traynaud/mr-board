@@ -104,4 +104,8 @@ export class ImportSettingsDto {
   @IsOptional()
   @IsIn(THEME_OPTIONS)
   theme?: ThemePreference;
+
+  @IsOptional()
+  @IsBoolean()
+  highlightMe?: boolean;
 }

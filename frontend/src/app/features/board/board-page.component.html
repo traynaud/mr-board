@@ -63,6 +63,7 @@
         [showOpened]="columnsStore.showOpened()"
         [columnWidths]="columnWidthsStore.widths()"
         [openInNewTab]="settingsStore.settings()?.openInNewTab ?? false"
+        [highlightMe]="settingsStore.settings()?.highlightMe ?? true"
         (sortChange)="mrStore.setSort($event)"
         (toggleStatusColumn)="onToggleStatusColumn()"
         (toggleOpenedColumn)="onToggleOpenedColumn()"
@@ -73,7 +74,7 @@
     }
     @if (showFooter()) {
       <div class="board-footer">
-        <span>{{ 'board.footer.legend' | translate }}</span>
+        <span>{{ footerLegendKey() | translate }}</span>
         <span class="query-string">{{ currentQueryString() }}</span>
       </div>
     }

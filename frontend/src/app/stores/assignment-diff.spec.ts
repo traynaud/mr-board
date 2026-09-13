@@ -2,7 +2,7 @@ import { MergeRequestUser, MergeRequestView } from '../models/merge-request.mode
 import { findNewAssignments } from './assignment-diff';
 
 function user(username: string): MergeRequestUser {
-  return { username, name: username, avatarUrl: null };
+  return { username, name: username, avatarUrl: null, isMe: false };
 }
 
 function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {

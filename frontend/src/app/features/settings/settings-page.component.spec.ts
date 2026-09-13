@@ -36,6 +36,7 @@ describe('SettingsPageComponent', () => {
     notifyAssigned: false,
     tabBadge: false,
     theme: 'system',
+    highlightMe: true,
   };
   const projectApi: Project = {
     id: 1,
@@ -193,6 +194,7 @@ describe('SettingsPageComponent', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
     req.flush({
       gitlabUrl: 'https://autre.exemple.fr',
@@ -214,6 +216,7 @@ describe('SettingsPageComponent', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
     await settle();
     await flushSync();
@@ -258,6 +261,7 @@ describe('SettingsPageComponent', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
   });
 

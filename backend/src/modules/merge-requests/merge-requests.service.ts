@@ -24,7 +24,7 @@ import {
   applyComposableFilters,
 } from './domain/filter-merge-requests';
 import { isIgnoredByLabel } from './domain/is-ignored-by-label';
-import { Identity, isMine } from './domain/is-mine';
+import { Identity, isMe, isMine } from './domain/is-mine';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import {
   DEFAULT_SORT,
@@ -329,11 +329,16 @@ function mustGet<T>(byId: Map<number, T>, id: number, label: string): T {
   return value;
 }
 
-function toMergeRequestUser(user: User): MergeRequestUserDto {
+/** @see RG-023-05 : `isMe` is computed independently of the `highlightMe` display preference. */
+function toMergeRequestUser(
+  user: User,
+  identity: Identity,
+): MergeRequestUserDto {
   return {
     username: user.username,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    isMe: isMe(user.username, identity),
   };
 }
 
@@ -354,10 +359,10 @@ function toMergeRequestView(
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
   const reviewers = reviewerIds.map((id) =>
-    toMergeRequestUser(mustGet(usersById, id, 'User')),
+    toMergeRequestUser(mustGet(usersById, id, 'User'), identity),
   );
   const assignees = assigneeIds.map((id) =>
-    toMergeRequestUser(mustGet(usersById, id, 'User')),
+    toMergeRequestUser(mustGet(usersById, id, 'User'), identity),
   );
   return {
     id: mergeRequest.id,
@@ -366,7 +371,7 @@ function toMergeRequestView(
     title: mergeRequest.title,
     webUrl: mergeRequest.webUrl,
     draft: mergeRequest.draft,
-    author: toMergeRequestUser(author),
+    author: toMergeRequestUser(author, identity),
     reviewers,
     assignees,
     approved: mergeRequest.approved,

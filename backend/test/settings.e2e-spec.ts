@@ -74,6 +74,7 @@ describe('Settings (e2e)', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
   });
 
@@ -138,6 +139,7 @@ describe('Settings (e2e)', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
     expect(JSON.stringify(res.body)).not.toContain('e2e-secret');
 
@@ -175,6 +177,7 @@ describe('Settings (e2e)', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
   });
 
@@ -535,6 +538,27 @@ describe('Settings (e2e)', () => {
 
     expect(res.status).toBe(400);
     expect(body(res).message).toEqual([expect.stringContaining('theme')]);
+  });
+
+  it('PUT /settings should_store_highlight_me', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com', highlightMe: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ highlightMe: false }));
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(res.body);
+  });
+
+  it('PUT /settings should_keep_highlight_me_when_omitted', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ gitlabUrl: 'https://gitlab.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({ highlightMe: false }));
   });
 
   it('PUT /settings should_reject_a_non_array_ignored_labels', async () => {

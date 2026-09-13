@@ -42,6 +42,7 @@ export interface MergeableSettingsFields {
   notifyAssigned?: boolean;
   tabBadge?: boolean;
   theme?: ThemePreference;
+  highlightMe?: boolean;
 }
 
 /** Every setting except the GitLab token, as exported/imported by US-015. */
@@ -63,6 +64,7 @@ export interface ExportableSettings {
   notifyAssigned: boolean;
   tabBadge: boolean;
   theme: ThemePreference;
+  highlightMe: boolean;
 }
 
 /** Manages the settings singleton and the GitLab connection test. */
@@ -244,6 +246,7 @@ export class SettingsService {
       notifyAssigned: settings.notifyAssigned,
       tabBadge: settings.tabBadge,
       theme: settings.theme,
+      highlightMe: settings.highlightMe,
     };
   }
 
@@ -304,6 +307,9 @@ export class SettingsService {
     if (dto.theme !== undefined) {
       settings.theme = dto.theme;
     }
+    if (dto.highlightMe !== undefined) {
+      settings.highlightMe = dto.highlightMe;
+    }
   }
 
   private async load(): Promise<Settings> {
@@ -333,6 +339,7 @@ export class SettingsService {
         notifyAssigned: false,
         tabBadge: false,
         theme: 'system',
+        highlightMe: true,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -400,6 +407,7 @@ export class SettingsService {
       notifyAssigned: settings.notifyAssigned,
       tabBadge: settings.tabBadge,
       theme: settings.theme,
+      highlightMe: settings.highlightMe,
     };
   }
 }

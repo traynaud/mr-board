@@ -17,7 +17,7 @@ const MR: MergeRequestView = {
   title: 'Refonte facturation',
   webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
   draft: false,
-  author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+  author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
   reviewers: [],
   assignees: [],
   approved: false,
@@ -71,6 +71,7 @@ const SETTINGS: Settings = {
   notifyAssigned: true,
   tabBadge: false,
   theme: 'system',
+  highlightMe: true,
 };
 
 describe('MergeRequestsStore', () => {
@@ -321,7 +322,7 @@ describe('MergeRequestsStore', () => {
 
     const ASSIGNED_MR: MergeRequestView = {
       ...MR,
-      reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null }],
+      reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false }],
     };
 
     it('should_not_notify_on_the_first_load_of_the_session', async () => {

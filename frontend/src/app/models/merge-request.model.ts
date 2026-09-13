@@ -3,6 +3,8 @@ export interface MergeRequestUser {
   username: string;
   name: string;
   avatarUrl: string | null;
+  /** Vrai si cet utilisateur est l'identité configurée dans les paramètres (RG-G09, RG-023-05). */
+  isMe: boolean;
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard';

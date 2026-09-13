@@ -89,6 +89,7 @@ describe('settings form helpers', () => {
     notifyAssigned: true,
     tabBadge: true,
     theme: 'dark' as const,
+    highlightMe: false,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -117,6 +118,7 @@ describe('settings form helpers', () => {
       notifyAssigned: true,
       tabBadge: true,
       theme: 'dark',
+      highlightMe: false,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -161,6 +163,7 @@ describe('settings form helpers', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
   });
 
@@ -186,6 +189,7 @@ describe('settings form helpers', () => {
       notifyAssigned: false,
       tabBadge: false,
       theme: 'system',
+      highlightMe: true,
     });
   });
 
@@ -289,6 +293,21 @@ describe('settings form helpers', () => {
 
     expect(form.controls.theme.value).toBe('dark');
   });
+
+  it('should_include_highlight_me_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ gitlabUrl: 'https://gitlab.com', highlightMe: false });
+
+    expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ highlightMe: false }));
+  });
+
+  it('should_reset_highlight_me_from_settings', () => {
+    const form = buildSettingsForm();
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.highlightMe.value).toBe(false);
+  });
 });
 
 describe('resetSettingsFormToDefaults', () => {
@@ -306,6 +325,7 @@ describe('resetSettingsFormToDefaults', () => {
       notifyAssigned: true,
       tabBadge: true,
       theme: 'dark',
+      highlightMe: false,
     });
 
     resetSettingsFormToDefaults(form);
@@ -323,6 +343,7 @@ describe('resetSettingsFormToDefaults', () => {
         notifyAssigned: false,
         tabBadge: false,
         theme: 'system',
+        highlightMe: true,
       }),
     );
   });

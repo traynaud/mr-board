@@ -9,6 +9,7 @@ interface MergeRequestUserBody {
   username: string;
   name: string;
   avatarUrl: string | null;
+  isMe: boolean;
 }
 interface MergeRequestViewBody {
   id: number;
@@ -219,12 +220,27 @@ describe('MergeRequests (e2e)', () => {
         title: 'MR 1',
         webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/1',
         draft: false,
-        author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+        author: {
+          username: 'mdupont',
+          name: 'Marie Dupont',
+          avatarUrl: null,
+          isMe: false,
+        },
         reviewers: [
-          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
+          {
+            username: 'kbenali',
+            name: 'Karim Benali',
+            avatarUrl: null,
+            isMe: false,
+          },
         ],
         assignees: [
-          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null },
+          {
+            username: 'lrousseau',
+            name: 'Léa Rousseau',
+            avatarUrl: null,
+            isMe: false,
+          },
         ],
         approved: true,
         commentsCount: 3,
@@ -483,6 +499,7 @@ describe('MergeRequests (e2e)', () => {
     const body = res.body as MergeRequestsResponseBody;
     expect(body.mergeRequests.map((v) => v.iid)).toEqual([40]);
     expect(body.mergeRequests[0].isMine).toBe(true);
+    expect(body.mergeRequests[0].author.isMe).toBe(true);
     expect(body.warnings).toEqual([]);
   });
 
@@ -507,6 +524,12 @@ describe('MergeRequests (e2e)', () => {
       (v) => v.iid === 50,
     );
     expect(view?.isMine).toBe(true);
+    expect(view?.reviewers.find((r) => r.username === 'mdupont')?.isMe).toBe(
+      true,
+    );
+    expect(view?.reviewers.find((r) => r.username === 'tgirard')?.isMe).toBe(
+      false,
+    );
   });
 
   it('GET /merge-requests?drafts=1&mine=1 should_combine_drafts_and_mine', async () => {

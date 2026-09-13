@@ -27,6 +27,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     notifyAssigned: false,
     tabBadge: false,
     theme: 'system',
+    highlightMe: true,
     ...overrides,
   };
 }

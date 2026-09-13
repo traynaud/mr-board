@@ -122,4 +122,9 @@ export class UpdateSettingsDto extends GitlabCredentialsDto {
   @IsOptional()
   @IsIn(THEME_OPTIONS)
   theme?: ThemePreference;
+
+  /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
+  @IsOptional()
+  @IsBoolean()
+  highlightMe?: boolean;
 }

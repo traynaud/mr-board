@@ -75,6 +75,8 @@ export class MrTableComponent {
   readonly columnWidths = input.required<Record<ResizableColumnKey, number>>();
   /** RG-G11, RG-015-01 : ouvre le titre dans un nouvel onglet plutôt que le même. */
   readonly openInNewTab = input(false);
+  /** RG-023-01/06 : surligne mon avatar et le promeut en position affichée. */
+  readonly highlightMe = input(true);
 
   readonly sortChange = output<SortKey>();
   /** RG-017-09 : bascule la visibilité de la colonne « Statut ». */

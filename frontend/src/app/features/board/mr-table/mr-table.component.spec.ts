@@ -20,7 +20,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
     draft: false,
-    author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+    author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
     reviewers: [],
     assignees: [],
     approved: false,
@@ -51,6 +51,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       [showOpened]="showOpened()"
       [columnWidths]="columnWidths()"
       [openInNewTab]="openInNewTab()"
+      [highlightMe]="highlightMe()"
       (sortChange)="lastSortChange = $event"
       (toggleStatusColumn)="toggleStatusColumnCount = toggleStatusColumnCount + 1"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
@@ -68,6 +69,7 @@ class HostComponent {
   readonly showOpened = signal(false);
   readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   readonly openInNewTab = signal(false);
+  readonly highlightMe = signal(true);
   lastSortChange: SortKey | null = null;
   toggleStatusColumnCount = 0;
   toggleOpenedColumnCount = 0;
@@ -139,8 +141,8 @@ describe('MrTableComponent', () => {
     fixture.componentInstance.rows.set([
       mergeRequest({
         reviewers: [
-          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
-          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null },
+          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null, isMe: false },
         ],
       }),
     ]);
@@ -154,14 +156,86 @@ describe('MrTableComponent', () => {
     fixture.componentInstance.rows.set([
       mergeRequest({
         assignees: [
-          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null },
-          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null },
+          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+          { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null, isMe: false },
         ],
       }),
     ]);
     await fixture.whenStable();
 
     expect(el.querySelector('.extra')?.textContent?.trim()).toBe('+1');
+  });
+
+  it('should_highlight_the_author_avatar_when_they_are_me_and_highlight_me_is_enabled', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({ author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true } }),
+    ]);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.avatar')?.classList.contains('highlighted')).toBe(true);
+  });
+
+  it('should_not_highlight_the_author_avatar_when_highlight_me_is_disabled', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.highlightMe.set(false);
+    fixture.componentInstance.rows.set([
+      mergeRequest({ author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true } }),
+    ]);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.avatar')?.classList.contains('highlighted')).toBe(false);
+  });
+
+  it('should_promote_me_to_first_position_among_several_reviewers_when_highlight_me_is_enabled', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        reviewers: [
+          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+          { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true },
+        ],
+      }),
+    ]);
+    await fixture.whenStable();
+
+    const reviewerAvatar = el.querySelectorAll('.user-group .avatar')[0];
+    expect(reviewerAvatar.classList.contains('highlighted')).toBe(true);
+    expect(el.querySelector('.extra')?.textContent?.trim()).toBe('+1');
+  });
+
+  it('should_highlight_both_the_reviewer_and_the_assignee_avatars_on_the_same_row_when_i_hold_both_roles', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        author: { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+        reviewers: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true }],
+        assignees: [{ username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true }],
+      }),
+    ]);
+    await fixture.whenStable();
+
+    const avatars = el.querySelectorAll('.avatar');
+    const highlightedCount = Array.from(avatars).filter((avatar) => avatar.classList.contains('highlighted')).length;
+    expect(highlightedCount).toBe(2);
+    expect(avatars[0].classList.contains('highlighted')).toBe(false);
+  });
+
+  it('should_keep_the_gitlab_order_among_reviewers_when_highlight_me_is_disabled', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.highlightMe.set(false);
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        reviewers: [
+          { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+          { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: true },
+        ],
+      }),
+    ]);
+    await fixture.whenStable();
+
+    const reviewerAvatar = el.querySelectorAll('.user-group .avatar')[0];
+    expect(reviewerAvatar.classList.contains('highlighted')).toBe(false);
   });
 
   it('should_show_a_check_icon_only_when_approved', async () => {

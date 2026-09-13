@@ -24,6 +24,13 @@
     object-fit: cover;
     display: block;
   }
+
+  /* Anneau « moi » (RG-023-07) : liseré --color-bg puis anneau --color-accent, tokens uniquement. */
+  &.highlighted {
+    box-shadow:
+      0 0 0 2px var(--color-bg),
+      0 0 0 4px var(--color-accent);
+  }
 }
 
 .initials {

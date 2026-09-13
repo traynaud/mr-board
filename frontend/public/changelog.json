@@ -2,6 +2,12 @@
   {
     "date": "2026-09-13",
     "type": "feat",
+    "user-story": "US-023",
+    "title": "Surbrillance de mes MRs : anneau accent sur mon avatar (auteur, reviewer, affecté), désactivable dans « Moi »."
+  },
+  {
+    "date": "2026-09-13",
+    "type": "feat",
     "user-story": "US-018",
     "title": "Thème sombre : réglage clair/sombre/système dans les Paramètres et bascule rapide dans la toolbar."
   },

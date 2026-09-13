@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -16,12 +17,20 @@ const STATUS_KEYS: Record<Exclude<MeIdentity['status'], 'unset'>, string> = {
 
 /**
  * Section « 01 · Moi » : username, email (optionnel), aperçu de l'identité
- * résolue (RG-002-03). Composant présentationnel : la résolution de
- * l'identité est calculée par la page (`resolveMeIdentity`).
+ * résolue (RG-002-03), case « Surligner mes MRs… » (RG-023-02). Composant
+ * présentationnel : la résolution de l'identité est calculée par la page
+ * (`resolveMeIdentity`).
  */
 @Component({
   selector: 'app-me-section',
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, TranslatePipe, AvatarComponent],
+  imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCheckboxModule,
+    TranslatePipe,
+    AvatarComponent,
+  ],
   templateUrl: './me-section.component.html',
   styleUrl: './me-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

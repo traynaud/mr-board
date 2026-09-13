@@ -45,6 +45,7 @@ const FULL_SETTINGS = {
   notifyAssigned: false,
   tabBadge: false,
   theme: 'system',
+  highlightMe: true,
 };
 
 describe('MiscellaneousSectionComponent', () => {

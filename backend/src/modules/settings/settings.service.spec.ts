@@ -34,6 +34,7 @@ describe('SettingsService', () => {
     notifyAssigned: false,
     tabBadge: false,
     theme: 'system',
+    highlightMe: true,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -94,6 +95,7 @@ describe('SettingsService', () => {
         notifyAssigned: false,
         tabBadge: false,
         theme: 'system',
+        highlightMe: true,
       });
     });
 
@@ -167,6 +169,7 @@ describe('SettingsService', () => {
         notifyAssigned: false,
         tabBadge: false,
         theme: 'system',
+        highlightMe: true,
       });
     });
 
@@ -472,6 +475,26 @@ describe('SettingsService', () => {
       const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
 
       expect(result).toEqual(expect.objectContaining({ theme: 'dark' }));
+    });
+
+    it('should_set_highlight_me_when_provided', async () => {
+      const result = await service.update({
+        gitlabUrl: 'https://gitlab.com',
+        highlightMe: false,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ highlightMe: false }),
+      );
+      expect(result).toEqual(expect.objectContaining({ highlightMe: false }));
+    });
+
+    it('should_keep_highlight_me_when_omitted', async () => {
+      repository.findOneBy.mockResolvedValue({ ...row(), highlightMe: false });
+
+      const result = await service.update({ gitlabUrl: 'https://gitlab.com' });
+
+      expect(result).toEqual(expect.objectContaining({ highlightMe: false }));
     });
   });
 
@@ -799,6 +822,7 @@ describe('SettingsService', () => {
         notifyAssigned: false,
         tabBadge: false,
         theme: 'system',
+        highlightMe: true,
       });
       expect(result).not.toHaveProperty('gitlabTokenEncrypted');
       expect(JSON.stringify(result)).not.toContain('should-not-appear');

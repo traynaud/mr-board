@@ -25,6 +25,10 @@ mat-form-field {
   font-size: 12px;
 }
 
+.highlight-me {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 640px) {
   .fields {
     grid-template-columns: 1fr;

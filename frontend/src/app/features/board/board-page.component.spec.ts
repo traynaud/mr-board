@@ -41,6 +41,7 @@ const NO_TOKEN_SETTINGS: Settings = {
   notifyAssigned: false,
   tabBadge: false,
   theme: 'system',
+  highlightMe: true,
 };
 const WITH_TOKEN_SETTINGS: Settings = {
   ...NO_TOKEN_SETTINGS,
@@ -100,7 +101,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
     draft: false,
-    author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+    author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
     reviewers: [],
     assignees: [],
     approved: false,
@@ -571,6 +572,32 @@ describe('BoardPageComponent', () => {
       await bootstrap({ settings: WITH_TOKEN_SETTINGS, projects: [], status: IDLE_STATUS });
 
       expect(el.querySelector('.board-footer')).toBeNull();
+    });
+
+    it('should_mention_the_highlight_ring_in_the_footer_when_highlight_me_is_enabled', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, highlightMe: true },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      expect(el.querySelector('.board-footer span')?.textContent?.trim()).toBe(
+        t('board.footer.legendHighlighted'),
+      );
+    });
+
+    it('should_not_mention_the_highlight_ring_in_the_footer_when_highlight_me_is_disabled', async () => {
+      await bootstrap({
+        settings: { ...WITH_TOKEN_SETTINGS, highlightMe: false },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest()],
+      });
+
+      expect(el.querySelector('.board-footer span')?.textContent?.trim()).toBe(
+        t('board.footer.legend'),
+      );
     });
 
     it('should_toggle_the_opened_column_from_the_mr_table_menu_output', async () => {
