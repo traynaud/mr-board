@@ -109,6 +109,15 @@ describe('GitlabClientService', () => {
     });
   });
 
+  describe('normalizePath', () => {
+    it('should_delegate_to_the_pure_normalizer_without_a_segment_count_limit', () => {
+      expect(service.normalizePath('equipe/sous-groupe/projet')).toBe(
+        'equipe/sous-groupe/projet',
+      );
+      expect(service.normalizePath('')).toBeNull();
+    });
+  });
+
   describe('testConnection', () => {
     it('should_resolve_the_identity_with_private_token_header', async () => {
       fetchSpy
@@ -128,6 +137,7 @@ describe('GitlabClientService', () => {
         avatarUrl: null,
         expiresAt: null,
         expirationKnown: false,
+        scopeKnown: false,
       });
 
       const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
@@ -159,6 +169,7 @@ describe('GitlabClientService', () => {
         expect.objectContaining({
           expiresAt: '2027-03-12',
           expirationKnown: true,
+          scopeKnown: true,
         }),
       );
     });

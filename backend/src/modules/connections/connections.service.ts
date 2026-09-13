@@ -44,7 +44,6 @@ export class ConnectionsService {
 
   /**
    * Adds a connection (RG-019-01 to RG-019-03).
-   * @throws ForgeTypeUnsupportedException for `type: 'github'` (400, until US-020).
    * @throws BusinessValidationException when the URL cannot be normalised (400).
    * @throws ConnectionNameDuplicateException when the name is already used (400).
    */

@@ -4,6 +4,7 @@ import { App } from 'supertest/types';
 import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
 import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
 import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
 import { createTestApp } from './utils/create-test-app';
 
 interface SyncRunBody {
@@ -56,6 +57,7 @@ describe('Sync (e2e)', () => {
   let app: INestApplication<App>;
   const gitlab = {
     normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    normalizePath: jest.fn((path: string) => normalizeProjectPath(path)),
     testConnection: jest.fn(),
     resolveProject: jest.fn(),
     fetchOpenMergeRequests: jest.fn(),

@@ -94,7 +94,7 @@
       },
       "mergeStatus": {
         "mergeable": "Mergeable",
-        "unknown": "Status being checked by GitLab",
+        "unknown": "Status being checked by {{forge}}",
         "blockedTitle": "Not mergeable:",
         "reasons": {
           "conflicts": "Merge conflicts",
@@ -185,7 +185,6 @@
       "form": {
         "typeGitlab": "GitLab",
         "typeGithub": "GitHub",
-        "typeGithubSoon": "Coming soon",
         "name": "Name",
         "nameDuplicate": "Name already in use",
         "url": "Instance URL",
@@ -194,6 +193,7 @@
         "token": "Personal access token",
         "tokenKeepPlaceholder": "Leave empty to keep the current token",
         "tokenTooShort": "The token must be at least {{min}} characters long.",
+        "tokenHelpGithub": "Classic token with the repo scope (or public_repo), or a fine-grained token with read access to Pull requests, Commit statuses and Checks.",
         "showToken": "Show token",
         "hideToken": "Hide token",
         "test": "Test connection",
@@ -205,7 +205,8 @@
         "connected": "Connected · {{name}} (@{{username}})",
         "expires": "expires on {{date}}",
         "noExpiry": "no expiry",
-        "unknownExpiry": "expiry unknown"
+        "unknownExpiry": "expiry unknown",
+        "scopeUnknown": "permissions not verifiable"
       },
       "deleteConfirm": {
         "title": "Remove connection « {{name}} »?",
@@ -221,7 +222,8 @@
       "connectionHeader": "Connection",
       "pathHeader": "Project path",
       "aliasHeader": "Alias",
-      "pathPlaceholder": "group/project or GitLab URL",
+      "pathPlaceholderGitlab": "group/project or GitLab URL",
+      "pathPlaceholderGithub": "owner/repo or GitHub URL",
       "aliasPlaceholder": "alias",
       "add": "Add",
       "remove": "Remove {{alias}}",
@@ -238,7 +240,7 @@
     "refresh": {
       "number": "04",
       "title": "Refresh",
-      "description": "Automatic sync frequency with GitLab.",
+      "description": "Automatic sync frequency with the configured forges.",
       "frequency": "Sync frequency",
       "options": {
         "minutes": "{{minutes}} min",
@@ -319,12 +321,12 @@
     "forge": {
       "auth": "Failed: token rejected (401)",
       "unavailable": "Failed: instance unreachable",
-      "scope": "Failed: insufficient scope (read_api required)",
-      "timeout": "Failed: request timed out"
+      "scope": "Failed: insufficient scope",
+      "timeout": "Failed: request timed out",
+      "rateLimited": "Failed: GitHub rate limit reached, try again later"
     },
     "connections": {
       "nameDuplicate": "This name is already in use.",
-      "typeUnsupported": "This forge type is not available yet.",
       "missing": "Add a connection first.",
       "tokenMissing": "Configure this connection's token first.",
       "unknown": "Unknown connection.",
@@ -339,7 +341,8 @@
       "notFound": "Project not found or not accessible with this token.",
       "alreadyConfigured": "This project is already configured.",
       "aliasDuplicate": "This alias is already in use.",
-      "connectionRequired": "Choose a connection."
+      "connectionRequired": "Choose a connection.",
+      "invalidPath": "Expected format: owner/repo"
     }
   }
 }

@@ -297,6 +297,21 @@ describe('MrTableComponent', () => {
     expect(el.querySelector('app-merge-status-icon .danger')).not.toBeNull();
   });
 
+  it('should_pass_the_rows_own_connection_type_to_the_merge_status_icon', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.rows.set([
+      mergeRequest({
+        mergeStatus: { state: 'unknown', reasons: [] },
+        connection: { id: 2, name: 'github.com', type: 'github' },
+      }),
+    ]);
+    await fixture.whenStable();
+
+    expect(el.querySelector('app-merge-status-icon .status-icon')?.getAttribute('aria-label')).toBe(
+      t('board.mergeRequests.mergeStatus.unknown', { forge: t('settings.connections.form.typeGithub') }),
+    );
+  });
+
   it('should_hide_the_opened_column_by_default_and_show_it_when_showOpened_is_true', async () => {
     const { fixture, el } = await setup();
 

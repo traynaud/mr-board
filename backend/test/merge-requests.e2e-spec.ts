@@ -6,6 +6,7 @@ import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service
 import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
 import { ForgeUser } from '../src/modules/forges/types/forge-user';
 import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
 import { createTestApp } from './utils/create-test-app';
 
 interface MergeRequestUserBody {
@@ -170,6 +171,7 @@ describe('MergeRequests (e2e)', () => {
   let connectionId: number;
   const gitlab = {
     normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    normalizePath: jest.fn((path: string) => normalizeProjectPath(path)),
     testConnection: jest.fn(),
     resolveProject: jest.fn(),
     fetchOpenMergeRequests: jest.fn(),

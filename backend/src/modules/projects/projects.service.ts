@@ -12,7 +12,6 @@ import {
 import { ConnectionsService } from '../connections/connections.service';
 import { ForgeClientFactory } from '../forges/forge-client.factory';
 import { deriveDefaultAlias } from './domain/derive-default-alias';
-import { normalizeProjectPath } from './domain/normalize-project-path';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectResponseDto } from './dto/project-response.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -92,13 +91,6 @@ export class ProjectsService {
    * @throws BusinessException (409) when the repo is already configured on this connection.
    */
   async add(dto: CreateProjectDto): Promise<ProjectResponseDto> {
-    const path = normalizeProjectPath(dto.path);
-    if (!path) {
-      throw new BusinessValidationException(
-        'projects.notFound',
-        'Path could not be resolved',
-      );
-    }
     const connectionId = await this.resolveConnectionId(dto.connectionId);
     const connection = await this.connections.findOrThrow(connectionId);
     const token = await this.connections.getToken(connectionId);
@@ -106,6 +98,18 @@ export class ProjectsService {
       throw new ConnectionTokenMissingException();
     }
     const forge = this.forges.forType(connection.type);
+
+    // Resolved via the connection's own forge (RG-020-05) — GitHub enforces
+    // a strict `owner/repo` shape (`projects.invalidPath`) where GitLab
+    // accepts any depth of (sub)groups, so this cannot happen before the
+    // forge is known.
+    const path = forge.normalizePath(dto.path);
+    if (!path) {
+      throw new BusinessValidationException(
+        'projects.notFound',
+        'Path could not be resolved',
+      );
+    }
 
     let forgeProject: Awaited<ReturnType<typeof forge.resolveProject>>;
     try {

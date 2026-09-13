@@ -72,15 +72,9 @@
   } @else {
     <div class="connection-form" [formGroup]="form()">
       @if (openForm()?.mode === 'add') {
-        <mat-radio-group formControlName="type" class="type-group">
+        <mat-radio-group formControlName="type" class="type-group" (change)="onTypeChange($event.value)">
           <mat-radio-button value="gitlab">{{ 'settings.connections.form.typeGitlab' | translate }}</mat-radio-button>
-          <mat-radio-button
-            value="github"
-            disabled
-            [matTooltip]="'settings.connections.form.typeGithubSoon' | translate"
-          >
-            {{ 'settings.connections.form.typeGithub' | translate }}
-          </mat-radio-button>
+          <mat-radio-button value="github">{{ 'settings.connections.form.typeGithub' | translate }}</mat-radio-button>
         </mat-radio-group>
       } @else {
         <div class="type-static">
@@ -133,6 +127,9 @@
           <mat-error>{{ 'settings.connections.form.tokenTooShort' | translate: { min: tokenMinLength } }}</mat-error>
         }
       </mat-form-field>
+      @if (isGithubType()) {
+        <p class="token-help">{{ 'settings.connections.form.tokenHelpGithub' | translate }}</p>
+      }
 
       <div class="test-row">
         <button mat-stroked-button type="button" [disabled]="!canTestForm()" (click)="testFromForm()">
@@ -144,6 +141,7 @@
               @if (test.status === 'success' && test.result; as result) {
                 <mat-icon svgIcon="check" class="result-icon" />
                 {{ 'settings.connections.result.connected' | translate: { name: result.name, username: result.username } }}
+                · {{ testResultSummary(result) }}
               } @else if (test.status === 'error') {
                 {{ (test.errorKey ?? 'errors.unexpected') | translate }}
               } @else {

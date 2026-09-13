@@ -15,11 +15,16 @@ import {
   ConfirmDialogData,
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { formatShortDate } from '../../../../shared/format/format-date';
-import { Connection } from '../../../../models/connection.model';
+import {
+  Connection,
+  ConnectionType,
+  TestConnectionResult,
+} from '../../../../models/connection.model';
 import { ConnectionsStore } from '../../../../stores/connections.store';
 import {
   ConnectionForm,
   TOKEN_MIN_LENGTH,
+  applyConnectionTypeDefaults,
   buildConnectionForm,
   resetConnectionFormForAdd,
   resetConnectionFormForEdit,
@@ -99,6 +104,20 @@ export class ConnectionsSectionComponent implements OnInit {
     return form.controls.url.valid && form.controls.token.valid && hasToken;
   }
 
+  /**
+   * Méthode simple (pas `computed`), même raison que `canTestForm` : lit
+   * `form().controls.type.value`, qui change en direct au clic sur le
+   * `mat-radio-group` en mode ajout.
+   */
+  protected isGithubType(): boolean {
+    return this.form().controls.type.value === 'github';
+  }
+
+  /** RG-020-01 : re-propose l'URL/le nom par défaut du type nouvellement choisi (ajout seulement). */
+  protected onTypeChange(type: ConnectionType): void {
+    applyConnectionTypeDefaults(this.form(), type);
+  }
+
   ngOnInit(): void {
     void this.store.load();
   }
@@ -160,22 +179,34 @@ export class ConnectionsSectionComponent implements OnInit {
     await this.store.testConnection({ connectionId: connection.id });
     const test = this.store.test();
     if (test.status === 'success' && test.result) {
-      const expiry = !test.result.expirationKnown
-        ? this.i18n.translate('settings.connections.result.unknownExpiry')
-        : test.result.expiresAt
-          ? this.i18n.translate('settings.connections.result.expires', {
-              date: formatShortDate(test.result.expiresAt, this.i18n.language()),
-            })
-          : this.i18n.translate('settings.connections.result.noExpiry');
       this.toast(
         `${connection.name} : ${this.i18n.translate('settings.connections.result.connected', {
           name: test.result.name,
           username: test.result.username,
-        })} · ${expiry}`,
+        })} · ${this.testResultSummary(test.result)}`,
       );
     } else if (test.status === 'error') {
       this.toast(`${connection.name} : ${this.i18n.translate(test.errorKey ?? 'errors.unexpected')}`);
     }
+  }
+
+  /**
+   * Résume l'expiration et, le cas échéant, l'absence de vérification de
+   * scope (RG-020-03, jeton GitHub fine-grained) d'un test réussi — partagé
+   * entre le toast de `testFromList` et l'affichage inline du formulaire.
+   */
+  protected testResultSummary(result: TestConnectionResult): string {
+    const expiry = !result.expirationKnown
+      ? this.i18n.translate('settings.connections.result.unknownExpiry')
+      : result.expiresAt
+        ? this.i18n.translate('settings.connections.result.expires', {
+            date: formatShortDate(result.expiresAt, this.i18n.language()),
+          })
+        : this.i18n.translate('settings.connections.result.noExpiry');
+    const scopeSuffix = result.scopeKnown
+      ? ''
+      : ` · ${this.i18n.translate('settings.connections.result.scopeUnknown')}`;
+    return `${expiry}${scopeSuffix}`;
   }
 
   protected async submit(): Promise<void> {

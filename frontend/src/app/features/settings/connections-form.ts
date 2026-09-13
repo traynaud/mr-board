@@ -12,8 +12,11 @@ import { Connection, ConnectionType } from '../../models/connection.model';
 /** Longueur minimale d'un jeton saisi (RG-019-03, identique au backend). */
 export const TOKEN_MIN_LENGTH = 8;
 
-/** URL de connexion par défaut à la création (RG-019-02). */
-export const DEFAULT_GITLAB_URL = 'https://gitlab.com';
+/** URL de connexion par défaut à la création, par type (RG-019-02, RG-020-01). */
+export const DEFAULT_URLS: Record<ConnectionType, string> = {
+  gitlab: 'https://gitlab.com',
+  github: 'https://github.com',
+};
 
 /**
  * Valide une URL d'instance de forge : schéma http(s) et hôte présents
@@ -74,7 +77,7 @@ export function buildConnectionForm(requireToken: boolean): ConnectionForm {
   return new FormGroup<ConnectionFormControls>({
     type: new FormControl<ConnectionType>('gitlab', { nonNullable: true }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    url: new FormControl(DEFAULT_GITLAB_URL, {
+    url: new FormControl(DEFAULT_URLS.gitlab, {
       nonNullable: true,
       validators: [Validators.required, forgeUrlValidator],
     }),
@@ -87,14 +90,30 @@ export function buildConnectionForm(requireToken: boolean): ConnectionForm {
   });
 }
 
-/** Pré-remplit le formulaire d'ajout avec les valeurs par défaut (RG-019-02). */
-export function resetConnectionFormForAdd(form: ConnectionForm): void {
+/** Pré-remplit le formulaire d'ajout avec les valeurs par défaut du type choisi (RG-019-02, RG-020-01). */
+export function resetConnectionFormForAdd(
+  form: ConnectionForm,
+  type: ConnectionType = 'gitlab',
+): void {
+  const url = DEFAULT_URLS[type];
   form.reset({
-    type: 'gitlab',
-    name: deriveDefaultConnectionName(DEFAULT_GITLAB_URL),
-    url: DEFAULT_GITLAB_URL,
+    type,
+    name: deriveDefaultConnectionName(url),
+    url,
     token: '',
   });
+}
+
+/**
+ * Ré-applique les valeurs par défaut du type sélectionné (nom, URL) quand
+ * l'utilisateur change de type dans un formulaire d'ajout déjà ouvert
+ * (RG-020-01) — le type n'est en revanche jamais modifiable après création
+ * (RG-019-11), donc jamais appelée en modification.
+ */
+export function applyConnectionTypeDefaults(form: ConnectionForm, type: ConnectionType): void {
+  const url = DEFAULT_URLS[type];
+  form.controls.name.setValue(deriveDefaultConnectionName(url));
+  form.controls.url.setValue(url);
 }
 
 /** Pré-remplit le formulaire de modification depuis une connexion existante (RG-019-11). */

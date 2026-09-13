@@ -139,6 +139,23 @@ describe('RepositoriesSectionComponent', () => {
     expect(el.textContent).toContain('GitLab');
   });
 
+  it('should_use_the_gitlab_path_placeholder_for_a_single_gitlab_connection', async () => {
+    await loadProjects();
+    await seedConnections([CONNECTION]);
+
+    expect(pathInput().placeholder).toBe(t('settings.projects.pathPlaceholderGitlab'));
+  });
+
+  it('should_use_the_github_placeholder_when_the_preselected_connection_is_github', async () => {
+    await loadProjects();
+    await seedConnections([
+      { ...CONNECTION, id: 3, type: 'github', name: 'github.com' },
+      { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' },
+    ]);
+
+    expect(pathInput().placeholder).toBe(t('settings.projects.pathPlaceholderGithub'));
+  });
+
   it('should_disable_add_button_when_path_is_empty_or_an_add_is_in_flight', async () => {
     // Traçabilité explicite du scénario « Bouton Ajouter désactivé » (specs
     // US-003 §6) : déjà couvert incidemment par un autre test, mais mérite
@@ -240,6 +257,23 @@ describe('RepositoriesSectionComponent', () => {
     await settle();
 
     expect(el.querySelector('mat-error')?.textContent?.trim()).toBe(t('errors.projects.notFound'));
+    expect(snackBar.open).not.toHaveBeenCalled();
+  });
+
+  it('should_show_inline_error_under_path_for_an_invalid_github_path', async () => {
+    await loadProjects();
+    await type(pathInput(), 'equipe/sous/front-web');
+
+    addButton().click();
+    http
+      .expectOne('/api/v1/projects')
+      .flush(
+        { statusCode: 400, code: 'projects.invalidPath', message: 'x' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+    await settle();
+
+    expect(el.querySelector('mat-error')?.textContent?.trim()).toBe(t('errors.projects.invalidPath'));
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 

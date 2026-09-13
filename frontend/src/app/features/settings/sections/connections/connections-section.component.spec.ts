@@ -109,7 +109,7 @@ describe('ConnectionsSectionComponent', () => {
     expect(el.querySelector('mat-radio-group')).not.toBeNull();
   });
 
-  it('should_disable_the_github_radio_option', async () => {
+  it('should_allow_selecting_the_github_type', async () => {
     await loadConnections([]);
     addButton().click();
     await settle();
@@ -117,7 +117,27 @@ describe('ConnectionsSectionComponent', () => {
     const githubRadio = Array.from(el.querySelectorAll('mat-radio-button')).find((b) =>
       b.textContent?.includes(t('settings.connections.form.typeGithub')),
     );
-    expect(githubRadio?.querySelector('input')?.disabled).toBe(true);
+    expect(githubRadio?.querySelector('input')?.disabled).toBe(false);
+  });
+
+  it('should_reapply_the_github_defaults_when_switching_type', async () => {
+    await loadConnections([]);
+    addButton().click();
+    await settle();
+
+    const githubRadioInput = Array.from(
+      el.querySelectorAll<HTMLInputElement>('mat-radio-button input'),
+    ).find((input) => input.value === 'github')!;
+    githubRadioInput.click();
+    await settle();
+
+    const nameInput = el.querySelector<HTMLInputElement>('input[formControlName="name"]')!;
+    const urlInput = el.querySelector<HTMLInputElement>('input[formControlName="url"]')!;
+    expect(nameInput.value).toBe('github.com');
+    expect(urlInput.value).toBe('https://github.com');
+    expect(el.querySelector('.token-help')?.textContent?.trim()).toBe(
+      t('settings.connections.form.tokenHelpGithub'),
+    );
   });
 
   it('should_add_a_connection_and_toast_on_success', async () => {
@@ -225,11 +245,40 @@ describe('ConnectionsSectionComponent', () => {
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
+      scopeKnown: true,
     });
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
       expect.stringContaining('GitLab'),
+      t('common.ok'),
+      expect.anything(),
+    );
+    expect(snackBar.open).not.toHaveBeenCalledWith(
+      expect.stringContaining(t('settings.connections.result.scopeUnknown')),
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('should_mention_unverifiable_permissions_when_testing_a_fine_grained_token_from_the_list', async () => {
+    await loadConnections([CONNECTION]);
+
+    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.test') + '"]')!.click();
+    await settle();
+
+    http.expectOne('/api/v1/connections/test').flush({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+      scopeKnown: false,
+    });
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      expect.stringContaining(t('settings.connections.result.scopeUnknown')),
       t('common.ok'),
       expect.anything(),
     );
@@ -257,10 +306,39 @@ describe('ConnectionsSectionComponent', () => {
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
+      scopeKnown: true,
     });
     await settle();
 
     expect(el.querySelector('.test-result.success')).not.toBeNull();
+    expect(el.querySelector('.test-result')?.textContent).not.toContain(
+      t('settings.connections.result.scopeUnknown'),
+    );
+  });
+
+  it('should_mention_unverifiable_permissions_inline_for_a_fine_grained_token', async () => {
+    await loadConnections([]);
+    addButton().click();
+    await settle();
+    await type(el.querySelector('input[formControlName="name"]')!, 'GitHub');
+    await type(el.querySelector('input[formControlName="token"]')!, 'github_pat_abcdwxyz');
+
+    el.querySelector<HTMLButtonElement>('.test-row button')!.click();
+    await settle();
+
+    http.expectOne('/api/v1/connections/test').flush({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+      scopeKnown: false,
+    });
+    await settle();
+
+    expect(el.querySelector('.test-result')?.textContent).toContain(
+      t('settings.connections.result.scopeUnknown'),
+    );
   });
 
   it('should_close_the_form_on_cancel_without_confirmation_when_pristine', async () => {
@@ -381,13 +459,13 @@ describe('ConnectionsSectionComponent', () => {
     http
       .expectOne('/api/v1/connections')
       .flush(
-        { statusCode: 400, code: 'connections.typeUnsupported', message: 'x' },
+        { statusCode: 400, code: 'connections.unknown', message: 'x' },
         { status: 400, statusText: 'Bad Request' },
       );
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
-      t('errors.connections.typeUnsupported'),
+      t('errors.connections.unknown'),
       t('common.ok'),
       expect.anything(),
     );

@@ -63,10 +63,16 @@ export class ForgeTimeoutException extends BusinessException {
   }
 }
 
-/** The connection's forge type is not supported yet (400). See RG-019-01. */
-export class ForgeTypeUnsupportedException extends BusinessValidationException {
-  constructor(message = 'This forge type is not supported yet') {
-    super('connections.typeUnsupported', message);
+/**
+ * The forge's rate limit was hit while testing a connection (502). See
+ * RG-020-03. Distinct from `ForgeUnavailableException` because it names a
+ * specific, actionable cause ("try again later") rather than a generic
+ * outage — thrown only by `testConnection` (a mid-sync rate limit is
+ * retried once then falls back to `ForgeUnavailableException`, RG-020-11).
+ */
+export class ForgeRateLimitedException extends BusinessException {
+  constructor(message = 'The forge rate limit was reached') {
+    super('forge.rateLimited', message, HttpStatus.BAD_GATEWAY);
   }
 }
 

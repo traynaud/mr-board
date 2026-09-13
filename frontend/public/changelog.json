@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-14",
+    "type": "feat",
+    "user-story": "US-020",
+    "title": "Connexion GitHub (github.com et GitHub Enterprise Server) : jeton classique ou fine-grained, dépôts owner/repo, Pull Requests synchronisées comme des MRs."
+  },
+  {
     "date": "2026-09-13",
     "type": "feat",
     "user-story": "US-019",

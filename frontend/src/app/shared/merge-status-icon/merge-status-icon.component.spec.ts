@@ -3,16 +3,18 @@ import { TestBed } from '@angular/core/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
+import { ConnectionType } from '../../models/connection.model';
 import { MergeStatus } from '../../models/merge-request.model';
 import { MergeStatusIconComponent } from './merge-status-icon.component';
 
 @Component({
   imports: [MergeStatusIconComponent],
-  template: `<app-merge-status-icon [mergeStatus]="mergeStatus()" />`,
+  template: `<app-merge-status-icon [mergeStatus]="mergeStatus()" [connectionType]="connectionType()" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly mergeStatus = signal<MergeStatus>({ state: 'mergeable', reasons: [] });
+  readonly connectionType = signal<ConnectionType>('gitlab');
 }
 
 describe('MergeStatusIconComponent', () => {
@@ -41,13 +43,26 @@ describe('MergeStatusIconComponent', () => {
     );
   });
 
-  it('should_render_a_gray_dashed_circle_for_unknown', async () => {
+  it('should_render_a_gray_dashed_circle_for_unknown_naming_the_gitlab_forge', async () => {
     const { fixture, el } = await setup();
     fixture.componentInstance.mergeStatus.set({ state: 'unknown', reasons: [] });
     await fixture.whenStable();
 
     expect(el.querySelector('.neutral')).not.toBeNull();
-    expect(tooltipOf(fixture)).toBe(t('board.mergeRequests.mergeStatus.unknown'));
+    expect(tooltipOf(fixture)).toBe(
+      t('board.mergeRequests.mergeStatus.unknown', { forge: t('settings.connections.form.typeGitlab') }),
+    );
+  });
+
+  it('should_name_the_github_forge_for_a_github_connection', async () => {
+    const { fixture } = await setup();
+    fixture.componentInstance.mergeStatus.set({ state: 'unknown', reasons: [] });
+    fixture.componentInstance.connectionType.set('github');
+    await fixture.whenStable();
+
+    expect(tooltipOf(fixture)).toBe(
+      t('board.mergeRequests.mergeStatus.unknown', { forge: t('settings.connections.form.typeGithub') }),
+    );
   });
 
   it('should_render_a_red_circle_x_with_a_multiline_tooltip_listing_every_reason_in_order', async () => {

@@ -94,7 +94,7 @@
       },
       "mergeStatus": {
         "mergeable": "Fusionnable",
-        "unknown": "Statut en cours de vérification par GitLab",
+        "unknown": "Statut en cours de vérification par {{forge}}",
         "blockedTitle": "Non fusionnable :",
         "reasons": {
           "conflicts": "Conflits de merge",
@@ -185,7 +185,6 @@
       "form": {
         "typeGitlab": "GitLab",
         "typeGithub": "GitHub",
-        "typeGithubSoon": "Bientôt disponible",
         "name": "Nom",
         "nameDuplicate": "Nom déjà utilisé",
         "url": "URL de l'instance",
@@ -194,6 +193,7 @@
         "token": "Jeton d'accès personnel",
         "tokenKeepPlaceholder": "Laisser vide pour conserver le jeton actuel",
         "tokenTooShort": "Le jeton doit contenir au moins {{min}} caractères.",
+        "tokenHelpGithub": "Jeton classique avec le scope repo (ou public_repo), ou jeton fine-grained avec les permissions Pull requests, Commit statuses et Checks en lecture.",
         "showToken": "Afficher le jeton",
         "hideToken": "Masquer le jeton",
         "test": "Tester la connexion",
@@ -205,7 +205,8 @@
         "connected": "Connecté · {{name}} (@{{username}})",
         "expires": "expire le {{date}}",
         "noExpiry": "sans expiration",
-        "unknownExpiry": "expiration inconnue"
+        "unknownExpiry": "expiration inconnue",
+        "scopeUnknown": "permissions non vérifiables"
       },
       "deleteConfirm": {
         "title": "Supprimer la connexion « {{name}} » ?",
@@ -221,7 +222,8 @@
       "connectionHeader": "Connexion",
       "pathHeader": "Chemin du projet",
       "aliasHeader": "Alias",
-      "pathPlaceholder": "groupe/projet ou URL GitLab",
+      "pathPlaceholderGitlab": "groupe/projet ou URL GitLab",
+      "pathPlaceholderGithub": "owner/repo ou URL GitHub",
       "aliasPlaceholder": "alias",
       "add": "Ajouter",
       "remove": "Supprimer {{alias}}",
@@ -238,7 +240,7 @@
     "refresh": {
       "number": "04",
       "title": "Actualisation",
-      "description": "Fréquence de synchronisation automatique avec GitLab.",
+      "description": "Fréquence de synchronisation automatique avec les forges.",
       "frequency": "Fréquence de synchronisation",
       "options": {
         "minutes": "{{minutes}} min",
@@ -319,12 +321,12 @@
     "forge": {
       "auth": "Échec : jeton refusé (401)",
       "unavailable": "Échec : instance injoignable",
-      "scope": "Échec : scope insuffisant (read_api requis)",
-      "timeout": "Échec : délai dépassé"
+      "scope": "Échec : scope insuffisant",
+      "timeout": "Échec : délai dépassé",
+      "rateLimited": "Échec : limite de débit GitHub atteinte, réessayez plus tard"
     },
     "connections": {
       "nameDuplicate": "Ce nom est déjà utilisé.",
-      "typeUnsupported": "Ce type de forge n'est pas encore disponible.",
       "missing": "Ajoutez d'abord une connexion.",
       "tokenMissing": "Configurez d'abord le jeton de cette connexion.",
       "unknown": "Connexion inconnue.",
@@ -339,7 +341,8 @@
       "notFound": "Projet introuvable ou inaccessible avec ce jeton.",
       "alreadyConfigured": "Ce projet est déjà configuré.",
       "aliasDuplicate": "Cet alias est déjà utilisé.",
-      "connectionRequired": "Choisissez une connexion."
+      "connectionRequired": "Choisissez une connexion.",
+      "invalidPath": "Format attendu : owner/repo"
     }
   }
 }

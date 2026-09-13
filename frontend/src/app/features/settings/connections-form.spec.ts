@@ -1,9 +1,10 @@
 import { FormArray, FormControl } from '@angular/forms';
 import { Connection } from '../../models/connection.model';
 import {
-  DEFAULT_GITLAB_URL,
+  DEFAULT_URLS,
   IdentityForm,
   TOKEN_MIN_LENGTH,
+  applyConnectionTypeDefaults,
   buildConnectionForm,
   buildIdentityGroup,
   deriveDefaultConnectionName,
@@ -89,12 +90,12 @@ describe('buildConnectionForm', () => {
     const form = buildConnectionForm(true);
 
     expect(form.controls.type.value).toBe('gitlab');
-    expect(form.controls.url.value).toBe(DEFAULT_GITLAB_URL);
+    expect(form.controls.url.value).toBe(DEFAULT_URLS.gitlab);
   });
 });
 
 describe('resetConnectionFormForAdd', () => {
-  it('should_prefill_the_default_values_and_derived_name', () => {
+  it('should_prefill_the_gitlab_default_values_and_derived_name', () => {
     const form = buildConnectionForm(true);
 
     resetConnectionFormForAdd(form);
@@ -102,9 +103,46 @@ describe('resetConnectionFormForAdd', () => {
     expect(form.getRawValue()).toEqual({
       type: 'gitlab',
       name: 'gitlab.com',
-      url: DEFAULT_GITLAB_URL,
+      url: DEFAULT_URLS.gitlab,
       token: '',
     });
+  });
+
+  it('should_prefill_the_github_default_values_and_derived_name', () => {
+    const form = buildConnectionForm(true);
+
+    resetConnectionFormForAdd(form, 'github');
+
+    expect(form.getRawValue()).toEqual({
+      type: 'github',
+      name: 'github.com',
+      url: DEFAULT_URLS.github,
+      token: '',
+    });
+  });
+});
+
+describe('applyConnectionTypeDefaults', () => {
+  it('should_replace_the_name_and_url_with_the_new_types_defaults', () => {
+    const form = buildConnectionForm(true);
+    resetConnectionFormForAdd(form, 'gitlab');
+
+    applyConnectionTypeDefaults(form, 'github');
+
+    expect(form.controls.name.value).toBe('github.com');
+    expect(form.controls.url.value).toBe(DEFAULT_URLS.github);
+  });
+
+  it('should_overwrite_a_manually_edited_name_and_url', () => {
+    const form = buildConnectionForm(true);
+    resetConnectionFormForAdd(form, 'gitlab');
+    form.controls.name.setValue('mon-gitlab');
+    form.controls.url.setValue('https://gitlab.exemple.fr');
+
+    applyConnectionTypeDefaults(form, 'github');
+
+    expect(form.controls.name.value).toBe('github.com');
+    expect(form.controls.url.value).toBe(DEFAULT_URLS.github);
   });
 });
 

@@ -1,4 +1,4 @@
-/** Forge types a connection can point to (RG-019-01). Only `gitlab` is usable in this US. */
+/** Forge types a connection can point to (RG-019-01, RG-020-01). */
 export type ConnectionType = 'gitlab' | 'github';
 
 /** Miroir de `ConnectionResponseDto` (backend). Ne contient jamais le jeton. */
@@ -50,6 +50,8 @@ export interface TestConnectionResult {
   avatarUrl: string | null;
   expiresAt: string | null;
   expirationKnown: boolean;
+  /** Faux quand la forge n'a pas pu exposer les permissions du jeton (RG-020-03 : jeton GitHub fine-grained). */
+  scopeKnown: boolean;
 }
 
 /** État du test de connexion (RG-001-04/05), partagé entre `ConnectionsStore` et ses composants. */

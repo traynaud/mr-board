@@ -14,6 +14,7 @@ import { ForgeProject } from '../forges/types/forge-project';
 import { ForgeTestResult } from '../forges/types/forge-test-result';
 import { hasRequiredScope } from './domain/check-token-scopes';
 import { normalizeGitlabUrl } from './domain/normalize-gitlab-url';
+import { normalizeProjectPath } from '../projects/domain/normalize-project-path';
 import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request';
 import {
   GitlabGraphqlMergeRequestNode,
@@ -87,6 +88,15 @@ export class GitlabClientService implements ForgeClient {
   }
 
   /**
+   * RG-003-01: accepts a bare path or a full GitLab URL, any depth of
+   * (sub)groups — GitLab enforces no fixed segment count, unlike GitHub
+   * (RG-020-05), so this never throws.
+   */
+  normalizePath(input: string): string | null {
+    return normalizeProjectPath(input);
+  }
+
+  /**
    * Verifies a token against GitLab (RG-001-04) : the identity it resolves
    * to (`GET /api/v4/user`) and, when available, its scopes and expiry
    * (`GET /api/v4/personal_access_tokens/self`). The caller is responsible
@@ -114,6 +124,7 @@ export class GitlabClientService implements ForgeClient {
       avatarUrl: (user as GitlabUser).avatar_url ?? null,
       expiresAt: info?.expires_at ?? null,
       expirationKnown: info !== null,
+      scopeKnown: info !== null,
     };
   }
 

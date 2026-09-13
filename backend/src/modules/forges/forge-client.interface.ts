@@ -21,6 +21,16 @@ export interface ForgeClient {
   normalizeUrl(input: string): string | null;
 
   /**
+   * Normalises a repository path or URL for this forge (RG-003-01), or
+   * `null` when it cannot be interpreted as one.
+   * @throws BusinessValidationException (`projects.invalidPath`) when the
+   * forge enforces a path shape this input violates (e.g. GitHub requires
+   * exactly `owner/repo`, RG-020-05) — GitLab never throws this, its paths
+   * have no fixed segment count.
+   */
+  normalizePath(input: string): string | null;
+
+  /**
    * Verifies a token against the forge (RG-001-04) and returns the identity
    * it resolves to.
    * @throws ForgeAuthException when the token is rejected.

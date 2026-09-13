@@ -47,6 +47,7 @@ export interface RepoRow {
 const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
   'errors.projects.notFound': 'path',
   'errors.projects.alreadyConfigured': 'path',
+  'errors.projects.invalidPath': 'path',
   'errors.projects.aliasDuplicate': 'alias',
 };
 
@@ -102,6 +103,25 @@ export class RepositoriesSectionComponent implements OnInit {
     path: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     alias: new FormControl('', { nonNullable: true, validators: [optionalAliasFormatValidator] }),
   });
+
+  /**
+   * Méthode simple (pas `computed`), même raison que `canTestForm` de
+   * `ConnectionsSectionComponent` : lit `addForm.controls.connectionId.value`
+   * (pas un signal), qui change en direct à la sélection dans le `mat-select`.
+   * RG-020-05 : dépend du type de la connexion sélectionnée (ou de l'unique
+   * connexion, tant que le sélecteur n'est pas affiché).
+   */
+  protected pathPlaceholderKey(): string {
+    const connections = this.connectionsStore.connections();
+    const connectionId = this.addForm.controls.connectionId.value;
+    const connection =
+      (connectionId !== null
+        ? connections.find((c) => c.id === connectionId)
+        : connections[0]) ?? null;
+    return connection?.type === 'github'
+      ? 'settings.projects.pathPlaceholderGithub'
+      : 'settings.projects.pathPlaceholderGitlab';
+  }
 
   constructor() {
     this.addForm.valueChanges

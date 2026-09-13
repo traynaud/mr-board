@@ -39,7 +39,7 @@ d'utilisateur par connexion et un email global (US-019) — configurée dans les
 
 | Terme                | Définition                                                                                              |
 |----------------------|---------------------------------------------------------------------------------------------------------|
-| **MR**               | Merge Request (GitLab) ou Pull Request (GitHub, US-020) ouverte ; désignées indifféremment « MR » dans l'application et cette documentation |
+| **MR**               | Merge Request (GitLab) ou Pull Request (GitHub) ouverte ; désignées indifféremment « MR » dans l'application et cette documentation |
 | **Draft**            | MR marquée comme brouillon par sa forge (`draft` sur GitLab, anciennement WIP)                          |
 | **Ready**            | MR ouverte et non draft                                                                                 |
 | **Date Ready**       | Date à laquelle la MR est devenue Ready (voir RG-G05)                                                   |
@@ -49,9 +49,10 @@ d'utilisateur par connexion et un email global (US-019) — configurée dans les
 | **Affecté** (assignee) | Utilisateur positionné comme assignee de la MR sur sa forge                                           |
 | **Approved**         | MR ayant reçu au moins une approbation                                                                  |
 | **Statut**           | Mergeabilité d'une MR : `mergeable` / `blocked` / `unknown`, avec la liste ordonnée des raisons de blocage (US-017) |
-| **Forge**            | Plateforme hébergeant des MRs : `gitlab` (GitHub proposé en v2, US-020) — voir Connexion (US-019)        |
+| **Forge**            | Plateforme hébergeant des MRs : `gitlab` ou `github` (US-020) — voir Connexion (US-019)                  |
 | **Connexion**        | Instance d'une forge configurée (type, nom, URL, jeton, mon nom d'utilisateur sur cette forge) ; possède des repos (US-019) |
-| **Projet / Repo**    | Dépôt d'une connexion (`groupe/projet` sur GitLab) configuré pour être scanné                            |
+| **PR**               | Pull Request GitHub, traitée comme une MR dans tout MR Board (US-020)                                    |
+| **Projet / Repo**    | Dépôt d'une connexion (`groupe/projet` sur GitLab, `owner/repo` sur GitHub) configuré pour être scanné    |
 | **Alias**            | Nom court d'un projet, choisi par l'utilisateur, affiché dans le tableau et les filtres                 |
 | **Synchronisation**  | Récupération des MRs depuis l'API de chaque connexion et mise à jour du cache local (SQLite)            |
 | **Moi**              | Identité de l'utilisateur courant : un nom d'utilisateur **par connexion** (US-019) et un email global, utilisée par « Mes MRs » |
@@ -178,7 +179,7 @@ une fois ses dépendances réalisées.
 | US-017 | Colonne « Statut » (mergeabilité : pipeline, conflits, approbations, discussions) | Should | M | US-004, US-011, US-012 | ✅ |
 | US-018 | Thème sombre (système / clair / sombre)                  | Could    | M          | US-015                 | ✅ |
 | US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ✅ |
-| US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ☐ |
+| US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ✅ |
 | US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
 | US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ✅ |
 | US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
@@ -220,13 +221,9 @@ les codes de RG-017-04.
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-019**, **US-022** et
-**US-023**, livrées — leurs termes « Statut », « Thème », « Langue », « Forge »/« Connexion » et « Anneau « moi » »
-ont rejoint le glossaire, §3. Le terme ci-dessous rejoindra le glossaire à la livraison de l'US concernée.
-
-| Terme          | Définition                                                                                                  | US     |
-|----------------|-------------------------------------------------------------------------------------------------------------|--------|
-| **PR**         | Pull Request GitHub, traitée comme une MR dans tout MR Board                                                 | US-020 |
+Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-019**, **US-020**, **US-022**
+et **US-023**, livrées — leurs termes « Statut », « Thème », « Langue », « Forge »/« Connexion »/« PR » et
+« Anneau « moi » » ont rejoint le glossaire, §3. Aucun terme en attente pour le moment.
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
 « Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
@@ -239,13 +236,11 @@ conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée 
 termes « Forge »/« Connexion », généralisation de MR/Reviewer/Affecté/Projet/Synchronisation/Moi/Jeton), §4.1
 (bandeau différenciant absence de connexion / jeton manquant), §4.2 (sections 01 « Moi » par connexion et 02
 « Connexions »), §5 (RG-G09/G17/G18 au pluriel / par connexion), §6 (entité `Connections`, attribut `connection` de
-`MergeRequestView`), §7 roadmap (✅).
-
-Impact documentaire restant prévu à la livraison de US-020 : §9 (retrait de « GitHub » de la liste des forges hors
-périmètre).
+`MergeRequestView`), §7 roadmap (✅) ; US-020 — §3 (glossaire, généralisation des termes « MR »/« Forge »/« Projet /
+Repo », ajout du terme « PR »), §9 (retrait de « GitHub » de la liste des forges hors périmètre), §7 roadmap (✅).
 
 Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
-RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`), §9 (retrait de « GitHub »).
+RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`).
 
 ---
 
@@ -257,4 +252,6 @@ RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`),
   livré par **US-017** (colonne Statut).
 - Multi-utilisateurs avec comptes et rôles
 - Historique / statistiques (temps moyen de relecture…)
-- Support d'autres forges → **GitHub proposé en v2 : EPIC-001 (US-019 → US-021)** ; Bitbucket, Gitea, Azure DevOps : hors périmètre (QO-E01-03)
+- Support d'autres forges → GitLab et GitHub livrés (EPIC-001, US-019/US-020) ; les indicateurs de forge dans le
+  tableau et le filtre « Connexion » restent à livrer (US-021) ; Bitbucket, Gitea, Azure DevOps : hors périmètre
+  (QO-E01-03)

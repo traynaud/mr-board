@@ -134,6 +134,7 @@ describe('ConnectionsStore', () => {
       avatarUrl: null,
       expiresAt: '2027-03-12',
       expirationKnown: true,
+      scopeKnown: true,
     };
     api.postTestConnection.mockReturnValue(of(result));
 

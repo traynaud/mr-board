@@ -47,7 +47,7 @@ describe('ProjectsService', () => {
     findOrThrow: jest.fn(),
     getToken: jest.fn(),
   };
-  const gitlabForge = { resolveProject: jest.fn() };
+  const gitlabForge = { resolveProject: jest.fn(), normalizePath: jest.fn() };
   const forges = { forType: jest.fn() };
   const forgeProject = {
     remoteProjectId: '42',
@@ -68,6 +68,9 @@ describe('ProjectsService', () => {
     connections.findOrThrow.mockResolvedValue(connectionRow);
     connections.getToken.mockResolvedValue('glpat-token-value');
     gitlabForge.resolveProject.mockResolvedValue(forgeProject);
+    gitlabForge.normalizePath.mockImplementation(
+      (path: string) => path.trim() || null,
+    );
     forges.forType.mockReturnValue(gitlabForge);
 
     const moduleRef = await Test.createTestingModule({
@@ -216,6 +219,32 @@ describe('ProjectsService', () => {
       await expect(service.add({ path: '   ' })).rejects.toBeInstanceOf(
         BusinessValidationException,
       );
+      expect(gitlabForge.resolveProject).not.toHaveBeenCalled();
+    });
+
+    it('should_normalise_the_path_through_the_connections_own_forge_after_resolving_it', async () => {
+      // RG-020-05 : chaque forge valide/normalise le chemin à sa façon
+      // (GitHub exige `owner/repo`) — la connexion doit donc être résolue
+      // avant que `normalizePath` ne soit appelé.
+      await service.add({ path: 'equipe/backend-api' });
+
+      expect(gitlabForge.normalizePath).toHaveBeenCalledWith(
+        'equipe/backend-api',
+      );
+      expect(connections.findOrThrow).toHaveBeenCalled();
+    });
+
+    it('should_propagate_a_business_exception_thrown_by_the_forges_own_path_validation', async () => {
+      gitlabForge.normalizePath.mockImplementation(() => {
+        throw new BusinessValidationException(
+          'projects.invalidPath',
+          'Expected format: owner/repo',
+        );
+      });
+
+      await expect(
+        service.add({ path: 'equipe/sous/backend-api' }),
+      ).rejects.toBeInstanceOf(BusinessValidationException);
       expect(gitlabForge.resolveProject).not.toHaveBeenCalled();
     });
 

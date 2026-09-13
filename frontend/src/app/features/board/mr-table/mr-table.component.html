@@ -194,7 +194,7 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      <app-merge-status-icon [mergeStatus]="row.mergeStatus" />
+      <app-merge-status-icon [mergeStatus]="row.mergeStatus" [connectionType]="row.connection.type" />
     </td>
   </ng-container>
 

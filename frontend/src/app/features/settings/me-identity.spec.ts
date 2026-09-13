@@ -17,6 +17,7 @@ const SUCCESS = (username: string): TestConnectionState => ({
     avatarUrl: 'https://gitlab.com/a.png',
     expiresAt: null,
     expirationKnown: true,
+    scopeKnown: true,
   },
 });
 

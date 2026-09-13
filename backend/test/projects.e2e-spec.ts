@@ -1,9 +1,15 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { ForgeUnavailableException } from '../src/common/exceptions';
+import {
+  BusinessValidationException,
+  ForgeUnavailableException,
+} from '../src/common/exceptions';
+import { normalizeGithubProjectPath } from '../src/modules/github/domain/normalize-github-project-path';
+import { GithubClientService } from '../src/modules/github/github-client.service';
 import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
 import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
 import { createTestApp } from './utils/create-test-app';
 
 interface Body {
@@ -22,6 +28,26 @@ describe('Projects (e2e)', () => {
   let app: INestApplication<App>;
   const gitlab = {
     normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    normalizePath: jest.fn((path: string) => normalizeProjectPath(path)),
+    testConnection: jest.fn(),
+    resolveProject: jest.fn(),
+    fetchOpenMergeRequests: jest.fn(),
+  };
+  const github = {
+    normalizeUrl: jest.fn((url: string) => normalizeGitlabUrl(url)),
+    normalizePath: jest.fn((path: string) => {
+      const normalized = normalizeGithubProjectPath(path);
+      if (!normalized) {
+        return null;
+      }
+      if (normalized.split('/').filter(Boolean).length !== 2) {
+        throw new BusinessValidationException(
+          'projects.invalidPath',
+          'Expected format: owner/repo',
+        );
+      }
+      return normalized;
+    }),
     testConnection: jest.fn(),
     resolveProject: jest.fn(),
     fetchOpenMergeRequests: jest.fn(),
@@ -29,7 +55,11 @@ describe('Projects (e2e)', () => {
 
   beforeAll(async () => {
     app = await createTestApp((b) =>
-      b.overrideProvider(GitlabClientService).useValue(gitlab),
+      b
+        .overrideProvider(GitlabClientService)
+        .useValue(gitlab)
+        .overrideProvider(GithubClientService)
+        .useValue(github),
     );
   });
 
@@ -311,5 +341,76 @@ describe('Projects (e2e)', () => {
     const res = await api().delete('/api/v1/projects/999999');
 
     expect(res.status).toBe(404);
+  });
+
+  describe('GitHub repos (RG-020-05/06)', () => {
+    let githubConnectionId: number;
+
+    it('POST /connections should_create_a_github_connection_for_this_suite', async () => {
+      const res = await api().post('/api/v1/connections').send({
+        type: 'github',
+        name: 'github.com',
+        url: 'https://github.com',
+        token: 'ghp-projects-e2e-token',
+      });
+
+      expect(res.status).toBe(201);
+      githubConnectionId = (res.body as { id: number }).id;
+    });
+
+    it('POST /projects should_reject_a_path_with_more_than_two_segments', async () => {
+      const res = await api().post('/api/v1/projects').send({
+        path: 'equipe/sous/front-web',
+        connectionId: githubConnectionId,
+      });
+
+      expect(res.status).toBe(400);
+      expect(body(res).code).toBe('projects.invalidPath');
+    });
+
+    it('POST /projects should_reject_a_path_with_a_single_segment', async () => {
+      const res = await api().post('/api/v1/projects').send({
+        path: 'equipe',
+        connectionId: githubConnectionId,
+      });
+
+      expect(res.status).toBe(400);
+      expect(body(res).code).toBe('projects.invalidPath');
+    });
+
+    it('POST /projects should_add_a_github_repo_by_url_stripping_the_pulls_suffix', async () => {
+      github.resolveProject.mockResolvedValue({
+        remoteProjectId: '99',
+        pathWithNamespace: 'Equipe/Widget-Service',
+        webUrl: 'https://github.com/Equipe/Widget-Service',
+      });
+
+      const res = await api().post('/api/v1/projects').send({
+        path: 'https://github.com/Equipe/Widget-Service/pulls',
+        connectionId: githubConnectionId,
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual({
+        id: expect.any(Number) as number,
+        connectionId: githubConnectionId,
+        pathWithNamespace: 'Equipe/Widget-Service',
+        alias: 'Widget-Service',
+        remoteProjectId: '99',
+      });
+      expect(github.resolveProject).toHaveBeenCalledWith(
+        'https://github.com',
+        'ghp-projects-e2e-token',
+        'Equipe/Widget-Service',
+      );
+    });
+
+    it('DELETE /connections/:id should_remove_the_github_connection_used_for_this_suite', async () => {
+      const res = await api().delete(
+        `/api/v1/connections/${githubConnectionId}`,
+      );
+
+      expect(res.status).toBe(204);
+    });
   });
 });

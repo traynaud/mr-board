@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateService } from '../../core/i18n/translate.service';
+import { ConnectionType } from '../../models/connection.model';
 import { MergeStatus, MergeStatusReason, MergeStatusState } from '../../models/merge-request.model';
 
 /** Délai avant apparition de l'infobulle (ms), plus long que le défaut Material (RG-017-08). */
@@ -30,6 +31,8 @@ export class MergeStatusIconComponent {
   private readonly i18n = inject(TranslateService);
 
   readonly mergeStatus = input.required<MergeStatus>();
+  /** Forge de la connexion du projet de cette MR (RG-019-22), pour le libellé « unknown » (RG-020-09). */
+  readonly connectionType = input.required<ConnectionType>();
 
   protected readonly tooltipShowDelay = TOOLTIP_SHOW_DELAY_MS;
 
@@ -51,7 +54,13 @@ export class MergeStatusIconComponent {
       return this.i18n.translate('board.mergeRequests.mergeStatus.mergeable');
     }
     if (state === 'unknown') {
-      return this.i18n.translate('board.mergeRequests.mergeStatus.unknown');
+      const forgeKey =
+        this.connectionType() === 'github'
+          ? 'settings.connections.form.typeGithub'
+          : 'settings.connections.form.typeGitlab';
+      return this.i18n.translate('board.mergeRequests.mergeStatus.unknown', {
+        forge: this.i18n.translate(forgeKey),
+      });
     }
     const lines = reasons.map((reason) => `– ${this.translateReason(reason)}`);
     return [this.i18n.translate('board.mergeRequests.mergeStatus.blockedTitle'), ...lines].join('\n');

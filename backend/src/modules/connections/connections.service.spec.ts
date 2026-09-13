@@ -42,6 +42,10 @@ describe('ConnectionsService', () => {
     normalizeUrl: jest.fn(),
     testConnection: jest.fn(),
   };
+  const githubForge = {
+    normalizeUrl: jest.fn(),
+    testConnection: jest.fn(),
+  };
   const forges = { forType: jest.fn() };
 
   beforeEach(async () => {
@@ -68,16 +72,14 @@ describe('ConnectionsService', () => {
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: false,
+      scopeKnown: false,
     });
-    forges.forType.mockImplementation((type: string) => {
-      if (type !== 'gitlab') {
-        throw new BusinessValidationException(
-          'connections.typeUnsupported',
-          'not supported',
-        );
-      }
-      return gitlabForge;
-    });
+    githubForge.normalizeUrl.mockImplementation((url: string) =>
+      url.startsWith('http') ? url.replace(/\/+$/, '') : null,
+    );
+    forges.forType.mockImplementation((type: string) =>
+      type === 'github' ? githubForge : gitlabForge,
+    );
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -131,16 +133,23 @@ describe('ConnectionsService', () => {
       expect(result.tokenConfigured).toBe(true);
     });
 
-    it('should_reject_the_github_type', async () => {
-      await expect(
-        service.add({
+    it('should_store_a_github_connection_with_an_encrypted_token', async () => {
+      const result = await service.add({
+        type: 'github',
+        name: 'github.com',
+        url: 'https://github.com/',
+        token: 'ghp-abcdwxyz',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
           type: 'github',
           name: 'github.com',
           url: 'https://github.com',
-          token: 'ghp-abcdwxyz',
+          tokenEncrypted: 'enc(ghp-abcdwxyz)',
         }),
-      ).rejects.toBeInstanceOf(BusinessValidationException);
-      expect(repository.save).not.toHaveBeenCalled();
+      );
+      expect(result.tokenConfigured).toBe(true);
     });
 
     it('should_reject_an_unnormalisable_url', async () => {
