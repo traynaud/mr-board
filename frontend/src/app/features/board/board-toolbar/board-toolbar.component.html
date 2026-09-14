@@ -1,5 +1,8 @@
 <mat-toolbar class="board-toolbar">
-  <span class="nav-brand">{{ 'board.title' | translate }}</span>
+  <span class="nav-brand-group">
+    <app-logo />
+    <span class="nav-brand">{{ 'board.title' | translate }}</span>
+  </span>
   <span class="sync-label" [class.accent]="label().accent" [matTooltip]="syncTooltip()"
     >{{ label().key | translate: (label().params ?? {}) }}</span
   >

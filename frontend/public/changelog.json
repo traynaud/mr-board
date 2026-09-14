@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-14",
+    "type": "fix",
+    "user-story": "",
+    "title": "Logo : fond noir remplacé par un fond transparent, et logo ajouté à côté du nom de l'app dans la toolbar."
+  },
+  {
+    "date": "2026-09-14",
     "type": "feat",
     "user-story": "US-025",
     "title": "Couleur d'arrière-plan optionnelle par repo (palette de 10 teintes) dans la case Projet du tableau et le filtre associé, pleine sur les MRs Ready et éclaircie sur les Drafts."

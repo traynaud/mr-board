@@ -60,6 +60,14 @@ describe('BoardToolbarComponent', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement };
   };
 
+  it('should_show_the_app_logo_next_to_the_brand_name', async () => {
+    const { el } = await setup();
+
+    const brand = el.querySelector('.nav-brand-group');
+    expect(brand?.querySelector('app-logo')).not.toBeNull();
+    expect(brand?.querySelector('.nav-brand')?.textContent?.trim()).toBe(t('board.title'));
+  });
+
   it('should_show_never_synced_by_default', async () => {
     const { el } = await setup();
 

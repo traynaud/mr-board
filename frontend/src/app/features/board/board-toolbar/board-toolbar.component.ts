@@ -17,6 +17,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../core/i18n/translate.service';
 import { SyncRun } from '../../../models/sync-status.model';
+import { AppLogoComponent } from '../../../shared/app-logo/app-logo.component';
 import { computeNextRunTooltip, computeSyncStatusLabel } from '../sync-status-label';
 
 /** Fréquence de recalcul du libellé relatif (« il y a N min »), RG-004-08. */
@@ -38,6 +39,7 @@ const LABEL_TICK_MS = 30_000;
     MatTooltipModule,
     RouterLink,
     TranslatePipe,
+    AppLogoComponent,
   ],
   templateUrl: './board-toolbar.component.html',
   styleUrl: './board-toolbar.component.scss',
