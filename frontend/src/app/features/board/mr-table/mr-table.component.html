@@ -11,7 +11,13 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      <span class="tag tag-neutral" [matTooltip]="tagTooltip(row)">
+      <span
+        class="tag"
+        [class.tag-neutral]="!tagStyle(row)"
+        [style.background-color]="tagStyle(row)?.background"
+        [style.color]="tagStyle(row)?.color"
+        [matTooltip]="tagTooltip(row)"
+      >
         @if (showForgeIcon()) {
           <mat-icon [svgIcon]="row.connection.type" class="forge-icon" />
         }

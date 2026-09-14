@@ -27,6 +27,7 @@
       [options]="optionsFor(key)"
       [multiSelected]="multiValueFor(key)"
       [booleanSelected]="booleanValueFor(key)"
+      [projects]="projects()"
       (toggleValue)="filterToggleValue.emit({ key, value: $event })"
       (selectBoolean)="filterSelectBoolean.emit({ key, value: $event })"
       (remove)="filterRemove.emit(key)"

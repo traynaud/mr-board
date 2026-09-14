@@ -70,7 +70,14 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
 class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
   readonly projects = signal<Project[]>([
-    { id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' },
+    {
+      id: 1,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/backend-api',
+      alias: 'api',
+      remoteProjectId: '42',
+      color: null,
+    },
   ]);
   readonly showForgeIcon = signal(false);
   readonly showConnectionInTooltip = signal(false);
@@ -160,6 +167,113 @@ describe('MrTableComponent', () => {
 
       const tooltip = fixture.debugElement.query(By.css('.tag-neutral')).injector.get(MatTooltip);
       expect(tooltip.message).toBe('GitLab · equipe/backend-api');
+    });
+  });
+
+  describe('project tag color (RG-025-03/04/06)', () => {
+    it('should_keep_tag_neutral_when_the_repo_has_no_color_rg_025_01', async () => {
+      const { el } = await setup();
+
+      const tag = el.querySelector<HTMLElement>('.tag');
+      expect(tag?.classList.contains('tag-neutral')).toBe(true);
+      expect(tag?.style.backgroundColor).toBe('');
+    });
+
+    it('should_show_the_full_color_for_a_ready_mr_rg_025_03', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.projects.set([
+        {
+          id: 1,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          remoteProjectId: '42',
+          color: 'sage',
+        },
+      ]);
+      fixture.componentInstance.rows.set([mergeRequest({ draft: false })]);
+      await fixture.whenStable();
+
+      const tag = el.querySelector<HTMLElement>('.tag');
+      expect(tag?.classList.contains('tag-neutral')).toBe(false);
+      expect(tag?.style.backgroundColor).toBe('rgb(200, 221, 199)');
+      expect(tag?.style.color).toBe('rgb(37, 56, 31)');
+    });
+
+    it('should_lighten_the_color_for_a_draft_mr_rg_025_04', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.projects.set([
+        {
+          id: 1,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          remoteProjectId: '42',
+          color: 'sage',
+        },
+      ]);
+      fixture.componentInstance.rows.set([mergeRequest({ draft: true })]);
+      await fixture.whenStable();
+
+      const tag = el.querySelector<HTMLElement>('.tag');
+      expect(tag?.style.backgroundColor).toBe('rgba(200, 221, 199, 0.45)');
+      expect(tag?.style.color).toBe('rgb(37, 56, 31)');
+    });
+
+    it('should_resolve_the_color_by_the_rows_own_project_alias_rg_025_06', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.projects.set([
+        {
+          id: 1,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          remoteProjectId: '42',
+          color: 'sage',
+        },
+        {
+          id: 2,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/front-web',
+          alias: 'web',
+          remoteProjectId: '7',
+          color: 'slate',
+        },
+      ]);
+      fixture.componentInstance.rows.set([
+        mergeRequest({ id: 1, projectAlias: 'web', draft: false }),
+      ]);
+      await fixture.whenStable();
+
+      const tag = el.querySelector<HTMLElement>('.tag');
+      expect(tag?.style.backgroundColor).toBe('rgb(199, 217, 234)');
+    });
+
+    it('should_update_every_row_of_the_same_repo_when_its_color_changes', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set([
+        mergeRequest({ id: 1, projectAlias: 'api', draft: false }),
+        mergeRequest({ id: 2, projectAlias: 'api', draft: false }),
+      ]);
+      await fixture.whenStable();
+
+      fixture.componentInstance.projects.set([
+        {
+          id: 1,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          remoteProjectId: '42',
+          color: 'peach',
+        },
+      ]);
+      await fixture.whenStable();
+
+      const tags = el.querySelectorAll<HTMLElement>('.tag');
+      expect(tags).toHaveLength(2);
+      for (const tag of Array.from(tags)) {
+        expect(tag.style.backgroundColor).toBe('rgb(240, 217, 196)');
+      }
     });
   });
 

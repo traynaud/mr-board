@@ -17,7 +17,12 @@ interface Body {
     url: string;
     meUsername: string | null;
   }[];
-  projects?: { connection: string; pathWithNamespace: string; alias: string }[];
+  projects?: {
+    connection: string;
+    pathWithNamespace: string;
+    alias: string;
+    color?: string | null;
+  }[];
   projectsAdded?: number;
   projectsUpdated?: number;
   projectsSkipped?: { pathWithNamespace: string; reason: string }[];
@@ -111,6 +116,7 @@ describe('SettingsTransfer (e2e)', () => {
         connection: 'GitLab',
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
+        color: null,
       },
     ]);
   });
@@ -230,6 +236,34 @@ describe('SettingsTransfer (e2e)', () => {
           name: 'gitlab.exemple.fr',
           tokenConfigured: false,
           meUsername: 'mdupont',
+        }),
+      ]),
+    );
+  });
+
+  it('POST /settings/import (v2) should_import_and_export_a_repos_color_rg_025_08', async () => {
+    const importRes = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 2,
+        settings: {},
+        projects: [
+          {
+            connection: 'GitLab',
+            pathWithNamespace: 'equipe/backend-api',
+            alias: 'api',
+            color: 'mint',
+          },
+        ],
+      });
+    expect(importRes.status).toBe(200);
+
+    const exported = await api().get('/api/v1/settings/export');
+    expect(body(exported).projects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          pathWithNamespace: 'equipe/backend-api',
+          color: 'mint',
         }),
       ]),
     );

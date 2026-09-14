@@ -175,13 +175,14 @@ describe('settings form helpers', () => {
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
         remoteProjectId: '42',
+        color: null,
       }),
     );
 
     resetSettingsForm(form, settings);
 
     expect(form.controls.repos.length).toBe(1);
-    expect(form.controls.repos.at(0).getRawValue()).toEqual({ id: 1, alias: 'api' });
+    expect(form.controls.repos.at(0).getRawValue()).toEqual({ id: 1, alias: 'api', color: null });
   });
 
   it('should_send_the_default_ignored_labels_when_ignore_wip_is_checked', () => {
@@ -312,6 +313,7 @@ describe('resetSettingsFormToDefaults', () => {
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
         remoteProjectId: '42',
+        color: null,
       }),
     );
     form.markAsPristine();

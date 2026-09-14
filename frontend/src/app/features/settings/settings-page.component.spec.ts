@@ -53,6 +53,7 @@ describe('SettingsPageComponent', () => {
     pathWithNamespace: 'equipe/backend-api',
     alias: 'api',
     remoteProjectId: '42',
+    color: null,
   };
   const projectWeb: Project = {
     id: 2,
@@ -60,6 +61,7 @@ describe('SettingsPageComponent', () => {
     pathWithNamespace: 'equipe/front-web',
     alias: 'web',
     remoteProjectId: '7',
+    color: null,
   };
   let fixture: ComponentFixture<SettingsPageComponent>;
   let el: HTMLElement;
@@ -374,7 +376,7 @@ describe('SettingsPageComponent', () => {
 
     const renameReq = http.expectOne('/api/v1/projects/1');
     expect(renameReq.request.method).toBe('PUT');
-    expect(renameReq.request.body).toEqual({ alias: 'back' });
+    expect(renameReq.request.body).toEqual({ alias: 'back', color: null });
     renameReq.flush({ ...projectApi, alias: 'back' });
     await settle();
 
@@ -438,7 +440,7 @@ describe('SettingsPageComponent', () => {
     pathInput.value = 'equipe/front-web';
     pathInput.dispatchEvent(new Event('input'));
     await settle();
-    el.querySelector<HTMLButtonElement>('.add-fields button')!.click();
+    el.querySelector<HTMLButtonElement>('.add-submit')!.click();
     await settle();
     http.expectOne('/api/v1/projects').flush(projectWeb);
     await settle();

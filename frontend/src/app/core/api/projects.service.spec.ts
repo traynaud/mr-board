@@ -45,11 +45,18 @@ describe('ProjectsService', () => {
   });
 
   it('should_put_project', async () => {
-    const pending = firstValueFrom(service.putProject(1, { alias: 'back' }));
+    const pending = firstValueFrom(service.putProject(1, { alias: 'back', color: null }));
     const req = ctrl.expectOne('/api/v1/projects/1');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ alias: 'back' });
-    req.flush({ id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'back', remoteProjectId: '42' });
+    expect(req.request.body).toEqual({ alias: 'back', color: null });
+    req.flush({
+      id: 1,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/backend-api',
+      alias: 'back',
+      remoteProjectId: '42',
+      color: null,
+    });
 
     await expect(pending).resolves.toEqual(expect.objectContaining({ alias: 'back' }));
   });

@@ -8,7 +8,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../../core/i18n/translate.service';
 import { FacetOption, FilterKey, isMultiValueFilter } from '../../../../models/merge-request.model';
+import { Project } from '../../../../models/project.model';
 import { computeInitials } from '../../../../shared/avatar/compute-initials';
+import { ProjectColorSwatch, findProjectColor } from '../../../../shared/project-color/project-color-palette';
 
 /** Au-delà de ce nombre d'options, le champ « Rechercher… » apparaît (RG-010-05). */
 const SEARCH_THRESHOLD = 6;
@@ -43,6 +45,8 @@ export class FilterPillComponent {
   readonly multiSelected = input<string[]>([]);
   /** Sélection courante pour un filtre booléen (`approved`/`commented`) ; `null` pour un filtre multi. */
   readonly booleanSelected = input<'yes' | 'no' | null>(null);
+  /** RG-025-09 : repos configurés, pour la pastille de couleur des options du filtre Projet. */
+  readonly projects = input<Project[]>([]);
 
   /** RG-010-05 : bascule `value` dans la sélection multi, sans fermer le menu. */
   readonly toggleValue = output<string>();
@@ -55,6 +59,19 @@ export class FilterPillComponent {
   protected readonly search = signal('');
 
   protected readonly isMulti = computed(() => isMultiValueFilter(this.filterKey()));
+
+  /** RG-025-09 : couleur pleine de chaque repo (par alias), pour le filtre Projet uniquement. */
+  private readonly colorByAlias = computed(
+    () => new Map(this.projects().map((project) => [project.alias, project.color])),
+  );
+
+  /** `null` si `filterKey` n'est pas `'project'` ou si le repo n'a pas de couleur (RG-025-01). */
+  protected swatchFor(option: FacetOption): ProjectColorSwatch | null {
+    if (this.filterKey() !== 'project') {
+      return null;
+    }
+    return findProjectColor(this.colorByAlias().get(option.value));
+  }
 
   protected readonly filterName = computed(() =>
     this.i18n.translate(`board.filters.pills.names.${this.filterKey()}`),

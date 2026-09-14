@@ -37,11 +37,16 @@ describe('ProjectsController', () => {
   it('should_rename_project', async () => {
     service.rename.mockResolvedValue({ id: 1, alias: 'back' });
 
-    await expect(controller.rename(1, { alias: 'back' })).resolves.toEqual({
+    await expect(
+      controller.rename(1, { alias: 'back', color: null }),
+    ).resolves.toEqual({
       id: 1,
       alias: 'back',
     });
-    expect(service.rename).toHaveBeenCalledWith(1, { alias: 'back' });
+    expect(service.rename).toHaveBeenCalledWith(1, {
+      alias: 'back',
+      color: null,
+    });
   });
 
   it('should_remove_project', async () => {

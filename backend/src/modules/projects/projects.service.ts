@@ -24,11 +24,17 @@ export interface ImportProjectsResult {
   skipped: { pathWithNamespace: string; reason: string }[];
 }
 
-/** One repo entry to import, already resolved to a connection by name (RG-019-19). */
+/**
+ * One repo entry to import, already resolved to a connection by name
+ * (RG-019-19). `color` follows RG-025-08 : absent (`undefined`, files
+ * exported before US-025) leaves a matched repo's color untouched ; present
+ * (including `null`) always overwrites it, exactly like `alias`.
+ */
 export interface ImportProjectEntry {
   pathWithNamespace: string;
   alias: string;
   connectionName: string;
+  color?: string | null;
 }
 
 /** Manages the list of repositories configured to be scanned. */
@@ -146,6 +152,7 @@ export class ProjectsService {
         webUrl: forgeProject.webUrl,
         alias,
         enabled: true,
+        color: dto.color ?? null,
         createdAt: new Date().toISOString(),
       }),
     );
@@ -153,7 +160,8 @@ export class ProjectsService {
   }
 
   /**
-   * Renames a repository's alias (RG-003-07).
+   * Renames a repository's alias and/or updates its tag color (RG-003-07,
+   * RG-025-07).
    * @throws EntityNotFoundException when `id` is unknown (404).
    * @throws BusinessValidationException when the alias is already used by another repo (400).
    */
@@ -161,6 +169,7 @@ export class ProjectsService {
     const project = await this.findOrThrow(id);
     await this.assertAliasAvailable(dto.alias, id);
     project.alias = dto.alias;
+    project.color = dto.color;
     return toResponse(await this.repository.save(project));
   }
 
@@ -177,11 +186,13 @@ export class ProjectsService {
   /**
    * Merges an imported repo list additively (RG-015-04, RG-019-19): a repo
    * already configured on the target connection (matched by
-   * `pathWithNamespace`, case-insensitive) only has its alias updated ; an
-   * unmatched one is resolved against the forge exactly like `add()`. Never
-   * removes a repo. A failure on one entry (connection unknown, no token,
-   * forge 404, alias clash…) is collected in `skipped` instead of aborting
-   * the whole import.
+   * `pathWithNamespace`, case-insensitive) has its alias updated, and its
+   * color too when the entry carries one (RG-025-08 : `entry.color`
+   * `undefined` — file exported before US-025 — leaves the existing color
+   * untouched) ; an unmatched one is resolved against the forge exactly like
+   * `add()`. Never removes a repo. A failure on one entry (connection
+   * unknown, no token, forge 404, alias clash…) is collected in `skipped`
+   * instead of aborting the whole import.
    */
   async importMany(
     entries: ImportProjectEntry[],
@@ -216,13 +227,17 @@ export class ProjectsService {
       );
       try {
         if (match) {
-          await this.rename(match.id, { alias: entry.alias });
+          await this.rename(match.id, {
+            alias: entry.alias,
+            color: entry.color === undefined ? match.color : entry.color,
+          });
           updated += 1;
         } else {
           await this.add({
             path: entry.pathWithNamespace,
             alias: entry.alias,
             connectionId: connection.id,
+            color: entry.color ?? undefined,
           });
           added += 1;
         }
@@ -310,5 +325,6 @@ function toResponse(project: Project): ProjectResponseDto {
     pathWithNamespace: project.pathWithNamespace,
     alias: project.alias,
     remoteProjectId: project.remoteProjectId,
+    color: project.color,
   };
 }

@@ -49,6 +49,9 @@
             tabindex="-1"
             (click)="$event.preventDefault()"
           />
+          @if (swatchFor(option); as swatch) {
+            <span class="option-swatch" [style.background-color]="swatch.background"></span>
+          }
           <span class="option-label">{{ option.label }}</span>
           <span class="option-count">{{ option.count }}</span>
         </div>

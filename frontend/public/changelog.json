@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-14",
+    "type": "feat",
+    "user-story": "US-025",
+    "title": "Couleur d'arrière-plan optionnelle par repo (palette de 10 teintes) dans la case Projet du tableau et le filtre associé, pleine sur les MRs Ready et éclaircie sur les Drafts."
+  },
+  {
+    "date": "2026-09-14",
     "type": "fix",
     "user-story": "",
     "title": "GitLab : la colonne Approved n'affiche plus une MR comme approuvée sans approbation réelle (le champ GitLab utilisé reflétait les règles d'approbation du projet, pas les clics sur Approve)."

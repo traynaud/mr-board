@@ -18,6 +18,7 @@ describe('ProjectsStore', () => {
     pathWithNamespace: 'equipe/backend-api',
     alias: 'api',
     remoteProjectId: '42',
+    color: null,
   };
   let store: InstanceType<typeof ProjectsStore>;
 
@@ -77,7 +78,7 @@ describe('ProjectsStore', () => {
     const renamed = { ...project, alias: 'back' };
     api.putProject.mockReturnValue(of(renamed));
 
-    const error = await store.rename(1, { alias: 'back' });
+    const error = await store.rename(1, { alias: 'back', color: null });
 
     expect(error).toBeNull();
     expect(store.projects()).toEqual([renamed]);
@@ -90,7 +91,7 @@ describe('ProjectsStore', () => {
       throwError(() => new ApiError(400, 'projects.aliasDuplicate', 'dup')),
     );
 
-    const error = await store.rename(1, { alias: 'web' });
+    const error = await store.rename(1, { alias: 'web', color: null });
 
     expect(error).toBe('errors.projects.aliasDuplicate');
     expect(store.projects()).toEqual([project]);

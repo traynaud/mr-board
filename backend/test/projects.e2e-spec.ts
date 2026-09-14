@@ -20,6 +20,7 @@ interface Body {
   pathWithNamespace?: string;
   remoteProjectId?: string;
   connectionId?: number;
+  color?: string | null;
 }
 const body = (res: request.Response): Body => res.body as Body;
 const bodyList = (res: request.Response): Body[] => res.body as Body[];
@@ -126,6 +127,7 @@ describe('Projects (e2e)', () => {
       pathWithNamespace: 'equipe/backend-api',
       alias: 'api',
       remoteProjectId: '42',
+      color: null,
     });
 
     const list = await api().get('/api/v1/projects');
@@ -153,6 +155,33 @@ describe('Projects (e2e)', () => {
         alias: 'front-web',
       }),
     );
+  });
+
+  it('POST /projects should_accept_a_color_from_the_predefined_palette_rg_025_02_07', async () => {
+    gitlab.resolveProject.mockResolvedValue(
+      forgeProject({ id: '9', path: 'equipe/colore' }),
+    );
+
+    const res = await api()
+      .post('/api/v1/projects')
+      .send({ path: 'equipe/colore', alias: 'colore', color: 'mint' });
+
+    expect(res.status).toBe(201);
+    expect(body(res).color).toBe('mint');
+  });
+
+  it('POST /projects should_reject_a_color_outside_the_predefined_palette_rg_025_02', async () => {
+    gitlab.resolveProject.mockResolvedValue(
+      forgeProject({ id: '10', path: 'equipe/mauvaise-couleur' }),
+    );
+
+    const res = await api().post('/api/v1/projects').send({
+      path: 'equipe/mauvaise-couleur',
+      alias: 'mauvaise-couleur',
+      color: 'not-a-real-color',
+    });
+
+    expect(res.status).toBe(400);
   });
 
   it('POST /projects should_reject_duplicate_alias_case_insensitively', async () => {
@@ -209,6 +238,7 @@ describe('Projects (e2e)', () => {
       pathWithNamespace: 'equipe/backend-api',
       alias: 'api-interne',
       remoteProjectId: '99',
+      color: null,
     });
   });
 
@@ -287,7 +317,7 @@ describe('Projects (e2e)', () => {
 
     const res = await api()
       .put(`/api/v1/projects/${id}`)
-      .send({ alias: 'back' });
+      .send({ alias: 'back', color: null });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expect.objectContaining({ id, alias: 'back' }));
@@ -301,7 +331,7 @@ describe('Projects (e2e)', () => {
 
     const res = await api()
       .put(`/api/v1/projects/${backId}`)
-      .send({ alias: otherAlias });
+      .send({ alias: otherAlias, color: null });
 
     expect(res.status).toBe(400);
     expect(body(res).code).toBe('projects.aliasDuplicate');
@@ -313,15 +343,45 @@ describe('Projects (e2e)', () => {
 
     const res = await api()
       .put(`/api/v1/projects/${project.id}`)
-      .send({ alias: 'back' });
+      .send({ alias: 'back', color: null });
 
     expect(res.status).toBe(200);
   });
 
   it('PUT /projects/:id should_be_404_for_unknown_id', async () => {
-    const res = await api().put('/api/v1/projects/999999').send({ alias: 'x' });
+    const res = await api()
+      .put('/api/v1/projects/999999')
+      .send({ alias: 'x', color: null });
 
     expect(res.status).toBe(404);
+  });
+
+  it('PUT /projects/:id should_reject_a_color_outside_the_predefined_palette_rg_025_02', async () => {
+    const list = await api().get('/api/v1/projects');
+    const id = bodyList(list).find((p) => p.alias === 'back')?.id as number;
+
+    const res = await api()
+      .put(`/api/v1/projects/${id}`)
+      .send({ alias: 'back', color: 'not-a-real-color' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /projects/:id should_set_and_then_clear_the_color_rg_025_01_07', async () => {
+    const list = await api().get('/api/v1/projects');
+    const id = bodyList(list).find((p) => p.alias === 'back')?.id as number;
+
+    const set = await api()
+      .put(`/api/v1/projects/${id}`)
+      .send({ alias: 'back', color: 'sage' });
+    expect(set.status).toBe(200);
+    expect(body(set).color).toBe('sage');
+
+    const cleared = await api()
+      .put(`/api/v1/projects/${id}`)
+      .send({ alias: 'back', color: null });
+    expect(cleared.status).toBe(200);
+    expect(body(cleared).color).toBeNull();
   });
 
   it('DELETE /projects/:id should_remove_the_repo', async () => {
@@ -397,6 +457,7 @@ describe('Projects (e2e)', () => {
         pathWithNamespace: 'Equipe/Widget-Service',
         alias: 'Widget-Service',
         remoteProjectId: '99',
+        color: null,
       });
       expect(github.resolveProject).toHaveBeenCalledWith(
         'https://github.com',

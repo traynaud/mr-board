@@ -31,6 +31,10 @@ export class Project {
   @Column({ type: 'boolean', default: true })
   enabled!: boolean;
 
+  /** Background color id for the Projet tag (`ProjectColorId`), `null` = "Aucune" (RG-025-01). */
+  @Column({ type: 'text', nullable: true })
+  color!: string | null;
+
   @Column({ name: 'created_at', type: 'text' })
   createdAt!: string;
 }

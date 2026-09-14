@@ -15,6 +15,8 @@ export class ExportProjectDto {
   connection!: string;
   pathWithNamespace!: string;
   alias!: string;
+  /** RG-025-08. */
+  color!: string | null;
 }
 
 /** Response of `GET /api/v1/settings/export`. Never carries a token. */

@@ -223,6 +223,7 @@
         "title": "Dépôts de cette connexion",
         "pathHeader": "Chemin du projet",
         "aliasHeader": "Alias",
+        "colorHeader": "Couleur",
         "pathPlaceholderGitlab": "groupe/projet ou URL GitLab",
         "pathPlaceholderGithub": "owner/repo ou URL GitHub",
         "aliasPlaceholder": "alias",
@@ -236,6 +237,20 @@
           "message": "Ses MRs ne seront plus affichées.",
           "confirm": "Supprimer",
           "cancel": "Rester"
+        },
+        "colors": {
+          "none": "Aucune",
+          "slate": "Bleu ardoise",
+          "sage": "Vert sauge",
+          "lilac": "Lilas",
+          "peach": "Pêche",
+          "rose": "Rose poudré",
+          "sand": "Sable",
+          "mint": "Menthe",
+          "steel": "Bleu gris",
+          "plum": "Prune",
+          "olive": "Olive clair",
+          "pickerLabel": "Couleur de {{alias}} : {{color}}"
         }
       }
     },

@@ -6,4 +6,5 @@ export class ProjectResponseDto {
   pathWithNamespace!: string;
   alias!: string;
   remoteProjectId!: string;
+  color!: string | null;
 }

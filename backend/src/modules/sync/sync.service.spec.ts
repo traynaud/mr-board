@@ -29,6 +29,7 @@ function project(overrides: Partial<Project> = {}): Project {
     alias: 'api',
     webUrl: 'https://gitlab.example.com/equipe/api',
     enabled: true,
+    color: null,
     createdAt: '2026-09-01T00:00:00.000Z',
     ...overrides,
   };

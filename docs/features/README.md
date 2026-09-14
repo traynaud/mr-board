@@ -183,6 +183,7 @@ une fois ses dépendances réalisées.
 | US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ✅ |
 | US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
 | US-024 | Repli sur les initiales quand l'image d'avatar ne charge pas (lien cassé)          | Should   | S          | US-005                 | ✅ |
+| US-025 | Couleur d'arrière-plan par repo dans la colonne Projet et le filtre associé        | Should   | M          | US-003, US-005, US-021 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.

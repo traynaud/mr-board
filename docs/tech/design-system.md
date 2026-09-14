@@ -93,7 +93,7 @@ html {
 |--------------------|----------------------------------------------------------------------------------------------------------------------|
 | Avatar auteur      | Carré 28 px, fond `neutral-800`, initiales blanches 11 px 600, `matTooltip` = nom complet ; si `avatar_url` GitLab dispo, l'afficher en 28 px carré avec le même tooltip |
 | Avatar reviewer / affecté | Carré 28 px, bordure 1.5 px `neutral-800`, initiales 11 px 600 ; vide = tiret `—` en `neutral-400`          |
-| Tag projet         | `.tag.tag-neutral` : fond neutre, texte 600, alias                                                                    |
+| Tag projet         | `.tag.tag-neutral` : fond neutre, texte 600, alias ; **US-025** : couleur optionnelle par repo, palette fermée de 10 teintes pastel (fond + texte fixes, indépendants du thème), pleine si Ready, éclaircie à 45 % si Draft — voir `shared/project-color/`, exception documentée au principe d'accent unique ci-dessous |
 | Tag Draft          | `.tag.tag-outline` « Draft » devant le titre ; ligne à opacité 0.72                                                   |
 | Jeton difficulté   | Carré 12 px couleur (`success` / `warning` / `danger`) + label `Easy` / `Medium` / `Hard` + méta `34 f · 1240 l` en 11 px `neutral-600` |
 | Délai Ready        | Carré 8 px couleur + libellé 600 même couleur : `aujourd'hui`, `1 j`, `6 j` ; drafts : « ouverte il y a 12 j » en 12 px `neutral-600` |

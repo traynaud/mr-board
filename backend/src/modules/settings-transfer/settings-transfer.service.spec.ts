@@ -58,6 +58,7 @@ describe('SettingsTransferService', () => {
           pathWithNamespace: 'equipe/backend-api',
           alias: 'api',
           remoteProjectId: '42',
+          color: 'sage',
         },
       ]);
 
@@ -79,6 +80,7 @@ describe('SettingsTransferService', () => {
             connection: 'GitLab',
             pathWithNamespace: 'equipe/backend-api',
             alias: 'api',
+            color: 'sage',
           },
         ],
       });
@@ -200,6 +202,38 @@ describe('SettingsTransferService', () => {
       expect(result.connectionsAdded).toBe(1);
       expect(result.connectionsUpdated).toBe(0);
       expect(result.newConnectionNames).toEqual(['gitlab.com']);
+    });
+
+    it('should_forward_the_entrys_color_to_importMany_rg_025_08', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [
+          {
+            connection: 'gitlab.com',
+            pathWithNamespace: 'equipe/backend-api',
+            alias: 'api',
+            color: 'peach',
+          },
+        ],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 1,
+        updated: 0,
+        skipped: [],
+      });
+
+      await service.import(dto);
+
+      expect(projects.importMany).toHaveBeenCalledWith([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'gitlab.com',
+          color: 'peach',
+        },
+      ]);
     });
 
     it('should_import_no_connection_when_the_array_is_absent', async () => {

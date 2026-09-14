@@ -13,6 +13,7 @@ import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
 import { formatDateTime, formatShortDate } from '../../../shared/format/format-date';
 import { MergeStatusIconComponent } from '../../../shared/merge-status-icon/merge-status-icon.component';
+import { ProjectTagStyle, projectTagStyle } from '../../../shared/project-color/project-tag-style';
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { ResizableColumnDirective } from '../../../shared/resizable-column/resizable-column.directive';
 import type { ResizableColumnKey } from '../../../stores/column-widths.store';
@@ -112,10 +113,23 @@ export class MrTableComponent {
     () => new Map(this.projects().map((project) => [project.alias, project.pathWithNamespace])),
   );
 
+  /** RG-025-06 : couleur de chaque repo configuré, indexée par alias. */
+  private readonly colorByAlias = computed(
+    () => new Map(this.projects().map((project) => [project.alias, project.color])),
+  );
+
   /** RG-021-02 : « <chemin> » avec une seule connexion, « <connexion> · <chemin> » à partir de deux. */
   protected tagTooltip(row: MergeRequestView): string {
     const path = this.pathByAlias().get(row.projectAlias) ?? '';
     return this.showConnectionInTooltip() ? `${row.connection.name} · ${path}` : path;
+  }
+
+  /**
+   * Style de la case Projet (RG-025-03/04), `null` si le repo n'a pas de
+   * couleur — le tag garde alors `tag-neutral` (inchangé, RG-025-01).
+   */
+  protected tagStyle(row: MergeRequestView): ProjectTagStyle | null {
+    return projectTagStyle(this.colorByAlias().get(row.projectAlias), row.draft);
   }
 
   protected readonly summarizeUsers = summarizeUsers;

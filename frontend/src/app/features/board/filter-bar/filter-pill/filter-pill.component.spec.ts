@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatMenuHarness } from '@angular/material/menu/testing';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { FacetOption, FilterKey } from '../../../../models/merge-request.model';
+import { Project } from '../../../../models/project.model';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
 import { FilterPillComponent } from './filter-pill.component';
 
@@ -24,6 +25,24 @@ const APPROVED_OPTIONS: FacetOption[] = [
   { value: 'yes', label: 'Oui', count: 1 },
   { value: 'no', label: 'Non', count: 2 },
 ];
+const PROJECTS: Project[] = [
+  {
+    id: 1,
+    connectionId: 1,
+    pathWithNamespace: 'equipe/backend-api',
+    alias: 'api',
+    remoteProjectId: '42',
+    color: 'sage',
+  },
+  {
+    id: 2,
+    connectionId: 1,
+    pathWithNamespace: 'equipe/front-web',
+    alias: 'web',
+    remoteProjectId: '7',
+    color: null,
+  },
+];
 
 @Component({
   imports: [FilterPillComponent],
@@ -33,6 +52,7 @@ const APPROVED_OPTIONS: FacetOption[] = [
       [options]="options()"
       [multiSelected]="multiSelected()"
       [booleanSelected]="booleanSelected()"
+      [projects]="projects()"
       (toggleValue)="toggled.push($event)"
       (selectBoolean)="selectedBoolean.push($event)"
       (remove)="removeCount = removeCount + 1"
@@ -45,6 +65,7 @@ class HostComponent {
   readonly options = signal<FacetOption[]>(PROJECT_OPTIONS);
   readonly multiSelected = signal<string[]>([]);
   readonly booleanSelected = signal<'yes' | 'no' | null>(null);
+  readonly projects = signal<Project[]>(PROJECTS);
   toggled: string[] = [];
   selectedBoolean: ('yes' | 'no')[] = [];
   removeCount = 0;
@@ -153,6 +174,38 @@ describe('FilterPillComponent', () => {
     expect(panelText).toContain(t('board.filters.pills.names.project'));
     expect(panelText).toContain('api · equipe/backend-api');
     expect(panelText).toContain('3');
+  });
+
+  it('should_show_a_swatch_on_a_project_option_whose_repo_has_a_color_rg_025_09', async () => {
+    const { loader } = await setup();
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+
+    // Panneau projeté dans l'overlay CDK, hors de `fixture.nativeElement`.
+    const options = document.querySelectorAll('.menu-option');
+    const apiSwatch = options[0].querySelector<HTMLElement>('.option-swatch');
+    expect(apiSwatch?.style.backgroundColor).toBe('rgb(200, 221, 199)');
+  });
+
+  it('should_not_show_a_swatch_on_a_project_option_whose_repo_has_no_color_rg_025_01', async () => {
+    const { loader } = await setup();
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+
+    const options = document.querySelectorAll('.menu-option');
+    expect(options[1].querySelector('.option-swatch')).toBeNull();
+  });
+
+  it('should_not_show_a_swatch_for_a_non_project_filter_rg_025_09', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.filterKey.set('author');
+    fixture.componentInstance.options.set(AUTHOR_OPTIONS);
+    await fixture.whenStable();
+
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+
+    expect(document.querySelector('.option-swatch')).toBeNull();
   });
 
   it('should_toggle_a_multi_value_and_keep_the_menu_open', async () => {

@@ -33,6 +33,11 @@ tbody tr:not(.add-row):not(.token-missing-row):hover {
   width: 150px;
 }
 
+.color-col {
+  width: 48px;
+  text-align: center;
+}
+
 .delete-col {
   width: 48px;
   text-align: center;
@@ -61,6 +66,10 @@ tbody tr:not(.add-row):not(.token-missing-row):hover {
   .alias-field {
     width: 150px;
     flex: none;
+  }
+
+  app-project-color-picker {
+    margin-top: 6px;
   }
 }
 

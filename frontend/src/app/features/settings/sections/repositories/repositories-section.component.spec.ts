@@ -1,8 +1,11 @@
+import { HarnessLoader } from '@angular/cdk/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
@@ -20,6 +23,7 @@ const project: Project = {
   pathWithNamespace: 'equipe/backend-api',
   alias: 'api',
   remoteProjectId: '42',
+  color: null,
 };
 const CONNECTION: Connection = {
   id: 1,
@@ -50,6 +54,7 @@ describe('RepositoriesSectionComponent', () => {
   let fixture: ComponentFixture<HostComponent>;
   let el: HTMLElement;
   let http: HttpTestingController;
+  let loader: HarnessLoader;
   const snackBar = { open: vi.fn() };
   const dialog = { open: vi.fn() };
 
@@ -69,6 +74,7 @@ describe('RepositoriesSectionComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(HostComponent);
     el = fixture.nativeElement as HTMLElement;
+    loader = TestbedHarnessEnvironment.loader(fixture);
     fixture.detectChanges();
   });
 
@@ -90,7 +96,7 @@ describe('RepositoriesSectionComponent', () => {
   const pathInput = () => el.querySelector<HTMLInputElement>('input[formControlName="path"]')!;
   const addAliasInput = () =>
     el.querySelectorAll<HTMLInputElement>('input[formControlName="alias"]')[1];
-  const addButton = () => el.querySelector<HTMLButtonElement>('.add-fields button')!;
+  const addButton = () => el.querySelector<HTMLButtonElement>('.add-submit')!;
   const type = async (input: HTMLInputElement, value: string) => {
     input.value = value;
     input.dispatchEvent(new Event('input'));
@@ -269,5 +275,64 @@ describe('RepositoriesSectionComponent', () => {
     await settle();
 
     http.expectNone('/api/v1/projects/1');
+  });
+
+  it('should_show_a_color_picker_for_the_existing_repo_row_rg_025_07', () => {
+    expect(el.querySelectorAll('.color-col app-project-color-picker')).toHaveLength(1);
+  });
+
+  it('should_mark_the_rows_color_control_dirty_when_a_color_is_picked_rg_025_07', async () => {
+    const menus = await loader.getAllHarnesses(MatMenuHarness);
+    await menus[0].open();
+    await menus[0].clickItem({ text: t('settings.connections.repos.colors.sage') });
+    await settle();
+
+    const row = fixture.componentInstance.rows()[0];
+    expect(row.group.controls.color.value).toBe('sage');
+    expect(row.group.controls.color.dirty).toBe(true);
+  });
+
+  it('should_include_the_chosen_color_when_adding_a_repo_rg_025_07', async () => {
+    await type(pathInput(), 'equipe/front-web');
+    const menus = await loader.getAllHarnesses(MatMenuHarness);
+    await menus[1].open();
+    await menus[1].clickItem({ text: t('settings.connections.repos.colors.mint') });
+    await settle();
+
+    addButton().click();
+    await settle();
+
+    const req = http.expectOne('/api/v1/projects');
+    expect(req.request.body).toEqual({ path: 'equipe/front-web', connectionId: 1, color: 'mint' });
+    req.flush({
+      id: 2,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/front-web',
+      alias: 'front-web',
+      remoteProjectId: '7',
+      color: 'mint',
+    });
+    await settle();
+    await flushSync(2);
+  });
+
+  it('should_omit_color_from_the_add_request_when_none_is_chosen', async () => {
+    await type(pathInput(), 'equipe/front-web');
+
+    addButton().click();
+    await settle();
+
+    const req = http.expectOne('/api/v1/projects');
+    expect(req.request.body).toEqual({ path: 'equipe/front-web', connectionId: 1 });
+    req.flush({
+      id: 2,
+      connectionId: 1,
+      pathWithNamespace: 'equipe/front-web',
+      alias: 'front-web',
+      remoteProjectId: '7',
+      color: null,
+    });
+    await settle();
+    await flushSync(2);
   });
 });

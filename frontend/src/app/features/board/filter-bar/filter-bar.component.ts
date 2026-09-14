@@ -13,6 +13,7 @@ import {
   MergeRequestsFacets,
   isMultiValueFilter,
 } from '../../../models/merge-request.model';
+import { Project } from '../../../models/project.model';
 import { AddFilterMenuComponent } from './add-filter-menu/add-filter-menu.component';
 import { countLabelParts } from './count-label';
 import { FilterPillComponent } from './filter-pill/filter-pill.component';
@@ -51,6 +52,8 @@ export class FilterBarComponent {
   readonly facets = input.required<MergeRequestsFacets | null>();
   /** RG-021-03 : transmis à `AddFilterMenuComponent`. */
   readonly showConnectionFilter = input(true);
+  /** RG-025-09 : repos configurés, transmis à `FilterPillComponent` pour la pastille du filtre Projet. */
+  readonly projects = input<Project[]>([]);
 
   readonly draftsToggle = output<void>();
   readonly mineToggle = output<void>();

@@ -25,6 +25,7 @@ describe('ProjectsService', () => {
     alias: 'api',
     webUrl: 'https://gitlab.com/equipe/backend-api',
     enabled: true,
+    color: null,
     createdAt: '2026-09-01T00:00:00.000Z',
     ...overrides,
   });
@@ -95,6 +96,7 @@ describe('ProjectsService', () => {
           pathWithNamespace: 'equipe/backend-api',
           alias: 'api',
           remoteProjectId: '42',
+          color: null,
         },
         {
           id: 2,
@@ -102,6 +104,7 @@ describe('ProjectsService', () => {
           pathWithNamespace: 'equipe/backend-api',
           alias: 'web',
           remoteProjectId: '42',
+          color: null,
         },
       ]);
       expect(repository.find).toHaveBeenCalledWith({ order: { id: 'ASC' } });
@@ -172,7 +175,30 @@ describe('ProjectsService', () => {
         pathWithNamespace: 'equipe/backend-api',
         alias: 'api',
         remoteProjectId: '42',
+        color: null,
       });
+    });
+
+    it('should_store_the_given_color_rg_025_07', async () => {
+      const result = await service.add({
+        path: 'equipe/backend-api',
+        alias: 'api',
+        color: 'sage',
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'sage' }),
+      );
+      expect(result.color).toBe('sage');
+    });
+
+    it('should_default_color_to_null_when_omitted_rg_025_01', async () => {
+      const result = await service.add({
+        path: 'equipe/backend-api',
+        alias: 'api',
+      });
+
+      expect(result.color).toBeNull();
     });
 
     it('should_use_the_explicit_connectionId_when_given', async () => {
@@ -329,7 +355,7 @@ describe('ProjectsService', () => {
     it('should_update_alias', async () => {
       repository.findOneBy.mockResolvedValue(row());
 
-      const result = await service.rename(1, { alias: 'back' });
+      const result = await service.rename(1, { alias: 'back', color: null });
 
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({ alias: 'back' }),
@@ -338,9 +364,9 @@ describe('ProjectsService', () => {
     });
 
     it('should_throw_404_for_unknown_id', async () => {
-      await expect(service.rename(99, { alias: 'x' })).rejects.toBeInstanceOf(
-        EntityNotFoundException,
-      );
+      await expect(
+        service.rename(99, { alias: 'x', color: null }),
+      ).rejects.toBeInstanceOf(EntityNotFoundException);
     });
 
     it('should_reject_duplicate_alias_excluding_itself', async () => {
@@ -350,18 +376,37 @@ describe('ProjectsService', () => {
         row({ id: 1, alias: 'api' }),
       ]);
 
-      await expect(service.rename(2, { alias: 'api' })).rejects.toBeInstanceOf(
-        BusinessValidationException,
-      );
+      await expect(
+        service.rename(2, { alias: 'api', color: null }),
+      ).rejects.toBeInstanceOf(BusinessValidationException);
     });
 
     it('should_allow_renaming_to_its_own_current_alias', async () => {
       repository.findOneBy.mockResolvedValue(row());
       repository.find.mockResolvedValue([row()]);
 
-      await expect(service.rename(1, { alias: 'api' })).resolves.toEqual(
-        expect.objectContaining({ alias: 'api' }),
+      await expect(
+        service.rename(1, { alias: 'api', color: null }),
+      ).resolves.toEqual(expect.objectContaining({ alias: 'api' }));
+    });
+
+    it('should_update_the_color_rg_025_07', async () => {
+      repository.findOneBy.mockResolvedValue(row({ color: 'sage' }));
+
+      const result = await service.rename(1, { alias: 'api', color: 'peach' });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'peach' }),
       );
+      expect(result.color).toBe('peach');
+    });
+
+    it('should_clear_the_color_back_to_none_rg_025_01', async () => {
+      repository.findOneBy.mockResolvedValue(row({ color: 'sage' }));
+
+      const result = await service.rename(1, { alias: 'api', color: null });
+
+      expect(result.color).toBeNull();
     });
   });
 
@@ -466,6 +511,79 @@ describe('ProjectsService', () => {
       await service.importMany([]);
 
       expect(repository.remove).not.toHaveBeenCalled();
+    });
+
+    it('should_store_the_entrys_color_for_a_newly_added_repo_rg_025_08', async () => {
+      await service.importMany([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'GitLab',
+          color: 'sage',
+        },
+      ]);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'sage' }),
+      );
+    });
+
+    it('should_overwrite_a_matched_repos_color_when_the_entry_carries_one_rg_025_08', async () => {
+      const existing = row({ id: 5, color: 'sage' });
+      repository.find.mockResolvedValue([existing]);
+      repository.findOneBy.mockResolvedValue(existing);
+
+      await service.importMany([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'GitLab',
+          color: 'peach',
+        },
+      ]);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 5, color: 'peach' }),
+      );
+    });
+
+    it('should_clear_a_matched_repos_color_when_the_entry_explicitly_carries_null_rg_025_08', async () => {
+      const existing = row({ id: 5, color: 'sage' });
+      repository.find.mockResolvedValue([existing]);
+      repository.findOneBy.mockResolvedValue(existing);
+
+      await service.importMany([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'GitLab',
+          color: null,
+        },
+      ]);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 5, color: null }),
+      );
+    });
+
+    it('should_keep_a_matched_repos_existing_color_when_the_entry_has_no_color_field_rg_025_08', async () => {
+      // Fichier exporté par une version antérieure à US-025 (v1 legacy) : la
+      // clé `color` est absente de l'entrée, pas seulement `null`.
+      const existing = row({ id: 5, color: 'sage' });
+      repository.find.mockResolvedValue([existing]);
+      repository.findOneBy.mockResolvedValue(existing);
+
+      await service.importMany([
+        {
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          connectionName: 'GitLab',
+        },
+      ]);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 5, color: 'sage' }),
+      );
     });
   });
 

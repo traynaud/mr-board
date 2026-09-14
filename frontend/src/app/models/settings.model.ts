@@ -92,6 +92,8 @@ export interface TransferProject {
   connection: string;
   pathWithNamespace: string;
   alias: string;
+  /** Absent = fichier exporté avant US-025 ; présent (même `null`) écrase toujours la couleur existante (RG-025-08). */
+  color?: string | null;
 }
 
 /** Réponse de `GET /settings/export` (RG-019-18). Ne contient jamais de jeton. */

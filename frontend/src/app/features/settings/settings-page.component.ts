@@ -32,7 +32,7 @@ import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
 import { syncIdentitiesFormArray } from './connections-form';
 import { resolveMeIdentity } from './me-identity';
-import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
+import { collectDirtyRepoChanges, syncReposFormArray } from './repos-form';
 import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
 import { IdentityRow, MeSectionComponent } from './sections/me/me-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
@@ -193,9 +193,11 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // Fire-and-forget (RG-004-15) : ne bloque ni le toast ni la navigation
     // ci-dessous, et son échec éventuel est ignoré (voir SyncStore.trigger).
     void this.syncStore.trigger();
-    const aliasChanges = collectDirtyAliasChanges(this.form.controls.repos);
+    const repoChanges = collectDirtyRepoChanges(this.form.controls.repos);
     const renameErrors = await Promise.all(
-      aliasChanges.map((change) => this.projectsStore.rename(change.id, { alias: change.alias })),
+      repoChanges.map((change) =>
+        this.projectsStore.rename(change.id, { alias: change.alias, color: change.color }),
+      ),
     );
     if (renameErrors.some((error) => error !== null)) {
       // Les paramètres sont déjà enregistrés côté serveur ; le formulaire

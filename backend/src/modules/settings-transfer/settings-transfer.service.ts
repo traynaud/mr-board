@@ -50,6 +50,7 @@ export class SettingsTransferService {
         connection: connectionsById.get(project.connectionId)!.name,
         pathWithNamespace: project.pathWithNamespace,
         alias: project.alias,
+        color: project.color,
       })),
     };
   }
@@ -109,6 +110,7 @@ export class SettingsTransferService {
       pathWithNamespace: entry.pathWithNamespace,
       alias: entry.alias,
       connectionName: entry.connection,
+      color: entry.color,
     }));
     return this.applyProjects(settings, connections, entries);
   }

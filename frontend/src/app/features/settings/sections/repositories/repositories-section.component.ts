@@ -21,6 +21,7 @@ import {
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { Connection } from '../../../../models/connection.model';
 import { Project } from '../../../../models/project.model';
+import { ProjectColorPickerComponent } from '../../../../shared/project-color/project-color-picker.component';
 import { ProjectsStore } from '../../../../stores/projects.store';
 import { SyncStore } from '../../../../stores/sync.store';
 import { RepoAliasForm, optionalAliasFormatValidator } from '../../repos-form';
@@ -69,6 +70,7 @@ const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
     MatInputModule,
     MatButtonModule,
     MatIconModule,
+    ProjectColorPickerComponent,
     TranslatePipe,
   ],
   templateUrl: './repositories-section.component.html',
@@ -91,6 +93,8 @@ export class RepositoriesSectionComponent {
   protected readonly addForm = new FormGroup({
     path: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     alias: new FormControl('', { nonNullable: true, validators: [optionalAliasFormatValidator] }),
+    /** `null` = « Aucune » présélectionnée par défaut (RG-025-01, RG-025-07). */
+    color: new FormControl<string | null>(null, { nonNullable: true }),
   });
 
   /** RG-020-05 : dépend du type de la connexion de cette section. */
@@ -111,10 +115,11 @@ export class RepositoriesSectionComponent {
       return;
     }
     this.clearServerErrors();
-    const { path, alias } = this.addForm.getRawValue();
+    const { path, alias, color } = this.addForm.getRawValue();
     const errorKey = await this.store.add({
       path: path.trim(),
       ...(alias ? { alias } : {}),
+      ...(color ? { color } : {}),
       connectionId: this.connection().id,
     });
     if (errorKey) {
@@ -137,7 +142,7 @@ export class RepositoriesSectionComponent {
       // Fire-and-forget (RG-004-15), voir SyncStore.trigger.
       void this.syncStore.trigger(added.id);
     }
-    this.addForm.reset({ path: '', alias: '' });
+    this.addForm.reset({ path: '', alias: '', color: null });
     this.toast('settings.connections.repos.added');
   }
 
@@ -162,6 +167,12 @@ export class RepositoriesSectionComponent {
     }
     const errorKey = await this.store.remove(project.id);
     this.toast(errorKey ?? 'settings.connections.repos.removed');
+  }
+
+  /** RG-025-07 : couleur d'un repo existant, différée comme l'alias (bouton « Enregistrer » global). */
+  protected setColor(group: RepoAliasForm, color: string | null): void {
+    group.controls.color.setValue(color);
+    group.controls.color.markAsDirty();
   }
 
   /** Efface une éventuelle erreur serveur posée sur `path`/`alias` (nouvelle saisie). */

@@ -223,6 +223,7 @@
         "title": "Repos of this connection",
         "pathHeader": "Project path",
         "aliasHeader": "Alias",
+        "colorHeader": "Color",
         "pathPlaceholderGitlab": "group/project or GitLab URL",
         "pathPlaceholderGithub": "owner/repo or GitHub URL",
         "aliasPlaceholder": "alias",
@@ -236,6 +237,20 @@
           "message": "Its MRs will no longer be shown.",
           "confirm": "Remove",
           "cancel": "Stay"
+        },
+        "colors": {
+          "none": "None",
+          "slate": "Slate blue",
+          "sage": "Sage green",
+          "lilac": "Lilac",
+          "peach": "Peach",
+          "rose": "Dusty rose",
+          "sand": "Sand",
+          "mint": "Mint",
+          "steel": "Steel blue",
+          "plum": "Plum",
+          "olive": "Light olive",
+          "pickerLabel": "Color of {{alias}}: {{color}}"
         }
       }
     },

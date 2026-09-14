@@ -64,6 +64,7 @@ const PROJECT: Project = {
   pathWithNamespace: 'equipe/backend-api',
   alias: 'api',
   remoteProjectId: '42',
+  color: null,
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
 const CONNECTIONS_URL = '/api/v1/connections';
@@ -281,6 +282,7 @@ describe('BoardPageComponent', () => {
       pathWithNamespace: 'exemple-org/web',
       alias: 'web',
       remoteProjectId: '99',
+      color: null,
     };
     const githubMr = mergeRequest({
       id: 2,

@@ -4,6 +4,7 @@
     <tr>
       <th>{{ 'settings.connections.repos.pathHeader' | translate }}</th>
       <th class="alias-col">{{ 'settings.connections.repos.aliasHeader' | translate }}</th>
+      <th class="color-col">{{ 'settings.connections.repos.colorHeader' | translate }}</th>
       <th class="delete-col"></th>
     </tr>
   </thead>
@@ -15,6 +16,13 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <input matInput formControlName="alias" autocomplete="off" spellcheck="false" />
           </mat-form-field>
+        </td>
+        <td class="color-col">
+          <app-project-color-picker
+            [value]="row.group.controls.color.value"
+            [name]="row.project.alias"
+            (valueChange)="setColor(row.group, $event)"
+          />
         </td>
         <td class="delete-col">
           <button
@@ -30,7 +38,7 @@
     }
     @if (connection().tokenConfigured) {
       <tr class="add-row" [formGroup]="addForm">
-        <td colspan="3">
+        <td colspan="4">
           <div class="add-fields">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="path-field">
               <input
@@ -56,9 +64,15 @@
                 <mat-error>{{ addForm.controls.alias.getError('server') | translate }}</mat-error>
               }
             </mat-form-field>
+            <app-project-color-picker
+              [value]="addForm.controls.color.value"
+              [name]="addForm.controls.alias.value || addForm.controls.path.value"
+              (valueChange)="addForm.controls.color.setValue($event)"
+            />
             <button
               mat-stroked-button
               type="button"
+              class="add-submit"
               [disabled]="addForm.invalid || store.adding()"
               (click)="addRepo()"
             >
@@ -70,7 +84,7 @@
       </tr>
     } @else {
       <tr class="token-missing-row">
-        <td colspan="3">{{ 'errors.connections.tokenMissing' | translate }}</td>
+        <td colspan="4">{{ 'errors.connections.tokenMissing' | translate }}</td>
       </tr>
     }
   </tbody>

@@ -31,6 +31,7 @@ const PROJECT: Project = {
   pathWithNamespace: 'equipe/backend-api',
   alias: 'api',
   remoteProjectId: '42',
+  color: null,
 };
 
 function rowOf(p: Project): RepoRow {

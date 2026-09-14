@@ -4,14 +4,14 @@ import {
   RepoAliasForm,
   aliasFormatValidator,
   buildRepoAliasGroup,
-  collectDirtyAliasChanges,
+  collectDirtyRepoChanges,
   optionalAliasFormatValidator,
   syncReposFormArray,
 } from './repos-form';
 
 const projects: Project[] = [
-  { id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' },
-  { id: 2, connectionId: 1, pathWithNamespace: 'equipe/front-web', alias: 'web', remoteProjectId: '7' },
+  { id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42', color: null },
+  { id: 2, connectionId: 1, pathWithNamespace: 'equipe/front-web', alias: 'web', remoteProjectId: '7', color: 'sage' },
 ];
 
 describe('aliasFormatValidator', () => {
@@ -42,11 +42,17 @@ describe('optionalAliasFormatValidator', () => {
 });
 
 describe('buildRepoAliasGroup', () => {
-  it('should_seed_id_and_alias_from_project', () => {
+  it('should_seed_id_alias_and_color_from_project', () => {
     const group = buildRepoAliasGroup(projects[0]);
 
-    expect(group.getRawValue()).toEqual({ id: 1, alias: 'api' });
+    expect(group.getRawValue()).toEqual({ id: 1, alias: 'api', color: null });
     expect(group.pristine).toBe(true);
+  });
+
+  it('should_seed_the_existing_color_rg_025_01', () => {
+    const group = buildRepoAliasGroup(projects[1]);
+
+    expect(group.getRawValue().color).toBe('sage');
   });
 });
 
@@ -57,8 +63,8 @@ describe('syncReposFormArray', () => {
     syncReposFormArray(array, projects);
 
     expect(array.length).toBe(2);
-    expect(array.at(0).getRawValue()).toEqual({ id: 1, alias: 'api' });
-    expect(array.at(1).getRawValue()).toEqual({ id: 2, alias: 'web' });
+    expect(array.at(0).getRawValue()).toEqual({ id: 1, alias: 'api', color: null });
+    expect(array.at(1).getRawValue()).toEqual({ id: 2, alias: 'web', color: 'sage' });
   });
 
   it('should_discard_unsaved_edits_on_rebuild', () => {
@@ -109,14 +115,14 @@ describe('syncReposFormArray', () => {
 
     syncReposFormArray(array, [
       ...projects,
-      { id: 3, connectionId: 1, pathWithNamespace: 'x/y', alias: 'xy', remoteProjectId: '9' },
+      { id: 3, connectionId: 1, pathWithNamespace: 'x/y', alias: 'xy', remoteProjectId: '9', color: null },
     ]);
     expect(array.length).toBe(3);
   });
 });
 
-describe('collectDirtyAliasChanges', () => {
-  it('should_return_only_dirty_and_valid_aliases_trimmed', () => {
+describe('collectDirtyRepoChanges', () => {
+  it('should_return_only_dirty_and_valid_rows_with_trimmed_alias', () => {
     const array = new FormArray<RepoAliasForm>([]);
     syncReposFormArray(array, projects);
     array.at(0).controls.alias.setValue('  back  ');
@@ -124,13 +130,33 @@ describe('collectDirtyAliasChanges', () => {
     array.at(1).controls.alias.setValue('api,web'); // dirty but invalid format
     array.at(1).controls.alias.markAsDirty();
 
-    expect(collectDirtyAliasChanges(array)).toEqual([{ id: 1, alias: 'back' }]);
+    expect(collectDirtyRepoChanges(array)).toEqual([{ id: 1, alias: 'back', color: null }]);
   });
 
   it('should_return_empty_array_when_nothing_changed', () => {
     const array = new FormArray<RepoAliasForm>([]);
     syncReposFormArray(array, projects);
 
-    expect(collectDirtyAliasChanges(array)).toEqual([]);
+    expect(collectDirtyRepoChanges(array)).toEqual([]);
+  });
+
+  it('should_include_a_row_whose_only_the_color_changed_rg_025_07', () => {
+    const array = new FormArray<RepoAliasForm>([]);
+    syncReposFormArray(array, projects);
+    array.at(0).controls.color.setValue('peach');
+    array.at(0).controls.color.markAsDirty();
+
+    expect(collectDirtyRepoChanges(array)).toEqual([{ id: 1, alias: 'api', color: 'peach' }]);
+  });
+
+  it('should_exclude_a_row_with_an_invalid_alias_even_if_its_color_changed', () => {
+    const array = new FormArray<RepoAliasForm>([]);
+    syncReposFormArray(array, projects);
+    array.at(0).controls.alias.setValue('bad alias');
+    array.at(0).controls.alias.markAsDirty();
+    array.at(0).controls.color.setValue('peach');
+    array.at(0).controls.color.markAsDirty();
+
+    expect(collectDirtyRepoChanges(array)).toEqual([]);
   });
 });

@@ -1,10 +1,12 @@
 import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
+import { PROJECT_COLOR_IDS } from '../domain/project-color';
 
 /** Alias charset/length (RG-003-04): URL-safe, no comma (breaks the CSV query params of RG-011-01). */
 export const ALIAS_PATTERN = /^[A-Za-z0-9._-]{1,20}$/;
@@ -26,4 +28,9 @@ export class CreateProjectDto {
   @IsOptional()
   @IsInt()
   connectionId?: number;
+
+  /** Background color of the Projet tag; omitted = "Aucune" (RG-025-01, RG-025-07). */
+  @IsOptional()
+  @IsIn(PROJECT_COLOR_IDS)
+  color?: string;
 }

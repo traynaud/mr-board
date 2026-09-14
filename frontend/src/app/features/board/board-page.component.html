@@ -41,6 +41,7 @@
       [composableFilters]="filtersStore.composableFilters()"
       [facets]="mrStore.facets()"
       [showConnectionFilter]="hasMultipleConnections()"
+      [projects]="projectsStore.projects()"
       (draftsToggle)="onDraftsToggle()"
       (mineToggle)="onMineToggle()"
       (clearFilters)="onClearFilters()"

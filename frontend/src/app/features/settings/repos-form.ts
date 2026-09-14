@@ -21,11 +21,13 @@ export const optionalAliasFormatValidator: ValidatorFn = (control) => {
 export interface RepoAliasFormGroup {
   id: FormControl<number>;
   alias: FormControl<string>;
+  /** Id de couleur (`ProjectColorId`), `null` = « Aucune » (RG-025-01). */
+  color: FormControl<string | null>;
 }
 
 export type RepoAliasForm = FormGroup<RepoAliasFormGroup>;
 
-/** Un groupe de formulaire par repo existant : id (lecture seule) + alias (éditable). */
+/** Un groupe de formulaire par repo existant : id (lecture seule) + alias + couleur (éditables). */
 export function buildRepoAliasGroup(project: Project): RepoAliasForm {
   return new FormGroup<RepoAliasFormGroup>({
     id: new FormControl(project.id, { nonNullable: true }),
@@ -33,6 +35,7 @@ export function buildRepoAliasGroup(project: Project): RepoAliasForm {
       nonNullable: true,
       validators: [Validators.required, aliasFormatValidator],
     }),
+    color: new FormControl(project.color, { nonNullable: true }),
   });
 }
 
@@ -54,14 +57,24 @@ export function syncReposFormArray(array: FormArray<RepoAliasForm>, projects: Pr
   array.markAsPristine();
 }
 
-/** Alias modifiés (dirty et valides) à envoyer au serveur lors de l'enregistrement global. */
-export function collectDirtyAliasChanges(
+/**
+ * Repos modifiés (alias et/ou couleur, RG-025-07) à envoyer au serveur lors
+ * de l'enregistrement global — dès que l'un des deux champs est dirty, les
+ * deux valeurs courantes sont renvoyées ensemble (`PUT` attend toujours les
+ * deux, voir `UpdateProjectRequest`). Une ligne à l'alias invalide est
+ * exclue même si sa couleur a changé.
+ */
+export function collectDirtyRepoChanges(
   array: FormArray<RepoAliasForm>,
-): { id: number; alias: string }[] {
+): { id: number; alias: string; color: string | null }[] {
   return array.controls
-    .filter((group) => group.controls.alias.dirty && group.controls.alias.valid)
+    .filter(
+      (group) =>
+        (group.controls.alias.dirty || group.controls.color.dirty) && group.controls.alias.valid,
+    )
     .map((group) => ({
       id: group.controls.id.value,
       alias: group.controls.alias.value.trim(),
+      color: group.controls.color.value,
     }));
 }

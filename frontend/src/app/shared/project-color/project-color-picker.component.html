@@ -1,0 +1,28 @@
+<button
+  type="button"
+  class="swatch-trigger"
+  [matMenuTriggerFor]="menu"
+  [matTooltip]="currentLabel()"
+  [attr.aria-label]="triggerAriaLabel()"
+>
+  <span class="swatch" [class.none]="!currentSwatch()" [style.background-color]="currentSwatch()?.background"></span>
+</button>
+
+<mat-menu #menu="matMenu" class="project-color-menu">
+  <button mat-menu-item type="button" (click)="select(null)">
+    @if (isSelected(null)) {
+      <mat-icon svgIcon="check" />
+    }
+    <span class="option-swatch none"></span>
+    {{ labelFor(null) }}
+  </button>
+  @for (swatch of palette; track swatch.id) {
+    <button mat-menu-item type="button" (click)="select(swatch.id)">
+      @if (isSelected(swatch.id)) {
+        <mat-icon svgIcon="check" />
+      }
+      <span class="option-swatch" [style.background-color]="swatch.background"></span>
+      {{ labelFor(swatch.id) }}
+    </button>
+  }
+</mat-menu>

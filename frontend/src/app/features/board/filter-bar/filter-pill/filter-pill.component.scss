@@ -96,6 +96,14 @@
   }
 }
 
+.option-swatch {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  display: inline-block;
+  border-radius: 0;
+}
+
 .option-label {
   flex: 1;
   font-size: 13px;
