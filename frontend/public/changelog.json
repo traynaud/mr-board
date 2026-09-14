@@ -2,6 +2,12 @@
   {
     "date": "2026-09-14",
     "type": "fix",
+    "user-story": "US-018",
+    "title": "Thème sombre : ne s'appliquait plus dans l'image Docker (CSP bloquant le chargement différé du CSS non critique par Angular)."
+  },
+  {
+    "date": "2026-09-14",
+    "type": "fix",
     "user-story": "US-020",
     "title": "Synchronisation GitHub : une erreur de permission GraphQL (jeton fine-grained sans accès Pull requests) n'est plus signalée à tort comme une version GitHub non supportée."
   },
