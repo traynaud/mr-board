@@ -53,6 +53,53 @@ describe('AvatarComponent', () => {
     expect(el.querySelector('.initials')).toBeNull();
   });
 
+  it('should_fallback_to_initials_when_the_image_fails_to_load_rg_024_01', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.avatarUrl.set('https://gitlab.com/broken.png');
+    await fixture.whenStable();
+    expect(el.querySelector('img')).not.toBeNull();
+
+    el.querySelector<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
+    await fixture.whenStable();
+
+    expect(el.querySelector('img')).toBeNull();
+    expect(el.querySelector('.initials')?.textContent?.trim()).toBe('MD');
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe('Marie Dupont');
+  });
+
+  it('should_not_retry_the_same_url_after_it_already_failed_rg_024_02', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.avatarUrl.set('https://gitlab.com/broken.png');
+    await fixture.whenStable();
+    el.querySelector<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
+    await fixture.whenStable();
+
+    // Un re-rendu sans changement d'URL (ex. re-render du parent) ne doit
+    // jamais réafficher l'<img> cassée.
+    fixture.componentInstance.highlighted.set(true);
+    await fixture.whenStable();
+
+    expect(el.querySelector('img')).toBeNull();
+    expect(el.querySelector('.initials')).not.toBeNull();
+  });
+
+  it('should_retry_loading_a_new_url_after_a_previous_failure_rg_024_02', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.avatarUrl.set('https://gitlab.com/broken.png');
+    await fixture.whenStable();
+    el.querySelector<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
+    await fixture.whenStable();
+    expect(el.querySelector('img')).toBeNull();
+
+    fixture.componentInstance.avatarUrl.set('https://gitlab.com/new.png');
+    await fixture.whenStable();
+
+    const img = el.querySelector<HTMLImageElement>('img');
+    expect(img?.src).toBe('https://gitlab.com/new.png');
+    expect(el.querySelector('.initials')).toBeNull();
+  });
+
   it('should_apply_filled_variant_by_default_and_outlined_when_set', async () => {
     const { fixture, el } = await setup();
     expect(el.querySelector('.avatar')?.classList.contains('filled')).toBe(true);
