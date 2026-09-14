@@ -91,11 +91,54 @@ toujours rattaché à sa connexion).
 | Type | GitLab ou GitHub (figé après création). |
 | Nom | Nom libre affiché dans l'app (ex. « gitlab.com », « GitLab interne »). Unique, ne peut contenir ni virgule ni point-virgule. |
 | URL | Adresse de l'instance (`https://gitlab.com`, `https://github.com`, ou une instance auto-hébergée / GitHub Enterprise Server). |
-| Jeton d'accès personnel | Un *Personal Access Token* en lecture seule (`read_api` sur GitLab ; scope `repo` ou permissions fine-grained *Pull requests* / *Commit statuses* / *Checks* sur GitHub). Chiffré au repos, jamais renvoyé en clair par l'API. |
+| Jeton d'accès personnel | Un *Personal Access Token* — voir les autorisations minimales par forge ci-dessous. Chiffré au repos, jamais renvoyé en clair par l'API. |
 | Dépôts de cette connexion | `groupe/projet` (GitLab) ou `owner/repo` (GitHub) à surveiller, chacun avec un alias court affiché dans le tableau. |
 
 Le bouton « Tester » vérifie le jeton sans l'enregistrer ; « Supprimer » retire la connexion, ses dépôts et leurs
 MRs du tableau après confirmation.
+
+MR Board ne fait jamais d'appel en écriture : donnez-lui toujours le jeton le plus restreint que votre forge
+permet de créer. Le détail par forge :
+
+#### GitLab
+
+[Créer un jeton](https://docs.gitlab.com/user/profile/personal_access_tokens/) (*Edit profile → Access Tokens*),
+avec pour seul scope :
+
+| Scope | Nécessaire |
+|-------|------------|
+| `read_api` | ✅ Oui — accès en lecture à toute l'API REST/GraphQL utilisée par MR Board (MRs, utilisateurs, statut des pipelines). C'est le scope **le plus restreint possible** qui reste suffisant. |
+| `api` | ❌ À éviter — fonctionne aussi puisqu'il inclut `read_api`, mais autorise en plus l'écriture ; ne l'utilisez pas ici. |
+| `read_repository`, `read_user`, … | ❌ Insuffisant seul — ne couvre pas les endpoints d'API nécessaires ; MR Board refusera le jeton au test de connexion. |
+
+Aucune autre permission (pas de `write_repository`, pas d'accès admin) n'est nécessaire, y compris sur une instance
+GitLab auto-hébergée.
+
+#### GitHub
+
+[Créer un jeton](https://github.com/settings/personal-access-tokens) — deux formats possibles, le premier étant
+recommandé :
+
+- **Jeton fine-grained** (recommandé) : limitez-le si possible aux dépôts que MR Board doit surveiller (« Only
+  select repositories »), puis accordez uniquement ces permissions **en lecture seule** :
+
+  | Permission (Repository permissions) | Nécessaire |
+  |--------------------------------------|------------|
+  | `Metadata` — Read-only | ✅ Oui — imposée automatiquement par GitHub dès qu'un dépôt est sélectionné, aucune action requise. |
+  | `Pull requests` — Read-only | ✅ Oui — lecture des PRs, reviewers, labels, discussions. |
+  | `Commit statuses` — Read-only | ✅ Oui — statut des vérifications classiques (CI historique). |
+  | `Checks` — Read-only | ✅ Oui — statut des GitHub Actions/Checks récents, utilisé pour la colonne Statut. |
+  | Toute permission en écriture, ou toute autre permission en lecture | ❌ Non nécessaire. |
+
+  Sur une instance **GitHub Enterprise Server**, seuls les jetons classiques sont en général disponibles (les
+  jetons fine-grained dépendent de la version) — dans ce cas, utilisez le format classique ci-dessous.
+
+- **Jeton classique** (`ghp_…`) : un seul scope à cocher.
+
+  | Scope | Nécessaire |
+  |-------|------------|
+  | `public_repo` | ✅ Suffisant **si tous les dépôts surveillés sont publics** — c'est le scope le plus restreint. |
+  | `repo` | ⚠️ Nécessaire **dès qu'un seul dépôt privé** est surveillé — attention, GitHub ne propose pas de variante lecture seule de ce scope pour les dépôts privés : `repo` donne aussi les droits d'écriture (MR Board ne les utilise jamais, mais le jeton les possède). Pour un accès strictement lecture seule sur du privé, préférez un jeton fine-grained. |
 
 ### 03 · Actualisation
 
