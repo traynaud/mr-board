@@ -22,6 +22,8 @@ export interface UrlState {
   assigned: string[];
   approved: 'yes' | 'no' | null;
   commented: 'yes' | 'no' | null;
+  /** RG-026-10 : recherche libre, `''` si absente de l'URL. */
+  search: string;
   sort: MergeRequestSort;
   /** RG-017-09 : visibilité de la colonne « Statut ». */
   showStatus: boolean;
@@ -76,6 +78,7 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
     assigned,
     approved,
     commented,
+    search: params['q'] ?? '',
     sort: decodeSort(params['sort']),
     showStatus,
     showOpened,
@@ -95,6 +98,9 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
   };
   for (const key of state.active) {
     params[key] = isMultiValueFilter(key) ? state[key].join(',') : encodeBooleanValue(state[key]);
+  }
+  if (state.search !== '') {
+    params['q'] = state.search;
   }
   params['sort'] = `${state.sort.key}:${state.sort.direction}`;
   const cols = encodeCols(state.showStatus, state.showOpened);

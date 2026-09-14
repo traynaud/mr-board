@@ -170,7 +170,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -184,7 +184,20 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: true, mine: true },
+      { drafts: true, mine: true, search: '' },
+      EMPTY_COMPOSABLE_FILTERS,
+    );
+  });
+
+  it('should_pass_the_current_search_to_the_api_rg_026', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.setSearch('facturation');
+
+    await store.load();
+
+    expect(api.getMergeRequests).toHaveBeenCalledWith(
+      { key: 'ready', direction: 'asc' },
+      { drafts: false, mine: false, search: 'facturation' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -199,11 +212,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, project: ['api'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -218,11 +231,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, connection: ['gitlab.com'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -313,7 +326,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'diff', direction: 'asc' },
-      { drafts: false, mine: false },
+      { drafts: false, mine: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -365,6 +378,26 @@ describe('MergeRequestsStore', () => {
       vi.advanceTimersByTime(100);
       store.scheduleReload();
       vi.advanceTimersByTime(150);
+
+      expect(api.getMergeRequests).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_accept_a_custom_debounce_for_the_search_field_rg_026_09', () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+
+      store.scheduleReload(300);
+      vi.advanceTimersByTime(150);
+      expect(api.getMergeRequests).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(150);
+      expect(api.getMergeRequests).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_reload_immediately_with_a_debounce_of_0', () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+
+      store.scheduleReload(0);
+      vi.advanceTimersByTime(0);
 
       expect(api.getMergeRequests).toHaveBeenCalledTimes(1);
     });

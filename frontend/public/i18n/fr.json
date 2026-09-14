@@ -26,6 +26,8 @@
       "count": "{{count}} MR{{countSuffix}} · {{projects}} projet{{projectsSuffix}}",
       "clear": "Effacer",
       "add": "Ajouter un filtre",
+      "searchPlaceholder": "Rechercher un titre…",
+      "searchClear": "Effacer la recherche",
       "pills": {
         "names": {
           "connection": "Connexion",

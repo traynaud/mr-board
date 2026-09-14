@@ -1152,6 +1152,64 @@ describe('MergeRequestsService', () => {
 
       expect(result.map((v) => v.iid)).toEqual([1]);
     });
+
+    it('should_filter_merge_requests_by_title_search_rg_026', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 1,
+          title: 'Refonte de la facturation',
+        }),
+        persistedMergeRequest({ id: 2, iid: 2, title: 'Correctif export CSV' }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        search: 'facturation',
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+    });
+
+    it('should_match_a_merge_request_by_iid_when_the_search_is_a_number_rg_026_05', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          iid: 42,
+          title: 'Correctif export CSV',
+        }),
+        persistedMergeRequest({ id: 2, iid: 43, title: 'Autre correctif' }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        search: '!42',
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([42]);
+    });
+
+    it('should_not_filter_anything_for_a_blank_search', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        search: '   ',
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+    });
   });
 
   describe('getFacets', () => {
@@ -1238,6 +1296,34 @@ describe('MergeRequestsService', () => {
 
       expect(facets.project).toEqual([
         { value: 'api', label: 'api · equipe/api', count: 0 },
+      ]);
+    });
+
+    it('should_scope_facet_counts_to_the_search_rg_026_07', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({
+          id: 1,
+          projectId: 1,
+          title: 'Refonte facturation',
+        }),
+        persistedMergeRequest({
+          id: 2,
+          projectId: 1,
+          title: 'Correctif export CSV',
+        }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      projectsService.list.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const facets = await service.getFacets({ search: 'facturation' });
+
+      expect(facets.project).toEqual([
+        { value: 'api', label: 'api · equipe/api', count: 1 },
       ]);
     });
 

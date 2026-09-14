@@ -28,7 +28,7 @@ describe('MergeRequestsService', () => {
       const pending = firstValueFrom(
         service.getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false },
+          { drafts: false, mine: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         ),
       );
@@ -68,7 +68,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'diff', direction: 'desc' },
-          { drafts: false, mine: false },
+          { drafts: false, mine: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -83,7 +83,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: true, mine: true },
+          { drafts: true, mine: true, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -101,7 +101,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false },
+          { drafts: false, mine: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -114,7 +114,23 @@ describe('MergeRequestsService', () => {
           !r.params.has('author') &&
           !r.params.has('assigned') &&
           !r.params.has('approved') &&
-          !r.params.has('commented'),
+          !r.params.has('commented') &&
+          !r.params.has('q'),
+      );
+      req.flush({ mergeRequests: [], warnings: [] });
+    });
+
+    it('should_send_q_when_search_is_not_empty_rg_026_10', () => {
+      service
+        .getMergeRequests(
+          { key: 'ready', direction: 'asc' },
+          { drafts: false, mine: false, search: 'facturation' },
+          EMPTY_COMPOSABLE_FILTERS,
+        )
+        .subscribe();
+
+      const req = ctrl.expectOne(
+        (r) => r.url === '/api/v1/merge-requests' && r.params.get('q') === 'facturation',
       );
       req.flush({ mergeRequests: [], warnings: [] });
     });
@@ -123,7 +139,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false },
+          { drafts: false, mine: false, search: '' },
           {
             connection: ['gitlab.com', 'github.com'],
             project: ['api', 'web'],
@@ -152,7 +168,7 @@ describe('MergeRequestsService', () => {
   describe('getFacets', () => {
     it('should_get_facets_with_the_drafts_and_mine_query_params_but_no_sort', async () => {
       const pending = firstValueFrom(
-        service.getFacets({ drafts: true, mine: false }, EMPTY_COMPOSABLE_FILTERS),
+        service.getFacets({ drafts: true, mine: false, search: '' }, EMPTY_COMPOSABLE_FILTERS),
       );
       const req = ctrl.expectOne(
         (r) =>
@@ -184,7 +200,7 @@ describe('MergeRequestsService', () => {
     it('should_send_the_composable_filter_params_as_csv_or_0_1_when_active', () => {
       service
         .getFacets(
-          { drafts: false, mine: false },
+          { drafts: false, mine: false, search: '' },
           {
             connection: ['gitlab.com'],
             project: ['api'],

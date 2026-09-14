@@ -388,6 +388,8 @@ describe('BoardPageComponent', () => {
   });
 
   const waitForDebounce = () => new Promise((resolve) => setTimeout(resolve, 200));
+  /** RG-026-09 : la recherche attend 300 ms, plus long que les autres filtres. */
+  const waitForSearchDebounce = () => new Promise((resolve) => setTimeout(resolve, 350));
 
   it('should_reload_with_drafts_1_after_toggling_the_drafts_chip', async () => {
     await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
@@ -462,6 +464,65 @@ describe('BoardPageComponent', () => {
     await settle();
   });
 
+  it('should_clear_the_visible_search_field_when_the_clear_filters_button_is_clicked_rg_026_11', async () => {
+    await bootstrap({
+      settings: SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [],
+    });
+    TestBed.inject(FiltersStore).setSearch('facturation');
+    fixture.detectChanges();
+    await settle();
+
+    const searchInput = el.querySelector<HTMLInputElement>('.search-field input');
+    expect(searchInput?.value).toBe('facturation');
+
+    const clearButton = el.querySelector<HTMLButtonElement>('.empty-state button');
+    clearButton?.click();
+    await waitForDebounce();
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).search()).toBe('');
+    expect(searchInput?.value).toBe('');
+
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && !r.params.has('q'))
+      .flush({ mergeRequests: [mergeRequest()], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
+    await settle();
+  });
+
+  it('should_not_touch_other_active_filters_when_the_search_field_is_cleared_alone_rg_026_11', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    TestBed.inject(FiltersStore).addFilter('project');
+    TestBed.inject(FiltersStore).toggleMultiValue('project', 'api');
+    TestBed.inject(FiltersStore).setSearch('facturation');
+    fixture.detectChanges();
+    await settle();
+
+    const filterBar = fixture.debugElement.query(By.directive(FilterBarComponent))
+      .componentInstance as FilterBarComponent;
+    filterBar.searchChange.emit('');
+    // Pas de waitForDebounce : le rechargement est immédiat (0 ms) puisque
+    // la recherche redevient vide (RG-026-09).
+    await settle();
+
+    http
+      .expectOne(
+        (r) =>
+          r.url === '/api/v1/merge-requests' &&
+          !r.params.has('q') &&
+          r.params.get('project') === 'api',
+      )
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(FACETS_WITH_API);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).project()).toEqual(['api']);
+    expect(TestBed.inject(FiltersStore).search()).toBe('');
+  });
+
   it('should_show_the_empty_state_with_a_clear_button_when_a_composable_filter_is_active_but_matches_nothing', async () => {
     await bootstrap({
       settings: SETTINGS,
@@ -482,6 +543,67 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector('.empty-state button')?.textContent?.trim()).toBe(
       t('board.mergeRequests.clearFilters'),
     );
+  });
+
+  it('should_show_the_empty_state_with_a_clear_button_when_a_search_is_active_but_matches_nothing_rg_026_12', async () => {
+    await bootstrap({
+      settings: SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [],
+    });
+    TestBed.inject(FiltersStore).setSearch('zzzzz');
+    fixture.detectChanges();
+    await settle();
+
+    expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.emptyFiltered'),
+    );
+    expect(el.querySelector('.empty-state button')?.textContent?.trim()).toBe(
+      t('board.mergeRequests.clearFilters'),
+    );
+  });
+
+  it('should_reload_with_q_after_a_search_change_debounced_at_300ms_rg_026_09', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    const filterBar = fixture.debugElement.query(By.directive(FilterBarComponent))
+      .componentInstance as FilterBarComponent;
+
+    filterBar.searchChange.emit('facturation');
+    await waitForSearchDebounce();
+    await settle();
+
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && r.params.get('q') === 'facturation')
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).search()).toBe('facturation');
+  });
+
+  it('should_reload_immediately_when_the_search_becomes_empty_rg_026_09', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+    const filterBar = fixture.debugElement.query(By.directive(FilterBarComponent))
+      .componentInstance as FilterBarComponent;
+    filterBar.searchChange.emit('facturation');
+    await waitForSearchDebounce();
+    await settle();
+    http.expectOne((r) => r.url === '/api/v1/merge-requests').flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+    await settle();
+
+    filterBar.searchChange.emit('');
+    // Pas de waitForSearchDebounce : le rechargement est immédiat (0 ms).
+    await settle();
+
+    http
+      .expectOne((r) => r.url === '/api/v1/merge-requests' && !r.params.has('q'))
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+    await settle();
+
+    expect(TestBed.inject(FiltersStore).search()).toBe('');
   });
 
   it('should_reload_after_adding_removing_toggling_or_selecting_a_composable_filter', async () => {
@@ -579,6 +701,29 @@ describe('BoardPageComponent', () => {
       // masque Statut et affiche Ouverte.
       expect(TestBed.inject(ColumnsStore).showStatus()).toBe(false);
       expect(TestBed.inject(ColumnsStore).showOpened()).toBe(true);
+    });
+
+    it('should_restore_the_search_from_the_url_before_the_first_load_rg_026_10', async () => {
+      TestBed.resetTestingModule();
+      await configureBoardTestingModule({
+        snapshot: { queryParams: { q: 'facturation' } },
+      });
+
+      fixture = TestBed.createComponent(BoardPageComponent);
+      el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      await settle();
+      http.expectOne('/api/v1/settings').flush(SETTINGS);
+      http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
+      http.expectOne('/api/v1/projects').flush([PROJECT]);
+      const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
+      expect(mrReq.request.params.get('q')).toBe('facturation');
+      mrReq.flush({ mergeRequests: [], warnings: [] });
+      http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+
+      expect(TestBed.inject(FiltersStore).search()).toBe('facturation');
     });
 
     it('should_write_the_url_with_default_params_and_replaceUrl_on_the_very_first_load', async () => {

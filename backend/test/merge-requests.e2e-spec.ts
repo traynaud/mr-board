@@ -109,6 +109,7 @@ async function withFrozenTime<T>(
 
 /** Raw GitLab-shaped signals a test wants to control ; mapped here exactly as `GitlabClientService.fetchOpenMergeRequests` would, since the client itself is mocked away. */
 interface RawOverrides {
+  title?: string;
   draft?: boolean;
   createdAt?: string;
   author?: ForgeUser;
@@ -138,7 +139,7 @@ function mergeRequest(
   return {
     remoteId: String(iid * 100),
     iid,
-    title: `MR ${iid}`,
+    title: overrides.title ?? `MR ${iid}`,
     webUrl: `https://gitlab.com/equipe/api/-/merge_requests/${iid}`,
     draft: overrides.draft ?? false,
     createdAt: overrides.createdAt ?? `2026-09-0${iid}T10:00:00Z`,
@@ -818,6 +819,180 @@ describe('MergeRequests (e2e)', () => {
     await waitUntilIdle();
 
     const res = await api().get('/api/v1/merge-requests?project=inconnu');
+
+    expect(res.status).toBe(200);
+    expect((res.body as MergeRequestsResponseBody).mergeRequests).toEqual([]);
+  });
+
+  it('GET /merge-requests?q=... should_filter_by_a_title_search_case_and_accent_insensitively_rg_026', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(140, { title: 'Réfacto du module Paiement' }),
+              mergeRequest(141, { title: 'Correctif export CSV' }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get(
+      '/api/v1/merge-requests?q=' + encodeURIComponent('REFACTO paiement'),
+    );
+
+    expect(res.status).toBe(200);
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([140]);
+  });
+
+  it('GET /merge-requests?q=!iid should_match_a_merge_request_by_its_number_rg_026_05', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(142, { title: 'Correctif export CSV' }),
+              mergeRequest(143, { title: 'Autre correctif' }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?q=!142');
+
+    expect(res.status).toBe(200);
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([142]);
+  });
+
+  it('GET /merge-requests?q=... should_combine_with_other_active_filters_with_and_rg_026_06', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(144, {
+                title: 'Refonte facturation',
+                author: forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
+              }),
+              mergeRequest(145, {
+                title: 'Refonte export',
+                author: forgeUser(2, 'kbenali', { name: 'Karim Benali' }),
+              }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get(
+      '/api/v1/merge-requests?q=refonte&author=mdupont',
+    );
+
+    expect(res.status).toBe(200);
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([144]);
+  });
+
+  it('GET /merge-requests?q=... should_not_reveal_a_hidden_draft_matching_the_search_rg_026_06', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(149, { title: 'Facturation express' }),
+              mergeRequest(150, {
+                title: 'Facturation brouillon',
+                draft: true,
+              }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?q=facturation');
+
+    expect(res.status).toBe(200);
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([149]);
+  });
+
+  it('GET /merge-requests?q=...&drafts=1 should_apply_the_search_to_displayed_drafts_too_rg_026_06', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(151, { title: 'Facturation express' }),
+              mergeRequest(152, {
+                title: 'Facturation brouillon',
+                draft: true,
+              }),
+              mergeRequest(153, { title: 'Correctif export CSV', draft: true }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get(
+      '/api/v1/merge-requests?q=facturation&drafts=1',
+    );
+
+    expect(res.status).toBe(200);
+    // RG-G10 : bloc Ready d'abord, puis le bloc Drafts — l'ordre est préservé
+    // même filtré par la recherche.
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([151, 152]);
+  });
+
+  it('GET /merge-requests/facets should_scope_facet_counts_to_the_search_rg_026_07', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(146, { title: 'Refonte facturation' }),
+              mergeRequest(147, { title: 'Correctif export CSV' }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests/facets?q=facturation');
+
+    expect(res.status).toBe(200);
+    const projectFacet = (res.body as MergeRequestsFacetsBody).project;
+    expect(projectFacet).toEqual([
+      { value: 'api', label: 'api · equipe/api', count: 1 },
+      { value: 'web', label: 'web · equipe/web', count: 0 },
+    ]);
+  });
+
+  it('GET /merge-requests?q=... should_return_an_empty_list_when_nothing_matches', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([
+              mergeRequest(148, { title: 'Refonte facturation' }),
+            ])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?q=zzzzz');
 
     expect(res.status).toBe(200);
     expect((res.body as MergeRequestsResponseBody).mergeRequests).toEqual([]);

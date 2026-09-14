@@ -14,7 +14,7 @@ import { MergeRequestsService } from './merge-requests.service';
 export class MergeRequestsController {
   constructor(private readonly mergeRequestsService: MergeRequestsService) {}
 
-  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&connection=...&project=...&author=...&assigned=...&approved=0|1&commented=0|1` */
+  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&connection=...&project=...&author=...&assigned=...&approved=0|1&commented=0|1&q=...` */
   @Get()
   list(
     @Query() query: MergeRequestQueryDto,
@@ -24,6 +24,7 @@ export class MergeRequestsController {
       includeDrafts: query.drafts === '1',
       mineOnly: query.mine === '1',
       filters: toComposableFilters(query),
+      search: query.q,
     });
   }
 
@@ -36,6 +37,7 @@ export class MergeRequestsController {
       includeDrafts: query.drafts === '1',
       mineOnly: query.mine === '1',
       filters: toComposableFilters(query),
+      search: query.q,
     });
   }
 }

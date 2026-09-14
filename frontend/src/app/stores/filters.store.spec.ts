@@ -14,6 +14,25 @@ describe('FiltersStore', () => {
     expect(store.mine()).toBe(false);
   });
 
+  it('should_default_to_no_search_rg_026_08', () => {
+    expect(store.search()).toBe('');
+  });
+
+  it('should_set_the_search_value', () => {
+    store.setSearch('facturation');
+    expect(store.search()).toBe('facturation');
+  });
+
+  it('should_clear_the_search_along_with_mine_and_composable_filters_rg_026_11', () => {
+    store.toggleDrafts();
+    store.setSearch('facturation');
+
+    store.clear();
+
+    expect(store.search()).toBe('');
+    expect(store.drafts()).toBe(true);
+  });
+
   it('should_default_to_no_active_composable_filter', () => {
     expect(store.active()).toEqual([]);
     expect(store.composableFilters()).toEqual({
@@ -53,6 +72,11 @@ describe('FiltersStore', () => {
   });
 
   describe('restore', () => {
+    it('should_patch_the_search_value_rg_026_10', () => {
+      store.restore({ search: 'facturation' });
+      expect(store.search()).toBe('facturation');
+    });
+
     it('should_patch_the_whole_state_in_one_shot', () => {
       store.restore({
         drafts: true,

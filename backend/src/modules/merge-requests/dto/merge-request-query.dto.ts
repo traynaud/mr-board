@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { SORT_PARAMS, type SortParam } from '../domain/sort-merge-requests';
 
 const BOOLEAN_PARAMS = ['0', '1'] as const;
@@ -62,6 +62,15 @@ export class MergeRequestFilterQueryDto {
   @IsOptional()
   @IsIn(BOOLEAN_PARAMS)
   commented?: BooleanParam;
+
+  /**
+   * Free-text search on the merge request title, plus an `iid` match for a
+   * `!42`/`#42`/`42` query (RG-026-*). Never rejected, whatever its length
+   * or content (RG-026-13) — unlike the boolean params above.
+   */
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
 
 /** Query params of `GET /api/v1/merge-requests` (RG-008-07 adds `sort` on top of the shared filters). */

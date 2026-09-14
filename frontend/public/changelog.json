@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-14",
+    "type": "feat",
+    "user-story": "US-026",
+    "title": "Recherche libre sur le titre des MRs (et par numéro !42), combinable avec les autres filtres et propagée dans l'URL."
+  },
+  {
+    "date": "2026-09-14",
     "type": "fix",
     "user-story": "",
     "title": "Logo : fond noir remplacé par un fond transparent, et logo ajouté à côté du nom de l'app dans la toolbar."

@@ -21,6 +21,7 @@ export interface FiltersState extends MergeRequestFilters {
 const initialState: FiltersState = {
   drafts: false,
   mine: false,
+  search: '',
   active: [],
   connection: [],
   project: [],
@@ -62,6 +63,11 @@ export const FiltersStore = signalStore(
     /** RG-009-02. */
     toggleMine(): void {
       patchState(store, { mine: !store.mine() });
+    },
+
+    /** RG-026-01/08 : nouvelle valeur de la recherche libre, telle que saisie (trim/collapse côté backend). */
+    setSearch(value: string): void {
+      patchState(store, { search: value });
     },
 
     /**
@@ -112,10 +118,11 @@ export const FiltersStore = signalStore(
       patchState(store, { [key]: store[key]() === value ? null : value });
     },
 
-    /** RG-009-05, RG-010-11 : retire toutes les pastilles et « Mes MRs », jamais « Drafts ». */
+    /** RG-009-05, RG-010-11, RG-026-11 : retire toutes les pastilles, « Mes MRs » et la recherche, jamais « Drafts ». */
     clear(): void {
       patchState(store, {
         mine: false,
+        search: '',
         active: [],
         connection: [],
         project: [],

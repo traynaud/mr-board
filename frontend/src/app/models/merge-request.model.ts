@@ -110,10 +110,12 @@ export interface MergeRequestsResponse {
   warnings: string[];
 }
 
-/** État des filtres rapides (RG-009-01/02). */
+/** État des filtres rapides (RG-009-01/02) et de la recherche libre (RG-026-*). */
 export interface MergeRequestFilters {
   drafts: boolean;
   mine: boolean;
+  /** Recherche sur le titre (+ iid, RG-026-05), `''` = pas de recherche (RG-026-08). */
+  search: string;
 }
 
 /** Les 6 filtres composables (RG-010-01, RG-021-03). */

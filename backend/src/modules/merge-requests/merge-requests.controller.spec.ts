@@ -86,6 +86,17 @@ describe('MergeRequestsController', () => {
         },
       });
     });
+
+    it('should_pass_the_q_query_param_through_as_search_rg_026', async () => {
+      const response = { mergeRequests: [], warnings: [] };
+      service.listOpen.mockResolvedValue(response);
+
+      await controller.list({ q: 'facturation' });
+
+      expect(service.listOpen).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'facturation' }),
+      );
+    });
   });
 
   describe('facets', () => {
@@ -139,6 +150,24 @@ describe('MergeRequestsController', () => {
           commented: null,
         },
       });
+    });
+
+    it('should_pass_the_q_query_param_through_as_search_rg_026', async () => {
+      const response = {
+        connection: [],
+        project: [],
+        author: [],
+        assigned: [],
+        approved: [],
+        commented: [],
+      };
+      service.getFacets.mockResolvedValue(response);
+
+      await controller.facets({ q: 'facturation' });
+
+      expect(service.getFacets).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'facturation' }),
+      );
     });
   });
 });

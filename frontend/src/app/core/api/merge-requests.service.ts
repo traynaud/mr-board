@@ -66,5 +66,8 @@ function filterParams(
   if (composableFilters.commented !== null) {
     params = params.set('commented', composableFilters.commented === 'yes' ? '1' : '0');
   }
+  if (filters.search !== '') {
+    params = params.set('q', filters.search);
+  }
   return params;
 }

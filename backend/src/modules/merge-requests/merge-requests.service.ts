@@ -31,6 +31,10 @@ import {
 } from './domain/filter-merge-requests';
 import { isIgnoredByLabel } from './domain/is-ignored-by-label';
 import { Identity, isMe, isMine } from './domain/is-mine';
+import {
+  compileSearch,
+  matchesCompiledSearch,
+} from './domain/search-merge-requests';
 import { resolveReadyAt } from './domain/resolve-ready-at';
 import {
   DEFAULT_SORT,
@@ -54,12 +58,16 @@ export interface ListOpenOptions {
   mineOnly?: boolean;
   /** RG-010-01/02. Defaults to no filter active. */
   filters?: ComposableFilters;
+  /** RG-026-*. Defaults to `''` (no search, nothing excluded). */
+  search?: string;
 }
 
 export interface FacetsOptions {
   includeDrafts?: boolean;
   mineOnly?: boolean;
   filters?: ComposableFilters;
+  /** RG-026-07 : applied before facet counts are computed, never excludable per-facet. */
+  search?: string;
 }
 
 /**
@@ -99,10 +107,12 @@ export class MergeRequestsService {
       includeDrafts = false,
       mineOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
+      search = '',
     } = options;
     const { views: base, warnings } = await this.loadBase(
       includeDrafts,
       mineOnly,
+      search,
     );
     const filtered = applyComposableFilters(base, filters);
     return { mergeRequests: sortMergeRequests(filtered, sort), warnings };
@@ -121,8 +131,13 @@ export class MergeRequestsService {
       includeDrafts = false,
       mineOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
+      search = '',
     } = options;
-    const { views: base } = await this.loadBase(includeDrafts, mineOnly);
+    const { views: base } = await this.loadBase(
+      includeDrafts,
+      mineOnly,
+      search,
+    );
     const [configuredProjects, allConnections]: [
       ConfiguredProject[],
       Connection[],
@@ -144,8 +159,11 @@ export class MergeRequestsService {
    * (RG-010) diverge their outcome (rows vs. facet counts). The
    * `draft: false` filter, when applied, guarantees `ready_at` is never
    * null for the returned rows (see `resolveReadyAt`). Merge requests
-   * carrying an ignored label (RG-015-02) are dropped first, so both
-   * `listOpen` and `getFacets` (and their counts) never see them.
+   * carrying an ignored label (RG-015-02) or failing the free-text search
+   * (RG-026-*) are dropped first, so both `listOpen` and `getFacets` (and
+   * their counts) never see them — `search` is therefore always applied,
+   * with no per-facet exclusion mechanism (RG-026-07), unlike the 5
+   * composable filters.
    *
    * The identity used for `isMe`/`isMine` is resolved per merge request,
    * from the `meUsername` of *its own project's connection* (RG-019-25) —
@@ -154,6 +172,7 @@ export class MergeRequestsService {
   private async loadBase(
     includeDrafts: boolean,
     mineOnly: boolean,
+    search = '',
   ): Promise<{ views: MergeRequestViewDto[]; warnings: string[] }> {
     const allMergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
@@ -163,9 +182,13 @@ export class MergeRequestsService {
       this.settings.getMeEmail(),
       this.connections.findAll(),
     ]);
-    const mergeRequests = allMergeRequests.filter(
-      (mr) => !isIgnoredByLabel(mr.labels, ignoredLabels),
-    );
+    // RG-026-* : `search` est normalisée une seule fois (`compileSearch`) et
+    // réutilisée pour chaque MR, plutôt que redécoupée/normalisée à chaque
+    // appel de `matchesCompiledSearch`.
+    const compiledSearch = compileSearch(search);
+    const mergeRequests = allMergeRequests
+      .filter((mr) => !isIgnoredByLabel(mr.labels, ignoredLabels))
+      .filter((mr) => matchesCompiledSearch(mr, compiledSearch));
     const connectionsById = new Map(allConnections.map((c) => [c.id, c]));
     const identityMissing =
       meEmail === null && allConnections.every((c) => c.meUsername === null);

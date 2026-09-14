@@ -30,6 +30,8 @@ export interface MergeRequestsState {
 
 /** RG-009-07 : les changements de filtre sont débounce avant de recharger. */
 const FILTER_RELOAD_DEBOUNCE_MS = 150;
+/** RG-026-09 : la recherche libre, elle, attend une frappe continue plus longtemps. */
+export const SEARCH_RELOAD_DEBOUNCE_MS = 300;
 
 const initialState: MergeRequestsState = {
   mergeRequests: [],
@@ -65,7 +67,11 @@ export const MergeRequestsStore = signalStore(
         const previous = store.mergeRequests();
         patchState(store, { loading: true, loadError: null });
         try {
-          const baseFilters = { drafts: filters.drafts(), mine: filters.mine() };
+          const baseFilters = {
+            drafts: filters.drafts(),
+            mine: filters.mine(),
+            search: filters.search(),
+          };
           const composableFilters = filters.composableFilters();
           const [{ mergeRequests, warnings }, facets] = await Promise.all([
             firstValueFrom(api.getMergeRequests(store.sort(), baseFilters, composableFilters)),
@@ -160,12 +166,15 @@ export const MergeRequestsStore = signalStore(
 
         /**
          * Recharge après un changement de filtre, avec un debounce de 150 ms
-         * (RG-009-07) pour éviter une requête par filtre quand plusieurs
-         * changent coup sur coup.
+         * par défaut (RG-009-07) pour éviter une requête par filtre quand
+         * plusieurs changent coup sur coup ; l'appelant passe
+         * `SEARCH_RELOAD_DEBOUNCE_MS` pour la recherche libre (RG-026-09,
+         * frappe continue) ou `0` quand elle redevient vide (rechargement
+         * immédiat).
          */
-        scheduleReload(): void {
+        scheduleReload(debounceMs: number = FILTER_RELOAD_DEBOUNCE_MS): void {
           clearTimeout(reloadTimer);
-          reloadTimer = setTimeout(() => void load(), FILTER_RELOAD_DEBOUNCE_MS);
+          reloadTimer = setTimeout(() => void load(), debounceMs);
         },
       };
     },

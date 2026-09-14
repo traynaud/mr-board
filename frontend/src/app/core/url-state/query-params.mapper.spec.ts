@@ -11,6 +11,7 @@ const DEFAULT_STATE: UrlState = {
   assigned: [],
   approved: null,
   commented: null,
+  search: '',
   sort: DEFAULT_SORT,
   showStatus: true,
   showOpened: false,
@@ -147,6 +148,19 @@ describe('decodeQueryParams', () => {
       showOpened: true,
     });
   });
+
+  it('should_decode_q_as_the_search_value_rg_026_10', () => {
+    expect(decodeQueryParams({ q: 'facturation' })).toMatchObject({ search: 'facturation' });
+  });
+
+  it('should_decode_absent_q_as_an_empty_search', () => {
+    expect(decodeQueryParams({})).toMatchObject({ search: '' });
+  });
+
+  it('should_not_add_search_to_active_rg_026_01', () => {
+    const state = decodeQueryParams({ q: 'facturation' });
+    expect(state.active).not.toContain('search');
+  });
 });
 
 describe('encodeQueryParams', () => {
@@ -250,6 +264,15 @@ describe('encodeQueryParams', () => {
       'cols',
     ]);
   });
+
+  it('should_encode_q_when_search_is_not_empty_rg_026_10', () => {
+    const params = encodeQueryParams({ ...DEFAULT_STATE, search: 'facturation' });
+    expect(params['q']).toBe('facturation');
+  });
+
+  it('should_omit_q_for_an_empty_search_rg_026_10', () => {
+    expect(encodeQueryParams(DEFAULT_STATE)['q']).toBeUndefined();
+  });
 });
 
 describe('round-trip (RG-011-08)', () => {
@@ -265,6 +288,8 @@ describe('round-trip (RG-011-08)', () => {
     { ...DEFAULT_STATE, showStatus: false, showOpened: false },
     { ...DEFAULT_STATE, showStatus: false, showOpened: true },
     { ...DEFAULT_STATE, showStatus: true, showOpened: true },
+    { ...DEFAULT_STATE, search: 'facturation' },
+    { ...DEFAULT_STATE, search: 'refonte export' },
     {
       ...DEFAULT_STATE,
       active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],

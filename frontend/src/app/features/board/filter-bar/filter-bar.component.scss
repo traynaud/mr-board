@@ -12,6 +12,31 @@
   flex-wrap: wrap;
 }
 
+.search-field {
+  width: 200px;
+  font-size: 13px;
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    height: 32px;
+  }
+
+  ::ng-deep .mat-mdc-form-field-infix {
+    min-height: 0;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  button[matSuffix] {
+    width: 24px;
+    height: 24px;
+
+    mat-icon {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
 .filter-pills {
   display: flex;
   align-items: center;

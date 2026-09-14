@@ -74,6 +74,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       [composableFilters]="composableFilters()"
       [facets]="facets()"
       [showConnectionFilter]="showConnectionFilter()"
+      [search]="search()"
       (draftsToggle)="draftsToggleCount = draftsToggleCount + 1"
       (mineToggle)="mineToggleCount = mineToggleCount + 1"
       (clearFilters)="clearCount = clearCount + 1"
@@ -81,6 +82,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       (filterRemove)="removed.push($event)"
       (filterToggleValue)="toggled.push($event)"
       (filterSelectBoolean)="selectedBoolean.push($event)"
+      (searchChange)="searchChanges.push($event)"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -94,6 +96,7 @@ class HostComponent {
   readonly composableFilters = signal<ComposableFilters>(EMPTY_COMPOSABLE_FILTERS);
   readonly facets = signal<MergeRequestsFacets | null>(EMPTY_FACETS);
   readonly showConnectionFilter = signal(true);
+  readonly search = signal('');
   draftsToggleCount = 0;
   mineToggleCount = 0;
   clearCount = 0;
@@ -101,6 +104,7 @@ class HostComponent {
   removed: FilterKey[] = [];
   toggled: { key: FilterKey; value: string }[] = [];
   selectedBoolean: { key: FilterKey; value: 'yes' | 'no' }[] = [];
+  searchChanges: string[] = [];
 }
 
 describe('FilterBarComponent', () => {
@@ -190,6 +194,52 @@ describe('FilterBarComponent', () => {
     const { el } = await setup();
 
     expect(el.querySelector('.summary button')).toBeNull();
+  });
+
+  it('should_show_the_search_field_with_its_placeholder_rg_026_01', async () => {
+    const { el } = await setup();
+
+    const input = el.querySelector<HTMLInputElement>('.search-field input');
+    expect(input?.placeholder).toBe(t('board.filters.searchPlaceholder'));
+  });
+
+  it('should_emit_search_change_on_input_rg_026_09', async () => {
+    const { fixture, el } = await setup();
+    const input = el.querySelector<HTMLInputElement>('.search-field input')!;
+
+    input.value = 'facturation';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.searchChanges).toEqual(['facturation']);
+  });
+
+  it('should_not_show_the_search_clear_button_when_the_field_is_empty', async () => {
+    const { el } = await setup();
+
+    expect(el.querySelector('.search-field button')).toBeNull();
+  });
+
+  it('should_show_and_use_the_search_clear_button_without_touching_other_filters_rg_026_11', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.search.set('facturation');
+    await fixture.whenStable();
+
+    const button = el.querySelector<HTMLButtonElement>('.search-field button');
+    expect(button?.getAttribute('aria-label')).toBe(t('board.filters.searchClear'));
+
+    button?.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.searchChanges).toEqual(['']);
+  });
+
+  it('should_show_the_clear_button_when_a_search_is_active_even_without_other_filters_rg_026_11', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.search.set('facturation');
+    await fixture.whenStable();
+
+    expect(el.querySelector('.summary button')).not.toBeNull();
   });
 
   it('should_show_the_clear_button_and_emit_clear_filters_when_mine_is_active', async () => {

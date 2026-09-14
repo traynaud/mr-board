@@ -42,6 +42,7 @@
       [facets]="mrStore.facets()"
       [showConnectionFilter]="hasMultipleConnections()"
       [projects]="projectsStore.projects()"
+      [search]="filtersStore.search()"
       (draftsToggle)="onDraftsToggle()"
       (mineToggle)="onMineToggle()"
       (clearFilters)="onClearFilters()"
@@ -49,6 +50,7 @@
       (filterRemove)="onFilterRemove($event)"
       (filterToggleValue)="onFilterToggleValue($event)"
       (filterSelectBoolean)="onFilterSelectBoolean($event)"
+      (searchChange)="onSearchChange($event)"
     />
     @if (mrStore.loading() && mrStore.mergeRequests().length === 0) {
       <mat-progress-bar mode="indeterminate" />

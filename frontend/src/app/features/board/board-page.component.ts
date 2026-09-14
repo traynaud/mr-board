@@ -26,7 +26,7 @@ import { ColumnWidthsStore, ResizableColumnKey } from '../../stores/column-width
 import { ColumnsStore } from '../../stores/columns.store';
 import { ConnectionsStore } from '../../stores/connections.store';
 import { FiltersStore } from '../../stores/filters.store';
-import { MergeRequestsStore } from '../../stores/merge-requests.store';
+import { MergeRequestsStore, SEARCH_RELOAD_DEBOUNCE_MS } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
@@ -148,13 +148,16 @@ export class BoardPageComponent implements OnInit {
   });
 
   /**
-   * « Mes MRs » et les filtres composables sont les seuls vrais filtres
-   * (RG-009-05, RG-010-10) : « Drafts » est une préférence d'affichage.
-   * Détermine le texte de l'état vide et la visibilité du bouton
-   * « Effacer les filtres ».
+   * « Mes MRs », les filtres composables et la recherche libre sont les
+   * seuls vrais filtres (RG-009-05, RG-010-10, RG-026-11) : « Drafts » est
+   * une préférence d'affichage. Détermine le texte de l'état vide et la
+   * visibilité du bouton « Effacer les filtres ».
    */
   protected readonly hasActiveFilter = computed(
-    () => this.filtersStore.mine() || this.filtersStore.active().length > 0,
+    () =>
+      this.filtersStore.mine() ||
+      this.filtersStore.active().length > 0 ||
+      this.filtersStore.search().length > 0,
   );
 
   /** RG-011-01/06 : query params courants (filtres + tri + colonnes), ordre stable. */
@@ -169,6 +172,7 @@ export class BoardPageComponent implements OnInit {
       assigned: this.filtersStore.assigned(),
       approved: this.filtersStore.approved(),
       commented: this.filtersStore.commented(),
+      search: this.filtersStore.search(),
       sort: this.mrStore.sort(),
       showStatus: this.columnsStore.showStatus(),
       showOpened: this.columnsStore.showOpened(),
@@ -369,6 +373,16 @@ export class BoardPageComponent implements OnInit {
   }
 
   /**
+   * RG-026-09 : recherche libre — débounce long pendant la frappe, mais
+   * rechargement immédiat (`0` ms) dès que le champ redevient vide, pour ne
+   * pas laisser les MRs filtrées affichées inutilement le temps du délai.
+   */
+  protected onSearchChange(value: string): void {
+    this.filtersStore.setSearch(value);
+    this.mrStore.scheduleReload(value.trim() === '' ? 0 : SEARCH_RELOAD_DEBOUNCE_MS);
+  }
+
+  /**
    * RG-017-09 : bascule la colonne « Statut ». Purement local — ne recharge
    * pas les MRs (aucun paramètre API concerné).
    */
@@ -420,6 +434,7 @@ export class BoardPageComponent implements OnInit {
       assigned: state.assigned,
       approved: state.approved,
       commented: state.commented,
+      search: state.search,
     });
     this.mrStore.restoreSort(state.sort);
     this.columnsStore.restore(state.showStatus, state.showOpened);
