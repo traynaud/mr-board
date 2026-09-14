@@ -22,10 +22,11 @@ import { countLabelParts } from './count-label';
 import { FilterPillComponent } from './filter-pill/filter-pill.component';
 
 /**
- * Barre de filtres (RG-009-*, RG-010-*) : chips « Drafts » / « Mes MRs »,
- * pastilles des filtres composables actifs + bouton « Ajouter un filtre »,
- * compteur (RG-G20) et bouton « Effacer » — visible si un filtre composable
- * ou « Mes MRs » est actif. Purement présentationnel : reçoit l'état, émet
+ * Barre de filtres (RG-009-*, RG-010-*, RG-026-*) : chips « Drafts » /
+ * « Mes MRs » / « Favoris », pastilles des filtres composables actifs
+ * (dont « Titre », RG-026-01) + bouton « Ajouter un filtre », compteur
+ * (RG-G20) et bouton « Effacer » — visible si un filtre composable ou
+ * « Mes MRs » est actif. Purement présentationnel : reçoit l'état, émet
  * les intentions, ne recharge jamais lui-même.
  */
 @Component({
@@ -57,7 +58,7 @@ export class FilterBarComponent {
   readonly active = input.required<FilterKey[]>();
   readonly composableFilters = input.required<ComposableFilters>();
   readonly facets = input.required<MergeRequestsFacets | null>();
-  /** RG-026-01 : recherche libre, `''` = aucune (toujours visible, pas une pastille). */
+  /** RG-026-01 : recherche libre, `''` = aucune ; visible seulement si `'search'` est dans `active()`. */
   readonly search = input.required<string>();
   /** RG-021-03 : transmis à `AddFilterMenuComponent`. */
   readonly showConnectionFilter = input(true);
@@ -85,21 +86,19 @@ export class FilterBarComponent {
     });
   });
 
-  /** RG-026-11 : le bouton « Effacer » reste visible dès qu'une recherche est saisie. */
   protected readonly hasActiveFilter = computed(
-    () =>
-      this.mine() ||
-      this.favorites() ||
-      this.active().length > 0 ||
-      this.search().length > 0,
+    () => this.mine() || this.favorites() || this.active().length > 0,
   );
 
-  /** RG-026-11 : croix du champ — vide la recherche seule, sans toucher aux autres filtres. */
-  protected clearSearch(): void {
-    this.searchChange.emit('');
-  }
+  /** Nom traduit de « Titre », pour l'`aria-label` de sa croix de suppression. */
+  protected readonly searchFilterName = computed(() =>
+    this.i18n.translate('board.filters.pills.names.search'),
+  );
 
   protected optionsFor(key: FilterKey): FacetOption[] {
+    if (key === 'search') {
+      return [];
+    }
     return this.facets()?.[key] ?? [];
   }
 
@@ -108,6 +107,6 @@ export class FilterBarComponent {
   }
 
   protected booleanValueFor(key: FilterKey): 'yes' | 'no' | null {
-    return isMultiValueFilter(key) ? null : this.composableFilters()[key];
+    return key === 'approved' || key === 'commented' ? this.composableFilters()[key] : null;
   }
 }

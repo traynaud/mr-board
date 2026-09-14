@@ -12,6 +12,12 @@
   flex-wrap: wrap;
 }
 
+.search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .search-field {
   width: 200px;
   font-size: 13px;
@@ -25,15 +31,25 @@
     padding-top: 6px;
     padding-bottom: 6px;
   }
+}
 
-  button[matSuffix] {
-    width: 24px;
-    height: 24px;
+.search-pill .pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-neutral-600);
 
-    mat-icon {
-      width: 14px;
-      height: 14px;
-    }
+  mat-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--color-accent);
   }
 }
 

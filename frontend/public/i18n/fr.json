@@ -28,9 +28,9 @@
       "clear": "Effacer",
       "add": "Ajouter un filtre",
       "searchPlaceholder": "Rechercher un titre…",
-      "searchClear": "Effacer la recherche",
       "pills": {
         "names": {
+          "search": "Titre",
           "connection": "Connexion",
           "project": "Projet",
           "author": "Auteur",

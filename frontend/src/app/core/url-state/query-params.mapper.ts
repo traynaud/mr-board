@@ -62,6 +62,10 @@ export function normalizeParams(params: Record<string, unknown>): Record<string,
 export function decodeQueryParams(params: Record<string, string | undefined>): UrlState {
   const active: FilterKey[] = [];
 
+  const search = params['q'];
+  if (search !== undefined) {
+    active.push('search');
+  }
   const connection = decodeListFilter('connection', params, active);
   const project = decodeListFilter('project', params, active);
   const author = decodeListFilter('author', params, active);
@@ -81,7 +85,7 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
     assigned,
     approved,
     commented,
-    search: params['q'] ?? '',
+    search: search ?? '',
     sort: decodeSort(params['sort']),
     showStatus,
     showOpened,
@@ -101,10 +105,11 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
     fav: state.favorites ? '1' : '0',
   };
   for (const key of state.active) {
+    if (key === 'search') {
+      params['q'] = state.search;
+      continue;
+    }
     params[key] = isMultiValueFilter(key) ? state[key].join(',') : encodeBooleanValue(state[key]);
-  }
-  if (state.search !== '') {
-    params['q'] = state.search;
   }
   params['sort'] = `${state.sort.key}:${state.sort.direction}`;
   const cols = encodeCols(state.showStatus, state.showOpened);

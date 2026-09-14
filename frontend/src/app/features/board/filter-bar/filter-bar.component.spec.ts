@@ -224,8 +224,20 @@ describe('FilterBarComponent', () => {
     expect(el.querySelector('.summary button')).toBeNull();
   });
 
-  it('should_show_the_search_field_with_its_placeholder_rg_026_01', async () => {
+  it('should_hide_the_search_field_until_the_title_filter_is_added', async () => {
+    // Bug : le champ de recherche était affiché en permanence, hors du
+    // mécanisme des filtres composables (sélection/ajout/suppression). Il ne
+    // doit apparaître qu'une fois « Titre » ajouté depuis « Ajouter un
+    // filtre », comme n'importe quel autre filtre de la liste.
     const { el } = await setup();
+
+    expect(el.querySelector('.search-field')).toBeNull();
+  });
+
+  it('should_show_the_search_field_with_its_placeholder_rg_026_01', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['search']);
+    await fixture.whenStable();
 
     const input = el.querySelector<HTMLInputElement>('.search-field input');
     expect(input?.placeholder).toBe(t('board.filters.searchPlaceholder'));
@@ -233,6 +245,8 @@ describe('FilterBarComponent', () => {
 
   it('should_emit_search_change_on_input_rg_026_09', async () => {
     const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['search']);
+    await fixture.whenStable();
     const input = el.querySelector<HTMLInputElement>('.search-field input')!;
 
     input.value = 'facturation';
@@ -242,29 +256,31 @@ describe('FilterBarComponent', () => {
     expect(fixture.componentInstance.searchChanges).toEqual(['facturation']);
   });
 
-  it('should_not_show_the_search_clear_button_when_the_field_is_empty', async () => {
-    const { el } = await setup();
+  it('should_show_a_remove_button_for_the_search_pill_like_any_other_filter', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['search']);
+    await fixture.whenStable();
 
-    expect(el.querySelector('.search-field button')).toBeNull();
+    const button = el.querySelector<HTMLButtonElement>('.search-pill .pill-remove');
+    expect(button?.getAttribute('aria-label')).toBe(
+      t('board.filters.pills.remove', { name: t('board.filters.pills.names.search') }),
+    );
   });
 
-  it('should_show_and_use_the_search_clear_button_without_touching_other_filters_rg_026_11', async () => {
+  it('should_emit_filter_remove_for_search_and_clear_its_text_when_the_remove_button_is_clicked', async () => {
     const { fixture, el } = await setup();
+    fixture.componentInstance.active.set(['search']);
     fixture.componentInstance.search.set('facturation');
     await fixture.whenStable();
 
-    const button = el.querySelector<HTMLButtonElement>('.search-field button');
-    expect(button?.getAttribute('aria-label')).toBe(t('board.filters.searchClear'));
+    el.querySelector<HTMLButtonElement>('.search-pill .pill-remove')?.click();
 
-    button?.click();
-    await fixture.whenStable();
-
-    expect(fixture.componentInstance.searchChanges).toEqual(['']);
+    expect(fixture.componentInstance.removed).toEqual(['search']);
   });
 
-  it('should_show_the_clear_button_when_a_search_is_active_even_without_other_filters_rg_026_11', async () => {
+  it('should_show_the_clear_button_when_the_search_filter_is_active_even_without_other_filters_rg_026_11', async () => {
     const { fixture, el } = await setup();
-    fixture.componentInstance.search.set('facturation');
+    fixture.componentInstance.active.set(['search']);
     await fixture.whenStable();
 
     expect(el.querySelector('.summary button')).not.toBeNull();
@@ -341,8 +357,8 @@ describe('FilterBarComponent', () => {
     const addFilterMenu = await loader.getHarness(MatMenuHarness);
     await addFilterMenu.open();
     const items = await addFilterMenu.getItems();
-    // RG-021-03 : « Connexion » est en tête du menu par défaut.
-    await items[0].click();
+    // RG-026-01 : « Titre » est en tête du menu, RG-021-03 : « Connexion » juste après par défaut.
+    await items[1].click();
 
     expect(fixture.componentInstance.added).toEqual(['connection']);
   });
@@ -354,7 +370,7 @@ describe('FilterBarComponent', () => {
     const addFilterMenu = await loader.getHarness(MatMenuHarness);
     await addFilterMenu.open();
     const items = await addFilterMenu.getItems();
-    await items[0].click();
+    await items[1].click();
 
     expect(fixture.componentInstance.added).toEqual(['project']);
   });

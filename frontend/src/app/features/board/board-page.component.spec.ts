@@ -529,13 +529,14 @@ describe('BoardPageComponent', () => {
     await settle();
   });
 
-  it('should_clear_the_visible_search_field_when_the_clear_filters_button_is_clicked_rg_026_11', async () => {
+  it('should_remove_the_search_filter_and_its_text_when_the_clear_filters_button_is_clicked_rg_026_11', async () => {
     await bootstrap({
       settings: SETTINGS,
       projects: [PROJECT],
       status: IDLE_STATUS,
       mergeRequests: [],
     });
+    TestBed.inject(FiltersStore).addFilter('search');
     TestBed.inject(FiltersStore).setSearch('facturation');
     fixture.detectChanges();
     await settle();
@@ -549,7 +550,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     expect(TestBed.inject(FiltersStore).search()).toBe('');
-    expect(searchInput?.value).toBe('');
+    // RG-026-01 : « Titre » est un filtre comme les autres — « Effacer » le
+    // retire complètement de la barre, le champ disparaît (pas seulement vidé).
+    expect(el.querySelector('.search-field')).toBeNull();
 
     http
       .expectOne((r) => r.url === '/api/v1/merge-requests' && !r.params.has('q'))
@@ -562,6 +565,7 @@ describe('BoardPageComponent', () => {
     await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
     TestBed.inject(FiltersStore).addFilter('project');
     TestBed.inject(FiltersStore).toggleMultiValue('project', 'api');
+    TestBed.inject(FiltersStore).addFilter('search');
     TestBed.inject(FiltersStore).setSearch('facturation');
     fixture.detectChanges();
     await settle();
@@ -617,6 +621,7 @@ describe('BoardPageComponent', () => {
       status: IDLE_STATUS,
       mergeRequests: [],
     });
+    TestBed.inject(FiltersStore).addFilter('search');
     TestBed.inject(FiltersStore).setSearch('zzzzz');
     fixture.detectChanges();
     await settle();

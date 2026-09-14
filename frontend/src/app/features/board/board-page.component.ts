@@ -148,17 +148,16 @@ export class BoardPageComponent implements OnInit {
   });
 
   /**
-   * « Mes MRs », les filtres composables et la recherche libre sont les
-   * seuls vrais filtres (RG-009-05, RG-010-10, RG-026-11) : « Drafts » est
-   * une préférence d'affichage. Détermine le texte de l'état vide et la
+   * « Mes MRs » et les filtres composables (dont « Titre », RG-026-01) sont
+   * les seuls vrais filtres (RG-009-05, RG-010-10, RG-026-11) : « Drafts »
+   * est une préférence d'affichage. Détermine le texte de l'état vide et la
    * visibilité du bouton « Effacer les filtres ».
    */
   protected readonly hasActiveFilter = computed(
     () =>
       this.filtersStore.mine() ||
       this.filtersStore.favorites() ||
-      this.filtersStore.active().length > 0 ||
-      this.filtersStore.search().length > 0,
+      this.filtersStore.active().length > 0,
   );
 
   /** RG-011-01/06 : query params courants (filtres + tri + colonnes), ordre stable. */

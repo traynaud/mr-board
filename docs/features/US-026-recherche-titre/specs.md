@@ -3,10 +3,10 @@
 ## 1. Reformulation
 
 En multi-repo, retrouver une MR précise dans le tableau impose aujourd'hui de la repérer à l'œil ou de bricoler
-une combinaison de filtres (Projet + Auteur). On veut un champ de recherche libre, toujours visible dans la barre
-de filtres, qui restreint le tableau aux MRs dont le titre contient les termes saisis. La recherche se combine
-avec tous les filtres existants, alimente les mêmes compteurs, et se retrouve dans l'URL comme le reste de l'état
-du tableau.
+une combinaison de filtres (Projet + Auteur). On veut un champ de recherche libre, ajoutable comme n'importe quel
+autre filtre composable (RG-010-03/04), qui restreint le tableau aux MRs dont le titre contient les termes
+saisis. La recherche se combine avec tous les filtres existants, alimente les mêmes compteurs, et se retrouve
+dans l'URL comme le reste de l'état du tableau.
 
 ## 2. User Story
 
@@ -18,10 +18,10 @@ du tableau.
 
 ## 3. Règles de Gestion
 
-- **RG-026-01** — Emplacement : un champ texte permanent dans la barre de filtres (zone 4 du §4.1), placé après le
-  séparateur qui suit les chips « Drafts »/« Mes MRs » et avant les pastilles de filtres composables. Ce n'est
-  **pas** une pastille : il est toujours visible, ne s'ajoute pas via « + Ajouter un filtre » et ne se retire pas
-  par une croix de pastille. Placeholder : « Rechercher un titre… ».
+- **RG-026-01** — Emplacement : « Titre » est un **7ᵉ filtre composable** (RG-010-01), en tête de la liste du menu
+  « + Ajouter un filtre » et de l'ordre canonique de restauration (RG-011-08). Sélectionné, il ajoute un champ
+  texte parmi les pastilles de filtres (zone 4 du §4.1), avec une croix de suppression identique aux autres
+  filtres — retirer le filtre vide aussi la recherche. Placeholder du champ : « Rechercher un titre… ».
 - **RG-026-02** — Portée : la recherche porte sur le **titre** de la MR (`title`). Elle ne porte ni sur la
   description, ni sur les commentaires, ni sur le nom de branche (non synchronisés — voir §7).
 - **RG-026-03** — Correspondance multi-termes : la saisie est découpée sur les espaces ; **tous** les termes
@@ -46,13 +46,14 @@ du tableau.
 - **RG-026-09** — Réactivité : la recherche est appliquée avec un délai anti-rebond de **300 ms** après la dernière
   frappe — jamais une requête par caractère. Une saisie qui redevient vide déclenche immédiatement le
   rechargement sans recherche.
-- **RG-026-10** — URL : la recherche est reflétée dans l'URL (RG-G15) sous le paramètre `q`, et restaurée au
-  chargement. Paramètre **absent** quand la recherche est vide (l'encodage reste l'inverse exact du décodage,
-  RG-011-08). La valeur est encodée telle que saisie (espaces compris).
-- **RG-026-11** — Effacement : le bouton « Effacer » de la barre de filtres (RG-009-05, RG-010-11) vide **aussi**
-  la recherche, au même titre que « Mes MRs » et les pastilles. Une croix dans le champ lui-même le vide seul,
-  sans toucher aux autres filtres. Le bouton « Effacer » reste visible dès qu'une recherche est saisie, même sans
-  autre filtre actif.
+- **RG-026-10** — URL : la recherche est reflétée dans l'URL (RG-G15) sous le paramètre `q`, présent dès que le
+  filtre « Titre » est actif (même vide, comme un filtre composable sans valeur — RG-011-08), et restaurée au
+  chargement : `q` présent dans l'URL réactive le filtre. Paramètre **absent** quand le filtre n'est pas actif.
+  La valeur est encodée telle que saisie (espaces compris).
+- **RG-026-11** — Effacement : le bouton « Effacer » de la barre de filtres (RG-009-05, RG-010-11) retire **aussi**
+  le filtre « Titre » (et vide la recherche), au même titre que « Mes MRs » et les autres pastilles. La croix du
+  filtre « Titre » fait de même individuellement. Le bouton « Effacer » reste visible dès que « Titre » est actif,
+  même sans autre filtre actif.
 - **RG-026-12** — État vide : si aucune MR ne correspond, l'état vide existant est réutilisé sans modification
   (« Aucune MR ne correspond aux filtres. » + bouton « Effacer les filtres »), le champ de recherche restant
   visible et rempli.
@@ -63,14 +64,22 @@ du tableau.
 ## 4. Maquettes de référence
 
 Aucune maquette de `docs/design/` ne couvre ce champ (nouveauté postérieure aux wireframes). Références
-existantes : zone 4 (barre de filtres) des wireframes 1a/1b et du prototype — le champ s'y insère entre le
-séparateur et les pastilles, dans le style des champs de recherche déjà présents dans les menus de filtre
-(`.menu-search`, US-010, RG-010-05 : `mat-form-field` `appearance="outline"`, `subscriptSizing="dynamic"`), avec
-la même typographie et aucun arrondi (design system).
+existantes : zone 4 (barre de filtres) des wireframes 1a/1b et du prototype — une fois ajouté, le champ s'insère
+parmi les pastilles de filtres composables, dans le style des champs de recherche déjà présents dans les menus de
+filtre (`.menu-search`, US-010, RG-010-05 : `mat-form-field` `appearance="outline"`, `subscriptSizing="dynamic"`),
+avec la même typographie et aucun arrondi (design system), et une croix de suppression alignée sur celle des
+autres pastilles (US-010).
 
 ## 5. Critères d'Acceptation
 
 ```gherkin
+Scenario: Le filtre Titre s'ajoute et se retire comme les autres filtres
+  Given aucun filtre actif
+  When j'ouvre « Ajouter un filtre » et je choisis « Titre »
+  Then un champ de recherche apparaît parmi les pastilles, avec sa croix de suppression
+  When je clique sur cette croix
+  Then le champ disparaît et le paramètre `q` n'est plus dans l'URL
+
 Scenario: Filtrer le tableau sur un mot du titre
   Given des MRs intitulées "Refonte de la facturation" et "Correctif export CSV"
   When je saisis "facturation" dans le champ de recherche
@@ -115,10 +124,10 @@ Scenario: La recherche est propagée dans l'URL et restaurée
   Then le champ de recherche contient "facturation"
   And le tableau est filtré sur ce texte
 
-Scenario: Le bouton Effacer vide aussi la recherche
+Scenario: Le bouton Effacer retire aussi le filtre Titre
   Given une recherche "facturation" et le filtre "Mes MRs" sont actifs
   When je clique sur "Effacer"
-  Then le champ de recherche est vide, "Mes MRs" est désactivé et toutes les MRs réapparaissent
+  Then le champ de recherche disparaît, "Mes MRs" est désactivé et toutes les MRs réapparaissent
 
 Scenario: Vider le champ seul ne touche pas aux autres filtres
   Given une recherche "facturation" et le filtre "Projet : api" sont actifs

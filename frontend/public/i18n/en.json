@@ -28,9 +28,9 @@
       "clear": "Clear",
       "add": "Add a filter",
       "searchPlaceholder": "Search a title…",
-      "searchClear": "Clear search",
       "pills": {
         "names": {
+          "search": "Title",
           "connection": "Connection",
           "project": "Project",
           "author": "Author",

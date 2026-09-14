@@ -2,6 +2,12 @@
   {
     "date": "2026-09-15",
     "type": "fix",
+    "user-story": "US-026",
+    "title": "Recherche sur le titre : c'est maintenant un filtre composable comme les autres (ajout via « Ajouter un filtre », pastille avec croix de suppression), au lieu d'un champ permanent."
+  },
+  {
+    "date": "2026-09-15",
+    "type": "fix",
     "user-story": "US-027",
     "title": "Favoris : le bouton étoile affichait un carré natif du navigateur au lieu du style Material (module manquant), en plus d'une icône trop grande."
   },

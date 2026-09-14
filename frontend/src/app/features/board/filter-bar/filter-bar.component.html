@@ -25,40 +25,41 @@
 
 <span class="separator"></span>
 
-<mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
-  <input
-    matInput
-    [ngModel]="search()"
-    (ngModelChange)="searchChange.emit($event)"
-    [placeholder]="'board.filters.searchPlaceholder' | translate"
-    [attr.aria-label]="'board.filters.searchPlaceholder' | translate"
-    maxlength="100"
-  />
-  @if (search().length > 0) {
-    <button
-      mat-icon-button
-      matSuffix
-      type="button"
-      (click)="clearSearch()"
-      [attr.aria-label]="'board.filters.searchClear' | translate"
-    >
-      <mat-icon svgIcon="x" />
-    </button>
-  }
-</mat-form-field>
-
 <span class="filter-pills">
   @for (key of active(); track key) {
-    <app-filter-pill
-      [filterKey]="key"
-      [options]="optionsFor(key)"
-      [multiSelected]="multiValueFor(key)"
-      [booleanSelected]="booleanValueFor(key)"
-      [projects]="projects()"
-      (toggleValue)="filterToggleValue.emit({ key, value: $event })"
-      (selectBoolean)="filterSelectBoolean.emit({ key, value: $event })"
-      (remove)="filterRemove.emit(key)"
-    />
+    @if (key === 'search') {
+      <span class="search-pill">
+        <mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
+          <input
+            matInput
+            [ngModel]="search()"
+            (ngModelChange)="searchChange.emit($event)"
+            [placeholder]="'board.filters.searchPlaceholder' | translate"
+            [attr.aria-label]="'board.filters.searchPlaceholder' | translate"
+            maxlength="100"
+          />
+        </mat-form-field>
+        <button
+          type="button"
+          class="pill-remove"
+          [attr.aria-label]="'board.filters.pills.remove' | translate: { name: searchFilterName() }"
+          (click)="filterRemove.emit('search')"
+        >
+          <mat-icon svgIcon="x" />
+        </button>
+      </span>
+    } @else {
+      <app-filter-pill
+        [filterKey]="key"
+        [options]="optionsFor(key)"
+        [multiSelected]="multiValueFor(key)"
+        [booleanSelected]="booleanValueFor(key)"
+        [projects]="projects()"
+        (toggleValue)="filterToggleValue.emit({ key, value: $event })"
+        (selectBoolean)="filterSelectBoolean.emit({ key, value: $event })"
+        (remove)="filterRemove.emit(key)"
+      />
+    }
   }
   <app-add-filter-menu
     [active]="active()"

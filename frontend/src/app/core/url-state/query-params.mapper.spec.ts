@@ -106,6 +106,11 @@ describe('decodeQueryParams', () => {
     expect(state.active).toEqual(['connection', 'project', 'author', 'approved', 'commented']);
   });
 
+  it('should_place_search_first_in_the_canonical_order_rg_026_01', () => {
+    const state = decodeQueryParams({ project: 'api', q: 'facturation' });
+    expect(state.active).toEqual(['search', 'project']);
+  });
+
   it('should_decode_a_valid_sort', () => {
     expect(decodeQueryParams({ sort: 'diff:desc' })).toMatchObject({ sort: { key: 'diff', direction: 'desc' } });
   });
@@ -164,8 +169,18 @@ describe('decodeQueryParams', () => {
     expect(decodeQueryParams({})).toMatchObject({ search: '' });
   });
 
-  it('should_not_add_search_to_active_rg_026_01', () => {
+  it('should_add_search_to_active_when_q_is_present_rg_026_01', () => {
     const state = decodeQueryParams({ q: 'facturation' });
+    expect(state.active).toContain('search');
+  });
+
+  it('should_add_search_to_active_even_when_q_is_empty_rg_026_01', () => {
+    const state = decodeQueryParams({ q: '' });
+    expect(state.active).toContain('search');
+  });
+
+  it('should_not_add_search_to_active_when_q_is_absent_rg_026_01', () => {
+    const state = decodeQueryParams({});
     expect(state.active).not.toContain('search');
   });
 });
@@ -279,12 +294,17 @@ describe('encodeQueryParams', () => {
     ]);
   });
 
-  it('should_encode_q_when_search_is_not_empty_rg_026_10', () => {
-    const params = encodeQueryParams({ ...DEFAULT_STATE, search: 'facturation' });
+  it('should_encode_q_when_search_is_active_rg_026_10', () => {
+    const params = encodeQueryParams({ ...DEFAULT_STATE, active: ['search'], search: 'facturation' });
     expect(params['q']).toBe('facturation');
   });
 
-  it('should_omit_q_for_an_empty_search_rg_026_10', () => {
+  it('should_encode_an_empty_q_when_search_is_active_but_blank_rg_026_01', () => {
+    const params = encodeQueryParams({ ...DEFAULT_STATE, active: ['search'], search: '' });
+    expect(params['q']).toBe('');
+  });
+
+  it('should_omit_q_when_search_is_not_active_rg_026_10', () => {
     expect(encodeQueryParams(DEFAULT_STATE)['q']).toBeUndefined();
   });
 });
@@ -303,8 +323,8 @@ describe('round-trip (RG-011-08)', () => {
     { ...DEFAULT_STATE, showStatus: false, showOpened: false },
     { ...DEFAULT_STATE, showStatus: false, showOpened: true },
     { ...DEFAULT_STATE, showStatus: true, showOpened: true },
-    { ...DEFAULT_STATE, search: 'facturation' },
-    { ...DEFAULT_STATE, search: 'refonte export' },
+    { ...DEFAULT_STATE, active: ['search'], search: 'facturation' },
+    { ...DEFAULT_STATE, active: ['search'], search: 'refonte export' },
     {
       ...DEFAULT_STATE,
       active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],

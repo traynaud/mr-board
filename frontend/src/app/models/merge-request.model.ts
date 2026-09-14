@@ -122,8 +122,9 @@ export interface MergeRequestFilters {
   search: string;
 }
 
-/** Les 6 filtres composables (RG-010-01, RG-021-03). */
+/** Les 7 filtres composables (RG-010-01, RG-021-03, RG-026-01 : Titre inclus). */
 export type FilterKey =
+  | 'search'
   | 'connection'
   | 'project'
   | 'author'
@@ -131,8 +132,9 @@ export type FilterKey =
   | 'approved'
   | 'commented';
 
-/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03, RG-021-03 : Connexion en tête). */
+/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03, RG-021-03 : Connexion en tête, RG-026-01 : Titre en tête). */
 export const ALL_FILTER_KEYS: FilterKey[] = [
+  'search',
   'connection',
   'project',
   'author',

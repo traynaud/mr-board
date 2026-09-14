@@ -94,11 +94,17 @@ export const FiltersStore = signalStore(
       patchState(store, { active: [...store.active(), key] });
     },
 
-    /** RG-010-04 (croix) : retire la pastille et réinitialise la valeur du filtre. */
+    /** RG-010-04/RG-026-01 (croix) : retire la pastille et réinitialise la valeur du filtre. */
     removeFilter(key: FilterKey): void {
+      const resetValue: Partial<FiltersState> =
+        key === 'search'
+          ? { search: '' }
+          : isMultiValueFilter(key)
+            ? { [key]: EMPTY_MULTI_VALUE }
+            : { [key]: null };
       patchState(store, {
         active: store.active().filter((k) => k !== key),
-        ...(isMultiValueFilter(key) ? { [key]: EMPTY_MULTI_VALUE } : { [key]: null }),
+        ...resetValue,
       });
     },
 
