@@ -1,6 +1,8 @@
 {
   "name": "mr-board-frontend",
   "version": "0.0.0",
+  "author": "Traynaud",
+  "license": "Apache-2.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
