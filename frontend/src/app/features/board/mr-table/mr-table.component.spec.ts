@@ -21,6 +21,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
     draft: false,
+    labels: [],
     author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
     reviewers: [],
     assignees: [],
@@ -55,12 +56,14 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       [sort]="sort()"
       [showStatus]="showStatus()"
       [showOpened]="showOpened()"
+      [showLabels]="showLabels()"
       [columnWidths]="columnWidths()"
       [openInNewTab]="openInNewTab()"
       [highlightMe]="highlightMe()"
       (sortChange)="lastSortChange = $event"
       (toggleStatusColumn)="toggleStatusColumnCount = toggleStatusColumnCount + 1"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
+      (toggleLabelsColumn)="toggleLabelsColumnCount = toggleLabelsColumnCount + 1"
       (widthChange)="lastWidthChange = $event"
       (resetColumnWidth)="lastResetColumn = $event"
       (resetAllWidths)="resetAllWidthsCount = resetAllWidthsCount + 1"
@@ -86,12 +89,14 @@ class HostComponent {
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
   readonly showStatus = signal(true);
   readonly showOpened = signal(false);
+  readonly showLabels = signal(false);
   readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   readonly openInNewTab = signal(false);
   readonly highlightMe = signal(true);
   lastSortChange: SortKey | null = null;
   toggleStatusColumnCount = 0;
   toggleOpenedColumnCount = 0;
+  toggleLabelsColumnCount = 0;
   lastWidthChange: { key: ResizableColumnKey; width: number } | null = null;
   lastResetColumn: ResizableColumnKey | null = null;
   resetAllWidthsCount = 0;
@@ -592,18 +597,78 @@ describe('MrTableComponent', () => {
     expect(el.querySelector('.opened-cell')?.textContent?.trim()).toBe('2026-09-01');
   });
 
+  describe('labels column (RG-028-05/06)', () => {
+    it('should_hide_the_labels_column_by_default_and_show_it_when_showLabels_is_true', async () => {
+      const { fixture, el } = await setup();
+
+      expect(
+        Array.from(el.querySelectorAll('th')).some(
+          (th) => th.textContent?.trim() === t('board.mergeRequests.columns.labels'),
+        ),
+      ).toBe(false);
+
+      fixture.componentInstance.showLabels.set(true);
+      await fixture.whenStable();
+
+      const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim());
+      expect(headers).toContain(t('board.mergeRequests.columns.labels'));
+    });
+
+    it('should_show_a_dash_when_the_row_has_no_label', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.showLabels.set(true);
+      fixture.componentInstance.rows.set([mergeRequest({ labels: [] })]);
+      await fixture.whenStable();
+
+      expect(el.querySelector('.label-group')).toBeNull();
+      expect(
+        Array.from(el.querySelectorAll('.none')).some((none) => none.textContent?.trim() === t('board.mergeRequests.none')),
+      ).toBe(true);
+    });
+
+    it('should_show_up_to_2_labels_as_tags', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.showLabels.set(true);
+      fixture.componentInstance.rows.set([mergeRequest({ labels: ['bug', 'urgent'] })]);
+      await fixture.whenStable();
+
+      const group = el.querySelector('.label-group');
+      const tags = Array.from(group?.querySelectorAll('.tag') ?? []).map((tag) => tag.textContent?.trim());
+      expect(tags).toEqual(['bug', 'urgent']);
+      expect(group?.querySelector('.extra')).toBeNull();
+    });
+
+    it('should_truncate_beyond_2_labels_with_an_extra_count_and_a_full_tooltip', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.showLabels.set(true);
+      fixture.componentInstance.rows.set([
+        mergeRequest({ labels: ['bug', 'urgent', 'backend'] }),
+      ]);
+      await fixture.whenStable();
+
+      const group = el.querySelector<HTMLElement>('.label-group');
+      const tags = Array.from(group?.querySelectorAll('.tag') ?? []).map((tag) => tag.textContent?.trim());
+      expect(tags).toEqual(['bug', 'urgent']);
+      expect(group?.querySelector('.extra')?.textContent?.trim()).toBe('+1');
+    });
+  });
+
   describe('columns menu', () => {
     function menuOptions(): HTMLElement[] {
       return Array.from(document.querySelectorAll<HTMLElement>('.menu-option'));
     }
 
-    it('should_list_the_status_option_before_the_opened_option', async () => {
+    it('should_list_the_status_opened_and_labels_options_in_order', async () => {
       const { loader } = await setup();
       const menu = await loader.getHarness(MatMenuHarness);
       await menu.open();
 
       const labels = menuOptions().map((option) => option.querySelector('.option-label')?.textContent?.trim());
-      expect(labels).toEqual([t('board.columns.status'), t('board.columns.opened')]);
+      expect(labels).toEqual([
+        t('board.columns.status'),
+        t('board.columns.opened'),
+        t('board.columns.labels'),
+      ]);
     });
 
     it('should_show_the_status_checkbox_reflecting_showStatus', async () => {
@@ -651,6 +716,31 @@ describe('MrTableComponent', () => {
 
       expect(fixture.componentInstance.toggleOpenedColumnCount).toBe(1);
       expect(fixture.componentInstance.toggleStatusColumnCount).toBe(0);
+      expect(await menu.isOpen()).toBe(true);
+    });
+
+    it('should_show_the_labels_checkbox_reflecting_showLabels_rg_028_05', async () => {
+      const { fixture, loader } = await setup();
+      fixture.componentInstance.showLabels.set(true);
+      await fixture.whenStable();
+
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      expect(menuOptions()[2].getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('should_emit_toggleLabelsColumn_and_keep_the_menu_open_when_the_labels_option_is_clicked_rg_028_05', async () => {
+      const { fixture, loader } = await setup();
+      const menu = await loader.getHarness(MatMenuHarness);
+      await menu.open();
+
+      menuOptions()[2].click();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.toggleLabelsColumnCount).toBe(1);
+      expect(fixture.componentInstance.toggleStatusColumnCount).toBe(0);
+      expect(fixture.componentInstance.toggleOpenedColumnCount).toBe(0);
       expect(await menu.isOpen()).toBe(true);
     });
   });

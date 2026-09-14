@@ -115,8 +115,10 @@ export class FilterPillComponent {
     return selected
       .map((value) => {
         const label = labelsByValue.get(value);
-        if (value === 'nobody') {
-          return label ?? 'Nobody';
+        // RG-028-14 : les labels ne sont pas des noms de personnes — pas
+        // d'initiales, texte brut (via l'option, pour « Sans label »/RG-028-13).
+        if (this.filterKey() === 'label' || value === 'nobody') {
+          return label ?? value;
         }
         return label ? computeInitials(label) : value;
       })

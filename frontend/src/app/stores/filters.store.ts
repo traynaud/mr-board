@@ -16,6 +16,7 @@ export interface FiltersState extends MergeRequestFilters {
   assigned: string[];
   approved: 'yes' | 'no' | null;
   commented: 'yes' | 'no' | null;
+  label: string[];
 }
 
 const initialState: FiltersState = {
@@ -30,6 +31,7 @@ const initialState: FiltersState = {
   assigned: [],
   approved: null,
   commented: null,
+  label: [],
 };
 
 const EMPTY_MULTI_VALUE: readonly string[] = [];
@@ -53,6 +55,7 @@ export const FiltersStore = signalStore(
       assigned: store.assigned(),
       approved: store.approved(),
       commented: store.commented(),
+      label: store.label(),
     })),
   })),
   withMethods((store) => ({
@@ -110,7 +113,7 @@ export const FiltersStore = signalStore(
 
     /** RG-010-02/05 : bascule `value` dans la sélection multi de `key` (OU entre valeurs). */
     toggleMultiValue(
-      key: 'connection' | 'project' | 'author' | 'assigned',
+      key: 'connection' | 'project' | 'author' | 'assigned' | 'label',
       value: string,
     ): void {
       const current = store[key]();
@@ -121,7 +124,10 @@ export const FiltersStore = signalStore(
     },
 
     /** RG-010-09 : remplace la sélection multi de `key` sans passer par un toggle (réconciliation). */
-    setMultiValue(key: 'connection' | 'project' | 'author' | 'assigned', values: string[]): void {
+    setMultiValue(
+      key: 'connection' | 'project' | 'author' | 'assigned' | 'label',
+      values: string[],
+    ): void {
       patchState(store, { [key]: values });
     },
 
@@ -143,6 +149,7 @@ export const FiltersStore = signalStore(
         assigned: [],
         approved: null,
         commented: null,
+        label: [],
       });
     },
   })),

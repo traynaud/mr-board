@@ -21,6 +21,8 @@ export interface MergeRequestsFacets {
   /** Two entries, `'yes'`/`'no'` (RG-010-01, see archi.md for the chosen shape). */
   approved: FacetOption[];
   commented: FacetOption[];
+  /** `'none'` ("Sans label") is always the first entry (RG-028-13). */
+  label: FacetOption[];
 }
 
 export interface ConfiguredProject {
@@ -129,7 +131,43 @@ export function buildFacets(
     },
   ];
 
-  return { connection, project, author, assigned, approved, commented };
+  const label = buildLabelFacet(base, countFor);
+
+  return { connection, project, author, assigned, approved, commented, label };
+}
+
+/**
+ * RG-028-12/13/14: distinct labels across `base` (exact, case-sensitive
+ * values — RG-028-14), sorted alphabetically ignoring case and accents.
+ * `'none'` ("Sans label") is always first. A label containing a comma can't
+ * be represented in the URL (`label=<csv>`, RG-028-15) and is excluded from
+ * the options — it stays visible in the column, just not filterable.
+ */
+function buildLabelFacet(
+  base: FilterableMergeRequest[],
+  countFor: (
+    key: FilterKey,
+    predicate: (mr: FilterableMergeRequest) => boolean,
+  ) => number,
+): FacetOption[] {
+  const distinctLabels = [...new Set(base.flatMap((mr) => mr.labels))].filter(
+    (value) => !value.includes(','),
+  );
+  const labelOptions = distinctLabels
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    .map((value) => ({
+      value,
+      label: value,
+      count: countFor('label', (mr) => mr.labels.includes(value)),
+    }));
+  return [
+    {
+      value: 'none',
+      label: 'Sans label',
+      count: countFor('label', (mr) => mr.labels.length === 0),
+    },
+    ...labelOptions,
+  ];
 }
 
 function uniquePeople<T extends { username: string }>(people: T[]): T[] {

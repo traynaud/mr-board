@@ -5,11 +5,14 @@ export interface ColumnsState {
   showStatus: boolean;
   /** Visibilité de la colonne optionnelle « Date d'ouverture » (RG-011-09). Masquée par défaut. */
   showOpened: boolean;
+  /** Visibilité de la colonne optionnelle « Labels » (RG-028-05). Masquée par défaut. */
+  showLabels: boolean;
 }
 
 const initialState: ColumnsState = {
   showStatus: true,
   showOpened: false,
+  showLabels: false,
 };
 
 /**
@@ -31,9 +34,14 @@ export const ColumnsStore = signalStore(
       patchState(store, { showOpened: !store.showOpened() });
     },
 
+    /** RG-028-05 : bascule la visibilité de la colonne « Labels ». */
+    toggleLabels(): void {
+      patchState(store, { showLabels: !store.showLabels() });
+    },
+
     /** RG-011-02 : restaure l'état depuis l'URL au chargement. */
-    restore(showStatus: boolean, showOpened: boolean): void {
-      patchState(store, { showStatus, showOpened });
+    restore(showStatus: boolean, showOpened: boolean, showLabels: boolean): void {
+      patchState(store, { showStatus, showOpened, showLabels });
     },
   })),
 );

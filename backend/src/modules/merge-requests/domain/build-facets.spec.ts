@@ -27,6 +27,7 @@ function mr(
     approved: false,
     commentsCount: 0,
     connection: { name: 'gitlab.com' },
+    labels: [],
     ...overrides,
   };
 }
@@ -237,5 +238,86 @@ describe('buildFacets', () => {
       { value: 'yes', label: 'Oui', count: 0 },
       { value: 'no', label: 'Non', count: 0 },
     ]);
+    expect(facets.label).toEqual([
+      { value: 'none', label: 'Sans label', count: 0 },
+    ]);
+  });
+
+  it('should_always_list_none_first_in_label_rg_028_13', () => {
+    const facets = buildFacets(
+      [mr({ labels: ['bug'] })],
+      filters(),
+      REPOS,
+      CONNECTIONS,
+    );
+
+    expect(facets.label[0]).toEqual({
+      value: 'none',
+      label: 'Sans label',
+      count: 0,
+    });
+    expect(facets.label[1]).toEqual({ value: 'bug', label: 'bug', count: 1 });
+  });
+
+  it('should_list_distinct_labels_sorted_case_and_accent_insensitively_rg_028_12', () => {
+    const facets = buildFacets(
+      [
+        mr({ labels: ['urgent'] }),
+        mr({ labels: ['Bug'] }),
+        mr({ labels: ['Bug'] }),
+        mr({ labels: ['écran'] }),
+      ],
+      filters(),
+      REPOS,
+      CONNECTIONS,
+    );
+
+    expect(facets.label.map((o) => o.value)).toEqual([
+      'none',
+      'Bug',
+      'écran',
+      'urgent',
+    ]);
+    expect(facets.label.find((o) => o.value === 'Bug')?.count).toBe(2);
+  });
+
+  it('should_count_merge_requests_with_no_label_under_none_rg_028_13', () => {
+    const facets = buildFacets(
+      [mr({ labels: [] }), mr({ labels: [] }), mr({ labels: ['bug'] })],
+      filters(),
+      REPOS,
+      CONNECTIONS,
+    );
+
+    expect(facets.label[0]).toEqual({
+      value: 'none',
+      label: 'Sans label',
+      count: 2,
+    });
+  });
+
+  it('should_exclude_a_label_containing_a_comma_from_the_options_rg_028_15', () => {
+    const facets = buildFacets(
+      [mr({ labels: ['a,b'] }), mr({ labels: ['bug'] })],
+      filters(),
+      REPOS,
+      CONNECTIONS,
+    );
+
+    expect(facets.label.map((o) => o.value)).toEqual(['none', 'bug']);
+  });
+
+  it('should_ignore_the_label_filter_own_value_when_computing_its_own_counts', () => {
+    const base = [mr({ labels: ['bug'] }), mr({ labels: ['urgent'] })];
+
+    const facets = buildFacets(
+      base,
+      filters({ label: ['bug'] }),
+      REPOS,
+      CONNECTIONS,
+    );
+
+    const urgent = facets.label.find((o) => o.value === 'urgent');
+    expect(urgent?.count).toBe(1);
   });
 });

@@ -79,6 +79,34 @@
     </td>
   </ng-container>
 
+  <ng-container matColumnDef="labels">
+    <th mat-header-cell *matHeaderCellDef [style.width.px]="columnWidths().labels">
+      {{ 'board.mergeRequests.columns.labels' | translate }}
+      <span
+        appResizableColumn
+        [currentWidth]="columnWidths().labels"
+        [ariaLabel]="resizeAriaLabel('board.mergeRequests.columns.labels')"
+        (widthChange)="widthChange.emit({ key: 'labels', width: $event })"
+        (resetRequested)="resetColumnWidth.emit('labels')"
+      ></span>
+    </th>
+    <td mat-cell *matCellDef="let row">
+      @let labelsSummary = summarizeLabels(row.labels);
+      @if (labelsSummary.shown.length > 0) {
+        <span class="label-group" [matTooltip]="labelsSummary.tooltip">
+          @for (label of labelsSummary.shown; track label) {
+            <span class="tag tag-neutral">{{ label }}</span>
+          }
+          @if (labelsSummary.extraCount > 0) {
+            <span class="extra">+{{ labelsSummary.extraCount }}</span>
+          }
+        </span>
+      } @else {
+        <span class="none">{{ 'board.mergeRequests.none' | translate }}</span>
+      }
+    </td>
+  </ng-container>
+
   <ng-container matColumnDef="difficulty">
     <th
       mat-header-cell
@@ -328,6 +356,18 @@
   >
     <mat-checkbox [checked]="showOpened()" [disableRipple]="true" tabindex="-1" (click)="$event.preventDefault()" />
     <span class="option-label">{{ 'board.columns.opened' | translate }}</span>
+  </div>
+  <div
+    class="menu-option"
+    role="checkbox"
+    tabindex="0"
+    [attr.aria-checked]="showLabels()"
+    (click)="$event.stopPropagation(); toggleLabelsColumn.emit()"
+    (keydown.enter)="toggleLabelsColumn.emit()"
+    (keydown.space)="$event.preventDefault(); toggleLabelsColumn.emit()"
+  >
+    <mat-checkbox [checked]="showLabels()" [disableRipple]="true" tabindex="-1" (click)="$event.preventDefault()" />
+    <span class="option-label">{{ 'board.columns.labels' | translate }}</span>
   </div>
   <mat-divider />
   <button mat-menu-item type="button" (click)="resetAllWidths.emit()">

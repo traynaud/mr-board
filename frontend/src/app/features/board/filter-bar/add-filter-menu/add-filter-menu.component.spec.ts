@@ -46,16 +46,17 @@ describe('AddFilterMenuComponent', () => {
     );
   });
 
-  it('should_list_all_7_filters_in_the_menu_with_search_first_rg_026_01', async () => {
+  it('should_list_all_8_filters_in_the_menu_with_search_first_rg_026_01', async () => {
     const { loader } = await setup();
     const menu = await loader.getHarness(MatMenuHarness);
     await menu.open();
     const items = await menu.getItems();
 
-    expect(items).toHaveLength(7);
+    expect(items).toHaveLength(8);
     expect(await items[0].getText()).toBe(t('board.filters.pills.names.search'));
     expect(await items[1].getText()).toBe(t('board.filters.pills.names.connection'));
     expect(await items[2].getText()).toBe(t('board.filters.pills.names.project'));
+    expect(await items[7].getText()).toBe(t('board.filters.pills.names.label'));
   });
 
   it('should_hide_the_connection_filter_when_there_are_fewer_than_2_connections_rg_021_03', async () => {
@@ -66,7 +67,7 @@ describe('AddFilterMenuComponent', () => {
     await menu.open();
     const items = await menu.getItems();
 
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     expect(await items[0].getText()).toBe(t('board.filters.pills.names.search'));
     expect(await items[1].getText()).toBe(t('board.filters.pills.names.project'));
   });
@@ -94,7 +95,7 @@ describe('AddFilterMenuComponent', () => {
     expect(await items[1].isDisabled()).toBe(false);
   });
 
-  it('should_disable_the_button_itself_when_all_7_filters_are_active', async () => {
+  it('should_disable_the_button_itself_when_all_8_filters_are_active', async () => {
     const { fixture, loader } = await setup();
     fixture.componentInstance.active.set([
       'search',
@@ -104,6 +105,7 @@ describe('AddFilterMenuComponent', () => {
       'assigned',
       'approved',
       'commented',
+      'label',
     ]);
     await fixture.whenStable();
 
@@ -111,7 +113,7 @@ describe('AddFilterMenuComponent', () => {
     expect(await button.isDisabled()).toBe(true);
   });
 
-  it('should_disable_the_button_when_all_6_visible_filters_are_active_without_connection', async () => {
+  it('should_disable_the_button_when_all_7_visible_filters_are_active_without_connection', async () => {
     const { fixture, loader } = await setup();
     fixture.componentInstance.showConnectionFilter.set(false);
     fixture.componentInstance.active.set([
@@ -121,6 +123,7 @@ describe('AddFilterMenuComponent', () => {
       'assigned',
       'approved',
       'commented',
+      'label',
     ]);
     await fixture.whenStable();
 

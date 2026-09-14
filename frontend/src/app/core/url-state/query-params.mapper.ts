@@ -24,6 +24,8 @@ export interface UrlState {
   assigned: string[];
   approved: 'yes' | 'no' | null;
   commented: 'yes' | 'no' | null;
+  /** RG-028-15 : labels sélectionnés (dont `'none'`, RG-028-13). */
+  label: string[];
   /** RG-026-10 : recherche libre, `''` si absente de l'URL. */
   search: string;
   sort: MergeRequestSort;
@@ -31,6 +33,8 @@ export interface UrlState {
   showStatus: boolean;
   /** RG-011-09 : visibilité de la colonne « Date d'ouverture ». */
   showOpened: boolean;
+  /** RG-028-05 : visibilité de la colonne optionnelle « Labels ». */
+  showLabels: boolean;
 }
 
 /**
@@ -72,7 +76,8 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
   const assigned = decodeListFilter('assigned', params, active);
   const approved = decodeBooleanFilter('approved', params, active);
   const commented = decodeBooleanFilter('commented', params, active);
-  const { showStatus, showOpened } = decodeCols(params['cols']);
+  const label = decodeListFilter('label', params, active);
+  const { showStatus, showOpened, showLabels } = decodeCols(params['cols']);
 
   return {
     drafts: params['drafts'] === '1',
@@ -85,10 +90,12 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
     assigned,
     approved,
     commented,
+    label,
     search: search ?? '',
     sort: decodeSort(params['sort']),
     showStatus,
     showOpened,
+    showLabels,
   };
 }
 
@@ -112,7 +119,7 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
     params[key] = isMultiValueFilter(key) ? state[key].join(',') : encodeBooleanValue(state[key]);
   }
   params['sort'] = `${state.sort.key}:${state.sort.direction}`;
-  const cols = encodeCols(state.showStatus, state.showOpened);
+  const cols = encodeCols(state.showStatus, state.showOpened, state.showLabels);
   if (cols !== undefined) {
     params['cols'] = cols;
   }
@@ -120,7 +127,7 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
 }
 
 function decodeListFilter(
-  key: 'connection' | 'project' | 'author' | 'assigned',
+  key: 'connection' | 'project' | 'author' | 'assigned' | 'label',
   params: Record<string, string | undefined>,
   active: FilterKey[],
 ): string[] {
@@ -177,28 +184,32 @@ function decodeSort(raw: string | undefined): MergeRequestSort {
   return { key, direction };
 }
 
-/** Jetons reconnus de `cols`, dans l'ordre d'encodage (RG-017-09). */
-const OPTIONAL_COLUMN_TOKENS = ['status', 'opened'] as const;
+/** Jetons reconnus de `cols`, dans l'ordre d'encodage (RG-017-09, RG-028-05). */
+const OPTIONAL_COLUMN_TOKENS = ['status', 'opened', 'labels'] as const;
 type OptionalColumnToken = (typeof OPTIONAL_COLUMN_TOKENS)[number];
 
 /**
- * RG-017-09 : `cols` liste les colonnes optionnelles *visibles* (au lieu
- * d'un simple indicateur `opened`). Absent → défauts (`status` visible,
- * `opened` masqué) ; `'none'` → tout masqué ; sinon, seuls les jetons
- * reconnus (`status`, `opened`) rendent leur colonne visible — une valeur
- * inconnue est ignorée sans faire échouer le décodage.
+ * RG-017-09/RG-028-05 : `cols` liste les colonnes optionnelles *visibles*
+ * (au lieu d'un simple indicateur `opened`). Absent → défauts (`status`
+ * visible, `opened`/`labels` masqués) ; `'none'` → tout masqué ; sinon,
+ * seuls les jetons reconnus (`status`, `opened`, `labels`) rendent leur
+ * colonne visible — une valeur inconnue est ignorée sans faire échouer le
+ * décodage.
  */
-function decodeCols(raw: string | undefined): { showStatus: boolean; showOpened: boolean } {
+function decodeCols(
+  raw: string | undefined,
+): { showStatus: boolean; showOpened: boolean; showLabels: boolean } {
   if (raw === undefined) {
-    return { showStatus: true, showOpened: false };
+    return { showStatus: true, showOpened: false, showLabels: false };
   }
   if (raw === 'none') {
-    return { showStatus: false, showOpened: false };
+    return { showStatus: false, showOpened: false, showLabels: false };
   }
   const tokens = new Set(raw.split(',').filter(Boolean));
   return {
     showStatus: tokens.has('status'),
     showOpened: tokens.has('opened'),
+    showLabels: tokens.has('labels'),
   };
 }
 
@@ -207,15 +218,21 @@ function decodeCols(raw: string | undefined): { showStatus: boolean; showOpened:
  * (`status` visible seul), encode `'none'` quand rien n'est visible, sinon
  * la liste des colonnes optionnelles visibles dans l'ordre canonique.
  */
-function encodeCols(showStatus: boolean, showOpened: boolean): string | undefined {
-  if (showStatus && !showOpened) {
+function encodeCols(
+  showStatus: boolean,
+  showOpened: boolean,
+  showLabels: boolean,
+): string | undefined {
+  if (showStatus && !showOpened && !showLabels) {
     return undefined;
   }
-  if (!showStatus && !showOpened) {
+  if (!showStatus && !showOpened && !showLabels) {
     return 'none';
   }
-  const visible: OptionalColumnToken[] = OPTIONAL_COLUMN_TOKENS.filter((token) =>
-    token === 'status' ? showStatus : showOpened,
-  );
+  const visible: OptionalColumnToken[] = OPTIONAL_COLUMN_TOKENS.filter((token) => {
+    if (token === 'status') return showStatus;
+    if (token === 'opened') return showOpened;
+    return showLabels;
+  });
   return visible.join(',');
 }

@@ -162,6 +162,7 @@ describe('MergeRequestsService', () => {
             assigned: ['nobody'],
             approved: 'yes',
             commented: 'no',
+            label: ['bug', 'urgent'],
           },
         )
         .subscribe();
@@ -174,7 +175,8 @@ describe('MergeRequestsService', () => {
           r.params.get('author') === 'mdupont' &&
           r.params.get('assigned') === 'nobody' &&
           r.params.get('approved') === '1' &&
-          r.params.get('commented') === '0',
+          r.params.get('commented') === '0' &&
+          r.params.get('label') === 'bug,urgent',
       );
       req.flush({ mergeRequests: [], warnings: [] });
     });
@@ -209,6 +211,7 @@ describe('MergeRequestsService', () => {
           { value: 'yes', label: 'Oui', count: 0 },
           { value: 'no', label: 'Non', count: 0 },
         ],
+        label: [{ value: 'none', label: 'Sans label', count: 0 }],
       };
       req.flush(facets);
 
@@ -226,6 +229,7 @@ describe('MergeRequestsService', () => {
             assigned: [],
             approved: null,
             commented: 'yes',
+            label: [],
           },
         )
         .subscribe();

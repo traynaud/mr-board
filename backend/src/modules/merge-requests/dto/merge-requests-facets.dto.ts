@@ -16,4 +16,6 @@ export class MergeRequestsFacetsDto {
   /** Two entries, `value: 'yes'|'no'` (see archi.md for the chosen shape). */
   approved!: FacetOptionDto[];
   commented!: FacetOptionDto[];
+  /** `'none'` ("Sans label") is always the first entry (RG-028-13). */
+  label!: FacetOptionDto[];
 }

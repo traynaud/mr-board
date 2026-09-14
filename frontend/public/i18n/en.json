@@ -36,7 +36,8 @@
           "author": "Author",
           "assigned": "Assigned to",
           "approved": "Approved",
-          "commented": "Commented"
+          "commented": "Commented",
+          "label": "Label"
         },
         "titles": {
           "assigned": "Assigned to (Reviewer OR Assignee)"
@@ -54,6 +55,7 @@
       "menuLabel": "Columns",
       "status": "Status",
       "opened": "Opened on",
+      "labels": "Labels",
       "resetWidths": "Reset widths",
       "resizeAriaLabel": "Resize the {{name}} column"
     },
@@ -79,7 +81,8 @@
         "approved": "Approved",
         "ready": "Since Ready",
         "opened": "Opened",
-        "status": "Status"
+        "status": "Status",
+        "labels": "Labels"
       },
       "difficulty": {
         "easy": "Easy",

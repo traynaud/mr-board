@@ -101,7 +101,7 @@ export class MergeRequestsService {
 
   /**
    * Open merge requests, ordered per `sort` (RG-008-01/04, default
-   * `ready:asc`), narrowed by the 6 composable filters (RG-010-01/02,
+   * `ready:asc`), narrowed by the 7 composable filters (RG-010-01/02,
    * RG-021-03) on top of the `drafts`/`mine` base (RG-009). `mineOnly` restricts to
    * merge requests where I have a role (RG-G09) — silently ignored, with a
    * `warnings` entry, when no connection has a username configured
@@ -129,7 +129,7 @@ export class MergeRequestsService {
   }
 
   /**
-   * Options and contextual counts for the 6 composable filters (RG-010-07,
+   * Options and contextual counts for the 7 composable filters (RG-010-07,
    * RG-021-03):
    * each filter's own options are counted against the `drafts`/`mine` base
    * with every *other* active composable filter applied, never itself.
@@ -185,14 +185,14 @@ export class MergeRequestsService {
 
   /**
    * Assembles the `drafts`/`mine`-scoped merge request views (RG-009),
-   * shared by `listOpen` and `getFacets` before the 5 composable filters
+   * shared by `listOpen` and `getFacets` before the 7 composable filters
    * (RG-010) diverge their outcome (rows vs. facet counts). The
    * `draft: false` filter, when applied, guarantees `ready_at` is never
    * null for the returned rows (see `resolveReadyAt`). Merge requests
    * carrying an ignored label (RG-015-02) or failing the free-text search
    * (RG-026-*) are dropped first, so both `listOpen` and `getFacets` (and
    * their counts) never see them — `search` is therefore always applied,
-   * with no per-facet exclusion mechanism (RG-026-07), unlike the 5
+   * with no per-facet exclusion mechanism (RG-026-07), unlike the 7
    * composable filters.
    *
    * The identity used for `isMe`/`isMine` is resolved per merge request,
@@ -497,6 +497,7 @@ function toMergeRequestView(
     title: mergeRequest.title,
     webUrl: mergeRequest.webUrl,
     draft: mergeRequest.draft,
+    labels: JSON.parse(mergeRequest.labels) as string[],
     author: toMergeRequestUser(author, identity),
     reviewers,
     assignees,

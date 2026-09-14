@@ -68,6 +68,9 @@ function filterParams(
   if (composableFilters.assigned.length > 0) {
     params = params.set('assigned', composableFilters.assigned.join(','));
   }
+  if (composableFilters.label.length > 0) {
+    params = params.set('label', composableFilters.label.join(','));
+  }
   if (composableFilters.approved !== null) {
     params = params.set('approved', composableFilters.approved === 'yes' ? '1' : '0');
   }

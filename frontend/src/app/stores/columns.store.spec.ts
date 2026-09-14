@@ -9,9 +9,10 @@ describe('ColumnsStore', () => {
     store = TestBed.inject(ColumnsStore);
   });
 
-  it('should_default_to_the_status_column_visible_and_the_opened_column_hidden', () => {
+  it('should_default_to_the_status_column_visible_and_the_opened_and_labels_columns_hidden', () => {
     expect(store.showStatus()).toBe(true);
     expect(store.showOpened()).toBe(false);
+    expect(store.showLabels()).toBe(false);
   });
 
   it('should_toggle_the_status_column', () => {
@@ -30,13 +31,23 @@ describe('ColumnsStore', () => {
     expect(store.showOpened()).toBe(false);
   });
 
+  it('should_toggle_the_labels_column_rg_028_05', () => {
+    store.toggleLabels();
+    expect(store.showLabels()).toBe(true);
+
+    store.toggleLabels();
+    expect(store.showLabels()).toBe(false);
+  });
+
   it('should_restore_the_state_from_the_url', () => {
-    store.restore(false, true);
+    store.restore(false, true, true);
     expect(store.showStatus()).toBe(false);
     expect(store.showOpened()).toBe(true);
+    expect(store.showLabels()).toBe(true);
 
-    store.restore(true, false);
+    store.restore(true, false, false);
     expect(store.showStatus()).toBe(true);
     expect(store.showOpened()).toBe(false);
+    expect(store.showLabels()).toBe(false);
   });
 });

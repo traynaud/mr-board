@@ -73,6 +73,14 @@
   gap: 4px;
 }
 
+.label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
 .extra {
   font-size: 11px;
   color: var(--color-neutral-600);

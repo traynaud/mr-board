@@ -19,12 +19,12 @@ import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
 import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
 import { MergeRequestsService } from './merge-requests.service';
 
-/** REST facade of the synchronised merge requests (RG-005-*, RG-008-*, RG-009-*, RG-010-*, RG-027-*). */
+/** REST facade of the synchronised merge requests (RG-005-*, RG-008-*, RG-009-*, RG-010-*, RG-027-*, RG-028-*). */
 @Controller('merge-requests')
 export class MergeRequestsController {
   constructor(private readonly mergeRequestsService: MergeRequestsService) {}
 
-  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&fav=0|1&connection=...&project=...&author=...&assigned=...&approved=0|1&commented=0|1&q=...` */
+  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&fav=0|1&connection=...&project=...&author=...&assigned=...&approved=0|1&commented=0|1&q=...&label=...` */
   @Get()
   list(
     @Query() query: MergeRequestQueryDto,
@@ -79,6 +79,7 @@ function toComposableFilters(
     assigned: query.assigned ?? [],
     approved: toYesNo(query.approved),
     commented: toYesNo(query.commented),
+    label: query.label ?? [],
   };
 }
 

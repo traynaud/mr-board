@@ -30,6 +30,7 @@ const EMPTY_FACETS: MergeRequestsFacets = {
     { value: 'yes', label: 'Oui', count: 0 },
     { value: 'no', label: 'Non', count: 2 },
   ],
+  label: [{ value: 'none', label: 'Sans label', count: 0 }],
 };
 
 function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
@@ -40,6 +41,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     title: 'Title',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/1',
     draft: false,
+    labels: [],
     author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
     reviewers: [],
     assignees: [],

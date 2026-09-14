@@ -18,26 +18,22 @@ import { ProjectTagStyle, projectTagStyle } from '../../../shared/project-color/
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { ResizableColumnDirective } from '../../../shared/resizable-column/resizable-column.directive';
 import type { ResizableColumnKey } from '../../../stores/column-widths.store';
+import { summarizeLabels } from './summarize-labels';
 import { summarizeUsers } from './summarize-users';
 
-/** Colonnes toujours affichées avant la colonne optionnelle « Statut » (RG-005-02). */
-const COLUMNS_BEFORE_STATUS = [
-  'project',
-  'author',
-  'title',
-  'difficulty',
-  'comments',
-  'reviewer',
-  'assignee',
-  'approved',
-];
+/** Colonnes toujours affichées avant la colonne optionnelle « Labels » (RG-028-06). */
+const COLUMNS_BEFORE_LABELS = ['project', 'author', 'title'];
+
+/** Colonnes toujours affichées entre « Labels » et la colonne optionnelle « Statut » (RG-005-02, RG-028-06). */
+const COLUMNS_AFTER_LABELS = ['difficulty', 'comments', 'reviewer', 'assignee', 'approved'];
 
 /** Colonnes toujours affichées après la colonne optionnelle « Statut » (RG-017-07). */
 const COLUMNS_AFTER_STATUS = ['ready'];
 
 /**
- * Tableau des MRs ouvertes — 8 colonnes (RG-005-02, RG-007-*), largeurs
- * ajustables (RG-012-*). Purement présentationnel : reçoit les lignes déjà
+ * Tableau des MRs ouvertes — 8 colonnes fixes + « Labels » optionnelle
+ * (RG-005-02, RG-007-*, RG-028-05/06), largeurs ajustables (RG-012-*).
+ * Purement présentationnel : reçoit les lignes déjà
  * triées par le backend (RG-005-01, RG-008-07) et ne recalcule rien
  * (RG-005-11), ne connaît ni `ColumnsStore` ni `ColumnWidthsStore` — tout
  * est reçu en entrée / émis en sortie, câblé par `BoardPageComponent`. Les
@@ -83,6 +79,8 @@ export class MrTableComponent {
   readonly showStatus = input.required<boolean>();
   /** RG-011-09 : visibilité de la colonne optionnelle « Date d'ouverture ». */
   readonly showOpened = input.required<boolean>();
+  /** RG-028-05 : visibilité de la colonne optionnelle « Labels ». */
+  readonly showLabels = input.required<boolean>();
   /** RG-012-01/02/03 : largeurs effectives (défauts + overrides), déjà résolues par l'appelant. */
   readonly columnWidths = input.required<Record<ResizableColumnKey, number>>();
   /** RG-G11, RG-015-01 : ouvre le titre dans un nouvel onglet plutôt que le même. */
@@ -95,6 +93,8 @@ export class MrTableComponent {
   readonly toggleStatusColumn = output<void>();
   /** RG-011-09 : bascule la visibilité de la colonne « Date d'ouverture ». */
   readonly toggleOpenedColumn = output<void>();
+  /** RG-028-05 : bascule la visibilité de la colonne « Labels ». */
+  readonly toggleLabelsColumn = output<void>();
   /** RG-012-01/07 : nouvelle largeur (glisser ou clavier), déjà bornée. */
   readonly widthChange = output<{ key: ResizableColumnKey; width: number }>();
   /** RG-012-04 : double-clic sur une poignée, une seule colonne. */
@@ -106,7 +106,9 @@ export class MrTableComponent {
 
   protected readonly displayedColumns = computed(() => [
     'favorite',
-    ...COLUMNS_BEFORE_STATUS,
+    ...COLUMNS_BEFORE_LABELS,
+    ...(this.showLabels() ? ['labels'] : []),
+    ...COLUMNS_AFTER_LABELS,
     ...(this.showStatus() ? ['status'] : []),
     ...COLUMNS_AFTER_STATUS,
     ...(this.showOpened() ? ['opened'] : []),
@@ -138,6 +140,7 @@ export class MrTableComponent {
   }
 
   protected readonly summarizeUsers = summarizeUsers;
+  protected readonly summarizeLabels = summarizeLabels;
   protected readonly formatShortDate = formatShortDate;
   protected readonly formatDateTime = formatDateTime;
 

@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-15",
+    "type": "feat",
+    "user-story": "US-028",
+    "title": "Labels : filtre composable « Label » (avec « Sans label ») et colonne optionnelle « Labels » dans le tableau, entre Titre et Difficulté."
+  },
+  {
+    "date": "2026-09-15",
     "type": "fix",
     "user-story": "US-026",
     "title": "Recherche sur le titre : c'est maintenant un filtre composable comme les autres (ajout via « Ajouter un filtre », pastille avec croix de suppression), au lieu d'un champ permanent."

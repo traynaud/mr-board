@@ -474,6 +474,7 @@ describe('MergeRequestsService', () => {
             title: 'Refonte facturation',
             webUrl: 'https://gitlab.example.com/equipe/api/-/merge_requests/7',
             draft: false,
+            labels: [],
             author: {
               username: 'mdupont',
               name: 'Marie Dupont',
@@ -1296,6 +1297,7 @@ describe('MergeRequestsService', () => {
           { value: 'yes', label: 'Oui', count: 0 },
           { value: 'no', label: 'Non', count: 0 },
         ],
+        label: [{ value: 'none', label: 'Sans label', count: 0 }],
       });
     });
 

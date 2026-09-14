@@ -83,6 +83,7 @@ const EMPTY_FACETS = {
     { value: 'yes', label: 'Oui', count: 0 },
     { value: 'no', label: 'Non', count: 0 },
   ],
+  label: [{ value: 'none', label: 'Sans label', count: 0 }],
 };
 // Facets incluant l'option « api », pour que la réconciliation RG-010-09 ne
 // retire pas silencieusement une sélection de projet valide.
@@ -112,6 +113,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     title: 'Refonte facturation',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
     draft: false,
+    labels: [],
     author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
     reviewers: [],
     assignees: [],

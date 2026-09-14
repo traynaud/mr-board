@@ -21,6 +21,7 @@ const MR: MergeRequestView = {
   title: 'Refonte facturation',
   webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/7',
   draft: false,
+  labels: [],
   author: { username: 'mdupont', name: 'Marie Dupont', avatarUrl: null, isMe: false },
   reviewers: [],
   assignees: [],
@@ -49,6 +50,7 @@ const EMPTY_COMPOSABLE_FILTERS = {
   assigned: [],
   approved: null,
   commented: null,
+  label: [],
 };
 const EMPTY_FACETS: MergeRequestsFacets = {
   connection: [{ value: 'GitLab', label: 'GitLab', count: 1 }],
@@ -63,6 +65,7 @@ const EMPTY_FACETS: MergeRequestsFacets = {
     { value: 'yes', label: 'Oui', count: 0 },
     { value: 'no', label: 'Non', count: 1 },
   ],
+  label: [{ value: 'none', label: 'Sans label', count: 1 }],
 };
 
 const SETTINGS: Settings = {

@@ -46,6 +46,7 @@ describe('FiltersStore', () => {
       assigned: [],
       approved: null,
       commented: null,
+      label: [],
     });
   });
 
@@ -103,17 +104,19 @@ describe('FiltersStore', () => {
       store.restore({
         drafts: true,
         mine: true,
-        active: ['project', 'approved'],
+        active: ['project', 'approved', 'label'],
         project: ['api'],
         approved: 'yes',
+        label: ['bug'],
       });
 
       expect(store.drafts()).toBe(true);
       expect(store.mine()).toBe(true);
-      expect(store.active()).toEqual(['project', 'approved']);
+      expect(store.active()).toEqual(['project', 'approved', 'label']);
       expect(store.project()).toEqual(['api']);
       expect(store.approved()).toBe('yes');
       expect(store.author()).toEqual([]);
+      expect(store.label()).toEqual(['bug']);
     });
 
     it('should_leave_unspecified_fields_untouched', () => {
@@ -178,6 +181,16 @@ describe('FiltersStore', () => {
       expect(store.active()).toEqual([]);
       expect(store.connection()).toEqual([]);
     });
+
+    it('should_remove_the_label_filter_rg_028_12', () => {
+      store.addFilter('label');
+      store.toggleMultiValue('label', 'bug');
+
+      store.removeFilter('label');
+
+      expect(store.active()).toEqual([]);
+      expect(store.label()).toEqual([]);
+    });
   });
 
   describe('toggleMultiValue', () => {
@@ -205,6 +218,17 @@ describe('FiltersStore', () => {
       store.toggleMultiValue('assigned', 'nobody');
 
       expect(store.assigned()).toEqual(['mdupont']);
+    });
+
+    it('should_toggle_the_label_filter_rg_028_12', () => {
+      store.toggleMultiValue('label', 'bug');
+      store.toggleMultiValue('label', 'urgent');
+
+      expect(store.label()).toEqual(['bug', 'urgent']);
+
+      store.toggleMultiValue('label', 'bug');
+
+      expect(store.label()).toEqual(['urgent']);
     });
   });
 
@@ -250,6 +274,8 @@ describe('FiltersStore', () => {
     store.toggleMultiValue('project', 'api');
     store.addFilter('approved');
     store.setBoolean('approved', 'yes');
+    store.addFilter('label');
+    store.toggleMultiValue('label', 'bug');
 
     store.clear();
 
@@ -259,5 +285,6 @@ describe('FiltersStore', () => {
     expect(store.connection()).toEqual([]);
     expect(store.project()).toEqual([]);
     expect(store.approved()).toBeNull();
+    expect(store.label()).toEqual([]);
   });
 });

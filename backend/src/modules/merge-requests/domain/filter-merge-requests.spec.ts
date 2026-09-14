@@ -24,6 +24,7 @@ function mr(
     approved: false,
     commentsCount: 0,
     connection: { name: 'gitlab.com' },
+    labels: [],
     ...overrides,
   };
 }
@@ -189,6 +190,58 @@ describe('applyComposableFilters', () => {
     expect(
       applyComposableFilters(items, filters({ project: ['inconnu'] })),
     ).toEqual([]);
+  });
+
+  it('should_filter_by_label_or_between_values_rg_028_11', () => {
+    const items = [
+      mr({ id: 1, labels: ['bug'] }),
+      mr({ id: 2, labels: ['urgent'] }),
+      mr({ id: 3, labels: ['backend'] }),
+    ];
+
+    expect(
+      applyComposableFilters(items, filters({ label: ['bug', 'urgent'] })).map(
+        (m) => m.id,
+      ),
+    ).toEqual([1, 2]);
+  });
+
+  it('should_treat_none_as_an_empty_label_list_rg_028_13', () => {
+    const noLabel = mr({ id: 1, labels: [] });
+    const withLabel = mr({ id: 2, labels: ['bug'] });
+
+    expect(
+      applyComposableFilters(
+        [noLabel, withLabel],
+        filters({ label: ['none'] }),
+      ).map((m) => m.id),
+    ).toEqual([1]);
+  });
+
+  it('should_combine_none_and_a_label_as_or_rg_028_13', () => {
+    const noLabel = mr({ id: 1, labels: [] });
+    const bug = mr({ id: 2, labels: ['bug'] });
+    const other = mr({ id: 3, labels: ['urgent'] });
+
+    expect(
+      applyComposableFilters(
+        [noLabel, bug, other],
+        filters({ label: ['none', 'bug'] }),
+      ).map((m) => m.id),
+    ).toEqual([1, 2]);
+  });
+
+  it('should_match_labels_exactly_case_sensitively_rg_028_14', () => {
+    const items = [
+      mr({ id: 1, labels: ['Bug'] }),
+      mr({ id: 2, labels: ['bug'] }),
+    ];
+
+    expect(
+      applyComposableFilters(items, filters({ label: ['bug'] })).map(
+        (m) => m.id,
+      ),
+    ).toEqual([2]);
   });
 });
 

@@ -76,6 +76,11 @@ export class MergeRequestFilterQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  /** CSV of label strings, exact/case-sensitive, plus `'none'` for "no label" (RG-028-11/13/14). */
+  @IsOptional()
+  @Transform(toArray)
+  label?: string[];
 }
 
 /** Query params of `GET /api/v1/merge-requests` (RG-008-07 adds `sort` on top of the shared filters). */

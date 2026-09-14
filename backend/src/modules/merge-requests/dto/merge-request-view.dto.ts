@@ -6,8 +6,7 @@ import { MergeStatusDto } from './merge-status.dto';
 
 /**
  * Response of `GET /api/v1/merge-requests` (RG-005-11, extended by
- * RG-006-01, RG-007-01 and RG-017-06). Still no `labels` — added by the US
- * that displays them (US-015).
+ * RG-006-01, RG-007-01, RG-017-06 and RG-028-01).
  */
 export class MergeRequestViewDto {
   id!: number;
@@ -16,6 +15,8 @@ export class MergeRequestViewDto {
   title!: string;
   webUrl!: string;
   draft!: boolean;
+  /** Raw forge label strings, in forge order (RG-028-01/02). Never includes an ignored label (RG-028-04). */
+  labels!: string[];
   author!: MergeRequestUserDto;
   reviewers!: MergeRequestUserDto[];
   assignees!: MergeRequestUserDto[];

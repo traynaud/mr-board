@@ -15,6 +15,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     title: 'Titre',
     webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/42',
     draft: false,
+    labels: [],
     author: user('adurand'),
     reviewers: [],
     assignees: [],

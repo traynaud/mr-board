@@ -4,6 +4,7 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 export type ResizableColumnKey =
   | 'project'
   | 'author'
+  | 'labels'
   | 'difficulty'
   | 'comments'
   | 'reviewer'
@@ -13,10 +14,11 @@ export type ResizableColumnKey =
   | 'ready'
   | 'opened';
 
-/** RG-005-02, RG-017-07 : largeurs initiales des colonnes, reprises du prototype de référence. */
+/** RG-005-02, RG-017-07, RG-028-09 : largeurs initiales des colonnes, reprises du prototype de référence. */
 export const DEFAULT_COLUMN_WIDTHS: Record<ResizableColumnKey, number> = {
   project: 64,
   author: 52,
+  labels: 160,
   difficulty: 150,
   comments: 44,
   reviewer: 72,

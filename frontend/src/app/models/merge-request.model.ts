@@ -63,10 +63,7 @@ export interface MergeRequestSort {
 /** RG-008-01/08 : tri par défaut (la plus ancienne MR Ready en haut). */
 export const DEFAULT_SORT: MergeRequestSort = { key: 'ready', direction: 'asc' };
 
-/**
- * Miroir de `MergeRequestViewDto` (backend). Volontairement minimal :
- * ni `labels` — ajouté par l'US qui l'affiche (US-015).
- */
+/** Miroir de `MergeRequestViewDto` (backend). */
 export interface MergeRequestView {
   id: number;
   projectAlias: string;
@@ -74,6 +71,8 @@ export interface MergeRequestView {
   title: string;
   webUrl: string;
   draft: boolean;
+  /** Labels bruts de la forge, dans leur ordre (RG-028-01/02). Jamais un label ignoré (RG-028-04). */
+  labels: string[];
   author: MergeRequestUser;
   reviewers: MergeRequestUser[];
   assignees: MergeRequestUser[];
@@ -122,7 +121,7 @@ export interface MergeRequestFilters {
   search: string;
 }
 
-/** Les 7 filtres composables (RG-010-01, RG-021-03, RG-026-01 : Titre inclus). */
+/** Les 8 filtres composables (RG-010-01, RG-021-03, RG-026-01 : Titre inclus, RG-028-11 : Label inclus). */
 export type FilterKey =
   | 'search'
   | 'connection'
@@ -130,9 +129,13 @@ export type FilterKey =
   | 'author'
   | 'assigned'
   | 'approved'
-  | 'commented';
+  | 'commented'
+  | 'label';
 
-/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03, RG-021-03 : Connexion en tête, RG-026-01 : Titre en tête). */
+/**
+ * Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03, RG-021-03 :
+ * Connexion en tête, RG-026-01 : Titre en tête, RG-028-11 : Label après Commenté).
+ */
 export const ALL_FILTER_KEYS: FilterKey[] = [
   'search',
   'connection',
@@ -141,16 +144,23 @@ export const ALL_FILTER_KEYS: FilterKey[] = [
   'assigned',
   'approved',
   'commented',
+  'label',
 ];
 
-/** `connection`/`project`/`author`/`assigned` sont des filtres multi-sélection ; `approved`/`commented` sont booléens. */
+/** `connection`/`project`/`author`/`assigned`/`label` sont des filtres multi-sélection ; `approved`/`commented` sont booléens. */
 export function isMultiValueFilter(
   key: FilterKey,
-): key is 'connection' | 'project' | 'author' | 'assigned' {
-  return key === 'connection' || key === 'project' || key === 'author' || key === 'assigned';
+): key is 'connection' | 'project' | 'author' | 'assigned' | 'label' {
+  return (
+    key === 'connection' ||
+    key === 'project' ||
+    key === 'author' ||
+    key === 'assigned' ||
+    key === 'label'
+  );
 }
 
-/** État des 6 filtres composables (RG-010-01/02, RG-021-03). `'nobody'` est une valeur comme une autre dans `assigned`. */
+/** État des 7 filtres composables (RG-010-01/02, RG-021-03, RG-028-11). `'nobody'`/`'none'` sont des valeurs comme les autres. */
 export interface ComposableFilters {
   /** Noms de connexion (RG-021-03), comparés insensible à la casse côté backend (RG-021-05). */
   connection: string[];
@@ -159,6 +169,8 @@ export interface ComposableFilters {
   assigned: string[];
   approved: 'yes' | 'no' | null;
   commented: 'yes' | 'no' | null;
+  /** `'none'` ("Sans label") est une valeur comme une autre (RG-028-13). */
+  label: string[];
 }
 
 export const EMPTY_COMPOSABLE_FILTERS: ComposableFilters = {
@@ -168,6 +180,7 @@ export const EMPTY_COMPOSABLE_FILTERS: ComposableFilters = {
   assigned: [],
   approved: null,
   commented: null,
+  label: [],
 };
 
 /** Une option sélectionnable d'un menu de filtre, avec son compteur contextuel (RG-010-07/08). */
@@ -188,4 +201,6 @@ export interface MergeRequestsFacets {
   /** 2 entrées, `value: 'yes'|'no'`. */
   approved: FacetOption[];
   commented: FacetOption[];
+  /** `'none'` ("Sans label") toujours en première position (RG-028-13). */
+  label: FacetOption[];
 }

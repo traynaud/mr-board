@@ -36,7 +36,8 @@
           "author": "Auteur",
           "assigned": "Affecté à",
           "approved": "Approved",
-          "commented": "Commenté"
+          "commented": "Commenté",
+          "label": "Label"
         },
         "titles": {
           "assigned": "Affecté à (Reviewer OU Affecté)"
@@ -54,6 +55,7 @@
       "menuLabel": "Colonnes",
       "status": "Statut",
       "opened": "Date d'ouverture",
+      "labels": "Labels",
       "resetWidths": "Réinitialiser les largeurs",
       "resizeAriaLabel": "Redimensionner la colonne {{name}}"
     },
@@ -79,7 +81,8 @@
         "approved": "Approved",
         "ready": "Depuis Ready",
         "opened": "Ouverte",
-        "status": "Statut"
+        "status": "Statut",
+        "labels": "Labels"
       },
       "difficulty": {
         "easy": "Easy",

@@ -102,8 +102,21 @@ describe('MergeRequestsController', () => {
           assigned: ['nobody'],
           approved: 'yes',
           commented: 'no',
+          label: [],
         },
       });
+    });
+
+    it('should_translate_the_label_query_param_to_a_composable_filters_object_rg_028_11', async () => {
+      const response = { mergeRequests: [], warnings: [] };
+      service.listOpen.mockResolvedValue(response);
+
+      await controller.list({ label: ['bug', 'urgent'] });
+
+      const [options] = service.listOpen.mock.calls[0] as [
+        { filters: { label: string[] } },
+      ];
+      expect(options.filters.label).toEqual(['bug', 'urgent']);
     });
 
     it('should_pass_the_q_query_param_through_as_search_rg_026', async () => {
@@ -169,8 +182,29 @@ describe('MergeRequestsController', () => {
           assigned: [],
           approved: 'no',
           commented: null,
+          label: [],
         },
       });
+    });
+
+    it('should_translate_the_label_query_param_to_a_composable_filters_object_rg_028_11', async () => {
+      const response = {
+        connection: [],
+        project: [],
+        author: [],
+        assigned: [],
+        approved: [],
+        commented: [],
+        label: [],
+      };
+      service.getFacets.mockResolvedValue(response);
+
+      await controller.facets({ label: ['bug'] });
+
+      const [options] = service.getFacets.mock.calls[0] as [
+        { filters: { label: string[] } },
+      ];
+      expect(options.filters.label).toEqual(['bug']);
     });
 
     it('should_translate_the_fav_query_param_to_a_boolean_rg_027_11', async () => {

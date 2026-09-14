@@ -16,10 +16,18 @@ export interface FilterableMergeRequest {
   approved: boolean;
   commentsCount: number;
   connection: FilterableConnection;
+  /** RG-028-01/02: raw forge label strings, already excluding ignored-label MRs (RG-028-04). */
+  labels: string[];
 }
 
 export type FilterKey =
-  'connection' | 'project' | 'author' | 'assigned' | 'approved' | 'commented';
+  | 'connection'
+  | 'project'
+  | 'author'
+  | 'assigned'
+  | 'approved'
+  | 'commented'
+  | 'label';
 
 export interface ComposableFilters {
   /** Connection names (RG-021-03), matched case-insensitively (RG-021-05). */
@@ -30,6 +38,8 @@ export interface ComposableFilters {
   assigned: string[];
   approved: 'yes' | 'no' | null;
   commented: 'yes' | 'no' | null;
+  /** `'none'` is a plain value here, alongside label strings (RG-028-13). */
+  label: string[];
 }
 
 /** RG-010-02: an empty/`null` filter excludes nothing. */
@@ -40,6 +50,7 @@ export const EMPTY_COMPOSABLE_FILTERS: ComposableFilters = {
   assigned: [],
   approved: null,
   commented: null,
+  label: [],
 };
 
 /** RG-021-05: the only filter matched case-insensitively — connection names are user-chosen free text. */
@@ -107,6 +118,19 @@ function matchesCommented(
   );
 }
 
+/** RG-028-13/14: OR between selected labels ; "none" means an empty label list. Exact, case-sensitive match. */
+function matchesLabel(
+  mr: FilterableMergeRequest,
+  filters: ComposableFilters,
+): boolean {
+  if (filters.label.length === 0) {
+    return true;
+  }
+  return filters.label.some((value) =>
+    value === 'none' ? mr.labels.length === 0 : mr.labels.includes(value),
+  );
+}
+
 const TESTS: Record<
   FilterKey,
   (mr: FilterableMergeRequest, filters: ComposableFilters) => boolean
@@ -117,6 +141,7 @@ const TESTS: Record<
   assigned: matchesAssigned,
   approved: matchesApproved,
   commented: matchesCommented,
+  label: matchesLabel,
 };
 
 const ALL_KEYS: FilterKey[] = [
@@ -126,6 +151,7 @@ const ALL_KEYS: FilterKey[] = [
   'assigned',
   'approved',
   'commented',
+  'label',
 ];
 
 /** RG-010-02: AND between filters, OR between values of the same filter. */

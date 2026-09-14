@@ -22,6 +22,7 @@ interface MergeRequestViewBody {
   title: string;
   webUrl: string;
   draft: boolean;
+  labels: string[];
   author: MergeRequestUserBody;
   reviewers: MergeRequestUserBody[];
   assignees: MergeRequestUserBody[];
@@ -61,6 +62,7 @@ interface MergeRequestsFacetsBody {
   assigned: FacetOptionBody[];
   approved: FacetOptionBody[];
   commented: FacetOptionBody[];
+  label: FacetOptionBody[];
 }
 
 function forgeUser(
@@ -127,6 +129,7 @@ interface RawOverrides {
   conflicts?: boolean;
   headPipelineStatus?: string | null;
   approvalsLeft?: number;
+  labels?: string[];
 }
 
 function mergeRequest(
@@ -147,7 +150,7 @@ function mergeRequest(
     updatedAt: overrides.createdAt ?? `2026-09-0${iid}T10:00:00Z`,
     commentsCount: overrides.commentsCount ?? iid,
     approved: overrides.approved ?? false,
-    labels: [],
+    labels: overrides.labels ?? [],
     changedFiles: diffStats?.fileCount ?? null,
     additions: diffStats?.additions ?? null,
     deletions: diffStats?.deletions ?? null,
@@ -262,6 +265,7 @@ describe('MergeRequests (e2e)', () => {
         title: 'MR 1',
         webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/1',
         draft: false,
+        labels: [],
         author: {
           username: 'mdupont',
           name: 'Marie Dupont',
@@ -313,6 +317,7 @@ describe('MergeRequests (e2e)', () => {
           'title',
           'webUrl',
           'draft',
+          'labels',
           'author',
           'reviewers',
           'assignees',
@@ -1157,6 +1162,184 @@ describe('MergeRequests (e2e)', () => {
         state: 'blocked',
         reasons: [{ code: 'conflicts' }],
       });
+    });
+  });
+
+  describe('labels (US-028)', () => {
+    it('GET /merge-requests should_expose_the_labels_field_rg_028_01', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(400, { labels: ['bug', 'urgent'] }),
+      ]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 400,
+      );
+      expect(view?.labels).toEqual(['bug', 'urgent']);
+    });
+
+    it('GET /merge-requests?label=... should_filter_by_a_single_label_rg_028_11', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([
+                mergeRequest(410, { labels: ['bug'] }),
+                mergeRequest(411, { labels: ['urgent'] }),
+              ])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests?label=bug');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).toEqual([410]);
+    });
+
+    it('GET /merge-requests?label=... should_combine_several_labels_with_or_rg_028_11', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([
+                mergeRequest(420, { labels: ['bug'] }),
+                mergeRequest(421, { labels: ['urgent'] }),
+                mergeRequest(422, { labels: ['backend'] }),
+              ])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests?label=bug,urgent');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests
+        .map((v) => v.iid)
+        .sort((a, b) => a - b);
+      expect(iids).toEqual([420, 421]);
+    });
+
+    it('GET /merge-requests?label=none should_filter_merge_requests_without_any_label_rg_028_13', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([
+                mergeRequest(430, { labels: [] }),
+                mergeRequest(431, { labels: ['bug'] }),
+              ])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests?label=none');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).toEqual([430]);
+    });
+
+    it('GET /merge-requests?project=...&label=... should_combine_with_another_composable_filter_with_and_rg_028_11', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([mergeRequest(440, { labels: ['bug'] })])
+            : Promise.resolve([mergeRequest(441, { labels: ['bug'] })]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get(
+        '/api/v1/merge-requests?project=api&label=bug',
+      );
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).toEqual([440]);
+    });
+
+    it('GET /merge-requests/facets should_expose_distinct_labels_with_none_first_rg_028_12_13', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([
+                mergeRequest(450, { labels: ['bug'] }),
+                mergeRequest(451, { labels: [] }),
+              ])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests/facets');
+      const facets = res.body as MergeRequestsFacetsBody;
+      expect(facets.label[0]).toEqual({
+        value: 'none',
+        label: 'Sans label',
+        count: expect.any(Number) as number,
+      });
+      expect(
+        facets.label.find((o) => o.value === 'bug')?.count,
+      ).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should_never_expose_an_ignored_label_in_the_column_or_the_filter_options_rg_028_04', async () => {
+      await api()
+        .put('/api/v1/settings')
+        .send({ ignoredLabels: ['wip'] });
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([
+                mergeRequest(460, { labels: ['wip', 'backend'] }),
+                mergeRequest(461, { labels: ['backend'] }),
+              ])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+
+      const res = await api().get('/api/v1/merge-requests');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).not.toContain(460);
+
+      const facets = await api().get('/api/v1/merge-requests/facets');
+      expect(
+        (facets.body as MergeRequestsFacetsBody).label.some(
+          (o) => o.value === 'wip',
+        ),
+      ).toBe(false);
+
+      // Reset for subsequent tests in this suite.
+      await api().put('/api/v1/settings').send({ ignoredLabels: [] });
     });
   });
 

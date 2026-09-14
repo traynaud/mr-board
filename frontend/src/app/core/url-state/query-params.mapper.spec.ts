@@ -12,10 +12,12 @@ const DEFAULT_STATE: UrlState = {
   assigned: [],
   approved: null,
   commented: null,
+  label: [],
   search: '',
   sort: DEFAULT_SORT,
   showStatus: true,
   showOpened: false,
+  showLabels: false,
 };
 
 describe('normalizeParams', () => {
@@ -72,6 +74,12 @@ describe('decodeQueryParams', () => {
     expect(state.connection).toEqual(['gitlab.com', 'github.com']);
   });
 
+  it('should_activate_the_label_filter_present_with_values_rg_028', () => {
+    const state = decodeQueryParams({ label: 'bug,urgent' });
+    expect(state.active).toEqual(['label']);
+    expect(state.label).toEqual(['bug', 'urgent']);
+  });
+
   it('should_not_validate_unknown_list_values_locally', () => {
     const state = decodeQueryParams({ project: 'inconnu' });
     expect(state.project).toEqual(['inconnu']);
@@ -97,13 +105,21 @@ describe('decodeQueryParams', () => {
 
   it('should_reconstruct_active_in_the_canonical_order_regardless_of_url_order', () => {
     const state = decodeQueryParams({
+      label: 'bug',
       commented: '1',
       project: 'api',
       approved: '0',
       author: 'mdupont',
       connection: 'gitlab.com',
     });
-    expect(state.active).toEqual(['connection', 'project', 'author', 'approved', 'commented']);
+    expect(state.active).toEqual([
+      'connection',
+      'project',
+      'author',
+      'approved',
+      'commented',
+      'label',
+    ]);
   });
 
   it('should_place_search_first_in_the_canonical_order_rg_026_01', () => {
@@ -129,13 +145,18 @@ describe('decodeQueryParams', () => {
 
   it('should_decode_absent_cols_as_the_default_optional_columns', () => {
     // Scenario: URL sans cols
-    expect(decodeQueryParams({})).toMatchObject({ showStatus: true, showOpened: false });
+    expect(decodeQueryParams({})).toMatchObject({
+      showStatus: true,
+      showOpened: false,
+      showLabels: false,
+    });
   });
 
   it('should_decode_cols_none_as_every_optional_column_hidden', () => {
     expect(decodeQueryParams({ cols: 'none' })).toMatchObject({
       showStatus: false,
       showOpened: false,
+      showLabels: false,
     });
   });
 
@@ -151,6 +172,22 @@ describe('decodeQueryParams', () => {
     expect(decodeQueryParams({ cols: 'status,opened' })).toMatchObject({
       showStatus: true,
       showOpened: true,
+    });
+  });
+
+  it('should_decode_cols_labels_as_status_and_opened_hidden_and_labels_visible_rg_028_06', () => {
+    expect(decodeQueryParams({ cols: 'labels' })).toMatchObject({
+      showStatus: false,
+      showOpened: false,
+      showLabels: true,
+    });
+  });
+
+  it('should_decode_cols_status_opened_labels_as_all_three_visible', () => {
+    expect(decodeQueryParams({ cols: 'status,opened,labels' })).toMatchObject({
+      showStatus: true,
+      showOpened: true,
+      showLabels: true,
     });
   });
 
@@ -221,6 +258,11 @@ describe('encodeQueryParams', () => {
     expect(params['author']).toBe('');
   });
 
+  it('should_encode_the_active_label_filter_as_csv_rg_028', () => {
+    const params = encodeQueryParams({ ...DEFAULT_STATE, active: ['label'], label: ['bug', 'urgent'] });
+    expect(params['label']).toBe('bug,urgent');
+  });
+
   it('should_not_include_an_inactive_list_filter', () => {
     const params = encodeQueryParams({ ...DEFAULT_STATE, project: ['api'] });
     expect(params['project']).toBeUndefined();
@@ -266,16 +308,35 @@ describe('encodeQueryParams', () => {
     ).toBe('opened');
   });
 
+  it('should_encode_cols_as_status_opened_labels_when_all_three_are_visible_rg_028_06', () => {
+    expect(
+      encodeQueryParams({ ...DEFAULT_STATE, showStatus: true, showOpened: true, showLabels: true })[
+        'cols'
+      ],
+    ).toBe('status,opened,labels');
+  });
+
+  it('should_encode_cols_including_labels_when_labels_is_visible_alongside_the_default_status', () => {
+    expect(encodeQueryParams({ ...DEFAULT_STATE, showLabels: true })['cols']).toBe('status,labels');
+  });
+
+  it('should_encode_cols_as_labels_when_only_labels_is_visible', () => {
+    expect(
+      encodeQueryParams({ ...DEFAULT_STATE, showStatus: false, showLabels: true })['cols'],
+    ).toBe('labels');
+  });
+
   it('should_produce_keys_in_the_canonical_order_of_rg_011_01', () => {
     const params = encodeQueryParams({
       ...DEFAULT_STATE,
-      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],
+      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented', 'label'],
       connection: ['gitlab.com'],
       project: ['api'],
       author: ['mdupont'],
       assigned: ['nobody'],
       approved: 'yes',
       commented: 'no',
+      label: ['bug'],
       showStatus: true,
       showOpened: true,
     });
@@ -289,6 +350,7 @@ describe('encodeQueryParams', () => {
       'assigned',
       'approved',
       'commented',
+      'label',
       'sort',
       'cols',
     ]);
@@ -320,23 +382,29 @@ describe('round-trip (RG-011-08)', () => {
     { ...DEFAULT_STATE, active: ['assigned'], assigned: ['nobody', 'mdupont'] },
     { ...DEFAULT_STATE, active: ['approved'], approved: 'yes' },
     { ...DEFAULT_STATE, active: ['commented'], commented: null },
+    { ...DEFAULT_STATE, active: ['label'], label: ['bug', 'urgent'] },
+    { ...DEFAULT_STATE, active: ['label'], label: [] },
     { ...DEFAULT_STATE, showStatus: false, showOpened: false },
     { ...DEFAULT_STATE, showStatus: false, showOpened: true },
     { ...DEFAULT_STATE, showStatus: true, showOpened: true },
+    { ...DEFAULT_STATE, showLabels: true },
+    { ...DEFAULT_STATE, showStatus: true, showOpened: true, showLabels: true },
     { ...DEFAULT_STATE, active: ['search'], search: 'facturation' },
     { ...DEFAULT_STATE, active: ['search'], search: 'refonte export' },
     {
       ...DEFAULT_STATE,
-      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],
+      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented', 'label'],
       connection: ['gitlab.com'],
       project: ['api', 'web'],
       author: ['mdupont'],
       assigned: ['nobody'],
       approved: 'no',
       commented: 'yes',
+      label: ['bug'],
       sort: { key: 'diff', direction: 'desc' },
       showStatus: true,
       showOpened: true,
+      showLabels: true,
     },
   ];
 

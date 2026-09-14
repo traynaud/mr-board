@@ -248,10 +248,12 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       assigned: this.filtersStore.assigned(),
       approved: this.filtersStore.approved(),
       commented: this.filtersStore.commented(),
+      label: this.filtersStore.label(),
       search: this.filtersStore.search(),
       sort: this.mrStore.sort(),
       showStatus: this.columnsStore.showStatus(),
       showOpened: this.columnsStore.showOpened(),
+      showLabels: this.columnsStore.showLabels(),
     });
   }
 

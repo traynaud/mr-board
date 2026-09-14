@@ -173,10 +173,12 @@ export class BoardPageComponent implements OnInit {
       assigned: this.filtersStore.assigned(),
       approved: this.filtersStore.approved(),
       commented: this.filtersStore.commented(),
+      label: this.filtersStore.label(),
       search: this.filtersStore.search(),
       sort: this.mrStore.sort(),
       showStatus: this.columnsStore.showStatus(),
       showOpened: this.columnsStore.showOpened(),
+      showLabels: this.columnsStore.showLabels(),
     }),
   );
 
@@ -372,7 +374,8 @@ export class BoardPageComponent implements OnInit {
       event.key === 'connection' ||
       event.key === 'project' ||
       event.key === 'author' ||
-      event.key === 'assigned'
+      event.key === 'assigned' ||
+      event.key === 'label'
     ) {
       this.filtersStore.toggleMultiValue(event.key, event.value);
       this.mrStore.scheduleReload();
@@ -413,6 +416,14 @@ export class BoardPageComponent implements OnInit {
     this.columnsStore.toggleOpened();
   }
 
+  /**
+   * RG-028-05 : bascule la colonne « Labels ». Purement local — ne recharge
+   * pas les MRs (aucun paramètre API concerné).
+   */
+  protected onToggleLabelsColumn(): void {
+    this.columnsStore.toggleLabels();
+  }
+
   /** RG-012-01/07 : nouvelle largeur (glisser ou clavier) pour une colonne. */
   protected onWidthChange(event: { key: ResizableColumnKey; width: number }): void {
     this.columnWidthsStore.setWidth(event.key, event.width);
@@ -450,10 +461,11 @@ export class BoardPageComponent implements OnInit {
       assigned: state.assigned,
       approved: state.approved,
       commented: state.commented,
+      label: state.label,
       search: state.search,
     });
     this.mrStore.restoreSort(state.sort);
-    this.columnsStore.restore(state.showStatus, state.showOpened);
+    this.columnsStore.restore(state.showStatus, state.showOpened, state.showLabels);
   }
 
   /**
