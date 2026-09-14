@@ -30,7 +30,7 @@ function buildMergeRequest(
     createdAt: '2026-09-01T10:00:00Z',
     updatedAt: '2026-09-05T09:00:00Z',
     userNotesCount: 3,
-    approved: true,
+    approvedBy: { nodes: [{ id: 'gid://gitlab/User/2' }] },
     labels: { nodes: [{ title: 'backend' }, { title: 'urgent' }] },
     diffStatsSummary: { fileCount: 12, additions: 340, deletions: 58 },
     author: buildUser('gid://gitlab/User/1', 'mdupont'),
@@ -108,6 +108,44 @@ describe('mapGraphqlMergeRequest', () => {
       assignees: [expect.objectContaining({ username: 'kbenali' })],
       mergeStatus: { state: 'mergeable', reasons: [] },
     });
+  });
+
+  it('should_report_not_approved_when_nobody_approved_regardless_of_gitlab_approval_rules', () => {
+    // RG-G07 : `approved_by` non vide, indépendamment des règles
+    // d'approbation du projet — un projet sans règle configurée est
+    // "satisfait" côté GitLab dès zéro approbation, mais ça ne doit jamais
+    // se traduire par `approved: true` ici (régression corrigée le
+    // 2026-09-14 : le mapper lisait auparavant le champ GitLab `approved`,
+    // qui reflète les règles, pas les approbations réelles).
+    const mapped = mapGraphqlMergeRequest(
+      buildMergeRequest({ approvedBy: { nodes: [] } }),
+    );
+
+    expect(mapped.approved).toBe(false);
+  });
+
+  it('should_not_count_the_authors_own_approval_towards_approved', () => {
+    // Un projet autorisant l'auto-approbation ne doit pas compter l'auteur
+    // parmi les approbateurs (demande explicite du bugfix).
+    const mapped = mapGraphqlMergeRequest(
+      buildMergeRequest({
+        approvedBy: { nodes: [{ id: 'gid://gitlab/User/1' }] }, // = author.id
+      }),
+    );
+
+    expect(mapped.approved).toBe(false);
+  });
+
+  it('should_report_approved_when_someone_other_than_the_author_approved', () => {
+    const mapped = mapGraphqlMergeRequest(
+      buildMergeRequest({
+        approvedBy: {
+          nodes: [{ id: 'gid://gitlab/User/1' }, { id: 'gid://gitlab/User/2' }],
+        }, // author + one real approver
+      }),
+    );
+
+    expect(mapped.approved).toBe(true);
   });
 
   it('should_compute_the_merge_status_from_the_raw_gitlab_signals', () => {

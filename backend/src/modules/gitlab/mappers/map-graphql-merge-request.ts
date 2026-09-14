@@ -48,7 +48,13 @@ export function mapGraphqlMergeRequest(
     createdAt: node.createdAt,
     updatedAt: node.updatedAt,
     commentsCount: node.userNotesCount,
-    approved: node.approved,
+    // RG-G07 : au moins un approbateur autre que l'auteur — jamais le champ
+    // GitLab `approved`, qui reflète les règles d'approbation du projet
+    // (vrai par défaut sans règle configurée, même à zéro approbation) et
+    // non les approbations réellement données (bug corrigé le 2026-09-14).
+    approved: node.approvedBy.nodes.some(
+      (user) => extractNumericId(user.id) !== extractNumericId(node.author.id),
+    ),
     labels: node.labels.nodes.map((label) => label.title),
     changedFiles: node.diffStatsSummary?.fileCount ?? null,
     additions: node.diffStatsSummary?.additions ?? null,

@@ -41,7 +41,7 @@ function graphqlNode(
     createdAt: '2026-09-01T10:00:00Z',
     updatedAt: '2026-09-01T10:00:00Z',
     userNotesCount: 0,
-    approved: false,
+    approvedBy: { nodes: [] },
     labels: { nodes: [] },
     diffStatsSummary: { fileCount: 1, additions: 1, deletions: 0 },
     author: {

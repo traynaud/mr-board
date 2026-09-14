@@ -19,7 +19,13 @@ export interface GitlabGraphqlMergeRequestNode {
   createdAt: string;
   updatedAt: string;
   userNotesCount: number;
-  approved: boolean;
+  /**
+   * Users who clicked "Approve" (RG-G07). Deliberately **not** GitLab's
+   * `approved` field, which reflects whether the project's approval *rules*
+   * are satisfied — true by default with zero approvals on a project with no
+   * rule configured — rather than whether anyone actually approved.
+   */
+  approvedBy: { nodes: { id: string }[] };
   labels: { nodes: { title: string }[] };
   diffStatsSummary: {
     fileCount: number;

@@ -2,6 +2,12 @@
   {
     "date": "2026-09-14",
     "type": "fix",
+    "user-story": "",
+    "title": "GitLab : la colonne Approved n'affiche plus une MR comme approuvée sans approbation réelle (le champ GitLab utilisé reflétait les règles d'approbation du projet, pas les clics sur Approve)."
+  },
+  {
+    "date": "2026-09-14",
+    "type": "fix",
     "user-story": "US-024",
     "title": "Avatar : repli sur les initiales quand l'image ne charge pas (lien cassé), au lieu de l'icône d'image cassée du navigateur."
   },
