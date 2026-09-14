@@ -18,6 +18,7 @@ import { provideIcons } from '../../../shared/icons/provide-icons';
 import { FilterBarComponent } from './filter-bar.component';
 
 const EMPTY_FACETS: MergeRequestsFacets = {
+  connection: [{ value: 'GitLab', label: 'GitLab', count: 2 }],
   project: [{ value: 'api', label: 'api · equipe/backend-api', count: 2 }],
   author: [],
   assigned: [{ value: 'nobody', label: 'Nobody', count: 2 }],
@@ -72,6 +73,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       [active]="active()"
       [composableFilters]="composableFilters()"
       [facets]="facets()"
+      [showConnectionFilter]="showConnectionFilter()"
       (draftsToggle)="draftsToggleCount = draftsToggleCount + 1"
       (mineToggle)="mineToggleCount = mineToggleCount + 1"
       (clearFilters)="clearCount = clearCount + 1"
@@ -91,6 +93,7 @@ class HostComponent {
   readonly active = signal<FilterKey[]>([]);
   readonly composableFilters = signal<ComposableFilters>(EMPTY_COMPOSABLE_FILTERS);
   readonly facets = signal<MergeRequestsFacets | null>(EMPTY_FACETS);
+  readonly showConnectionFilter = signal(true);
   draftsToggleCount = 0;
   mineToggleCount = 0;
   clearCount = 0;
@@ -249,6 +252,19 @@ describe('FilterBarComponent', () => {
 
   it('should_emit_filter_add_when_a_filter_is_chosen_in_the_add_menu', async () => {
     const { fixture, loader } = await setup();
+    const addFilterMenu = await loader.getHarness(MatMenuHarness);
+    await addFilterMenu.open();
+    const items = await addFilterMenu.getItems();
+    // RG-021-03 : « Connexion » est en tête du menu par défaut.
+    await items[0].click();
+
+    expect(fixture.componentInstance.added).toEqual(['connection']);
+  });
+
+  it('should_hide_the_connection_filter_from_the_add_menu_when_asked_rg_021_03', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.showConnectionFilter.set(false);
+    await fixture.whenStable();
     const addFilterMenu = await loader.getHarness(MatMenuHarness);
     await addFilterMenu.open();
     const items = await addFilterMenu.getItems();

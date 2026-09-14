@@ -83,11 +83,10 @@ Zones, de haut en bas :
 En-tête : retour, titre « Paramètres », « Annuler », « Enregistrer ». Corps en deux colonnes (titre de section à gauche,
 contenu à droite), sections :
 - `01 · Moi` — un nom d'utilisateur **par connexion** configurée (US-019), email (optionnel), aperçu de l'identité détectée par ligne, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
-- `02 · Connexions` — liste des connexions (type, nom, URL, état du jeton, tester/modifier/supprimer) et formulaire inline d'ajout (US-019)
-- `03 · Repos à scanner` — tableau connexion (si ≥ 2, US-019) / chemin / alias / supprimer, ligne d'ajout (sélecteur de connexion si ≥ 2)
-- `04 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
-- `05 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
-- `06 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `02 · Connexions` — liste des connexions (type, nom, URL, état du jeton), chaque ligne repliable ; dépliée, elle affiche le formulaire de la connexion (tester/modifier/supprimer) **suivi de son propre tableau de repos** (chemin, alias, supprimer, ligne d'ajout) — les repos sont rattachés à leur connexion dans l'UI, il n'existe pas de section « Repos à scanner » séparée (US-019 corrigée par US-021, voir US-021 §0)
+- `03 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
+- `04 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
+- `05 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -180,7 +179,7 @@ une fois ses dépendances réalisées.
 | US-018 | Thème sombre (système / clair / sombre)                  | Could    | M          | US-015                 | ✅ |
 | US-019 | Connexions multi-forges — socle (GitLab uniquement)      | Must*    | L          | US-015, US-016         | ✅ |
 | US-020 | Connexion GitHub (github.com et GitHub Enterprise)       | Must*    | L          | US-019, US-017         | ✅ |
-| US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ☐ |
+| US-021 | Forges dans le tableau (icône, infobulle, filtre « Connexion ») | Should | S      | US-020, US-010         | ✅ |
 | US-022 | Support d'autres langues (anglais, choix dans « Divers ») | Should   | M          | US-015, US-018         | ✅ |
 | US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
 
@@ -188,10 +187,10 @@ une fois ses dépendances réalisées.
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
 
 Périmètre **v1 (MVP)** : TECH-001 → US-011. **v1.1** : US-012 → US-014. **v1.2** : US-015, US-016.
-**v2** : US-017, US-018, US-022 et US-023 (livrées) puis, **proposition à valider**, US-019 → US-021 (épique
-multi-forges). US-022 étant livrée avant l'épique, les nouveaux libellés de US-019 → US-021 devront être traduits
-en anglais dès leur ajout à `en.json`. US-017 avant US-020 pour que le mapping GitHub de la mergeabilité réutilise
-les codes de RG-017-04.
+**v2** : US-017, US-018, US-019, US-020, US-021, US-022 et US-023 — toutes livrées (épique multi-forges compris,
+voir `docs/features/EPIC-001-multi-forges/README.md`). US-022 ayant été livrée avant l'épique, les libellés de
+US-019 → US-021 ont été traduits en anglais dès leur ajout à `en.json`. US-017 est passée avant US-020 pour que le
+mapping GitHub de la mergeabilité réutilise les codes de RG-017-04.
 
 > La visibilité de la colonne « Date d'ouverture » (menu « Colonnes », case à cocher) est traitée par **US-011**
 > (RG-011-09/10/11), pas US-012, afin que le paramètre `cols` de l'URL ait un effet réel dès US-011. US-012 ne
@@ -221,26 +220,34 @@ les codes de RG-017-04.
 
 ## 10. Évolutions v2 (propositions)
 
-Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-019**, **US-020**, **US-022**
-et **US-023**, livrées — leurs termes « Statut », « Thème », « Langue », « Forge »/« Connexion »/« PR » et
-« Anneau « moi » » ont rejoint le glossaire, §3. Aucun terme en attente pour le moment.
+Spécifiées en septembre 2026, non validées à l'exception de **US-017**, **US-018**, **US-019**, **US-020**,
+**US-021**, **US-022** et **US-023**, livrées — leurs termes « Statut », « Thème », « Langue »,
+« Forge »/« Connexion »/« PR » et « Anneau « moi » » ont rejoint le glossaire, §3. Aucun terme en attente pour le
+moment.
 
 Impacts documentaires déjà appliqués : US-017 — §1 (non-objectif « pipelines » nuancé), §3 (glossaire, terme
 « Statut »), §4.1 (colonne Statut), §9 (retrait de « pipelines / conflits ») ; US-018 — §3 (glossaire, terme
-« Thème »), §4.1 (bascule toolbar), §4.2 (option Thème en 06), §9 (retrait de « Thème sombre »), §7 roadmap (✅) ;
-US-022 — §3 (glossaire, terme « Langue »), §4.2 (option « Langue » en 06, sous « Thème »), §6 (attribut `language`
-de `Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli, réactivité), §7 roadmap (✅) ; US-023 — §3
-(glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur mes avatars ; zone 6 : pied de page
-conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par RG-023-06), §6 (`isMe` sur
-`author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap (✅) ; US-019 — §3 (glossaire,
-termes « Forge »/« Connexion », généralisation de MR/Reviewer/Affecté/Projet/Synchronisation/Moi/Jeton), §4.1
-(bandeau différenciant absence de connexion / jeton manquant), §4.2 (sections 01 « Moi » par connexion et 02
-« Connexions »), §5 (RG-G09/G17/G18 au pluriel / par connexion), §6 (entité `Connections`, attribut `connection` de
-`MergeRequestView`), §7 roadmap (✅) ; US-020 — §3 (glossaire, généralisation des termes « MR »/« Forge »/« Projet /
-Repo », ajout du terme « PR »), §9 (retrait de « GitHub » de la liste des forges hors périmètre), §7 roadmap (✅).
+« Thème »), §4.1 (bascule toolbar), §4.2 (option Thème, section « Divers »), §9 (retrait de « Thème sombre »), §7
+roadmap (✅) ; US-022 — §3 (glossaire, terme « Langue »), §4.2 (option « Langue », section « Divers », sous
+« Thème »), §6 (attribut `language` de `Settings`), `docs/tech/i18n.md` (un dictionnaire par langue, repli,
+réactivité), §7 roadmap (✅) ; US-023 — §3 (glossaire, terme « Anneau « moi » »), §4.1 (zone 5 : anneau accent sur
+mes avatars ; zone 6 : pied de page conditionnel), §4.2 (case « Surligner mes MRs » en 01), §5 (RG-G06 amendée par
+RG-023-06), §6 (`isMe` sur `author`/`reviewers[]`/`assignees[]`, attribut `highlightMe` de `Settings`), §7 roadmap
+(✅) ; US-019 — §3 (glossaire, termes « Forge »/« Connexion », généralisation de MR/Reviewer/Affecté/Projet/
+Synchronisation/Moi/Jeton), §4.1 (bandeau différenciant absence de connexion / jeton manquant), §4.2 (section 01
+« Moi » par connexion), §5 (RG-G09/G17/G18 au pluriel / par connexion), §6 (entité `Connections`, attribut
+`connection` de `MergeRequestView`), §7 roadmap (✅) ; US-020 — §3 (glossaire, généralisation des termes « MR »/
+« Forge »/« Projet / Repo », ajout du terme « PR »), §9 (retrait de « GitHub » de la liste des forges hors
+périmètre), §7 roadmap (✅) ; US-021 — §4.2 (section 02 « Connexions » absorbant les repos, ex-« 03 · Repos à
+scanner » supprimée, renumérotation 03/04/05 des sections suivantes — voir US-021 §0), §9 (retrait de la mention
+des indicateurs de forge/filtre « Connexion » restant à livrer), §7 roadmap (✅).
 
-Impacts documentaires restant prévus à la livraison des US suivantes : §4.2 (sections 01/02/03 des Paramètres),
-RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`).
+Impacts documentaires restant prévus : RG-G09/G17/G18 (jetons et identités au pluriel dans leur formulation exacte),
+§6 (modèle conceptuel : renommer `Connections` en toutes lettres si une future US y touche).
+
+US-021 amende en outre RG-019-10/11/15 (US-019, livrée) : la section « 03 · Repos à scanner » disparaît, ses repos
+étant désormais gérés dans la fiche dépliée de leur connexion (§4.2 mis à jour ci-dessus) ; voir US-021 §0 pour le
+détail du correctif et sa justification (écart constaté avec le prototype mis à jour après la rédaction de US-019).
 
 ---
 
@@ -252,6 +259,5 @@ RG-G09/G17/G18 (jetons et identités au pluriel), §6 (modèle : `Connections`).
   livré par **US-017** (colonne Statut).
 - Multi-utilisateurs avec comptes et rôles
 - Historique / statistiques (temps moyen de relecture…)
-- Support d'autres forges → GitLab et GitHub livrés (EPIC-001, US-019/US-020) ; les indicateurs de forge dans le
-  tableau et le filtre « Connexion » restent à livrer (US-021) ; Bitbucket, Gitea, Azure DevOps : hors périmètre
-  (QO-E01-03)
+- Support d'autres forges → GitLab et GitHub livrés (EPIC-001, US-019/US-020/US-021, épique complète) ; Bitbucket,
+  Gitea, Azure DevOps : hors périmètre (QO-E01-03)

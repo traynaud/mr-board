@@ -120,6 +120,14 @@ describe('SettingsPageComponent', () => {
     input.dispatchEvent(new Event('input'));
     await settle();
   };
+  /** US-021 §0 : les repos vivent désormais dans la carte dépliée de leur connexion. */
+  const expandConnection = async (name: string) => {
+    const summary = Array.from(el.querySelectorAll<HTMLElement>('.connection-summary')).find((row) =>
+      row.textContent?.includes(name),
+    )!;
+    summary.click();
+    await settle();
+  };
   const loadSettings = async (
     value: Settings = settings,
     connections: Connection[] = [connection],
@@ -246,6 +254,7 @@ describe('SettingsPageComponent', () => {
 
   it('should_reset_the_whole_form_to_defaults_without_touching_the_repos', async () => {
     await loadSettings({ ...settings, easyFiles: 12, openInNewTab: true }, [connection], [projectApi]);
+    await expandConnection('GitLab');
 
     resetButton().click();
     await settle();
@@ -259,6 +268,23 @@ describe('SettingsPageComponent', () => {
       t('common.ok'),
       expect.anything(),
     );
+  });
+
+  it('should_number_the_sections_01_to_05_with_no_separate_repos_section_us_021_0', async () => {
+    // US-021 §0 : « 03 · Repos à scanner » a disparu (absorbée par « 02 ·
+    // Connexions ») ; Actualisation/Seuils/Divers sont renumérotés 03/04/05.
+    await loadSettings();
+
+    const headings = Array.from(el.querySelectorAll('.heading h6')).map((h) =>
+      h.textContent?.trim(),
+    );
+    expect(headings).toEqual([
+      `01 · ${t('settings.me.title')}`,
+      `02 · ${t('settings.connections.title')}`,
+      `03 · ${t('settings.refresh.title')}`,
+      `04 · ${t('settings.thresholds.title')}`,
+      `05 · ${t('settings.misc.title')}`,
+    ]);
   });
 
   it('should_navigate_home_on_cancel', async () => {
@@ -322,6 +348,7 @@ describe('SettingsPageComponent', () => {
 
   it('should_render_repo_rows_from_the_projects_store', async () => {
     await loadSettings(settings, [connection], [projectApi, projectWeb]);
+    await expandConnection('GitLab');
 
     expect(el.textContent).toContain('equipe/backend-api');
     expect(el.textContent).toContain('equipe/front-web');
@@ -332,6 +359,7 @@ describe('SettingsPageComponent', () => {
 
   it('should_activate_save_when_an_alias_is_edited_and_include_it_on_save', async () => {
     await loadSettings(settings, [connection], [projectApi]);
+    await expandConnection('GitLab');
     expect(saveButton().disabled).toBe(true);
 
     await type(repoAliasInputs()[0], 'back');
@@ -376,6 +404,7 @@ describe('SettingsPageComponent', () => {
 
   it('should_keep_form_dirty_and_not_navigate_when_a_rename_fails', async () => {
     await loadSettings(settings, [connection], [projectApi, projectWeb]);
+    await expandConnection('GitLab');
     await type(repoAliasInputs()[1], 'API');
 
     saveButton().click();
@@ -399,6 +428,7 @@ describe('SettingsPageComponent', () => {
 
   it('should_discard_unsaved_alias_edit_when_another_repo_is_added_immediately', async () => {
     await loadSettings(settings, [connection], [projectApi]);
+    await expandConnection('GitLab');
     await type(repoAliasInputs()[0], 'back');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
 

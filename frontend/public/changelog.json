@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-14",
+    "type": "feat",
+    "user-story": "US-021",
+    "title": "Forges dans le tableau : icône de forge et infobulle sur le tag projet, filtre « Connexion », messages de synchro et notifications nommant la connexion ; repos désormais rattachés à leur connexion dans les Paramètres."
+  },
+  {
+    "date": "2026-09-14",
     "type": "fix",
     "user-story": "US-018",
     "title": "Thème sombre : ne s'appliquait plus dans l'image Docker (CSP bloquant le chargement différé du CSS non critique par Angular)."

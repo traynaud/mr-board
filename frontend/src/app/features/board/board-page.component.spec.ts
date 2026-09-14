@@ -2,6 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import { By, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
@@ -69,6 +70,7 @@ const CONNECTIONS_URL = '/api/v1/connections';
 const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc';
 const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0';
 const EMPTY_FACETS = {
+  connection: [],
   project: [],
   author: [],
   assigned: [{ value: 'nobody', label: 'Nobody', count: 0 }],
@@ -264,6 +266,71 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector('app-filter-bar')).not.toBeNull();
     expect(el.querySelector('app-mr-table')).not.toBeNull();
     expect(el.querySelector('.title-link')?.textContent?.trim()).toBe('Refonte facturation');
+  });
+
+  it('should_show_the_forge_icon_the_connection_filter_and_a_named_tooltip_with_two_connections_of_different_types_rg_021_01_02_03', async () => {
+    const githubConnection: Connection = {
+      ...CONNECTION,
+      id: 2,
+      type: 'github',
+      name: 'github.com',
+    };
+    const githubProject: Project = {
+      id: 2,
+      connectionId: 2,
+      pathWithNamespace: 'exemple-org/web',
+      alias: 'web',
+      remoteProjectId: '99',
+    };
+    const githubMr = mergeRequest({
+      id: 2,
+      iid: 8,
+      projectAlias: 'web',
+      title: 'Migration CI',
+      connection: { id: 2, name: 'github.com', type: 'github' },
+    });
+
+    fixture = TestBed.createComponent(BoardPageComponent);
+    el = fixture.nativeElement as HTMLElement;
+    fixture.detectChanges();
+    await settle();
+    http.expectOne('/api/v1/settings').flush(SETTINGS);
+    http.expectOne(CONNECTIONS_URL).flush([CONNECTION, githubConnection]);
+    http.expectOne('/api/v1/projects').flush([PROJECT, githubProject]);
+    http
+      .expectOne(MERGE_REQUESTS_URL)
+      .flush({ mergeRequests: [mergeRequest(), githubMr], warnings: [] });
+    http.expectOne(FACETS_URL).flush({
+      ...EMPTY_FACETS,
+      connection: [
+        { value: 'github.com', label: 'github.com', count: 1 },
+        { value: 'GitLab', label: 'GitLab', count: 1 },
+      ],
+    });
+    http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+    await settle();
+
+    // RG-021-01 : icône de forge sur chaque tag projet, dès 2 types de forge.
+    const icons = Array.from(
+      el.querySelectorAll<HTMLElement>('app-mr-table .tag-neutral mat-icon.forge-icon'),
+    );
+    expect(icons.map((icon) => icon.getAttribute('data-mat-icon-name')).sort()).toEqual([
+      'github',
+      'gitlab',
+    ]);
+
+    // RG-021-02 : l'infobulle nomme la connexion dès qu'il y en a au moins deux.
+    const tags = fixture.debugElement.queryAll(By.css('app-mr-table .tag-neutral'));
+    const tooltips = tags.map((tag) => tag.injector.get(MatTooltip).message);
+    expect(tooltips).toEqual(
+      expect.arrayContaining(['GitLab · equipe/backend-api', 'github.com · exemple-org/web']),
+    );
+
+    // RG-021-03 : le filtre « Connexion » est proposé dans le menu (rendu dans l'overlay CDK, hors `el`).
+    const addFilterButton = el.querySelector<HTMLButtonElement>('.add-filter-button');
+    addFilterButton?.click();
+    await settle();
+    expect(document.body.textContent).toContain(t('board.filters.pills.names.connection'));
   });
 
   it('should_open_the_title_link_in_a_new_tab_when_configured', async () => {
@@ -880,7 +947,34 @@ describe('BoardPageComponent', () => {
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
-      t('board.sync.toastError'),
+      t('board.sync.toastPartial'),
+      t('common.ok'),
+      expect.anything(),
+    );
+  });
+
+  it('should_include_the_error_message_in_the_sync_failure_toast_rg_021_06', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    const syncStore = TestBed.inject(SyncStore);
+    void syncStore.loadStatus();
+    await settle();
+    http.expectOne('/api/v1/sync/status').flush({
+      running: false,
+      lastRun: run({
+        status: 'error',
+        startedAt: '2026-09-11T09:00:00.000Z',
+        errorMessage: 'front-web: Jeton refusé (github.com)',
+      }),
+      nextRunAt: null,
+    });
+    await settle();
+    http.expectOne(MERGE_REQUESTS_URL).flush({ mergeRequests: [], warnings: [] });
+    http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
+    await settle();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      `${t('board.sync.toastError')} front-web: Jeton refusé (github.com)`,
       t('common.ok'),
       expect.anything(),
     );

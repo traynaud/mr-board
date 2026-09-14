@@ -33,6 +33,7 @@ import { SyncStore } from '../../stores/sync.store';
 import { BoardToolbarComponent } from './board-toolbar/board-toolbar.component';
 import { FilterBarComponent } from './filter-bar/filter-bar.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
+import { computeSyncFailureDetail } from './sync-status-label';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'application. */
 const TOAST_DURATION_MS = 3500;
@@ -101,6 +102,21 @@ export class BoardPageComponent implements OnInit {
       .join(', '),
   );
 
+  /** RG-021-01/03/08 : icône de forge, filtre « Connexion » et notifications ne s'affichent qu'à partir de 2 connexions. */
+  protected readonly hasMultipleConnections = computed(
+    () => this.connectionsStore.connections().length > 1,
+  );
+
+  /** RG-021-01 : l'icône de forge n'apparaît que si au moins deux types de forge sont configurés. */
+  protected readonly hasMultipleForgeTypes = computed(
+    () => new Set(this.connectionsStore.connections().map((c) => c.type)).size > 1,
+  );
+
+  /** RG-021-06 : détail des repos en échec du dernier run, pour le tooltip du libellé de synchro. */
+  protected readonly syncFailureDetail = computed(() =>
+    computeSyncFailureDetail(this.syncStore.lastRun()),
+  );
+
   /** Avec des connexions mais aucun repo (RG-004-11) ; le bandeau RG-019-17 prend le pas (mutuellement exclusifs). */
   protected readonly noRepos = computed(
     () =>
@@ -147,6 +163,7 @@ export class BoardPageComponent implements OnInit {
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
       active: this.filtersStore.active(),
+      connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),
       author: this.filtersStore.author(),
       assigned: this.filtersStore.assigned(),
@@ -216,7 +233,7 @@ export class BoardPageComponent implements OnInit {
       if (lastRun && lastRun.startedAt !== this.lastToastedStartedAt) {
         this.lastToastedStartedAt = lastRun.startedAt;
         if (lastRun.status === 'partial' || lastRun.status === 'error') {
-          this.toast('board.sync.toastError');
+          this.toastSyncFailure(lastRun.status, lastRun.errorMessage);
         }
       }
       // Rechargement automatique des MRs à chaque fin de synchronisation,
@@ -332,7 +349,12 @@ export class BoardPageComponent implements OnInit {
 
   /** RG-010-05 : bascule une valeur d'un filtre multi-sélection et recharge. */
   protected onFilterToggleValue(event: { key: FilterKey; value: string }): void {
-    if (event.key === 'project' || event.key === 'author' || event.key === 'assigned') {
+    if (
+      event.key === 'connection' ||
+      event.key === 'project' ||
+      event.key === 'author' ||
+      event.key === 'assigned'
+    ) {
       this.filtersStore.toggleMultiValue(event.key, event.value);
       this.mrStore.scheduleReload();
     }
@@ -392,6 +414,7 @@ export class BoardPageComponent implements OnInit {
       drafts: state.drafts,
       mine: state.mine,
       active: state.active,
+      connection: state.connection,
       project: state.project,
       author: state.author,
       assigned: state.assigned,
@@ -417,7 +440,22 @@ export class BoardPageComponent implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snackBar.open(this.i18n.translate(key), this.i18n.translate('common.ok'), {
+    this.toastText(this.i18n.translate(key));
+  }
+
+  /**
+   * RG-021-06 : toast de fin de synchro `partial`/`error`, préfixé du statut
+   * et suivi de `lastRun.errorMessage` — déjà nommé par connexion/repo côté
+   * backend (RG-019-16, RG-020-*), jamais retraduit ici.
+   */
+  private toastSyncFailure(status: 'partial' | 'error', errorMessage: string | null): void {
+    const prefixKey = status === 'partial' ? 'board.sync.toastPartial' : 'board.sync.toastError';
+    const prefix = this.i18n.translate(prefixKey);
+    this.toastText(errorMessage ? `${prefix} ${errorMessage}` : prefix);
+  }
+
+  private toastText(text: string): void {
+    this.snackBar.open(text, this.i18n.translate('common.ok'), {
       duration: TOAST_DURATION_MS,
       horizontalPosition: 'start',
       panelClass: 'mrb-toast',

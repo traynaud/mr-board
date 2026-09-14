@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../core/api/api-error';
+import { ConnectionsService } from '../core/api/connections.service';
 import { MergeRequestsService } from '../core/api/merge-requests.service';
 import { SettingsService } from '../core/api/settings.service';
 import { BrowserNotificationService } from '../core/notifications/browser-notification.service';
 import { MergeRequestsFacets, MergeRequestView } from '../models/merge-request.model';
 import { Settings } from '../models/settings.model';
+import { ConnectionsStore } from './connections.store';
 import { FiltersStore } from './filters.store';
 import { MergeRequestsStore } from './merge-requests.store';
 import { SettingsStore } from './settings.store';
@@ -39,8 +41,16 @@ const MR: MergeRequestView = {
   connection: CONNECTION,
 };
 const RESPONSE = { mergeRequests: [MR], warnings: [] };
-const EMPTY_COMPOSABLE_FILTERS = { project: [], author: [], assigned: [], approved: null, commented: null };
+const EMPTY_COMPOSABLE_FILTERS = {
+  connection: [],
+  project: [],
+  author: [],
+  assigned: [],
+  approved: null,
+  commented: null,
+};
 const EMPTY_FACETS: MergeRequestsFacets = {
+  connection: [{ value: 'GitLab', label: 'GitLab', count: 1 }],
   project: [{ value: 'api', label: 'api · equipe/api', count: 1 }],
   author: [{ value: 'mdupont', label: 'Marie Dupont', count: 1 }],
   assigned: [{ value: 'nobody', label: 'Nobody', count: 1 }],
@@ -83,23 +93,28 @@ describe('MergeRequestsStore', () => {
     postImportConfig: vi.fn(),
   };
   const notifications = { show: vi.fn(), isSupported: vi.fn(), permission: vi.fn(), requestPermission: vi.fn() };
+  const connectionsApi = { getConnections: vi.fn() };
   let store: InstanceType<typeof MergeRequestsStore>;
   let filters: InstanceType<typeof FiltersStore>;
   let settingsStore: InstanceType<typeof SettingsStore>;
+  let connectionsStore: InstanceType<typeof ConnectionsStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     api.getFacets.mockReturnValue(of(EMPTY_FACETS));
+    connectionsApi.getConnections.mockReturnValue(of([]));
     TestBed.configureTestingModule({
       providers: [
         { provide: MergeRequestsService, useValue: api },
         { provide: SettingsService, useValue: settingsApi },
+        { provide: ConnectionsService, useValue: connectionsApi },
         { provide: BrowserNotificationService, useValue: notifications },
       ],
     });
     store = TestBed.inject(MergeRequestsStore);
     filters = TestBed.inject(FiltersStore);
     settingsStore = TestBed.inject(SettingsStore);
+    connectionsStore = TestBed.inject(ConnectionsStore);
   });
 
   it('should_load_merge_requests', async () => {
@@ -191,6 +206,48 @@ describe('MergeRequestsStore', () => {
       { drafts: false, mine: false },
       expectedComposableFilters,
     );
+  });
+
+  it('should_pass_the_connection_composable_filter_to_the_api_and_facets_endpoint_rg_021_03', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('connection');
+    filters.toggleMultiValue('connection', 'gitlab.com');
+
+    await store.load();
+
+    const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, connection: ['gitlab.com'] };
+    expect(api.getMergeRequests).toHaveBeenCalledWith(
+      { key: 'ready', direction: 'asc' },
+      { drafts: false, mine: false },
+      expectedComposableFilters,
+    );
+    expect(api.getFacets).toHaveBeenCalledWith(
+      { drafts: false, mine: false },
+      expectedComposableFilters,
+    );
+  });
+
+  it('should_silently_drop_a_selected_connection_absent_from_the_new_facets_options_rg_021_03', async () => {
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('connection');
+    filters.toggleMultiValue('connection', 'ghost.example.com');
+
+    await store.load();
+
+    expect(filters.connection()).toEqual([]);
+  });
+
+  it('should_keep_a_selected_connection_matching_case_insensitively_rg_021_05', async () => {
+    // EMPTY_FACETS.connection contient « GitLab » ; une sélection restaurée
+    // depuis l'URL dans une autre casse ne doit pas être purgée à tort, le
+    // backend la matchant lui aussi de façon insensible à la casse.
+    api.getMergeRequests.mockReturnValue(of(RESPONSE));
+    filters.addFilter('connection');
+    filters.toggleMultiValue('connection', 'gitlab');
+
+    await store.load();
+
+    expect(filters.connection()).toEqual(['gitlab']);
   });
 
   it('should_expose_the_facets_from_the_response', async () => {
@@ -346,6 +403,30 @@ describe('MergeRequestsStore', () => {
       expect(notifications.show).toHaveBeenCalledWith(
         `MR Board — ${ASSIGNED_MR.projectAlias} !${ASSIGNED_MR.iid}`,
         ASSIGNED_MR.title,
+        expect.any(Function),
+      );
+    });
+
+    it('should_name_the_connection_in_the_body_when_at_least_two_are_configured_rg_021_08', async () => {
+      connectionsApi.getConnections.mockReturnValue(
+        of([
+          { id: 1, type: 'gitlab', name: 'GitLab', url: 'https://gitlab.com', tokenConfigured: true, tokenHint: null, meUsername: null, projectsCount: 1 },
+          { id: 2, type: 'github', name: 'GitHub', url: 'https://github.com', tokenConfigured: true, tokenHint: null, meUsername: null, projectsCount: 1 },
+        ]),
+      );
+      await connectionsStore.load();
+      await loadSettings(SETTINGS);
+      api.getMergeRequests.mockReturnValueOnce(of({ mergeRequests: [MR], warnings: [] }));
+      await store.load();
+
+      api.getMergeRequests.mockReturnValueOnce(
+        of({ mergeRequests: [ASSIGNED_MR], warnings: [] }),
+      );
+      await store.load();
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        `MR Board — ${ASSIGNED_MR.projectAlias} !${ASSIGNED_MR.iid}`,
+        `[${ASSIGNED_MR.connection.name} · ${ASSIGNED_MR.projectAlias}] ${ASSIGNED_MR.title}`,
         expect.any(Function),
       );
     });

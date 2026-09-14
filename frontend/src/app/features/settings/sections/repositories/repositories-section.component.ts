@@ -2,9 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
-  computed,
-  effect,
   inject,
   input,
 } from '@angular/core';
@@ -15,7 +12,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../../core/i18n/translate.service';
@@ -23,8 +19,8 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
+import { Connection } from '../../../../models/connection.model';
 import { Project } from '../../../../models/project.model';
-import { ConnectionsStore } from '../../../../stores/connections.store';
 import { ProjectsStore } from '../../../../stores/projects.store';
 import { SyncStore } from '../../../../stores/sync.store';
 import { RepoAliasForm, optionalAliasFormatValidator } from '../../repos-form';
@@ -36,8 +32,6 @@ const TOAST_DURATION_MS = 3500;
 export interface RepoRow {
   project: Project;
   group: RepoAliasForm;
-  /** Nom de la connexion du repo, affiché en colonne quand ≥ 2 connexions existent (RG-019-15). */
-  connectionName: string;
 }
 
 /**
@@ -52,13 +46,14 @@ const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
 };
 
 /**
- * Section « 03 · Repos à scanner ». Composant hybride (voir archi US-003) :
- * la liste des repos existants (renommage d'alias) est reçue en `input()` et
+ * Tableau « Dépôts de cette connexion », niché dans la carte dépliée d'une
+ * connexion (US-021 §0, RG-021-00a/b — remplace la section globale
+ * « 03 · Repos à scanner » de US-019). Scopé à `connection()` : plus de
+ * sélecteur ni de colonne « Connexion », `connectionId` est implicite. La
+ * liste des repos existants (renommage d'alias) est reçue en `input()` et
  * fait partie du formulaire partagé de la page (différé, RG-003-07) ; l'ajout
  * et la suppression sont immédiats (RG-003-10) et gérés ici directement via
- * `ProjectsStore`, indépendamment du bouton « Enregistrer » global. Le
- * sélecteur de connexion et la colonne « Connexion » n'apparaissent qu'à
- * partir de 2 connexions configurées (RG-019-15).
+ * `ProjectsStore`, indépendamment du bouton « Enregistrer » global.
  *
  * Les erreurs serveur d'ajout liées à un champ (chemin/alias) sont posées
  * directement sur le `FormControl` concerné via `setErrors({ server: key })`
@@ -72,7 +67,6 @@ const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatButtonModule,
     MatIconModule,
     TranslatePipe,
@@ -81,70 +75,35 @@ const ADD_ERROR_FIELD: Record<string, 'path' | 'alias'> = {
   styleUrl: './repositories-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RepositoriesSectionComponent implements OnInit {
+export class RepositoriesSectionComponent {
   protected readonly store = inject(ProjectsStore);
-  protected readonly connectionsStore = inject(ConnectionsStore);
   private readonly syncStore = inject(SyncStore);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** Lignes existantes (renommage), fournies par la page — zip par index avec `projects()`. */
+  /** Connexion propriétaire de ces repos (RG-021-00a). */
+  readonly connection = input.required<Connection>();
+  /** Repos existants de cette connexion (renommage), fournis par la page — zip par index avec `projects()`. */
   readonly rows = input.required<RepoRow[]>();
 
-  /** RG-019-15 : le sélecteur et la colonne ne sont affichés qu'à partir de 2 connexions. */
-  protected readonly showConnectionSelector = computed(
-    () => this.connectionsStore.connections().length > 1,
-  );
-
   protected readonly addForm = new FormGroup({
-    connectionId: new FormControl<number | null>(null),
     path: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     alias: new FormControl('', { nonNullable: true, validators: [optionalAliasFormatValidator] }),
   });
 
-  /**
-   * Méthode simple (pas `computed`), même raison que `canTestForm` de
-   * `ConnectionsSectionComponent` : lit `addForm.controls.connectionId.value`
-   * (pas un signal), qui change en direct à la sélection dans le `mat-select`.
-   * RG-020-05 : dépend du type de la connexion sélectionnée (ou de l'unique
-   * connexion, tant que le sélecteur n'est pas affiché).
-   */
+  /** RG-020-05 : dépend du type de la connexion de cette section. */
   protected pathPlaceholderKey(): string {
-    const connections = this.connectionsStore.connections();
-    const connectionId = this.addForm.controls.connectionId.value;
-    const connection =
-      (connectionId !== null
-        ? connections.find((c) => c.id === connectionId)
-        : connections[0]) ?? null;
-    return connection?.type === 'github'
-      ? 'settings.projects.pathPlaceholderGithub'
-      : 'settings.projects.pathPlaceholderGitlab';
+    return this.connection().type === 'github'
+      ? 'settings.connections.repos.pathPlaceholderGithub'
+      : 'settings.connections.repos.pathPlaceholderGitlab';
   }
 
   constructor() {
     this.addForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.clearServerErrors());
-    // RG-019-15 : la première connexion est présélectionnée dès qu'un
-    // sélecteur devient nécessaire (ajout d'une deuxième connexion).
-    effect(() => {
-      const connections = this.connectionsStore.connections();
-      if (connections.length > 0 && this.addForm.controls.connectionId.value === null) {
-        this.addForm.controls.connectionId.setValue(connections[0].id);
-      }
-    });
-  }
-
-  ngOnInit(): void {
-    void this.store.load();
-    // `ConnectionsStore` est chargé par `ConnectionsSectionComponent`, qui
-    // apparaît avant cette section dans la page — jamais rechargé ici.
-  }
-
-  protected retry(): void {
-    void this.store.load();
   }
 
   protected async addRepo(): Promise<void> {
@@ -152,11 +111,11 @@ export class RepositoriesSectionComponent implements OnInit {
       return;
     }
     this.clearServerErrors();
-    const { connectionId, path, alias } = this.addForm.getRawValue();
+    const { path, alias } = this.addForm.getRawValue();
     const errorKey = await this.store.add({
       path: path.trim(),
       ...(alias ? { alias } : {}),
-      ...(this.showConnectionSelector() && connectionId !== null ? { connectionId } : {}),
+      connectionId: this.connection().id,
     });
     if (errorKey) {
       const field = ADD_ERROR_FIELD[errorKey];
@@ -178,9 +137,8 @@ export class RepositoriesSectionComponent implements OnInit {
       // Fire-and-forget (RG-004-15), voir SyncStore.trigger.
       void this.syncStore.trigger(added.id);
     }
-    const keptConnectionId = this.addForm.controls.connectionId.value;
-    this.addForm.reset({ connectionId: keptConnectionId, path: '', alias: '' });
-    this.toast('settings.projects.added');
+    this.addForm.reset({ path: '', alias: '' });
+    this.toast('settings.connections.repos.added');
   }
 
   protected async removeRepo(project: Project): Promise<void> {
@@ -188,10 +146,10 @@ export class RepositoriesSectionComponent implements OnInit {
       ConfirmDialogComponent,
       {
         data: {
-          titleKey: 'settings.projects.deleteConfirm.title',
-          messageKey: 'settings.projects.deleteConfirm.message',
-          confirmKey: 'settings.projects.deleteConfirm.confirm',
-          cancelKey: 'settings.projects.deleteConfirm.cancel',
+          titleKey: 'settings.connections.repos.deleteConfirm.title',
+          messageKey: 'settings.connections.repos.deleteConfirm.message',
+          confirmKey: 'settings.connections.repos.deleteConfirm.confirm',
+          cancelKey: 'settings.connections.repos.deleteConfirm.cancel',
         },
         autoFocus: 'first-tabbable',
       },
@@ -203,7 +161,7 @@ export class RepositoriesSectionComponent implements OnInit {
       return;
     }
     const errorKey = await this.store.remove(project.id);
-    this.toast(errorKey ?? 'settings.projects.removed');
+    this.toast(errorKey ?? 'settings.connections.repos.removed');
   }
 
   /** Efface une éventuelle erreur serveur posée sur `path`/`alias` (nouvelle saisie). */

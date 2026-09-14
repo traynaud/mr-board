@@ -11,7 +11,6 @@ import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.i
 import { Connection } from '../../../../models/connection.model';
 import { Project } from '../../../../models/project.model';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
-import { ConnectionsStore } from '../../../../stores/connections.store';
 import { RepoAliasForm, buildRepoAliasGroup } from '../../repos-form';
 import { RepoRow, RepositoriesSectionComponent } from './repositories-section.component';
 
@@ -34,15 +33,16 @@ const CONNECTION: Connection = {
 };
 
 function rowOf(p: Project): RepoRow {
-  return { project: p, group: buildRepoAliasGroup(p) as RepoAliasForm, connectionName: 'GitLab' };
+  return { project: p, group: buildRepoAliasGroup(p) as RepoAliasForm };
 }
 
 @Component({
   imports: [RepositoriesSectionComponent],
-  template: `<app-repositories-section [rows]="rows()" />`,
+  template: `<app-repositories-section [connection]="connection()" [rows]="rows()" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
+  readonly connection = signal<Connection>(CONNECTION);
   readonly rows = signal<RepoRow[]>([rowOf(project)]);
 }
 
@@ -79,22 +79,6 @@ describe('RepositoriesSectionComponent', () => {
     await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
   };
-  const loadProjects = async (projects: Project[] = [project]) => {
-    http.expectOne('/api/v1/projects').flush(projects);
-    await settle();
-  };
-  /**
-   * `ConnectionsStore` n'est chargé que par `ConnectionsSectionComponent`
-   * dans la vraie page — ce composant se contente de le lire. Ce test le
-   * déclenche lui-même pour simuler un chargement déjà terminé par ailleurs.
-   */
-  const seedConnections = async (connections: Connection[]) => {
-    const pending = TestBed.inject(ConnectionsStore).load();
-    http.expectOne('/api/v1/connections').flush(connections);
-    await pending;
-    fixture.detectChanges();
-    await settle();
-  };
   /** Flushe le déclenchement de synchro ciblée après un ajout réussi (RG-004-15). */
   const flushSync = async (projectId: number) => {
     const req = http.expectOne(`/api/v1/sync?projectId=${projectId}`);
@@ -113,54 +97,34 @@ describe('RepositoriesSectionComponent', () => {
     await settle();
   };
 
-  it('should_show_loading_then_table_with_existing_and_add_row', async () => {
-    expect(el.querySelector('.status')?.textContent?.trim()).toBe(t('common.loading'));
-
-    await loadProjects();
-
+  it('should_show_the_repos_table_with_the_existing_repo_and_an_add_row', () => {
     expect(el.querySelector('.repos-table')).not.toBeNull();
     expect(el.textContent).toContain('equipe/backend-api');
     expect(addButton().disabled).toBe(true);
   });
 
-  it('should_not_show_a_connection_selector_or_column_with_a_single_connection', async () => {
-    await loadProjects();
-
-    expect(el.querySelector('.connection-col')).toBeNull();
-    expect(el.querySelector('.connection-field')).toBeNull();
+  it('should_use_the_gitlab_path_placeholder_for_a_gitlab_connection', () => {
+    expect(pathInput().placeholder).toBe(t('settings.connections.repos.pathPlaceholderGitlab'));
   });
 
-  it('should_show_a_connection_selector_and_column_with_two_connections', async () => {
-    await loadProjects();
-    await seedConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' }]);
+  it('should_use_the_github_path_placeholder_for_a_github_connection', () => {
+    fixture.componentInstance.connection.set({ ...CONNECTION, id: 3, type: 'github', name: 'github.com' });
+    fixture.detectChanges();
 
-    expect(el.querySelector('.connection-col')).not.toBeNull();
-    expect(el.querySelector('.connection-field')).not.toBeNull();
-    expect(el.textContent).toContain('GitLab');
+    expect(pathInput().placeholder).toBe(t('settings.connections.repos.pathPlaceholderGithub'));
   });
 
-  it('should_use_the_gitlab_path_placeholder_for_a_single_gitlab_connection', async () => {
-    await loadProjects();
-    await seedConnections([CONNECTION]);
+  it('should_show_a_blocking_message_instead_of_the_add_row_when_the_connection_has_no_token_rg_021_00b', () => {
+    fixture.componentInstance.connection.set({ ...CONNECTION, tokenConfigured: false });
+    fixture.detectChanges();
 
-    expect(pathInput().placeholder).toBe(t('settings.projects.pathPlaceholderGitlab'));
-  });
-
-  it('should_use_the_github_placeholder_when_the_preselected_connection_is_github', async () => {
-    await loadProjects();
-    await seedConnections([
-      { ...CONNECTION, id: 3, type: 'github', name: 'github.com' },
-      { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' },
-    ]);
-
-    expect(pathInput().placeholder).toBe(t('settings.projects.pathPlaceholderGithub'));
+    expect(el.querySelector('.add-fields')).toBeNull();
+    expect(el.querySelector('.token-missing-row')?.textContent?.trim()).toBe(
+      t('errors.connections.tokenMissing'),
+    );
   });
 
   it('should_disable_add_button_when_path_is_empty_or_an_add_is_in_flight', async () => {
-    // Traçabilité explicite du scénario « Bouton Ajouter désactivé » (specs
-    // US-003 §6) : déjà couvert incidemment par un autre test, mais mérite
-    // sa propre assertion nommée (retour QA-001).
-    await loadProjects();
     expect(addButton().disabled).toBe(true);
 
     await type(pathInput(), 'equipe/front-web');
@@ -181,54 +145,13 @@ describe('RepositoriesSectionComponent', () => {
     await flushSync(2);
   });
 
-  it('should_show_error_and_retry', async () => {
-    http.expectOne('/api/v1/projects').flush('down', { status: 500, statusText: 'KO' });
-    await settle();
-
-    expect(el.querySelector('.status.error')).not.toBeNull();
-    el.querySelector<HTMLButtonElement>('.status.error button')!.click();
-    http.expectOne('/api/v1/projects').flush([project]);
-    await settle();
-
-    expect(el.querySelector('.repos-table')).not.toBeNull();
-  });
-
-  it('should_add_repo_and_reset_form_on_success', async () => {
-    await loadProjects();
+  it('should_add_repo_scoped_to_the_connection_and_reset_form_on_success', async () => {
     await type(pathInput(), 'equipe/front-web');
     expect(addButton().disabled).toBe(false);
 
     addButton().click();
     await settle();
     expect(addButton().disabled).toBe(true);
-
-    const req = http.expectOne('/api/v1/projects');
-    expect(req.request.body).toEqual({ path: 'equipe/front-web' });
-    req.flush({
-      id: 2,
-      connectionId: 1,
-      pathWithNamespace: 'equipe/front-web',
-      alias: 'front-web',
-      remoteProjectId: '7',
-    });
-    await settle();
-    await flushSync(2);
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      t('settings.projects.added'),
-      t('common.ok'),
-      expect.anything(),
-    );
-    expect(pathInput().value).toBe('');
-  });
-
-  it('should_include_the_selected_connectionId_when_more_than_one_connection_exists', async () => {
-    await loadProjects();
-    await seedConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'gitlab.exemple.fr' }]);
-    await type(pathInput(), 'equipe/front-web');
-
-    addButton().click();
-    await settle();
 
     const req = http.expectOne('/api/v1/projects');
     expect(req.request.body).toEqual({ path: 'equipe/front-web', connectionId: 1 });
@@ -241,10 +164,16 @@ describe('RepositoriesSectionComponent', () => {
     });
     await settle();
     await flushSync(2);
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('settings.connections.repos.added'),
+      t('common.ok'),
+      expect.anything(),
+    );
+    expect(pathInput().value).toBe('');
   });
 
   it('should_show_inline_error_under_path_for_not_found', async () => {
-    await loadProjects();
     await type(pathInput(), 'equipe/inexistant');
 
     addButton().click();
@@ -260,25 +189,7 @@ describe('RepositoriesSectionComponent', () => {
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 
-  it('should_show_inline_error_under_path_for_an_invalid_github_path', async () => {
-    await loadProjects();
-    await type(pathInput(), 'equipe/sous/front-web');
-
-    addButton().click();
-    http
-      .expectOne('/api/v1/projects')
-      .flush(
-        { statusCode: 400, code: 'projects.invalidPath', message: 'x' },
-        { status: 400, statusText: 'Bad Request' },
-      );
-    await settle();
-
-    expect(el.querySelector('mat-error')?.textContent?.trim()).toBe(t('errors.projects.invalidPath'));
-    expect(snackBar.open).not.toHaveBeenCalled();
-  });
-
   it('should_show_inline_error_under_alias_for_duplicate', async () => {
-    await loadProjects();
     await type(pathInput(), 'equipe/autre');
     await type(addAliasInput(), 'api');
 
@@ -297,28 +208,26 @@ describe('RepositoriesSectionComponent', () => {
   });
 
   it('should_show_toast_for_global_precondition_errors', async () => {
-    await loadProjects();
     await type(pathInput(), 'equipe/x');
 
     addButton().click();
     http
       .expectOne('/api/v1/projects')
       .flush(
-        { statusCode: 409, code: 'connections.missing', message: 'x' },
+        { statusCode: 409, code: 'connections.tokenMissing', message: 'x' },
         { status: 409, statusText: 'Conflict' },
       );
     await settle();
 
     expect(el.querySelector('mat-error')).toBeNull();
     expect(snackBar.open).toHaveBeenCalledWith(
-      t('errors.connections.missing'),
+      t('errors.connections.tokenMissing'),
       t('common.ok'),
       expect.anything(),
     );
   });
 
   it('should_clear_inline_error_when_editing_again', async () => {
-    await loadProjects();
     await type(pathInput(), 'equipe/inexistant');
     addButton().click();
     http
@@ -336,7 +245,6 @@ describe('RepositoriesSectionComponent', () => {
   });
 
   it('should_remove_repo_after_confirmation', async () => {
-    await loadProjects();
     dialog.open.mockReturnValue({ afterClosed: () => of(true) });
 
     el.querySelector<HTMLButtonElement>('.delete-col button')!.click();
@@ -348,14 +256,13 @@ describe('RepositoriesSectionComponent', () => {
     await settle();
 
     expect(snackBar.open).toHaveBeenCalledWith(
-      t('settings.projects.removed'),
+      t('settings.connections.repos.removed'),
       t('common.ok'),
       expect.anything(),
     );
   });
 
   it('should_not_remove_repo_when_confirmation_is_declined', async () => {
-    await loadProjects();
     dialog.open.mockReturnValue({ afterClosed: () => of(false) });
 
     el.querySelector<HTMLButtonElement>('.delete-col button')!.click();

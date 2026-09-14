@@ -3,14 +3,14 @@
   type="button"
   class="add-filter-button"
   [matMenuTriggerFor]="menu"
-  [disabled]="active().length >= allKeys.length"
+  [disabled]="active().length >= allKeys().length"
 >
   <mat-icon svgIcon="plus" />
   {{ 'board.filters.add' | translate }}
 </button>
 
 <mat-menu #menu="matMenu">
-  @for (key of allKeys; track key) {
+  @for (key of allKeys(); track key) {
     <button mat-menu-item type="button" [disabled]="isActive(key)" (click)="addFilter.emit(key)">
       @if (isActive(key)) {
         <mat-icon svgIcon="check" />

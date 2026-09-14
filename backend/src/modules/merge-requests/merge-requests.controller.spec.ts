@@ -64,6 +64,7 @@ describe('MergeRequestsController', () => {
       service.listOpen.mockResolvedValue(response);
 
       await controller.list({
+        connection: ['gitlab.com'],
         project: ['api', 'web'],
         author: ['mdupont'],
         assigned: ['nobody'],
@@ -76,6 +77,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: false,
         mineOnly: false,
         filters: {
+          connection: ['gitlab.com'],
           project: ['api', 'web'],
           author: ['mdupont'],
           assigned: ['nobody'],
@@ -89,6 +91,7 @@ describe('MergeRequestsController', () => {
   describe('facets', () => {
     it('should_delegate_to_the_service_with_defaults_when_no_query_param_is_given', async () => {
       const response = {
+        connection: [],
         project: [],
         author: [],
         assigned: [],
@@ -107,6 +110,7 @@ describe('MergeRequestsController', () => {
 
     it('should_translate_drafts_mine_and_composable_filter_query_params', async () => {
       const response = {
+        connection: [],
         project: [],
         author: [],
         assigned: [],
@@ -118,6 +122,7 @@ describe('MergeRequestsController', () => {
       await controller.facets({
         drafts: '1',
         mine: '1',
+        connection: ['github.com'],
         project: ['api'],
         approved: '0',
       });
@@ -126,6 +131,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: true,
         mineOnly: true,
         filters: {
+          connection: ['github.com'],
           project: ['api'],
           author: [],
           assigned: [],

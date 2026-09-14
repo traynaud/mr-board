@@ -1,9 +1,6 @@
 <mat-toolbar class="board-toolbar">
   <span class="nav-brand">{{ 'board.title' | translate }}</span>
-  <span
-    class="sync-label"
-    [class.accent]="label().accent"
-    [matTooltip]="nextRunTooltip().key | translate: (nextRunTooltip().params ?? {})"
+  <span class="sync-label" [class.accent]="label().accent" [matTooltip]="syncTooltip()"
     >{{ label().key | translate: (label().params ?? {}) }}</span
   >
   <span class="spacer"></span>

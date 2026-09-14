@@ -3,7 +3,7 @@
 Version : 1.1 — 2026-09-14 (relecture PO au lancement de l'épique : US-017, US-018, US-022 et US-023 ont été
 livrées depuis la rédaction initiale — voir US-019 §3 « Cohérence avec les US livrées depuis » pour le détail des
 ajustements ; impacts ci-dessous mis à jour en conséquence).
-Statut : proposition PO, à valider avant `/project:feature US-019`.
+Statut : livrée — US-019, US-020 et US-021 sont toutes les trois ✅ (voir `docs/features/README.md` §7).
 
 ---
 

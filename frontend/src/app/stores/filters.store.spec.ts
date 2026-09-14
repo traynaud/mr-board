@@ -17,6 +17,7 @@ describe('FiltersStore', () => {
   it('should_default_to_no_active_composable_filter', () => {
     expect(store.active()).toEqual([]);
     expect(store.composableFilters()).toEqual({
+      connection: [],
       project: [],
       author: [],
       assigned: [],
@@ -121,6 +122,16 @@ describe('FiltersStore', () => {
       expect(store.active()).toEqual([]);
       expect(store.approved()).toBeNull();
     });
+
+    it('should_remove_the_connection_filter_rg_021_03', () => {
+      store.addFilter('connection');
+      store.toggleMultiValue('connection', 'gitlab.com');
+
+      store.removeFilter('connection');
+
+      expect(store.active()).toEqual([]);
+      expect(store.connection()).toEqual([]);
+    });
   });
 
   describe('toggleMultiValue', () => {
@@ -128,6 +139,17 @@ describe('FiltersStore', () => {
       store.toggleMultiValue('project', 'api');
 
       expect(store.project()).toEqual(['api']);
+    });
+
+    it('should_toggle_the_connection_filter_rg_021_03', () => {
+      store.toggleMultiValue('connection', 'gitlab.com');
+      store.toggleMultiValue('connection', 'github.com');
+
+      expect(store.connection()).toEqual(['gitlab.com', 'github.com']);
+
+      store.toggleMultiValue('connection', 'gitlab.com');
+
+      expect(store.connection()).toEqual(['github.com']);
     });
 
     it('should_remove_a_value_already_selected', () => {
@@ -176,6 +198,8 @@ describe('FiltersStore', () => {
 
   it('should_clear_every_active_pill_and_composable_filter_value_but_not_drafts', () => {
     store.toggleDrafts();
+    store.addFilter('connection');
+    store.toggleMultiValue('connection', 'gitlab.com');
     store.addFilter('project');
     store.toggleMultiValue('project', 'api');
     store.addFilter('approved');
@@ -186,6 +210,7 @@ describe('FiltersStore', () => {
     expect(store.drafts()).toBe(true);
     expect(store.mine()).toBe(false);
     expect(store.active()).toEqual([]);
+    expect(store.connection()).toEqual([]);
     expect(store.project()).toEqual([]);
     expect(store.approved()).toBeNull();
   });

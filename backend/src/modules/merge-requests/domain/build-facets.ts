@@ -12,6 +12,8 @@ export interface FacetOption {
 }
 
 export interface MergeRequestsFacets {
+  /** RG-021-03: every configured connection, even with zero count (same pattern as `project`). */
+  connection: FacetOption[];
   project: FacetOption[];
   author: FacetOption[];
   /** `'nobody'` is always the first entry (RG-010-05). */
@@ -26,6 +28,10 @@ export interface ConfiguredProject {
   pathWithNamespace: string;
 }
 
+export interface ConfiguredConnection {
+  name: string;
+}
+
 /**
  * RG-010-07/08: for each filter, options and their count are computed
  * against `base` with every *other* active composable filter applied —
@@ -36,12 +42,24 @@ export function buildFacets(
   base: FilterableMergeRequest[],
   filters: ComposableFilters,
   configuredProjects: ConfiguredProject[],
+  configuredConnections: ConfiguredConnection[],
 ): MergeRequestsFacets {
   const countFor = (
     key: FilterKey,
     predicate: (mr: FilterableMergeRequest) => boolean,
   ): number =>
     applyComposableFiltersExcept(base, filters, key).filter(predicate).length;
+
+  const connection: FacetOption[] = [...configuredConnections]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((conn) => ({
+      value: conn.name,
+      label: conn.name,
+      count: countFor(
+        'connection',
+        (mr) => mr.connection.name.toLowerCase() === conn.name.toLowerCase(),
+      ),
+    }));
 
   const project: FacetOption[] = [...configuredProjects]
     .sort((a, b) => a.alias.localeCompare(b.alias))
@@ -111,7 +129,7 @@ export function buildFacets(
     },
   ];
 
-  return { project, author, assigned, approved, commented };
+  return { connection, project, author, assigned, approved, commented };
 }
 
 function uniquePeople<T extends { username: string }>(people: T[]): T[] {

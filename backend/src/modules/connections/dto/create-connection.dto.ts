@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -22,6 +23,12 @@ export const TOKEN_MIN_LENGTH = 8;
 /** Maximum length of a connection name (RG-019-01). */
 export const CONNECTION_NAME_MAX_LENGTH = 40;
 
+/**
+ * A connection name may not contain `,` or `;` — both are used as CSV
+ * separators for the `connection` filter (RG-021-04, completes RG-019-01).
+ */
+export const CONNECTION_NAME_PATTERN = /^[^,;]*$/;
+
 /** Body of `POST /api/v1/connections`. */
 export class CreateConnectionDto {
   /** Only `gitlab` is accepted in this US; `github` is rejected (RG-019-01). */
@@ -31,6 +38,7 @@ export class CreateConnectionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(CONNECTION_NAME_MAX_LENGTH)
+  @Matches(CONNECTION_NAME_PATTERN)
   name!: string;
 
   @IsUrl(FORGE_URL_OPTIONS)

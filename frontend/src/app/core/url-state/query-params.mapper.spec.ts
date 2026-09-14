@@ -5,6 +5,7 @@ const DEFAULT_STATE: UrlState = {
   drafts: false,
   mine: false,
   active: [],
+  connection: [],
   project: [],
   author: [],
   assigned: [],
@@ -57,6 +58,12 @@ describe('decodeQueryParams', () => {
     expect(state.project).toEqual([]);
   });
 
+  it('should_activate_the_connection_filter_present_with_values_rg_021_04', () => {
+    const state = decodeQueryParams({ connection: 'gitlab.com,github.com' });
+    expect(state.active).toEqual(['connection']);
+    expect(state.connection).toEqual(['gitlab.com', 'github.com']);
+  });
+
   it('should_not_validate_unknown_list_values_locally', () => {
     const state = decodeQueryParams({ project: 'inconnu' });
     expect(state.project).toEqual(['inconnu']);
@@ -81,8 +88,14 @@ describe('decodeQueryParams', () => {
   });
 
   it('should_reconstruct_active_in_the_canonical_order_regardless_of_url_order', () => {
-    const state = decodeQueryParams({ commented: '1', project: 'api', approved: '0', author: 'mdupont' });
-    expect(state.active).toEqual(['project', 'author', 'approved', 'commented']);
+    const state = decodeQueryParams({
+      commented: '1',
+      project: 'api',
+      approved: '0',
+      author: 'mdupont',
+      connection: 'gitlab.com',
+    });
+    expect(state.active).toEqual(['connection', 'project', 'author', 'approved', 'commented']);
   });
 
   it('should_decode_a_valid_sort', () => {
@@ -152,6 +165,15 @@ describe('encodeQueryParams', () => {
     expect(params['project']).toBe('api,web');
   });
 
+  it('should_encode_the_active_connection_filter_as_csv_rg_021_04', () => {
+    const params = encodeQueryParams({
+      ...DEFAULT_STATE,
+      active: ['connection'],
+      connection: ['gitlab.com', 'github.com'],
+    });
+    expect(params['connection']).toBe('gitlab.com,github.com');
+  });
+
   it('should_encode_an_active_but_empty_list_filter_as_an_empty_string', () => {
     const params = encodeQueryParams({ ...DEFAULT_STATE, active: ['author'], author: [] });
     expect(params['author']).toBe('');
@@ -205,7 +227,8 @@ describe('encodeQueryParams', () => {
   it('should_produce_keys_in_the_canonical_order_of_rg_011_01', () => {
     const params = encodeQueryParams({
       ...DEFAULT_STATE,
-      active: ['project', 'author', 'assigned', 'approved', 'commented'],
+      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],
+      connection: ['gitlab.com'],
       project: ['api'],
       author: ['mdupont'],
       assigned: ['nobody'],
@@ -217,6 +240,7 @@ describe('encodeQueryParams', () => {
     expect(Object.keys(params)).toEqual([
       'drafts',
       'mine',
+      'connection',
       'project',
       'author',
       'assigned',
@@ -232,6 +256,7 @@ describe('round-trip (RG-011-08)', () => {
   const CASES: UrlState[] = [
     DEFAULT_STATE,
     { ...DEFAULT_STATE, drafts: true, mine: true },
+    { ...DEFAULT_STATE, active: ['connection'], connection: ['gitlab.com', 'github.com'] },
     { ...DEFAULT_STATE, active: ['project'], project: ['api', 'web'] },
     { ...DEFAULT_STATE, active: ['author'], author: [] },
     { ...DEFAULT_STATE, active: ['assigned'], assigned: ['nobody', 'mdupont'] },
@@ -242,7 +267,8 @@ describe('round-trip (RG-011-08)', () => {
     { ...DEFAULT_STATE, showStatus: true, showOpened: true },
     {
       ...DEFAULT_STATE,
-      active: ['project', 'author', 'assigned', 'approved', 'commented'],
+      active: ['connection', 'project', 'author', 'assigned', 'approved', 'commented'],
+      connection: ['gitlab.com'],
       project: ['api', 'web'],
       author: ['mdupont'],
       assigned: ['nobody'],

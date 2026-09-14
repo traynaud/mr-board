@@ -14,7 +14,7 @@ import { MergeRequestsService } from './merge-requests.service';
 export class MergeRequestsController {
   constructor(private readonly mergeRequestsService: MergeRequestsService) {}
 
-  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&project=...&author=...&assigned=...&approved=0|1&commented=0|1` */
+  /** `GET /api/v1/merge-requests?sort=...&drafts=0|1&mine=0|1&connection=...&project=...&author=...&assigned=...&approved=0|1&commented=0|1` */
   @Get()
   list(
     @Query() query: MergeRequestQueryDto,
@@ -45,6 +45,7 @@ function toComposableFilters(
   query: MergeRequestFilterQueryDto,
 ): ComposableFilters {
   return {
+    connection: query.connection ?? [],
     project: query.project ?? [],
     author: query.author ?? [],
     assigned: query.assigned ?? [],

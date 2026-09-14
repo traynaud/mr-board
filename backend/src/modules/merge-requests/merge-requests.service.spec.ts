@@ -1062,6 +1062,30 @@ describe('MergeRequestsService', () => {
       expect(result.map((v) => v.iid)).toEqual([2]);
     });
 
+    it('should_apply_the_connection_composable_filter_case_insensitively', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, id: 1, name: 'gitlab.com' },
+        { ...CONNECTION, id: 2, name: 'github.com' },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, projectId: 1 }),
+        persistedMergeRequest({ id: 2, iid: 2, projectId: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([
+        projectRow({ connectionId: 1 }),
+        projectRow({ id: 2, alias: 'web', connectionId: 2 }),
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        filters: { ...EMPTY_COMPOSABLE_FILTERS, connection: ['GitHub.com'] },
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([2]);
+    });
+
     it('should_apply_the_assigned_nobody_composable_filter', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1 }),
@@ -1135,6 +1159,7 @@ describe('MergeRequestsService', () => {
       projectsService.list.mockResolvedValue([]);
 
       await expect(service.getFacets({})).resolves.toEqual({
+        connection: [{ value: 'GitLab', label: 'GitLab', count: 0 }],
         project: [],
         author: [],
         assigned: [{ value: 'nobody', label: 'Nobody', count: 0 }],
@@ -1147,6 +1172,30 @@ describe('MergeRequestsService', () => {
           { value: 'no', label: 'Non', count: 0 },
         ],
       });
+    });
+
+    it('should_list_every_configured_connection_including_one_with_no_open_merge_request', async () => {
+      connectionsService.findAll.mockResolvedValue([
+        { ...CONNECTION, id: 1, name: 'gitlab.com' },
+        { ...CONNECTION, id: 2, name: 'github.com' },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, projectId: 1 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      projectsService.list.mockResolvedValue([
+        { id: 1, alias: 'api', pathWithNamespace: 'equipe/api' },
+      ]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const facets = await service.getFacets({});
+
+      expect(facets.connection).toEqual([
+        { value: 'github.com', label: 'github.com', count: 0 },
+        { value: 'gitlab.com', label: 'gitlab.com', count: 1 },
+      ]);
     });
 
     it('should_list_every_configured_project_including_one_with_no_open_merge_request', async () => {

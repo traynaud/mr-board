@@ -49,6 +49,8 @@ export class FilterBarComponent {
   readonly active = input.required<FilterKey[]>();
   readonly composableFilters = input.required<ComposableFilters>();
   readonly facets = input.required<MergeRequestsFacets | null>();
+  /** RG-021-03 : transmis à `AddFilterMenuComponent`. */
+  readonly showConnectionFilter = input(true);
 
   readonly draftsToggle = output<void>();
   readonly mineToggle = output<void>();

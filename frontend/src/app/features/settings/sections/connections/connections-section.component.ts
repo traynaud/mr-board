@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,12 +24,9 @@ import {
   ConfirmDialogData,
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { formatShortDate } from '../../../../shared/format/format-date';
-import {
-  Connection,
-  ConnectionType,
-  TestConnectionResult,
-} from '../../../../models/connection.model';
+import { Connection, ConnectionType, TestConnectionResult } from '../../../../models/connection.model';
 import { ConnectionsStore } from '../../../../stores/connections.store';
+import { ProjectsStore } from '../../../../stores/projects.store';
 import {
   ConnectionForm,
   TOKEN_MIN_LENGTH,
@@ -29,22 +35,26 @@ import {
   resetConnectionFormForAdd,
   resetConnectionFormForEdit,
 } from '../../connections-form';
+import { RepoRow, RepositoriesSectionComponent } from '../repositories/repositories-section.component';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'écran Paramètres. */
 const TOAST_DURATION_MS = 3500;
 
-/** Formulaire ouvert : aucun, ajout, ou modification d'une connexion existante. */
+/** Formulaire ouvert : aucun, ajout, ou modification (= dépliée, US-021 §0) d'une connexion existante. */
 type OpenForm = { mode: 'add' } | { mode: 'edit'; connectionId: number } | null;
 
 /**
- * Section « 02 · Connexions » (RG-019-10 à RG-019-14) : liste compacte des
- * connexions configurées + formulaire inline d'ajout/modification. Persiste
- * immédiatement, indépendamment du bouton « Enregistrer » global (même
- * principe que `RepositoriesSectionComponent`, RG-019-12).
+ * Section « 02 · Connexions » (RG-019-10 à RG-019-14, restructurée par
+ * US-021 §0/RG-021-00a/b) : liste de connexions dont chaque ligne se déplie
+ * pour montrer son formulaire (RG-019-11, inchangé) **suivi** de ses propres
+ * repos (`RepositoriesSectionComponent`, scopée à la connexion) — il n'existe
+ * plus de section « Repos à scanner » séparée. Persiste immédiatement,
+ * indépendamment du bouton « Enregistrer » global (RG-019-12).
  */
 @Component({
   selector: 'app-connections-section',
   imports: [
+    NgTemplateOutlet,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -53,6 +63,7 @@ type OpenForm = { mode: 'add' } | { mode: 'edit'; connectionId: number } | null;
     MatRadioModule,
     MatTooltipModule,
     TranslatePipe,
+    RepositoriesSectionComponent,
   ],
   templateUrl: './connections-section.component.html',
   styleUrl: './connections-section.component.scss',
@@ -60,23 +71,19 @@ type OpenForm = { mode: 'add' } | { mode: 'edit'; connectionId: number } | null;
 })
 export class ConnectionsSectionComponent implements OnInit {
   protected readonly store = inject(ConnectionsStore);
+  /** RG-021-00b : les repos vivant désormais ici, une erreur de chargement des projets s'affiche à ce niveau. */
+  protected readonly projectsStore = inject(ProjectsStore);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
+
+  /** Repos de toutes les connexions, fournis par la page — filtrés par connexion pour `RepositoriesSectionComponent`. */
+  readonly rows = input.required<RepoRow[]>();
 
   protected readonly tokenMinLength = TOKEN_MIN_LENGTH;
   protected readonly showToken = signal(false);
   protected readonly openForm = signal<OpenForm>(null);
   protected readonly form = signal<ConnectionForm>(buildConnectionForm(true));
-
-  /** `null` pour le formulaire d'ajout (pas encore de connexion existante). */
-  protected readonly editingConnection = computed<Connection | null>(() => {
-    const open = this.openForm();
-    if (!open || open.mode !== 'edit') {
-      return null;
-    }
-    return this.store.connections().find((c) => c.id === open.connectionId) ?? null;
-  });
 
   /** Résultat du test à afficher sous le formulaire ouvert (RG-019-11), le cas échéant. */
   protected readonly formTest = computed(() => {
@@ -98,9 +105,7 @@ export class ConnectionsSectionComponent implements OnInit {
    */
   protected canTestForm(): boolean {
     const form = this.form();
-    const hasToken =
-      form.controls.token.value.length > 0 ||
-      (this.editingConnection()?.tokenConfigured ?? false);
+    const hasToken = form.controls.token.value.length > 0 || this.isEditingWithToken();
     return form.controls.url.valid && form.controls.token.valid && hasToken;
   }
 
@@ -118,12 +123,40 @@ export class ConnectionsSectionComponent implements OnInit {
     applyConnectionTypeDefaults(this.form(), type);
   }
 
+  /** RG-021-00a : une seule connexion dépliée à la fois. */
+  protected isEditing(connection: Connection): boolean {
+    const open = this.openForm();
+    return open?.mode === 'edit' && open.connectionId === connection.id;
+  }
+
+  /** Repos de `connection`, pour `RepositoriesSectionComponent` (RG-021-00a). */
+  protected rowsFor(connectionId: number): RepoRow[] {
+    return this.rows().filter((row) => row.project.connectionId === connectionId);
+  }
+
+  /** Non-signal, même raison que `canTestForm` : lit `openForm()` en combinaison avec la liste de connexions. */
+  protected isEditingWithToken(): boolean {
+    const open = this.openForm();
+    if (open?.mode !== 'edit') {
+      return false;
+    }
+    return this.store.connections().find((c) => c.id === open.connectionId)?.tokenConfigured ?? false;
+  }
+
   ngOnInit(): void {
     void this.store.load();
+    // RG-021-00a : cette section porte désormais aussi les repos (nichés par
+    // connexion) — leur chargement lui revient, `RepositoriesSectionComponent`
+    // n'étant monté qu'une fois une connexion dépliée.
+    void this.projectsStore.load();
   }
 
   protected async retry(): Promise<void> {
     await this.store.load();
+  }
+
+  protected async retryProjects(): Promise<void> {
+    await this.projectsStore.load();
   }
 
   protected async openAdd(): Promise<void> {
@@ -138,7 +171,12 @@ export class ConnectionsSectionComponent implements OnInit {
     this.openForm.set({ mode: 'add' });
   }
 
-  protected async openEdit(connection: Connection): Promise<void> {
+  /** RG-021-00a : déplie la ligne (comme l'ancien « Modifier ») ou la replie si déjà ouverte. */
+  protected async toggleRow(connection: Connection): Promise<void> {
+    if (this.isEditing(connection)) {
+      await this.cancel();
+      return;
+    }
     if (!(await this.confirmDiscardIfDirty())) {
       return;
     }
@@ -234,8 +272,17 @@ export class ConnectionsSectionComponent implements OnInit {
       }
       return;
     }
-    this.openForm.set(null);
-    this.toast(open.mode === 'add' ? 'settings.connections.added' : 'settings.connections.updated');
+    if (open.mode === 'add') {
+      // RG-021-00a : la carte reste dépliée après création pour enchaîner sur
+      // l'ajout des repos — `ConnectionsStore.add` ajoute la nouvelle
+      // connexion en fin de tableau, comme `ProjectsStore.add` (voir
+      // `RepositoriesSectionComponent.addRepo`).
+      const created = this.store.connections().at(-1);
+      this.openForm.set(created ? { mode: 'edit', connectionId: created.id } : null);
+      this.toast('settings.connections.added');
+    } else {
+      this.toast('settings.connections.updated');
+    }
   }
 
   protected async remove(connection: Connection): Promise<void> {

@@ -48,6 +48,9 @@ function filterParams(
   let params = new HttpParams()
     .set('drafts', filters.drafts ? '1' : '0')
     .set('mine', filters.mine ? '1' : '0');
+  if (composableFilters.connection.length > 0) {
+    params = params.set('connection', composableFilters.connection.join(','));
+  }
   if (composableFilters.project.length > 0) {
     params = params.set('project', composableFilters.project.join(','));
   }

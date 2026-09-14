@@ -40,6 +40,19 @@ export function computeSyncStatusLabel(
   return { key: 'board.sync.minutesAgo', params: { minutes }, accent: false };
 }
 
+/**
+ * Détail des repos en échec du dernier run, pour l'infobulle du libellé de
+ * synchro (RG-021-06) : `lastRun.errorMessage` réutilisé tel quel — il nomme
+ * déjà la connexion et le repo en cause (RG-019-16, RG-020-*) — dès que le
+ * run est `partial` ou `error`. `null` sinon (rien à montrer).
+ */
+export function computeSyncFailureDetail(lastRun: SyncRun | null): string | null {
+  if (!lastRun || (lastRun.status !== 'partial' && lastRun.status !== 'error')) {
+    return null;
+  }
+  return lastRun.errorMessage;
+}
+
 export interface NextRunTooltip {
   /** Clé i18n du tooltip de la toolbar (RG-013-07). */
   key: string;

@@ -28,6 +28,7 @@
       "add": "Add a filter",
       "pills": {
         "names": {
+          "connection": "Connection",
           "project": "Project",
           "author": "Author",
           "assigned": "Assigned to",
@@ -123,7 +124,8 @@
       "justNow": "Synced just now",
       "minutesAgo": "Synced {{minutes}} min ago",
       "failedMinutesAgo": "Last sync failed {{minutes}} min ago",
-      "toastError": "Sync failed.",
+      "toastPartial": "Sync partially failed:",
+      "toastError": "Sync failed:",
       "nextRunTooltip": "Next sync at {{time}}",
       "manualTooltip": "Manual sync"
     },
@@ -168,7 +170,7 @@
     "connections": {
       "number": "02",
       "title": "Connections",
-      "description": "Forges queried by MR Board. Token read-only, stored encrypted server-side.",
+      "description": "Forges queried by MR Board. Token read-only, stored encrypted server-side. Each repo is attached to its connection.",
       "loadError": "Could not load connections.",
       "empty": "No connection. Add your first forge.",
       "add": "Add a connection",
@@ -178,8 +180,10 @@
       "list": {
         "tokenConfigured": "Token configured (…{{hint}})",
         "tokenNone": "No token",
+        "repoCount": "{{count}} repos",
         "test": "Test",
-        "edit": "Edit",
+        "expand": "Expand {{name}}",
+        "collapse": "Collapse {{name}}",
         "remove": "Remove {{name}}"
       },
       "form": {
@@ -187,6 +191,7 @@
         "typeGithub": "GitHub",
         "name": "Name",
         "nameDuplicate": "Name already in use",
+        "nameInvalidChars": "The name may not contain a comma or a semicolon.",
         "url": "Instance URL",
         "urlRequired": "The URL is required.",
         "urlInvalid": "Enter a valid http(s) URL, e.g. https://gitlab.example.com",
@@ -213,32 +218,29 @@
         "message": "Its {{count}} repos and their MRs will be removed from the table.",
         "confirm": "Remove",
         "cancel": "Cancel"
-      }
-    },
-    "projects": {
-      "number": "03",
-      "title": "Repos to scan",
-      "description": "The alias is what's shown in the Project column and the filter.",
-      "connectionHeader": "Connection",
-      "pathHeader": "Project path",
-      "aliasHeader": "Alias",
-      "pathPlaceholderGitlab": "group/project or GitLab URL",
-      "pathPlaceholderGithub": "owner/repo or GitHub URL",
-      "aliasPlaceholder": "alias",
-      "add": "Add",
-      "remove": "Remove {{alias}}",
-      "added": "Repo added",
-      "removed": "Repo removed",
-      "loadError": "Could not load repos.",
-      "deleteConfirm": {
-        "title": "Remove this repo?",
-        "message": "Its MRs will no longer be shown.",
-        "confirm": "Remove",
-        "cancel": "Stay"
+      },
+      "repos": {
+        "title": "Repos of this connection",
+        "pathHeader": "Project path",
+        "aliasHeader": "Alias",
+        "pathPlaceholderGitlab": "group/project or GitLab URL",
+        "pathPlaceholderGithub": "owner/repo or GitHub URL",
+        "aliasPlaceholder": "alias",
+        "add": "Add",
+        "remove": "Remove {{alias}}",
+        "added": "Repo added",
+        "removed": "Repo removed",
+        "loadError": "Could not load repos.",
+        "deleteConfirm": {
+          "title": "Remove this repo?",
+          "message": "Its MRs will no longer be shown.",
+          "confirm": "Remove",
+          "cancel": "Stay"
+        }
       }
     },
     "refresh": {
-      "number": "04",
+      "number": "03",
       "title": "Refresh",
       "description": "Automatic sync frequency with the configured forges.",
       "frequency": "Sync frequency",
@@ -250,7 +252,7 @@
       "hint": "Automatic sync ; the Refresh button always forces one."
     },
     "thresholds": {
-      "number": "05",
+      "number": "04",
       "title": "Thresholds",
       "description": "Rules for computing difficulty and the Ready delay.",
       "difficulty": {
@@ -280,7 +282,7 @@
       }
     },
     "misc": {
-      "number": "06",
+      "number": "05",
       "title": "Miscellaneous",
       "description": "Convenience options and configuration backup.",
       "theme": {

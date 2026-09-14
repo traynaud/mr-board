@@ -32,7 +32,11 @@
       (remove)="filterRemove.emit(key)"
     />
   }
-  <app-add-filter-menu [active]="active()" (addFilter)="filterAdd.emit($event)" />
+  <app-add-filter-menu
+    [active]="active()"
+    [showConnectionFilter]="showConnectionFilter()"
+    (addFilter)="filterAdd.emit($event)"
+  />
 </span>
 
 <span class="spacer"></span>

@@ -1,61 +1,37 @@
-@if (store.loading()) {
-  <p class="status">{{ 'common.loading' | translate }}</p>
-} @else if (store.loadError(); as errorKey) {
-  <div class="status error" role="alert">
-    <span>{{ 'settings.projects.loadError' | translate }} {{ errorKey | translate }}</span>
-    <button mat-stroked-button type="button" (click)="retry()">
-      {{ 'common.retry' | translate }}
-    </button>
-  </div>
-} @else {
-  <table class="repos-table">
-    <thead>
-      <tr>
-        @if (showConnectionSelector()) {
-          <th>{{ 'settings.projects.connectionHeader' | translate }}</th>
-        }
-        <th>{{ 'settings.projects.pathHeader' | translate }}</th>
-        <th class="alias-col">{{ 'settings.projects.aliasHeader' | translate }}</th>
-        <th class="delete-col"></th>
+<div class="repos-title">{{ 'settings.connections.repos.title' | translate }}</div>
+<table class="repos-table">
+  <thead>
+    <tr>
+      <th>{{ 'settings.connections.repos.pathHeader' | translate }}</th>
+      <th class="alias-col">{{ 'settings.connections.repos.aliasHeader' | translate }}</th>
+      <th class="delete-col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.project.id) {
+      <tr [formGroup]="row.group">
+        <td>{{ row.project.pathWithNamespace }}</td>
+        <td class="alias-col">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <input matInput formControlName="alias" autocomplete="off" spellcheck="false" />
+          </mat-form-field>
+        </td>
+        <td class="delete-col">
+          <button
+            mat-icon-button
+            type="button"
+            (click)="removeRepo(row.project)"
+            [attr.aria-label]="'settings.connections.repos.remove' | translate: { alias: row.project.alias }"
+          >
+            <mat-icon svgIcon="x" />
+          </button>
+        </td>
       </tr>
-    </thead>
-    <tbody>
-      @for (row of rows(); track row.project.id) {
-        <tr [formGroup]="row.group">
-          @if (showConnectionSelector()) {
-            <td class="connection-col">{{ row.connectionName }}</td>
-          }
-          <td>{{ row.project.pathWithNamespace }}</td>
-          <td class="alias-col">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <input matInput formControlName="alias" autocomplete="off" spellcheck="false" />
-            </mat-form-field>
-          </td>
-          <td class="delete-col">
-            <button
-              mat-icon-button
-              type="button"
-              (click)="removeRepo(row.project)"
-              [attr.aria-label]="'settings.projects.remove' | translate: { alias: row.project.alias }"
-            >
-              <mat-icon svgIcon="x" />
-            </button>
-          </td>
-        </tr>
-      }
+    }
+    @if (connection().tokenConfigured) {
       <tr class="add-row" [formGroup]="addForm">
-        <td [attr.colspan]="showConnectionSelector() ? 4 : 3">
+        <td colspan="3">
           <div class="add-fields">
-            @if (showConnectionSelector()) {
-              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="connection-field">
-                <mat-label>{{ 'settings.projects.connectionHeader' | translate }}</mat-label>
-                <mat-select formControlName="connectionId">
-                  @for (connection of connectionsStore.connections(); track connection.id) {
-                    <mat-option [value]="connection.id">{{ connection.name }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="path-field">
               <input
                 matInput
@@ -72,7 +48,7 @@
               <input
                 matInput
                 formControlName="alias"
-                [placeholder]="'settings.projects.aliasPlaceholder' | translate"
+                [placeholder]="'settings.connections.repos.aliasPlaceholder' | translate"
                 autocomplete="off"
                 spellcheck="false"
               />
@@ -87,11 +63,15 @@
               (click)="addRepo()"
             >
               <mat-icon svgIcon="plus" />
-              {{ 'settings.projects.add' | translate }}
+              {{ 'settings.connections.repos.add' | translate }}
             </button>
           </div>
         </td>
       </tr>
-    </tbody>
-  </table>
-}
+    } @else {
+      <tr class="token-missing-row">
+        <td colspan="3">{{ 'errors.connections.tokenMissing' | translate }}</td>
+      </tr>
+    }
+  </tbody>
+</table>

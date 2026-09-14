@@ -19,7 +19,11 @@ import {
   calculateElapsedDays,
   readyLevelForDays,
 } from './domain/calculate-ready-delay';
-import { ConfiguredProject, buildFacets } from './domain/build-facets';
+import {
+  ConfiguredConnection,
+  ConfiguredProject,
+  buildFacets,
+} from './domain/build-facets';
 import {
   ComposableFilters,
   EMPTY_COMPOSABLE_FILTERS,
@@ -81,8 +85,8 @@ export class MergeRequestsService {
 
   /**
    * Open merge requests, ordered per `sort` (RG-008-01/04, default
-   * `ready:asc`), narrowed by the 5 composable filters (RG-010-01/02) on
-   * top of the `drafts`/`mine` base (RG-009). `mineOnly` restricts to
+   * `ready:asc`), narrowed by the 6 composable filters (RG-010-01/02,
+   * RG-021-03) on top of the `drafts`/`mine` base (RG-009). `mineOnly` restricts to
    * merge requests where I have a role (RG-G09) — silently ignored, with a
    * `warnings` entry, when no connection has a username configured
    * (RG-019-09).
@@ -105,7 +109,8 @@ export class MergeRequestsService {
   }
 
   /**
-   * Options and contextual counts for the 5 composable filters (RG-010-07):
+   * Options and contextual counts for the 6 composable filters (RG-010-07,
+   * RG-021-03):
    * each filter's own options are counted against the `drafts`/`mine` base
    * with every *other* active composable filter applied, never itself.
    */
@@ -118,8 +123,19 @@ export class MergeRequestsService {
       filters = EMPTY_COMPOSABLE_FILTERS,
     } = options;
     const { views: base } = await this.loadBase(includeDrafts, mineOnly);
-    const configuredProjects: ConfiguredProject[] = await this.projects.list();
-    return buildFacets(base, filters, configuredProjects);
+    const [configuredProjects, allConnections]: [
+      ConfiguredProject[],
+      Connection[],
+    ] = await Promise.all([this.projects.list(), this.connections.findAll()]);
+    const configuredConnections: ConfiguredConnection[] = allConnections.map(
+      (connection) => ({ name: connection.name }),
+    );
+    return buildFacets(
+      base,
+      filters,
+      configuredProjects,
+      configuredConnections,
+    );
   }
 
   /**

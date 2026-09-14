@@ -12,12 +12,17 @@ import { AddFilterMenuComponent } from './add-filter-menu.component';
 @Component({
   imports: [AddFilterMenuComponent],
   template: `
-    <app-add-filter-menu [active]="active()" (addFilter)="added.push($event)" />
+    <app-add-filter-menu
+      [active]="active()"
+      [showConnectionFilter]="showConnectionFilter()"
+      (addFilter)="added.push($event)"
+    />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly active = signal<FilterKey[]>([]);
+  readonly showConnectionFilter = signal(true);
   added: FilterKey[] = [];
 }
 
@@ -41,8 +46,21 @@ describe('AddFilterMenuComponent', () => {
     );
   });
 
-  it('should_list_all_5_filters_in_the_menu', async () => {
+  it('should_list_all_6_filters_in_the_menu_with_connection_first_rg_021_03', async () => {
     const { loader } = await setup();
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+    const items = await menu.getItems();
+
+    expect(items).toHaveLength(6);
+    expect(await items[0].getText()).toBe(t('board.filters.pills.names.connection'));
+    expect(await items[1].getText()).toBe(t('board.filters.pills.names.project'));
+  });
+
+  it('should_hide_the_connection_filter_when_there_are_fewer_than_2_connections_rg_021_03', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.showConnectionFilter.set(false);
+    await fixture.whenStable();
     const menu = await loader.getHarness(MatMenuHarness);
     await menu.open();
     const items = await menu.getItems();
@@ -59,12 +77,12 @@ describe('AddFilterMenuComponent', () => {
 
     await items[0].click();
 
-    expect(fixture.componentInstance.added).toEqual(['project']);
+    expect(fixture.componentInstance.added).toEqual(['connection']);
   });
 
   it('should_disable_and_check_an_already_active_filter', async () => {
     const { fixture, loader } = await setup();
-    fixture.componentInstance.active.set(['project']);
+    fixture.componentInstance.active.set(['connection']);
     await fixture.whenStable();
     const menu = await loader.getHarness(MatMenuHarness);
     await menu.open();
@@ -74,8 +92,25 @@ describe('AddFilterMenuComponent', () => {
     expect(await items[1].isDisabled()).toBe(false);
   });
 
-  it('should_disable_the_button_itself_when_all_5_filters_are_active', async () => {
+  it('should_disable_the_button_itself_when_all_6_filters_are_active', async () => {
     const { fixture, loader } = await setup();
+    fixture.componentInstance.active.set([
+      'connection',
+      'project',
+      'author',
+      'assigned',
+      'approved',
+      'commented',
+    ]);
+    await fixture.whenStable();
+
+    const button = await loader.getHarness(MatButtonHarness);
+    expect(await button.isDisabled()).toBe(true);
+  });
+
+  it('should_disable_the_button_when_all_5_visible_filters_are_active_without_connection', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.showConnectionFilter.set(false);
     fixture.componentInstance.active.set(['project', 'author', 'assigned', 'approved', 'commented']);
     await fixture.whenStable();
 

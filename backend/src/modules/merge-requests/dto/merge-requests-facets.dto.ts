@@ -7,6 +7,8 @@ export class FacetOptionDto {
 
 /** Response of `GET /api/v1/merge-requests/facets` (RG-010-07). */
 export class MergeRequestsFacetsDto {
+  /** RG-021-03: every configured connection, even with zero count. */
+  connection!: FacetOptionDto[];
   project!: FacetOptionDto[];
   author!: FacetOptionDto[];
   /** `'nobody'` is always the first entry (RG-010-05). */

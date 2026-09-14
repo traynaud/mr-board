@@ -7,6 +7,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideI18nTesting, t } from '../../../core/i18n/testing';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
+import { Project } from '../../../models/project.model';
 import { formatDateTime } from '../../../shared/format/format-date';
 import { provideIcons } from '../../../shared/icons/provide-icons';
 import { DEFAULT_COLUMN_WIDTHS, ResizableColumnKey } from '../../../stores/column-widths.store';
@@ -47,6 +48,9 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
   template: `
     <app-mr-table
       [rows]="rows()"
+      [projects]="projects()"
+      [showForgeIcon]="showForgeIcon()"
+      [showConnectionInTooltip]="showConnectionInTooltip()"
       [sort]="sort()"
       [showStatus]="showStatus()"
       [showOpened]="showOpened()"
@@ -65,6 +69,11 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
 })
 class HostComponent {
   readonly rows = signal<MergeRequestView[]>([mergeRequest()]);
+  readonly projects = signal<Project[]>([
+    { id: 1, connectionId: 1, pathWithNamespace: 'equipe/backend-api', alias: 'api', remoteProjectId: '42' },
+  ]);
+  readonly showForgeIcon = signal(false);
+  readonly showConnectionInTooltip = signal(false);
   readonly sort = signal<MergeRequestSort>({ key: 'ready', direction: 'asc' });
   readonly showStatus = signal(true);
   readonly showOpened = signal(false);
@@ -106,6 +115,52 @@ describe('MrTableComponent', () => {
     expect(el.querySelector('.tag-neutral')?.textContent?.trim()).toBe('api');
     expect(el.querySelector('.title-link')?.textContent?.trim()).toBe('Refonte facturation');
     expect(el.querySelectorAll('tr.mat-mdc-row')).toHaveLength(1);
+  });
+
+  describe('forge icon and tooltip on the project tag (RG-021-01/02)', () => {
+    it('should_not_show_a_forge_icon_by_default_with_a_single_forge_type', async () => {
+      const { el } = await setup();
+
+      expect(el.querySelector('.tag-neutral mat-icon.forge-icon')).toBeNull();
+      expect(el.querySelector('.tag-neutral')?.textContent?.trim()).toBe('api');
+    });
+
+    it('should_show_the_gitlab_icon_before_the_alias_when_showForgeIcon_is_enabled_rg_021_01', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.showForgeIcon.set(true);
+      await fixture.whenStable();
+
+      const icon = el.querySelector<HTMLElement>('.tag-neutral mat-icon.forge-icon');
+      expect(icon?.getAttribute('data-mat-icon-name')).toBe('gitlab');
+    });
+
+    it('should_show_the_github_icon_for_a_row_whose_connection_is_github_rg_021_01', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set([
+        mergeRequest({ connection: { id: 2, name: 'github.com', type: 'github' } }),
+      ]);
+      fixture.componentInstance.showForgeIcon.set(true);
+      await fixture.whenStable();
+
+      const icon = el.querySelector<HTMLElement>('.tag-neutral mat-icon.forge-icon');
+      expect(icon?.getAttribute('data-mat-icon-name')).toBe('github');
+    });
+
+    it('should_show_only_the_path_in_the_tooltip_with_a_single_connection_rg_021_02', async () => {
+      const { fixture } = await setup();
+
+      const tooltip = fixture.debugElement.query(By.css('.tag-neutral')).injector.get(MatTooltip);
+      expect(tooltip.message).toBe('equipe/backend-api');
+    });
+
+    it('should_prefix_the_tooltip_with_the_connection_name_when_showConnectionInTooltip_is_enabled_rg_021_02', async () => {
+      const { fixture } = await setup();
+      fixture.componentInstance.showConnectionInTooltip.set(true);
+      await fixture.whenStable();
+
+      const tooltip = fixture.debugElement.query(By.css('.tag-neutral')).injector.get(MatTooltip);
+      expect(tooltip.message).toBe('GitLab · equipe/backend-api');
+    });
   });
 
   it('should_link_the_title_to_web_url_with_rel_noopener_and_a_tooltip', async () => {

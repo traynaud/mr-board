@@ -36,10 +36,7 @@ import { collectDirtyAliasChanges, syncReposFormArray } from './repos-form';
 import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
 import { IdentityRow, MeSectionComponent } from './sections/me/me-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
-import {
-  RepoRow,
-  RepositoriesSectionComponent,
-} from './sections/repositories/repositories-section.component';
+import { RepoRow } from './sections/repositories/repositories-section.component';
 import { MiscellaneousSectionComponent } from './sections/miscellaneous/miscellaneous-section.component';
 import { ThresholdsSectionComponent } from './sections/thresholds/thresholds-section.component';
 import {
@@ -74,7 +71,6 @@ const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
     ConnectionsSectionComponent,
     MeSectionComponent,
     RefreshSectionComponent,
-    RepositoriesSectionComponent,
     ThresholdsSectionComponent,
     MiscellaneousSectionComponent,
   ],
@@ -152,15 +148,11 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // temps (cas rare, assumé).
     effect(() => {
       const projects = this.projectsStore.projects();
-      const connectionsById = new Map(
-        this.connectionsStore.connections().map((c) => [c.id, c]),
-      );
       syncReposFormArray(this.form.controls.repos, projects);
       this.repoRows.set(
         projects.map((project, i) => ({
           project,
           group: this.form.controls.repos.at(i),
-          connectionName: connectionsById.get(project.connectionId)?.name ?? '',
         })),
       );
     });
@@ -174,9 +166,10 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
 
   ngOnInit(): void {
     void this.store.load();
-    // `ConnectionsStore`/`ProjectsStore` sont chargés par leurs sections
-    // propriétaires (`ConnectionsSectionComponent`/`RepositoriesSectionComponent`)
-    // — jamais ici, pour éviter un chargement redondant du même singleton.
+    // `ConnectionsStore`/`ProjectsStore` sont chargés par `ConnectionsSectionComponent`
+    // (US-021 §0 : les repos vivent désormais dans ses cartes de connexion
+    // dépliées) — jamais ici, pour éviter un chargement redondant du même
+    // singleton.
   }
 
   /** Contrat du guard d'abandon (RG-001-07). */
@@ -246,6 +239,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
       active: this.filtersStore.active(),
+      connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),
       author: this.filtersStore.author(),
       assigned: this.filtersStore.assigned(),

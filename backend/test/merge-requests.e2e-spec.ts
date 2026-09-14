@@ -54,6 +54,7 @@ interface FacetOptionBody {
   count: number;
 }
 interface MergeRequestsFacetsBody {
+  connection: FacetOptionBody[];
   project: FacetOptionBody[];
   author: FacetOptionBody[];
   assigned: FacetOptionBody[];
@@ -640,6 +641,36 @@ describe('MergeRequests (e2e)', () => {
     expect(iids).toEqual([70, 71]);
   });
 
+  it('GET /merge-requests?connection=... should_only_return_merge_requests_of_the_given_connection_case_insensitively', async () => {
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        project.pathWithNamespace === 'equipe/api'
+          ? Promise.resolve([mergeRequest(75), mergeRequest(76)])
+          : Promise.resolve([]),
+    );
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const matching = await api().get(
+      '/api/v1/merge-requests?connection=gitlab',
+    );
+    const matchingIids = (
+      matching.body as MergeRequestsResponseBody
+    ).mergeRequests
+      .map((v) => v.iid)
+      .sort((a, b) => a - b);
+    expect(matchingIids).toEqual(expect.arrayContaining([75, 76]));
+
+    const unknown = await api().get(
+      '/api/v1/merge-requests?connection=inconnue',
+    );
+    expect(unknown.status).toBe(200);
+    expect((unknown.body as MergeRequestsResponseBody).mergeRequests).toEqual(
+      [],
+    );
+  });
+
   it('GET /merge-requests?assigned=nobody should_return_merge_requests_without_reviewer_or_assignee', async () => {
     gitlab.fetchOpenMergeRequests.mockImplementation(
       (_url: string, _token: string, project: { pathWithNamespace: string }) =>
@@ -792,7 +823,7 @@ describe('MergeRequests (e2e)', () => {
     expect((res.body as MergeRequestsResponseBody).mergeRequests).toEqual([]);
   });
 
-  it('GET /merge-requests/facets should_expose_options_and_contextual_counts_for_the_5_filters', async () => {
+  it('GET /merge-requests/facets should_expose_options_and_contextual_counts_for_the_6_filters', async () => {
     gitlab.fetchOpenMergeRequests.mockImplementation(
       (
         _url: string,
@@ -828,6 +859,9 @@ describe('MergeRequests (e2e)', () => {
     expect(res.status).toBe(200);
     const facets = res.body as MergeRequestsFacetsBody;
 
+    expect(facets.connection).toEqual([
+      { value: 'GitLab', label: 'GitLab', count: 3 },
+    ]);
     expect(facets.project.find((o) => o.value === 'api')?.count).toBe(3);
     expect(facets.project.find((o) => o.value === 'web')?.count).toBe(0);
     expect(facets.author).toEqual(
@@ -865,6 +899,21 @@ describe('MergeRequests (e2e)', () => {
       label: 'Nobody',
       count: 0,
     });
+  });
+
+  it('GET /merge-requests/facets?connection=inconnue should_not_apply_the_connection_filter_to_its_own_options', async () => {
+    const res = await api().get(
+      '/api/v1/merge-requests/facets?connection=inconnue',
+    );
+    expect(res.status).toBe(200);
+    const facets = res.body as MergeRequestsFacetsBody;
+
+    // 'connection' ignores its own active filter: 'GitLab' keeps its true count.
+    expect(facets.connection).toEqual([
+      { value: 'GitLab', label: 'GitLab', count: 3 },
+    ]);
+    // but 'project' IS scoped by connection=inconnue (no open MR there).
+    expect(facets.project.find((o) => o.value === 'api')?.count).toBe(0);
   });
 
   describe('mergeStatus (US-017)', () => {

@@ -46,6 +46,7 @@ describe('findNewAssignments', () => {
       {
         id: 1,
         projectAlias: 'api',
+        connectionName: 'GitLab',
         iid: 42,
         title: 'Titre',
         webUrl: 'https://gitlab.com/equipe/api/-/merge_requests/42',

@@ -49,14 +49,7 @@
         titleKey="settings.connections.title"
         descriptionKey="settings.connections.description"
       >
-        <app-connections-section />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.projects.number' | translate"
-        titleKey="settings.projects.title"
-        descriptionKey="settings.projects.description"
-      >
-        <app-repositories-section [rows]="repoRows()" />
+        <app-connections-section [rows]="repoRows()" />
       </app-settings-section>
       <app-settings-section
         [number]="'settings.refresh.number' | translate"

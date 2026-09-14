@@ -1,5 +1,9 @@
 import { SyncRun } from '../../models/sync-status.model';
-import { computeNextRunTooltip, computeSyncStatusLabel } from './sync-status-label';
+import {
+  computeNextRunTooltip,
+  computeSyncFailureDetail,
+  computeSyncStatusLabel,
+} from './sync-status-label';
 
 const NOW = new Date('2026-09-11T08:10:00.000Z').getTime();
 
@@ -89,6 +93,32 @@ describe('computeSyncStatusLabel', () => {
       NOW,
     );
     expect(label.key).toBe('board.sync.justNow');
+  });
+});
+
+describe('computeSyncFailureDetail', () => {
+  it('should_return_null_when_there_is_no_last_run', () => {
+    expect(computeSyncFailureDetail(null)).toBeNull();
+  });
+
+  it('should_return_null_for_a_successful_run', () => {
+    expect(computeSyncFailureDetail(run({ status: 'success' }))).toBeNull();
+  });
+
+  it('should_return_the_error_message_for_a_partial_run_rg_021_06', () => {
+    const lastRun = run({
+      status: 'partial',
+      errorMessage: 'front-web: Jeton refusé (github.com)',
+    });
+    expect(computeSyncFailureDetail(lastRun)).toBe('front-web: Jeton refusé (github.com)');
+  });
+
+  it('should_return_the_error_message_for_an_error_run', () => {
+    const lastRun = run({
+      status: 'error',
+      errorMessage: 'Aucun jeton (gitlab.exemple.fr) : equipe/api',
+    });
+    expect(computeSyncFailureDetail(lastRun)).toBe('Aucun jeton (gitlab.exemple.fr) : equipe/api');
   });
 });
 

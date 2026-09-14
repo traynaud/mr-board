@@ -113,6 +113,35 @@ describe('Connections (e2e)', () => {
     );
   });
 
+  it('POST /connections should_reject_a_name_containing_a_comma_rg_021_04', async () => {
+    const res = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'GitLab interne, secours',
+      url: 'https://gitlab.exemple.fr',
+      token: 'glpat-abcdwxyz',
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /connections/:id should_reject_a_name_containing_a_semicolon_rg_021_04', async () => {
+    const created = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'temp-connection',
+      url: 'https://gitlab-temp.exemple.fr',
+      token: 'glpat-abcdwxyz',
+    });
+    const id = body(created).id;
+
+    const res = await api()
+      .put(`/api/v1/connections/${id}`)
+      .send({ name: 'temp;connection' });
+
+    expect(res.status).toBe(400);
+
+    await api().delete(`/api/v1/connections/${id}`);
+  });
+
   it('GET /connections should_list_both_connections', async () => {
     const res = await api().get('/api/v1/connections');
 

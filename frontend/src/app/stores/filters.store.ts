@@ -10,6 +10,7 @@ import {
 export interface FiltersState extends MergeRequestFilters {
   /** Filtres composables actifs (pastilles affichées), dans l'ordre d'ajout (RG-010-03). */
   active: FilterKey[];
+  connection: string[];
   project: string[];
   author: string[];
   assigned: string[];
@@ -21,6 +22,7 @@ const initialState: FiltersState = {
   drafts: false,
   mine: false,
   active: [],
+  connection: [],
   project: [],
   author: [],
   assigned: [],
@@ -41,8 +43,9 @@ export const FiltersStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withComputed((store) => ({
-    /** Forme `ComposableFilters` attendue par l'API (RG-010-01). */
+    /** Forme `ComposableFilters` attendue par l'API (RG-010-01, RG-021-03). */
     composableFilters: computed<ComposableFilters>(() => ({
+      connection: store.connection(),
       project: store.project(),
       author: store.author(),
       assigned: store.assigned(),
@@ -88,7 +91,10 @@ export const FiltersStore = signalStore(
     },
 
     /** RG-010-02/05 : bascule `value` dans la sélection multi de `key` (OU entre valeurs). */
-    toggleMultiValue(key: 'project' | 'author' | 'assigned', value: string): void {
+    toggleMultiValue(
+      key: 'connection' | 'project' | 'author' | 'assigned',
+      value: string,
+    ): void {
       const current = store[key]();
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
@@ -97,7 +103,7 @@ export const FiltersStore = signalStore(
     },
 
     /** RG-010-09 : remplace la sélection multi de `key` sans passer par un toggle (réconciliation). */
-    setMultiValue(key: 'project' | 'author' | 'assigned', values: string[]): void {
+    setMultiValue(key: 'connection' | 'project' | 'author' | 'assigned', values: string[]): void {
       patchState(store, { [key]: values });
     },
 
@@ -111,6 +117,7 @@ export const FiltersStore = signalStore(
       patchState(store, {
         mine: false,
         active: [],
+        connection: [],
         project: [],
         author: [],
         assigned: [],

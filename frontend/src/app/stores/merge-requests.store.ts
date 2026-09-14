@@ -12,6 +12,7 @@ import {
   SortKey,
 } from '../models/merge-request.model';
 import { findNewAssignments } from './assignment-diff';
+import { ConnectionsStore } from './connections.store';
 import { FiltersStore } from './filters.store';
 import { SettingsStore } from './settings.store';
 
@@ -54,6 +55,7 @@ export const MergeRequestsStore = signalStore(
       api = inject(MergeRequestsService),
       filters = inject(FiltersStore),
       settingsStore = inject(SettingsStore),
+      connectionsStore = inject(ConnectionsStore),
       notifications = inject(BrowserNotificationService),
     ) => {
       let reloadTimer: ReturnType<typeof setTimeout> | undefined;
@@ -81,7 +83,8 @@ export const MergeRequestsStore = signalStore(
       /**
        * Notifie les nouvelles assignations (RG-016-01/02) : jamais au premier
        * chargement de la session (`hasLoadedOnce`), et seulement si l'option
-       * est activée.
+       * est activée. Le corps nomme la connexion après l'alias dès qu'il en
+       * existe au moins deux (RG-021-08).
        */
       function notifyNewAssignments(
         previous: MergeRequestView[],
@@ -91,10 +94,14 @@ export const MergeRequestsStore = signalStore(
         if (!hasLoadedOnce || !settings?.notifyAssigned) {
           return;
         }
+        const showConnection = connectionsStore.connections().length > 1;
         for (const assignment of findNewAssignments(previous, current)) {
+          const body = showConnection
+            ? `[${assignment.connectionName} · ${assignment.projectAlias}] ${assignment.title}`
+            : assignment.title;
           notifications.show(
             `MR Board — ${assignment.projectAlias} !${assignment.iid}`,
-            assignment.title,
+            body,
             () => window.open(assignment.webUrl, '_blank'),
           );
         }
@@ -103,14 +110,22 @@ export const MergeRequestsStore = signalStore(
       /**
        * RG-010-09 : retire silencieusement, de chaque filtre multi-sélection,
        * toute valeur sélectionnée absente des options renvoyées par `facets`
-       * (utilisateur disparu, alias renommé). `FiltersStore` reste un état UI
-       * pur, sans connaissance du serveur — cette logique vit ici.
+       * (utilisateur disparu, alias renommé, connexion supprimée — RG-021-03).
+       * `FiltersStore` reste un état UI pur, sans connaissance du serveur —
+       * cette logique vit ici. `connection` compare en minuscules (RG-021-05)
+       * pour ne pas purger à tort une valeur restaurée depuis l'URL dans une
+       * casse différente de celle stockée (le backend, lui, la matcherait).
        */
       function reconcileSelections(facets: MergeRequestsFacets): void {
-        for (const key of ['project', 'author', 'assigned'] as const) {
-          const known = new Set(facets[key].map((option) => option.value));
+        for (const key of ['connection', 'project', 'author', 'assigned'] as const) {
+          const caseInsensitive = key === 'connection';
+          const known = new Set(
+            facets[key].map((option) => (caseInsensitive ? option.value.toLowerCase() : option.value)),
+          );
           const current = filters[key]();
-          const pruned = current.filter((value) => known.has(value));
+          const pruned = current.filter((value) =>
+            known.has(caseInsensitive ? value.toLowerCase() : value),
+          );
           if (pruned.length !== current.length) {
             filters.setMultiValue(key, pruned);
           }

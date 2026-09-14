@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../core/i18n/translate.service';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
+import { Project } from '../../../models/project.model';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { DifficultyBadgeComponent } from '../../../shared/difficulty-badge/difficulty-badge.component';
 import { formatDateTime, formatShortDate } from '../../../shared/format/format-date';
@@ -68,6 +69,12 @@ export class MrTableComponent {
   protected readonly language = this.i18n.language;
 
   readonly rows = input.required<MergeRequestView[]>();
+  /** Repos configurés, pour résoudre le `pathWithNamespace` de l'infobulle du tag projet (RG-021-02). */
+  readonly projects = input<Project[]>([]);
+  /** RG-021-01 : icône de forge avant l'alias, seulement si ≥ 2 types de forge sont configurés. */
+  readonly showForgeIcon = input(false);
+  /** RG-021-02 : l'infobulle nomme la connexion en plus du chemin, seulement à partir de 2 connexions. */
+  readonly showConnectionInTooltip = input(false);
   readonly sort = input.required<MergeRequestSort>();
   /** RG-017-09 : visibilité de la colonne optionnelle « Statut ». */
   readonly showStatus = input.required<boolean>();
@@ -99,6 +106,17 @@ export class MrTableComponent {
     ...(this.showOpened() ? ['opened'] : []),
     'columnsMenu',
   ]);
+
+  /** RG-021-02 : chemin de chaque repo configuré, indexé par alias. */
+  private readonly pathByAlias = computed(
+    () => new Map(this.projects().map((project) => [project.alias, project.pathWithNamespace])),
+  );
+
+  /** RG-021-02 : « <chemin> » avec une seule connexion, « <connexion> · <chemin> » à partir de deux. */
+  protected tagTooltip(row: MergeRequestView): string {
+    const path = this.pathByAlias().get(row.projectAlias) ?? '';
+    return this.showConnectionInTooltip() ? `${row.connection.name} · ${path}` : path;
+  }
 
   protected readonly summarizeUsers = summarizeUsers;
   protected readonly formatShortDate = formatShortDate;

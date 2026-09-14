@@ -3,6 +3,7 @@ import {
   Component,
   OnDestroy,
   computed,
+  inject,
   input,
   output,
   signal,
@@ -14,6 +15,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslateService } from '../../../core/i18n/translate.service';
 import { SyncRun } from '../../../models/sync-status.model';
 import { computeNextRunTooltip, computeSyncStatusLabel } from '../sync-status-label';
 
@@ -42,10 +44,14 @@ const LABEL_TICK_MS = 30_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoardToolbarComponent implements OnDestroy {
+  private readonly i18n = inject(TranslateService);
+
   readonly running = input.required<boolean>();
   readonly lastRun = input.required<SyncRun | null>();
   /** Prochaine échéance planifiée, `null` en mode manuel (RG-013-07). */
   readonly nextRunAt = input<string | null>(null);
+  /** Détail des repos en échec du dernier run `partial`/`error` (RG-021-06). */
+  readonly failureDetail = input<string | null>(null);
   /** Désactivé sans jeton configuré ou pendant une synchronisation (RG-004-09, RG-004-10). */
   readonly refreshDisabled = input<boolean>(false);
   readonly refresh = output<void>();
@@ -69,6 +75,20 @@ export class BoardToolbarComponent implements OnDestroy {
   );
 
   protected readonly nextRunTooltip = computed(() => computeNextRunTooltip(this.nextRunAt()));
+
+  /**
+   * RG-021-06 : le détail des repos en échec prime sur l'infobulle
+   * « prochaine synchro » (RG-013-07) quand il y en a un — texte déjà
+   * assemblé côté backend, jamais une clé i18n.
+   */
+  protected readonly syncTooltip = computed(() => {
+    const failure = this.failureDetail();
+    if (failure) {
+      return failure;
+    }
+    const tooltip = this.nextRunTooltip();
+    return this.i18n.translate(tooltip.key, tooltip.params ?? {});
+  });
 
   ngOnDestroy(): void {
     clearInterval(this.tickHandle);

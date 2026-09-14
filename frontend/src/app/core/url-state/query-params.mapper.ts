@@ -15,6 +15,8 @@ export interface UrlState {
   mine: boolean;
   /** Filtres composables actifs (pastilles affichées), reconstruit depuis la présence des clés dans l'URL. */
   active: FilterKey[];
+  /** Noms de connexion (RG-021-04). */
+  connection: string[];
   project: string[];
   author: string[];
   assigned: string[];
@@ -56,6 +58,7 @@ export function normalizeParams(params: Record<string, unknown>): Record<string,
 export function decodeQueryParams(params: Record<string, string | undefined>): UrlState {
   const active: FilterKey[] = [];
 
+  const connection = decodeListFilter('connection', params, active);
   const project = decodeListFilter('project', params, active);
   const author = decodeListFilter('author', params, active);
   const assigned = decodeListFilter('assigned', params, active);
@@ -67,6 +70,7 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
     drafts: params['drafts'] === '1',
     mine: params['mine'] === '1',
     active,
+    connection,
     project,
     author,
     assigned,
@@ -101,7 +105,7 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
 }
 
 function decodeListFilter(
-  key: 'project' | 'author' | 'assigned',
+  key: 'connection' | 'project' | 'author' | 'assigned',
   params: Record<string, string | undefined>,
   active: FilterKey[],
 ): string[] {

@@ -109,6 +109,7 @@ describe('MergeRequestsService', () => {
       const req = ctrl.expectOne(
         (r) =>
           r.url === '/api/v1/merge-requests' &&
+          !r.params.has('connection') &&
           !r.params.has('project') &&
           !r.params.has('author') &&
           !r.params.has('assigned') &&
@@ -124,6 +125,7 @@ describe('MergeRequestsService', () => {
           { key: 'ready', direction: 'asc' },
           { drafts: false, mine: false },
           {
+            connection: ['gitlab.com', 'github.com'],
             project: ['api', 'web'],
             author: ['mdupont'],
             assigned: ['nobody'],
@@ -136,6 +138,7 @@ describe('MergeRequestsService', () => {
       const req = ctrl.expectOne(
         (r) =>
           r.url === '/api/v1/merge-requests' &&
+          r.params.get('connection') === 'gitlab.com,github.com' &&
           r.params.get('project') === 'api,web' &&
           r.params.get('author') === 'mdupont' &&
           r.params.get('assigned') === 'nobody' &&
@@ -160,6 +163,7 @@ describe('MergeRequestsService', () => {
       );
       expect(req.request.method).toBe('GET');
       const facets = {
+        connection: [],
         project: [],
         author: [],
         assigned: [{ value: 'nobody', label: 'Nobody', count: 0 }],
@@ -181,20 +185,35 @@ describe('MergeRequestsService', () => {
       service
         .getFacets(
           { drafts: false, mine: false },
-          { project: ['api'], author: [], assigned: [], approved: null, commented: 'yes' },
+          {
+            connection: ['gitlab.com'],
+            project: ['api'],
+            author: [],
+            assigned: [],
+            approved: null,
+            commented: 'yes',
+          },
         )
         .subscribe();
 
       const req = ctrl.expectOne(
         (r) =>
           r.url === '/api/v1/merge-requests/facets' &&
+          r.params.get('connection') === 'gitlab.com' &&
           r.params.get('project') === 'api' &&
           !r.params.has('author') &&
           !r.params.has('assigned') &&
           !r.params.has('approved') &&
           r.params.get('commented') === '1',
       );
-      req.flush({ project: [], author: [], assigned: [], approved: [], commented: [] });
+      req.flush({
+        connection: [],
+        project: [],
+        author: [],
+        assigned: [],
+        approved: [],
+        commented: [],
+      });
     });
   });
 });

@@ -11,7 +11,12 @@
       ></span>
     </th>
     <td mat-cell *matCellDef="let row">
-      <span class="tag tag-neutral">{{ row.projectAlias }}</span>
+      <span class="tag tag-neutral" [matTooltip]="tagTooltip(row)">
+        @if (showForgeIcon()) {
+          <mat-icon [svgIcon]="row.connection.type" class="forge-icon" />
+        }
+        {{ row.projectAlias }}
+      </span>
     </td>
   </ng-container>
 

@@ -28,6 +28,7 @@
       "add": "Ajouter un filtre",
       "pills": {
         "names": {
+          "connection": "Connexion",
           "project": "Projet",
           "author": "Auteur",
           "assigned": "Affecté à",
@@ -123,7 +124,8 @@
       "justNow": "Synchronisé à l'instant",
       "minutesAgo": "Synchronisé il y a {{minutes}} min",
       "failedMinutesAgo": "Dernière synchro en échec il y a {{minutes}} min",
-      "toastError": "La synchronisation a rencontré une erreur.",
+      "toastPartial": "Synchronisation partielle :",
+      "toastError": "Synchronisation en erreur :",
       "nextRunTooltip": "Prochaine synchro à {{time}}",
       "manualTooltip": "Synchronisation manuelle"
     },
@@ -168,7 +170,7 @@
     "connections": {
       "number": "02",
       "title": "Connexions",
-      "description": "Forges interrogées par MR Board. Jeton en lecture seule, stocké chiffré côté serveur.",
+      "description": "Forges interrogées par MR Board. Jeton en lecture seule, stocké chiffré côté serveur. Chaque dépôt est rattaché à sa connexion.",
       "loadError": "Impossible de charger les connexions.",
       "empty": "Aucune connexion. Ajoutez votre première forge.",
       "add": "Ajouter une connexion",
@@ -178,8 +180,10 @@
       "list": {
         "tokenConfigured": "Jeton configuré (…{{hint}})",
         "tokenNone": "Aucun jeton",
+        "repoCount": "{{count}} dépôts",
         "test": "Tester",
-        "edit": "Modifier",
+        "expand": "Déplier {{name}}",
+        "collapse": "Replier {{name}}",
         "remove": "Supprimer {{name}}"
       },
       "form": {
@@ -187,6 +191,7 @@
         "typeGithub": "GitHub",
         "name": "Nom",
         "nameDuplicate": "Nom déjà utilisé",
+        "nameInvalidChars": "Le nom ne peut contenir ni virgule ni point-virgule.",
         "url": "URL de l'instance",
         "urlRequired": "L'URL est obligatoire.",
         "urlInvalid": "Saisir une URL http(s) valide, par ex. https://gitlab.exemple.fr",
@@ -213,32 +218,29 @@
         "message": "Ses {{count}} repos et leurs MRs seront retirés du tableau.",
         "confirm": "Supprimer",
         "cancel": "Annuler"
-      }
-    },
-    "projects": {
-      "number": "03",
-      "title": "Repos à scanner",
-      "description": "L'alias est ce qui s'affiche dans la colonne Projet et le filtre.",
-      "connectionHeader": "Connexion",
-      "pathHeader": "Chemin du projet",
-      "aliasHeader": "Alias",
-      "pathPlaceholderGitlab": "groupe/projet ou URL GitLab",
-      "pathPlaceholderGithub": "owner/repo ou URL GitHub",
-      "aliasPlaceholder": "alias",
-      "add": "Ajouter",
-      "remove": "Supprimer {{alias}}",
-      "added": "Repo ajouté",
-      "removed": "Repo supprimé",
-      "loadError": "Impossible de charger les repos.",
-      "deleteConfirm": {
-        "title": "Supprimer ce repo ?",
-        "message": "Ses MRs ne seront plus affichées.",
-        "confirm": "Supprimer",
-        "cancel": "Rester"
+      },
+      "repos": {
+        "title": "Dépôts de cette connexion",
+        "pathHeader": "Chemin du projet",
+        "aliasHeader": "Alias",
+        "pathPlaceholderGitlab": "groupe/projet ou URL GitLab",
+        "pathPlaceholderGithub": "owner/repo ou URL GitHub",
+        "aliasPlaceholder": "alias",
+        "add": "Ajouter",
+        "remove": "Supprimer {{alias}}",
+        "added": "Repo ajouté",
+        "removed": "Repo supprimé",
+        "loadError": "Impossible de charger les repos.",
+        "deleteConfirm": {
+          "title": "Supprimer ce repo ?",
+          "message": "Ses MRs ne seront plus affichées.",
+          "confirm": "Supprimer",
+          "cancel": "Rester"
+        }
       }
     },
     "refresh": {
-      "number": "04",
+      "number": "03",
       "title": "Actualisation",
       "description": "Fréquence de synchronisation automatique avec les forges.",
       "frequency": "Fréquence de synchronisation",
@@ -250,7 +252,7 @@
       "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
     },
     "thresholds": {
-      "number": "05",
+      "number": "04",
       "title": "Seuils",
       "description": "Règles de calcul de la difficulté et du délai Ready.",
       "difficulty": {
@@ -280,7 +282,7 @@
       }
     },
     "misc": {
-      "number": "06",
+      "number": "05",
       "title": "Divers",
       "description": "Options de confort et sauvegarde de la configuration.",
       "theme": {

@@ -4,6 +4,8 @@ import { MergeRequestView } from '../models/merge-request.model';
 export interface NewAssignment {
   id: number;
   projectAlias: string;
+  /** Nom de la connexion du projet, utilisé par RG-021-08 dès qu'il en existe au moins deux. */
+  connectionName: string;
   iid: number;
   title: string;
   webUrl: string;
@@ -40,6 +42,7 @@ export function findNewAssignments(
     newAssignments.push({
       id: mr.id,
       projectAlias: mr.projectAlias,
+      connectionName: mr.connection.name,
       iid: mr.iid,
       title: mr.title,
       webUrl: mr.webUrl,

@@ -116,11 +116,18 @@ export interface MergeRequestFilters {
   mine: boolean;
 }
 
-/** Les 5 filtres composables (RG-010-01). */
-export type FilterKey = 'project' | 'author' | 'assigned' | 'approved' | 'commented';
+/** Les 6 filtres composables (RG-010-01, RG-021-03). */
+export type FilterKey =
+  | 'connection'
+  | 'project'
+  | 'author'
+  | 'assigned'
+  | 'approved'
+  | 'commented';
 
-/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03). */
+/** Ordre d'affichage du menu « Ajouter un filtre » (RG-010-03, RG-021-03 : Connexion en tête). */
 export const ALL_FILTER_KEYS: FilterKey[] = [
+  'connection',
   'project',
   'author',
   'assigned',
@@ -128,13 +135,17 @@ export const ALL_FILTER_KEYS: FilterKey[] = [
   'commented',
 ];
 
-/** `project`/`author`/`assigned` sont des filtres multi-sélection ; `approved`/`commented` sont booléens. */
-export function isMultiValueFilter(key: FilterKey): key is 'project' | 'author' | 'assigned' {
-  return key === 'project' || key === 'author' || key === 'assigned';
+/** `connection`/`project`/`author`/`assigned` sont des filtres multi-sélection ; `approved`/`commented` sont booléens. */
+export function isMultiValueFilter(
+  key: FilterKey,
+): key is 'connection' | 'project' | 'author' | 'assigned' {
+  return key === 'connection' || key === 'project' || key === 'author' || key === 'assigned';
 }
 
-/** État des 5 filtres composables (RG-010-01/02). `'nobody'` est une valeur comme une autre dans `assigned`. */
+/** État des 6 filtres composables (RG-010-01/02, RG-021-03). `'nobody'` est une valeur comme une autre dans `assigned`. */
 export interface ComposableFilters {
+  /** Noms de connexion (RG-021-03), comparés insensible à la casse côté backend (RG-021-05). */
+  connection: string[];
   project: string[];
   author: string[];
   assigned: string[];
@@ -143,6 +154,7 @@ export interface ComposableFilters {
 }
 
 export const EMPTY_COMPOSABLE_FILTERS: ComposableFilters = {
+  connection: [],
   project: [],
   author: [],
   assigned: [],
@@ -157,8 +169,10 @@ export interface FacetOption {
   count: number;
 }
 
-/** Réponse de `GET /merge-requests/facets` (RG-010-07). */
+/** Réponse de `GET /merge-requests/facets` (RG-010-07, RG-021-03). */
 export interface MergeRequestsFacets {
+  /** Chaque connexion configurée, même sans MR ouverte (RG-021-03). */
+  connection: FacetOption[];
   project: FacetOption[];
   author: FacetOption[];
   /** `'nobody'` toujours en première position (RG-010-05). */

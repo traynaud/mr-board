@@ -23,6 +23,7 @@ function mr(
     assignees: [],
     approved: false,
     commentsCount: 0,
+    connection: { name: 'gitlab.com' },
     ...overrides,
   };
 }
@@ -40,6 +41,32 @@ describe('applyComposableFilters', () => {
     expect(applyComposableFilters(items, filters()).map((m) => m.id)).toEqual([
       1, 2,
     ]);
+  });
+
+  it('should_filter_by_connection_or_between_values', () => {
+    const items = [
+      mr({ id: 1, connection: { name: 'gitlab.com' } }),
+      mr({ id: 2, connection: { name: 'github.com' } }),
+      mr({ id: 3, connection: { name: 'gitlab.exemple.fr' } }),
+    ];
+
+    expect(
+      applyComposableFilters(
+        items,
+        filters({ connection: ['gitlab.com', 'github.com'] }),
+      ).map((m) => m.id),
+    ).toEqual([1, 2]);
+  });
+
+  it('should_match_connection_names_case_insensitively_rg_021_05', () => {
+    const items = [mr({ id: 1, connection: { name: 'GitHub.com' } })];
+
+    expect(
+      applyComposableFilters(
+        items,
+        filters({ connection: ['github.com'] }),
+      ).map((m) => m.id),
+    ).toEqual([1]);
   });
 
   it('should_filter_by_project_or_between_values', () => {

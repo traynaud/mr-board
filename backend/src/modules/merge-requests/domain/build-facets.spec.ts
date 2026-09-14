@@ -3,7 +3,11 @@ import {
   EMPTY_COMPOSABLE_FILTERS,
   FilterableMergeRequest,
 } from './filter-merge-requests';
-import { ConfiguredProject, buildFacets } from './build-facets';
+import {
+  ConfiguredConnection,
+  ConfiguredProject,
+  buildFacets,
+} from './build-facets';
 
 function person(
   username: string,
@@ -22,6 +26,7 @@ function mr(
     assignees: [],
     approved: false,
     commentsCount: 0,
+    connection: { name: 'gitlab.com' },
     ...overrides,
   };
 }
@@ -37,14 +42,65 @@ const REPOS: ConfiguredProject[] = [
   { alias: 'api', pathWithNamespace: 'equipe/backend-api' },
 ];
 
+const CONNECTIONS: ConfiguredConnection[] = [{ name: 'gitlab.com' }];
+
 describe('buildFacets', () => {
   it('should_list_every_configured_project_sorted_by_alias_even_with_zero_count', () => {
-    const facets = buildFacets([mr({ projectAlias: 'api' })], filters(), REPOS);
+    const facets = buildFacets(
+      [mr({ projectAlias: 'api' })],
+      filters(),
+      REPOS,
+      CONNECTIONS,
+    );
 
     expect(facets.project).toEqual([
       { value: 'api', label: 'api · equipe/backend-api', count: 1 },
       { value: 'web', label: 'web · equipe/front-web', count: 0 },
     ]);
+  });
+
+  it('should_list_every_configured_connection_sorted_by_name_even_with_zero_count', () => {
+    const facets = buildFacets(
+      [mr({ connection: { name: 'gitlab.com' } })],
+      filters(),
+      REPOS,
+      [{ name: 'gitlab.com' }, { name: 'github.com' }],
+    );
+
+    expect(facets.connection).toEqual([
+      { value: 'github.com', label: 'github.com', count: 0 },
+      { value: 'gitlab.com', label: 'gitlab.com', count: 1 },
+    ]);
+  });
+
+  it('should_count_connection_options_case_insensitively_rg_021_05', () => {
+    const facets = buildFacets(
+      [mr({ connection: { name: 'GitHub.com' } })],
+      filters(),
+      REPOS,
+      [{ name: 'github.com' }],
+    );
+
+    expect(facets.connection).toEqual([
+      { value: 'github.com', label: 'github.com', count: 1 },
+    ]);
+  });
+
+  it('should_ignore_the_connection_filter_own_value_when_computing_its_own_counts', () => {
+    const base = [
+      mr({ connection: { name: 'gitlab.com' } }),
+      mr({ connection: { name: 'github.com' } }),
+    ];
+
+    const facets = buildFacets(
+      base,
+      filters({ connection: ['gitlab.com'] }),
+      REPOS,
+      [{ name: 'gitlab.com' }, { name: 'github.com' }],
+    );
+
+    const github = facets.connection.find((o) => o.value === 'github.com');
+    expect(github?.count).toBe(1);
   });
 
   it('should_only_list_authors_present_in_the_base_set_sorted_by_name', () => {
@@ -55,6 +111,7 @@ describe('buildFacets', () => {
       ],
       filters(),
       REPOS,
+      CONNECTIONS,
     );
 
     expect(facets.author).toEqual([
@@ -71,6 +128,7 @@ describe('buildFacets', () => {
       ],
       filters(),
       REPOS,
+      CONNECTIONS,
     );
 
     expect(facets.author).toEqual([
@@ -83,6 +141,7 @@ describe('buildFacets', () => {
       [mr({ reviewers: [person('zaccary', 'Zaccary Aaa')] })],
       filters(),
       REPOS,
+      CONNECTIONS,
     );
 
     expect(facets.assigned[0]).toEqual({
@@ -105,6 +164,7 @@ describe('buildFacets', () => {
       ],
       filters(),
       REPOS,
+      CONNECTIONS,
     );
 
     expect(facets.assigned).toHaveLength(2); // nobody + mdupont
@@ -123,6 +183,7 @@ describe('buildFacets', () => {
       ],
       filters(),
       REPOS,
+      CONNECTIONS,
     );
 
     expect(facets.approved).toEqual([
@@ -147,7 +208,12 @@ describe('buildFacets', () => {
       mr({ projectAlias: 'web', reviewers: [], assignees: [] }),
     ];
 
-    const facets = buildFacets(base, filters({ project: ['api'] }), REPOS);
+    const facets = buildFacets(
+      base,
+      filters({ project: ['api'] }),
+      REPOS,
+      CONNECTIONS,
+    );
 
     const nobody = facets.assigned.find((o) => o.value === 'nobody');
     expect(nobody?.count).toBe(2);
@@ -159,8 +225,9 @@ describe('buildFacets', () => {
   });
 
   it('should_return_empty_option_lists_and_zero_counts_for_an_empty_base', () => {
-    const facets = buildFacets([], filters(), []);
+    const facets = buildFacets([], filters(), [], []);
 
+    expect(facets.connection).toEqual([]);
     expect(facets.project).toEqual([]);
     expect(facets.author).toEqual([]);
     expect(facets.assigned).toEqual([

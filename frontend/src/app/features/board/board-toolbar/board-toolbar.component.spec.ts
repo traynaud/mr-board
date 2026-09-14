@@ -27,6 +27,7 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
       [running]="running()"
       [lastRun]="lastRun()"
       [nextRunAt]="nextRunAt()"
+      [failureDetail]="failureDetail()"
       [refreshDisabled]="refreshDisabled()"
       [themeIcon]="themeIcon()"
       [themeToggleLabel]="themeToggleLabel()"
@@ -40,6 +41,7 @@ class HostComponent {
   readonly running = signal(false);
   readonly lastRun = signal<SyncRun | null>(null);
   readonly nextRunAt = signal<string | null>(null);
+  readonly failureDetail = signal<string | null>(null);
   readonly refreshDisabled = signal(false);
   readonly refreshCount = signal(0);
   readonly themeIcon = signal<'sun' | 'moon'>('moon');
@@ -120,6 +122,17 @@ describe('BoardToolbarComponent', () => {
 
     const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
     expect(tooltip.message).toBe(t('board.sync.nextRunTooltip', { time: '14:05' }));
+  });
+
+  it('should_show_the_failure_detail_in_the_tooltip_instead_of_the_next_run_time_rg_021_06', async () => {
+    const { fixture } = await setup();
+    const local = new Date(2026, 8, 12, 14, 5);
+    fixture.componentInstance.nextRunAt.set(local.toISOString());
+    fixture.componentInstance.failureDetail.set('front-web: Jeton refusé (github.com)');
+    await fixture.whenStable();
+
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe('front-web: Jeton refusé (github.com)');
   });
 
   it('should_link_the_settings_button_to_settings', async () => {

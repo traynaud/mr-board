@@ -33,6 +33,11 @@ export class MergeRequestFilterQueryDto {
   @IsIn(BOOLEAN_PARAMS)
   mine?: BooleanParam;
 
+  /** CSV of connection names, matched case-insensitively (RG-021-05). */
+  @IsOptional()
+  @Transform(toArray)
+  connection?: string[];
+
   /** CSV of project aliases. */
   @IsOptional()
   @Transform(toArray)

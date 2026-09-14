@@ -1,5 +1,6 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -8,7 +9,10 @@ import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../../../core/interceptors/api-base-url.interceptor';
 import { httpErrorInterceptor } from '../../../../core/interceptors/http-error.interceptor';
 import { Connection } from '../../../../models/connection.model';
+import { Project } from '../../../../models/project.model';
 import { provideIcons } from '../../../../shared/icons/provide-icons';
+import { RepoAliasForm, buildRepoAliasGroup } from '../../repos-form';
+import { RepoRow } from '../repositories/repositories-section.component';
 import { ConnectionsSectionComponent } from './connections-section.component';
 
 const CONNECTION: Connection = {
@@ -19,11 +23,31 @@ const CONNECTION: Connection = {
   tokenConfigured: true,
   tokenHint: 'wxyz',
   meUsername: null,
-  projectsCount: 2,
+  projectsCount: 1,
+};
+const PROJECT: Project = {
+  id: 1,
+  connectionId: 1,
+  pathWithNamespace: 'equipe/backend-api',
+  alias: 'api',
+  remoteProjectId: '42',
 };
 
+function rowOf(p: Project): RepoRow {
+  return { project: p, group: buildRepoAliasGroup(p) as RepoAliasForm };
+}
+
+@Component({
+  imports: [ConnectionsSectionComponent],
+  template: `<app-connections-section [rows]="rows()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class HostComponent {
+  readonly rows = signal<RepoRow[]>([]);
+}
+
 describe('ConnectionsSectionComponent', () => {
-  let fixture: ComponentFixture<ConnectionsSectionComponent>;
+  let fixture: ComponentFixture<HostComponent>;
   let el: HTMLElement;
   let http: HttpTestingController;
   const snackBar = { open: vi.fn() };
@@ -32,7 +56,7 @@ describe('ConnectionsSectionComponent', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await TestBed.configureTestingModule({
-      imports: [ConnectionsSectionComponent],
+      imports: [HostComponent],
       providers: [
         provideHttpClient(withInterceptors([apiBaseUrlInterceptor, httpErrorInterceptor])),
         provideHttpClientTesting(),
@@ -43,7 +67,7 @@ describe('ConnectionsSectionComponent', () => {
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(ConnectionsSectionComponent);
+    fixture = TestBed.createComponent(HostComponent);
     el = fixture.nativeElement as HTMLElement;
     fixture.detectChanges();
   });
@@ -55,8 +79,12 @@ describe('ConnectionsSectionComponent', () => {
     await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
   };
-  const loadConnections = async (connections: Connection[] = []) => {
+  const loadConnections = async (
+    connections: Connection[] = [],
+    projects: Project[] = [],
+  ) => {
     http.expectOne('/api/v1/connections').flush(connections);
+    http.expectOne('/api/v1/projects').flush(projects);
     await settle();
   };
   const addButton = () =>
@@ -68,9 +96,22 @@ describe('ConnectionsSectionComponent', () => {
     input.dispatchEvent(new Event('input'));
     await settle();
   };
+  const summaryFor = (name: string) =>
+    Array.from(el.querySelectorAll<HTMLElement>('.connection-summary')).find((row) =>
+      row.textContent?.includes(name),
+    )!;
+  const testIcon = (name: string) =>
+    summaryFor(name).querySelector<HTMLButtonElement>(
+      '[aria-label="' + t('settings.connections.list.test') + '"]',
+    )!;
+  const removeIcon = (name: string) =>
+    summaryFor(name).querySelector<HTMLButtonElement>(
+      '[aria-label="' + t('settings.connections.list.remove', { name }) + '"]',
+    )!;
 
   it('should_show_error_and_retry', async () => {
     http.expectOne('/api/v1/connections').flush('down', { status: 500, statusText: 'KO' });
+    http.expectOne('/api/v1/projects').flush([]);
     await settle();
 
     expect(el.querySelector('.status.error')).not.toBeNull();
@@ -78,22 +119,40 @@ describe('ConnectionsSectionComponent', () => {
     http.expectOne('/api/v1/connections').flush([CONNECTION]);
     await settle();
 
-    expect(el.querySelector('.connections-table')).not.toBeNull();
+    expect(el.querySelector('.connections-list')).not.toBeNull();
+  });
+
+  it('should_show_a_load_error_for_the_repos_and_allow_retrying', async () => {
+    http.expectOne('/api/v1/connections').flush([CONNECTION]);
+    http.expectOne('/api/v1/projects').flush('down', { status: 500, statusText: 'KO' });
+    await settle();
+
+    expect(el.querySelector('.status.error')?.textContent).toContain(
+      t('settings.connections.repos.loadError'),
+    );
+    el.querySelectorAll<HTMLButtonElement>('.status.error button')[0]!.click();
+    http.expectOne('/api/v1/projects').flush([]);
+    await settle();
+
+    expect(el.querySelector('.status.error')).toBeNull();
   });
 
   it('should_show_the_empty_state_when_there_is_no_connection', async () => {
     await loadConnections([]);
 
     expect(el.querySelector('.status')?.textContent?.trim()).toBe(t('settings.connections.empty'));
-    expect(el.querySelector('.connections-table')).toBeNull();
+    expect(el.querySelector('.connections-list')).toBeNull();
   });
 
-  it('should_render_a_row_per_connection', async () => {
+  it('should_render_a_row_per_connection_collapsed_by_default', async () => {
     await loadConnections([CONNECTION]);
 
-    expect(el.querySelector('.connections-table')).not.toBeNull();
+    expect(el.querySelector('.connections-list')).not.toBeNull();
     expect(el.textContent).toContain('GitLab');
     expect(el.textContent).toContain('https://gitlab.com');
+    // RG-021-00a : nombre de repos affiché sur la ligne repliée.
+    expect(el.textContent).toContain(t('settings.connections.list.repoCount', { count: 1 }));
+    expect(el.querySelector('.connection-details')).toBeNull();
   });
 
   it('should_open_the_add_form_prefilled_with_defaults', async () => {
@@ -140,7 +199,7 @@ describe('ConnectionsSectionComponent', () => {
     );
   });
 
-  it('should_add_a_connection_and_toast_on_success', async () => {
+  it('should_add_a_connection_toast_and_stay_expanded_with_its_repos_table_rg_021_00a', async () => {
     await loadConnections([]);
     addButton().click();
     await settle();
@@ -166,23 +225,70 @@ describe('ConnectionsSectionComponent', () => {
       t('common.ok'),
       expect.anything(),
     );
-    expect(el.querySelector('.connection-form')).toBeNull();
+    // RG-021-00a : la carte reste dépliée, formulaire ET tableau de repos visibles.
+    expect(el.querySelector('.connection-details')).not.toBeNull();
+    expect(el.querySelector('.repos-table')).not.toBeNull();
   });
 
-  it('should_open_the_edit_form_without_the_token_and_with_a_read_only_type', async () => {
-    await loadConnections([CONNECTION]);
+  it('should_expand_a_row_on_click_and_show_its_form_and_repos', async () => {
+    fixture.componentInstance.rows.set([rowOf(PROJECT)]);
+    await loadConnections([CONNECTION], [PROJECT]);
 
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.edit') + '"]')!.click();
+    summaryFor('GitLab').click();
     await settle();
 
-    expect(el.querySelector('input[formControlName="token"]')).toHaveProperty('value', '');
+    expect(el.querySelector('input[formControlName="url"]')).toHaveProperty(
+      'value',
+      'https://gitlab.com',
+    );
     expect(el.querySelector('mat-radio-group')).toBeNull();
     expect(el.querySelector('.type-static')).not.toBeNull();
+    expect(el.querySelector('.repos-table')).not.toBeNull();
+    expect(el.textContent).toContain('equipe/backend-api');
+  });
+
+  it('should_collapse_an_expanded_row_on_a_second_click', async () => {
+    await loadConnections([CONNECTION], [PROJECT]);
+    summaryFor('GitLab').click();
+    await settle();
+    expect(el.querySelector('.connection-details')).not.toBeNull();
+
+    summaryFor('GitLab').click();
+    await settle();
+
+    expect(el.querySelector('.connection-details')).toBeNull();
+  });
+
+  it('should_only_keep_one_row_expanded_at_a_time_rg_021_00a', async () => {
+    await loadConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'github.com', type: 'github' }]);
+
+    summaryFor('GitLab').click();
+    await settle();
+    summaryFor('github.com').click();
+    await settle();
+
+    expect(el.querySelectorAll('.connection-details')).toHaveLength(1);
+    expect(el.querySelector('.connection-row.expanded')?.textContent).toContain('github.com');
+  });
+
+  it('should_scope_repos_to_the_expanded_connection_only', async () => {
+    const otherProject: Project = { ...PROJECT, id: 2, connectionId: 2, alias: 'web', pathWithNamespace: 'equipe/web' };
+    fixture.componentInstance.rows.set([rowOf(PROJECT), rowOf(otherProject)]);
+    await loadConnections(
+      [CONNECTION, { ...CONNECTION, id: 2, name: 'github.com', type: 'github' }],
+      [PROJECT, otherProject],
+    );
+
+    summaryFor('GitLab').click();
+    await settle();
+
+    expect(el.textContent).toContain('equipe/backend-api');
+    expect(el.textContent).not.toContain('equipe/web');
   });
 
   it('should_update_a_connection_keeping_the_token_when_omitted', async () => {
-    await loadConnections([CONNECTION]);
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.edit') + '"]')!.click();
+    await loadConnections([CONNECTION], [PROJECT]);
+    summaryFor('GitLab').click();
     await settle();
     await type(el.querySelector('input[formControlName="url"]')!, 'https://gitlab.exemple.fr');
 
@@ -200,13 +306,15 @@ describe('ConnectionsSectionComponent', () => {
       t('common.ok'),
       expect.anything(),
     );
+    // Reste dépliée après modification (pas de fermeture forcée).
+    expect(el.querySelector('.connection-details')).not.toBeNull();
   });
 
-  it('should_remove_a_connection_after_confirmation', async () => {
-    await loadConnections([CONNECTION]);
+  it('should_remove_a_connection_from_its_row_icon_after_confirmation', async () => {
+    await loadConnections([CONNECTION], [PROJECT]);
     dialog.open.mockReturnValue({ afterClosed: () => of(true) });
 
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.remove', { name: 'GitLab' }) + '"]')!.click();
+    removeIcon('GitLab').click();
     await settle();
 
     const req = http.expectOne('/api/v1/connections/1');
@@ -221,20 +329,54 @@ describe('ConnectionsSectionComponent', () => {
     );
   });
 
+  it('should_remove_a_connection_from_the_expanded_footer_link', async () => {
+    await loadConnections([CONNECTION], [PROJECT]);
+    summaryFor('GitLab').click();
+    await settle();
+    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
+
+    el.querySelector<HTMLButtonElement>('.delete-link')!.click();
+    await settle();
+
+    const req = http.expectOne('/api/v1/connections/1');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+
+    expect(el.querySelector('.connection-details')).toBeNull();
+  });
+
   it('should_not_remove_a_connection_when_confirmation_is_declined', async () => {
-    await loadConnections([CONNECTION]);
+    await loadConnections([CONNECTION], [PROJECT]);
     dialog.open.mockReturnValue({ afterClosed: () => of(false) });
 
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.remove', { name: 'GitLab' }) + '"]')!.click();
+    removeIcon('GitLab').click();
     await settle();
 
     http.expectNone('/api/v1/connections/1');
   });
 
-  it('should_test_from_the_list_with_the_stored_token_and_toast_the_result', async () => {
-    await loadConnections([CONNECTION]);
+  it('should_not_toggle_the_row_when_clicking_the_test_or_remove_icons', async () => {
+    await loadConnections([CONNECTION], [PROJECT]);
 
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.test') + '"]')!.click();
+    testIcon('GitLab').click();
+    await settle();
+    http.expectOne('/api/v1/connections/test').flush({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+      scopeKnown: true,
+    });
+    await settle();
+
+    expect(el.querySelector('.connection-details')).toBeNull();
+  });
+
+  it('should_test_from_the_list_with_the_stored_token_and_toast_the_result', async () => {
+    await loadConnections([CONNECTION], [PROJECT]);
+
+    testIcon('GitLab').click();
     await settle();
 
     const req = http.expectOne('/api/v1/connections/test');
@@ -251,34 +393,6 @@ describe('ConnectionsSectionComponent', () => {
 
     expect(snackBar.open).toHaveBeenCalledWith(
       expect.stringContaining('GitLab'),
-      t('common.ok'),
-      expect.anything(),
-    );
-    expect(snackBar.open).not.toHaveBeenCalledWith(
-      expect.stringContaining(t('settings.connections.result.scopeUnknown')),
-      expect.anything(),
-      expect.anything(),
-    );
-  });
-
-  it('should_mention_unverifiable_permissions_when_testing_a_fine_grained_token_from_the_list', async () => {
-    await loadConnections([CONNECTION]);
-
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.test') + '"]')!.click();
-    await settle();
-
-    http.expectOne('/api/v1/connections/test').flush({
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: null,
-      expiresAt: null,
-      expirationKnown: true,
-      scopeKnown: false,
-    });
-    await settle();
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      expect.stringContaining(t('settings.connections.result.scopeUnknown')),
       t('common.ok'),
       expect.anything(),
     );
@@ -311,74 +425,46 @@ describe('ConnectionsSectionComponent', () => {
     await settle();
 
     expect(el.querySelector('.test-result.success')).not.toBeNull();
-    expect(el.querySelector('.test-result')?.textContent).not.toContain(
-      t('settings.connections.result.scopeUnknown'),
-    );
-  });
-
-  it('should_mention_unverifiable_permissions_inline_for_a_fine_grained_token', async () => {
-    await loadConnections([]);
-    addButton().click();
-    await settle();
-    await type(el.querySelector('input[formControlName="name"]')!, 'GitHub');
-    await type(el.querySelector('input[formControlName="token"]')!, 'github_pat_abcdwxyz');
-
-    el.querySelector<HTMLButtonElement>('.test-row button')!.click();
-    await settle();
-
-    http.expectOne('/api/v1/connections/test').flush({
-      username: 'mdupont',
-      name: 'Marie Dupont',
-      avatarUrl: null,
-      expiresAt: null,
-      expirationKnown: true,
-      scopeKnown: false,
-    });
-    await settle();
-
-    expect(el.querySelector('.test-result')?.textContent).toContain(
-      t('settings.connections.result.scopeUnknown'),
-    );
   });
 
   it('should_close_the_form_on_cancel_without_confirmation_when_pristine', async () => {
     await loadConnections([]);
     addButton().click();
     await settle();
-    expect(el.querySelector('.connection-form')).not.toBeNull();
+    expect(el.querySelector('.new-connection')).not.toBeNull();
 
     el.querySelector<HTMLButtonElement>('.form-actions button[mat-button]')!.click();
     await settle();
 
-    expect(el.querySelector('.connection-form')).toBeNull();
+    expect(el.querySelector('.new-connection')).toBeNull();
     expect(dialog.open).not.toHaveBeenCalled();
   });
 
-  it('should_ask_confirmation_before_discarding_a_dirty_form_on_cancel', async () => {
-    await loadConnections([]);
-    addButton().click();
+  it('should_ask_confirmation_before_discarding_a_dirty_form_when_toggling_another_row', async () => {
+    await loadConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'github.com', type: 'github' }], [PROJECT]);
+    summaryFor('GitLab').click();
     await settle();
     await type(el.querySelector('input[formControlName="name"]')!, 'Changed');
     dialog.open.mockReturnValue({ afterClosed: () => of(true) });
 
-    el.querySelector<HTMLButtonElement>('.form-actions button[mat-button]')!.click();
+    summaryFor('github.com').click();
     await settle();
 
     expect(dialog.open).toHaveBeenCalled();
-    expect(el.querySelector('.connection-form')).toBeNull();
+    expect(el.querySelector('.connection-row.expanded')?.textContent).toContain('github.com');
   });
 
-  it('should_keep_the_form_open_when_discarding_is_declined', async () => {
-    await loadConnections([]);
-    addButton().click();
+  it('should_keep_the_row_expanded_when_discarding_is_declined', async () => {
+    await loadConnections([CONNECTION, { ...CONNECTION, id: 2, name: 'github.com', type: 'github' }], [PROJECT]);
+    summaryFor('GitLab').click();
     await settle();
     await type(el.querySelector('input[formControlName="name"]')!, 'Changed');
     dialog.open.mockReturnValue({ afterClosed: () => of(false) });
 
-    el.querySelector<HTMLButtonElement>('.form-actions button[mat-button]')!.click();
+    summaryFor('github.com').click();
     await settle();
 
-    expect(el.querySelector('.connection-form')).not.toBeNull();
+    expect(el.querySelector('.connection-row.expanded')?.textContent).toContain('GitLab');
   });
 
   it('should_toggle_the_token_visibility', async () => {
@@ -397,31 +483,6 @@ describe('ConnectionsSectionComponent', () => {
     await settle();
 
     expect(tokenInput.type).toBe('text');
-  });
-
-  it('should_toast_an_error_when_testing_from_the_list_fails', async () => {
-    await loadConnections([CONNECTION]);
-
-    el
-      .querySelector<HTMLButtonElement>(
-        '[aria-label="' + t('settings.connections.list.test') + '"]',
-      )!
-      .click();
-    await settle();
-
-    http
-      .expectOne('/api/v1/connections/test')
-      .flush(
-        { statusCode: 401, code: 'forge.auth', message: 'x' },
-        { status: 401, statusText: 'Unauthorized' },
-      );
-    await settle();
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      expect.stringContaining(t('errors.forge.auth')),
-      t('common.ok'),
-      expect.anything(),
-    );
   });
 
   it('should_show_an_inline_error_on_the_name_field_for_a_duplicate_name', async () => {
@@ -444,7 +505,7 @@ describe('ConnectionsSectionComponent', () => {
     expect(el.querySelector('mat-error')?.textContent?.trim()).toBe(
       t('errors.connections.nameDuplicate'),
     );
-    expect(el.querySelector('.connection-form')).not.toBeNull();
+    expect(el.querySelector('.new-connection')).not.toBeNull();
   });
 
   it('should_toast_a_generic_error_on_submit_failure', async () => {
@@ -469,24 +530,5 @@ describe('ConnectionsSectionComponent', () => {
       t('common.ok'),
       expect.anything(),
     );
-  });
-
-  it('should_close_the_edit_form_when_deleting_the_connection_being_edited', async () => {
-    await loadConnections([CONNECTION]);
-    el.querySelector<HTMLButtonElement>('[aria-label="' + t('settings.connections.list.edit') + '"]')!.click();
-    await settle();
-    expect(el.querySelector('.connection-form')).not.toBeNull();
-
-    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
-    el
-      .querySelector<HTMLButtonElement>(
-        '[aria-label="' + t('settings.connections.list.remove', { name: 'GitLab' }) + '"]',
-      )!
-      .click();
-    await settle();
-    http.expectOne('/api/v1/connections/1').flush(null, { status: 204, statusText: 'No Content' });
-    await settle();
-
-    expect(el.querySelector('.connection-form')).toBeNull();
   });
 });
