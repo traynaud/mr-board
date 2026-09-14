@@ -184,6 +184,9 @@ une fois ses dépendances réalisées.
 | US-023 | Surbrillance de « moi » dans le tableau (anneau accent sur mes avatars, option dans « Moi ») | Should | S | US-002, US-009, US-015, US-018 | ✅ |
 | US-024 | Repli sur les initiales quand l'image d'avatar ne charge pas (lien cassé)          | Should   | S          | US-005                 | ✅ |
 | US-025 | Couleur d'arrière-plan par repo dans la colonne Projet et le filtre associé        | Should   | M          | US-003, US-005, US-021 | ✅ |
+| US-026 | Recherche libre sur le titre des MRs                                               | Should   | S          | US-005, US-010, US-011 | ☐ |
+| US-027 | Favoris : suivre une MR en particulier (étoile + filtre rapide)                    | Should   | M          | US-004, US-005, US-009, US-011, US-015 | ☐ |
+| US-028 | Labels dans le tableau : colonne optionnelle et filtre                             | Should   | M          | US-005, US-010, US-011, US-012, US-015 | ☐ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
