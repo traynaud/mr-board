@@ -422,6 +422,17 @@ describe('MrTableComponent', () => {
   });
 
   describe('favorite column (RG-027-07/08/09)', () => {
+    it('should_apply_material_icon_button_styling_to_the_favorite_toggle', async () => {
+      // Bug : `MatButtonModule` n'était pas importé, donc `mat-icon-button`
+      // ne s'activait jamais — le bouton restait un <button> natif non
+      // stylé (fond + bordure du navigateur visibles comme un carré autour
+      // de l'étoile) au lieu du bouton Material transparent attendu.
+      const { el } = await setup();
+
+      const button = el.querySelector<HTMLButtonElement>('.favorite-toggle');
+      expect(button?.classList.contains('mat-mdc-icon-button')).toBe(true);
+    });
+
     it('should_show_the_outline_star_for_a_non_favorite_row', async () => {
       const { el } = await setup();
 

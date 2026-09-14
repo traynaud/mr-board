@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-15",
+    "type": "fix",
+    "user-story": "US-027",
+    "title": "Favoris : le bouton étoile affichait un carré natif du navigateur au lieu du style Material (module manquant), en plus d'une icône trop grande."
+  },
+  {
     "date": "2026-09-14",
     "type": "feat",
     "user-story": "US-027",

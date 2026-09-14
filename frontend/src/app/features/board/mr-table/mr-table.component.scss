@@ -125,12 +125,24 @@ th.sortable.active .sort-arrow {
   text-align: center;
 }
 
+.favorite-cell button {
+  width: 30px;
+  padding-left: 0;
+  text-align: left;
+}
+
 .favorite-toggle {
   color: var(--color-neutral-500);
 }
 
-.favorite-icon.active {
-  color: var(--color-accent);
+.favorite-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+
+  &.active {
+    color: var(--color-accent);
+  }
 }
 
 .menu-title {

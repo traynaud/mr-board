@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -48,6 +49,7 @@ const COLUMNS_AFTER_STATUS = ['ready'];
   selector: 'app-mr-table',
   imports: [
     MatTableModule,
+    MatButtonModule,
     MatCheckboxModule,
     MatDividerModule,
     MatIconModule,
