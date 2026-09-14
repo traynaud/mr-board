@@ -26,6 +26,7 @@ interface Body {
   projectsAdded?: number;
   projectsUpdated?: number;
   projectsSkipped?: { pathWithNamespace: string; reason: string }[];
+  favorites?: { connection: string; pathWithNamespace: string; iid: number }[];
 }
 const body = (res: request.Response): Body => res.body as Body;
 
@@ -330,5 +331,59 @@ describe('SettingsTransfer (e2e)', () => {
       .send({ version: 2, settings: { language: 'de' }, projects: [] });
 
     expect(res.status).toBe(400);
+  });
+
+  it('POST /settings/import (v2) should_import_and_export_a_favorite_rg_027_15', async () => {
+    const importRes = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 2,
+        settings: {},
+        projects: [],
+        favorites: [
+          {
+            connection: 'GitLab',
+            pathWithNamespace: 'equipe/backend-api',
+            iid: 99,
+          },
+        ],
+      });
+    expect(importRes.status).toBe(200);
+
+    const exported = await api().get('/api/v1/settings/export');
+    expect(body(exported).favorites).toEqual(
+      expect.arrayContaining([
+        {
+          connection: 'GitLab',
+          pathWithNamespace: 'equipe/backend-api',
+          iid: 99,
+        },
+      ]),
+    );
+  });
+
+  it('POST /settings/import (v2) should_silently_ignore_a_favorite_for_an_unknown_repo_rg_027_15', async () => {
+    const res = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 2,
+        settings: {},
+        projects: [],
+        favorites: [
+          {
+            connection: 'GitLab',
+            pathWithNamespace: 'equipe/introuvable',
+            iid: 1,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    const exported = await api().get('/api/v1/settings/export');
+    expect(body(exported).favorites).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ pathWithNamespace: 'equipe/introuvable' }),
+      ]),
+    );
   });
 });

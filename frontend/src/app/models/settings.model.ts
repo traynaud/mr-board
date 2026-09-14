@@ -96,12 +96,21 @@ export interface TransferProject {
   color?: string | null;
 }
 
-/** Réponse de `GET /settings/export` (RG-019-18). Ne contient jamais de jeton. */
+/** Un favori tel qu'exporté/importé (RG-027-15). */
+export interface TransferFavorite {
+  /** Nom de la connexion à laquelle le repo de cette MR est rattaché. */
+  connection: string;
+  pathWithNamespace: string;
+  iid: number;
+}
+
+/** Réponse de `GET /settings/export` (RG-019-18, RG-027-15). Ne contient jamais de jeton. */
 export interface ExportConfig {
   version: 2;
   settings: Settings;
   connections: TransferConnection[];
   projects: TransferProject[];
+  favorites: TransferFavorite[];
 }
 
 /**
@@ -121,6 +130,8 @@ export interface ImportConfig {
   };
   connections?: TransferConnection[];
   projects: (TransferProject | Omit<TransferProject, 'connection'>)[];
+  /** `version: 2` seulement ; absent/ignoré sur un fichier `version: 1` (RG-027-15). */
+  favorites?: TransferFavorite[];
 }
 
 /** Réponse de `POST /settings/import`. */

@@ -4,6 +4,7 @@ import { UrlState, decodeQueryParams, encodeQueryParams, normalizeParams } from 
 const DEFAULT_STATE: UrlState = {
   drafts: false,
   mine: false,
+  favorites: false,
   active: [],
   connection: [],
   project: [],
@@ -39,6 +40,12 @@ describe('decodeQueryParams', () => {
   it('should_decode_drafts_and_mine_as_1_only', () => {
     expect(decodeQueryParams({ drafts: '1', mine: '1' })).toMatchObject({ drafts: true, mine: true });
     expect(decodeQueryParams({ drafts: '0', mine: 'x' })).toMatchObject({ drafts: false, mine: false });
+  });
+
+  it('should_decode_fav_as_1_only_rg_027_11', () => {
+    expect(decodeQueryParams({ fav: '1' })).toMatchObject({ favorites: true });
+    expect(decodeQueryParams({ fav: '0' })).toMatchObject({ favorites: false });
+    expect(decodeQueryParams({})).toMatchObject({ favorites: false });
   });
 
   it('should_activate_a_list_filter_present_with_values', () => {
@@ -164,14 +171,20 @@ describe('decodeQueryParams', () => {
 });
 
 describe('encodeQueryParams', () => {
-  it('should_always_include_drafts_mine_and_sort', () => {
-    expect(encodeQueryParams(DEFAULT_STATE)).toEqual({ drafts: '0', mine: '0', sort: 'ready:asc' });
+  it('should_always_include_drafts_mine_fav_and_sort', () => {
+    expect(encodeQueryParams(DEFAULT_STATE)).toEqual({
+      drafts: '0',
+      mine: '0',
+      fav: '0',
+      sort: 'ready:asc',
+    });
   });
 
-  it('should_encode_drafts_and_mine_as_1_when_true', () => {
-    const params = encodeQueryParams({ ...DEFAULT_STATE, drafts: true, mine: true });
+  it('should_encode_drafts_mine_and_fav_as_1_when_true', () => {
+    const params = encodeQueryParams({ ...DEFAULT_STATE, drafts: true, mine: true, favorites: true });
     expect(params['drafts']).toBe('1');
     expect(params['mine']).toBe('1');
+    expect(params['fav']).toBe('1');
   });
 
   it('should_encode_an_active_list_filter_as_csv', () => {
@@ -254,6 +267,7 @@ describe('encodeQueryParams', () => {
     expect(Object.keys(params)).toEqual([
       'drafts',
       'mine',
+      'fav',
       'connection',
       'project',
       'author',
@@ -279,6 +293,7 @@ describe('round-trip (RG-011-08)', () => {
   const CASES: UrlState[] = [
     DEFAULT_STATE,
     { ...DEFAULT_STATE, drafts: true, mine: true },
+    { ...DEFAULT_STATE, favorites: true },
     { ...DEFAULT_STATE, active: ['connection'], connection: ['gitlab.com', 'github.com'] },
     { ...DEFAULT_STATE, active: ['project'], project: ['api', 'web'] },
     { ...DEFAULT_STATE, active: ['author'], author: [] },

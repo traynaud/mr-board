@@ -37,6 +37,7 @@ const MR: MergeRequestView = {
   readyLevel: 'red',
   openedDays: 6,
   isMine: false,
+  isFavorite: false,
   mergeStatus: { state: 'mergeable', reasons: [] },
   connection: CONNECTION,
 };
@@ -85,7 +86,7 @@ const SETTINGS: Settings = {
 };
 
 describe('MergeRequestsStore', () => {
-  const api = { getMergeRequests: vi.fn(), getFacets: vi.fn() };
+  const api = { getMergeRequests: vi.fn(), getFacets: vi.fn(), setFavorite: vi.fn() };
   const settingsApi = {
     getSettings: vi.fn(),
     putSettings: vi.fn(),
@@ -170,7 +171,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -184,7 +185,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: true, mine: true, search: '' },
+      { drafts: true, mine: true, favorites: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -197,7 +198,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, search: 'facturation' },
+      { drafts: false, mine: false, favorites: false, search: 'facturation' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -212,11 +213,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, project: ['api'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -231,11 +232,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, connection: ['gitlab.com'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -326,7 +327,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'diff', direction: 'asc' },
-      { drafts: false, mine: false, search: '' },
+      { drafts: false, mine: false, favorites: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -400,6 +401,56 @@ describe('MergeRequestsStore', () => {
       vi.advanceTimersByTime(0);
 
       expect(api.getMergeRequests).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('toggleFavorite', () => {
+    it('should_optimistically_flip_is_favorite_before_the_api_resolves_rg_027_09', async () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+      await store.load();
+      api.setFavorite.mockReturnValue(of(undefined));
+
+      const pending = store.toggleFavorite(MR);
+      expect(store.mergeRequests()[0].isFavorite).toBe(true);
+      await pending;
+
+      expect(store.mergeRequests()[0].isFavorite).toBe(true);
+      expect(api.setFavorite).toHaveBeenCalledWith(1, true);
+    });
+
+    it('should_unmark_when_the_row_is_already_a_favorite', async () => {
+      api.getMergeRequests.mockReturnValue(of({ mergeRequests: [{ ...MR, isFavorite: true }], warnings: [] }));
+      await store.load();
+      api.setFavorite.mockReturnValue(of(undefined));
+
+      await store.toggleFavorite(store.mergeRequests()[0]);
+
+      expect(store.mergeRequests()[0].isFavorite).toBe(false);
+      expect(api.setFavorite).toHaveBeenCalledWith(1, false);
+    });
+
+    it('should_roll_back_and_return_an_error_key_when_the_api_call_fails_rg_027_09', async () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+      await store.load();
+      api.setFavorite.mockReturnValue(throwError(() => new ApiError(500, undefined, 'boom')));
+
+      const errorKey = await store.toggleFavorite(MR);
+
+      expect(errorKey).toBe('errors.unexpected');
+      expect(store.mergeRequests()[0].isFavorite).toBe(false);
+    });
+
+    it('should_not_affect_other_rows', async () => {
+      const OTHER: MergeRequestView = { ...MR, id: 2, iid: 8 };
+      api.getMergeRequests.mockReturnValue(
+        of({ mergeRequests: [MR, OTHER], warnings: [] }),
+      );
+      await store.load();
+      api.setFavorite.mockReturnValue(of(undefined));
+
+      await store.toggleFavorite(MR);
+
+      expect(store.mergeRequests().find((mr) => mr.id === 2)?.isFavorite).toBe(false);
     });
   });
 

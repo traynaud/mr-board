@@ -2,6 +2,12 @@
   {
     "date": "2026-09-14",
     "type": "feat",
+    "user-story": "US-027",
+    "title": "Favoris : étoile pour marquer une MR, chip de filtre dédié, favoris conservés à l'export/import et à la disparition/réapparition d'une MR."
+  },
+  {
+    "date": "2026-09-14",
+    "type": "feat",
     "user-story": "US-026",
     "title": "Recherche libre sur le titre des MRs (et par numéro !42), combinable avec les autres filtres et propagée dans l'URL."
   },

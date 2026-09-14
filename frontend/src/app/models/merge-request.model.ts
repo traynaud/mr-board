@@ -97,6 +97,8 @@ export interface MergeRequestView {
   openedDays: number;
   /** `true` si je suis auteur, reviewer ou affecté (RG-G09). Non affiché visuellement dans cette US. */
   isMine: boolean;
+  /** Annotation locale (RG-027-01/04). */
+  isFavorite: boolean;
   /** Mergeabilité GitLab (RG-017-06). `unknown` si la MR a été synchronisée avant l'US-017 (RG-017-11). */
   mergeStatus: MergeStatus;
   /** Connexion à laquelle appartient le projet de cette MR (RG-019-22). */
@@ -114,6 +116,8 @@ export interface MergeRequestsResponse {
 export interface MergeRequestFilters {
   drafts: boolean;
   mine: boolean;
+  /** RG-027-10/11 : filtre de base, comme `mine` — pas un `FilterKey` composable. */
+  favorites: boolean;
   /** Recherche sur le titre (+ iid, RG-026-05), `''` = pas de recherche (RG-026-08). */
   search: string;
 }

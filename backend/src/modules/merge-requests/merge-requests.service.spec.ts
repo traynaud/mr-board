@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityNotFoundException } from '../../common/exceptions';
 import { ConnectionsService } from '../connections/connections.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
@@ -77,6 +79,7 @@ describe('MergeRequestsService', () => {
     getIgnoredLabels: jest.Mock;
   };
   let connectionsService: { findAll: jest.Mock };
+  let favoritesService: { list: jest.Mock; add: jest.Mock; remove: jest.Mock };
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -164,6 +167,14 @@ describe('MergeRequestsService', () => {
             findAll: jest.fn().mockResolvedValue([{ ...CONNECTION }]),
           },
         },
+        {
+          provide: FavoritesService,
+          useValue: {
+            list: jest.fn().mockResolvedValue([]),
+            add: jest.fn().mockResolvedValue(undefined),
+            remove: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -175,6 +186,7 @@ describe('MergeRequestsService', () => {
     projectsService = module.get(ProjectsService);
     settingsService = module.get(SettingsService);
     connectionsService = module.get(ConnectionsService);
+    favoritesService = module.get(FavoritesService);
   });
 
   function persistedMergeRequest(
@@ -483,6 +495,7 @@ describe('MergeRequestsService', () => {
             readyLevel: 'red',
             openedDays: 9,
             isMine: false,
+            isFavorite: false,
             mergeStatus: { state: 'mergeable', reasons: [] },
             connection: { id: 1, name: 'GitLab', type: 'gitlab' },
           },
@@ -1210,6 +1223,60 @@ describe('MergeRequestsService', () => {
 
       expect(result.map((v) => v.iid)).toEqual([1]);
     });
+
+    it('should_report_is_favorite_true_when_the_project_and_iid_match_a_favorite_rg_027_04', async () => {
+      favoritesService.list.mockResolvedValue([
+        { id: 1, projectId: 1, iid: 7, createdAt: '2026-09-01T00:00:00.000Z' },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.isFavorite).toBe(true);
+    });
+
+    it('should_report_is_favorite_false_when_no_favorite_matches', async () => {
+      favoritesService.list.mockResolvedValue([
+        { id: 1, projectId: 99, iid: 7, createdAt: '2026-09-01T00:00:00.000Z' },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.isFavorite).toBe(false);
+    });
+
+    it('should_filter_to_favorited_merge_requests_when_favorites_only_is_requested_rg_027_10', async () => {
+      favoritesService.list.mockResolvedValue([
+        { id: 1, projectId: 1, iid: 1, createdAt: '2026-09-01T00:00:00.000Z' },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1 }),
+        persistedMergeRequest({ id: 2, iid: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        favoritesOnly: true,
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+    });
   });
 
   describe('getFacets', () => {
@@ -1345,6 +1412,40 @@ describe('MergeRequestsService', () => {
       expect(facets.project).toEqual([
         { value: 'api', label: 'api · equipe/api', count: 0 },
       ]);
+    });
+  });
+
+  describe('setFavorite', () => {
+    it('should_add_the_resolved_project_and_iid_when_marking_favorite_rg_027_04', async () => {
+      mergeRequestsRepo.findOneBy.mockResolvedValue(
+        persistedMergeRequest({ id: 1, projectId: 3, iid: 42 }),
+      );
+
+      await service.setFavorite(1, true);
+
+      expect(mergeRequestsRepo.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(favoritesService.add).toHaveBeenCalledWith(3, 42);
+      expect(favoritesService.remove).not.toHaveBeenCalled();
+    });
+
+    it('should_remove_the_resolved_project_and_iid_when_unmarking_favorite_rg_027_04', async () => {
+      mergeRequestsRepo.findOneBy.mockResolvedValue(
+        persistedMergeRequest({ id: 1, projectId: 3, iid: 42 }),
+      );
+
+      await service.setFavorite(1, false);
+
+      expect(favoritesService.remove).toHaveBeenCalledWith(3, 42);
+      expect(favoritesService.add).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_entity_not_found_when_the_merge_request_does_not_exist', async () => {
+      mergeRequestsRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(service.setFavorite(999, true)).rejects.toThrow(
+        EntityNotFoundException,
+      );
+      expect(favoritesService.add).not.toHaveBeenCalled();
     });
   });
 });

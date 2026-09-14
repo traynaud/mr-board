@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { EntityNotFoundException } from '../../common/exceptions';
 import { Connection } from '../connections/entities/connection.entity';
 import { ConnectionsService } from '../connections/connections.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
 import { MergeStatusResult } from '../forges/types/merge-status';
 import { Project } from '../projects/entities/project.entity';
@@ -29,6 +31,7 @@ import {
   EMPTY_COMPOSABLE_FILTERS,
   applyComposableFilters,
 } from './domain/filter-merge-requests';
+import { favoriteKey, isFavorite } from './domain/is-favorite';
 import { isIgnoredByLabel } from './domain/is-ignored-by-label';
 import { Identity, isMe, isMine } from './domain/is-mine';
 import {
@@ -56,6 +59,8 @@ export interface ListOpenOptions {
   includeDrafts?: boolean;
   /** RG-009-02, RG-G09. Defaults to `false`. */
   mineOnly?: boolean;
+  /** RG-027-10/11. Defaults to `false`. */
+  favoritesOnly?: boolean;
   /** RG-010-01/02. Defaults to no filter active. */
   filters?: ComposableFilters;
   /** RG-026-*. Defaults to `''` (no search, nothing excluded). */
@@ -65,6 +70,8 @@ export interface ListOpenOptions {
 export interface FacetsOptions {
   includeDrafts?: boolean;
   mineOnly?: boolean;
+  /** RG-027-10/11. Defaults to `false`. */
+  favoritesOnly?: boolean;
   filters?: ComposableFilters;
   /** RG-026-07 : applied before facet counts are computed, never excludable per-facet. */
   search?: string;
@@ -89,6 +96,7 @@ export class MergeRequestsService {
     private readonly projects: ProjectsService,
     private readonly settings: SettingsService,
     private readonly connections: ConnectionsService,
+    private readonly favorites: FavoritesService,
   ) {}
 
   /**
@@ -106,12 +114,14 @@ export class MergeRequestsService {
       sort = DEFAULT_SORT,
       includeDrafts = false,
       mineOnly = false,
+      favoritesOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
       search = '',
     } = options;
     const { views: base, warnings } = await this.loadBase(
       includeDrafts,
       mineOnly,
+      favoritesOnly,
       search,
     );
     const filtered = applyComposableFilters(base, filters);
@@ -130,12 +140,14 @@ export class MergeRequestsService {
     const {
       includeDrafts = false,
       mineOnly = false,
+      favoritesOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
       search = '',
     } = options;
     const { views: base } = await this.loadBase(
       includeDrafts,
       mineOnly,
+      favoritesOnly,
       search,
     );
     const [configuredProjects, allConnections]: [
@@ -151,6 +163,24 @@ export class MergeRequestsService {
       configuredProjects,
       configuredConnections,
     );
+  }
+
+  /**
+   * Marks or unmarks a merge request as favorite (RG-027-01/08), identified
+   * by its internal id — resolved here to the stable `(projectId, iid)` pair
+   * `FavoritesService` actually persists (RG-027-04).
+   * @throws EntityNotFoundException if `id` does not match a merge request (404).
+   */
+  async setFavorite(id: number, favorite: boolean): Promise<void> {
+    const mergeRequest = await this.mergeRequests.findOneBy({ id });
+    if (!mergeRequest) {
+      throw new EntityNotFoundException('MergeRequest', id);
+    }
+    if (favorite) {
+      await this.favorites.add(mergeRequest.projectId, mergeRequest.iid);
+    } else {
+      await this.favorites.remove(mergeRequest.projectId, mergeRequest.iid);
+    }
   }
 
   /**
@@ -172,16 +202,22 @@ export class MergeRequestsService {
   private async loadBase(
     includeDrafts: boolean,
     mineOnly: boolean,
+    favoritesOnly: boolean,
     search = '',
   ): Promise<{ views: MergeRequestViewDto[]; warnings: string[] }> {
     const allMergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
     });
-    const [ignoredLabels, meEmail, allConnections] = await Promise.all([
-      this.settings.getIgnoredLabels(),
-      this.settings.getMeEmail(),
-      this.connections.findAll(),
-    ]);
+    const [ignoredLabels, meEmail, allConnections, allFavorites] =
+      await Promise.all([
+        this.settings.getIgnoredLabels(),
+        this.settings.getMeEmail(),
+        this.connections.findAll(),
+        this.favorites.list(),
+      ]);
+    const favoriteKeys = new Set(
+      allFavorites.map((favorite) => favoriteKey(favorite)),
+    );
     // RG-026-* : `search` est normalisée une seule fois (`compileSearch`) et
     // réutilisée pour chaque MR, plutôt que redécoupée/normalisée à chaque
     // appel de `matchesCompiledSearch`.
@@ -235,10 +271,14 @@ export class MergeRequestsService {
         assigneeIdsByMr.get(mr.id) ?? [],
         now,
         thresholds,
+        favoriteKeys,
       ),
     );
     if (mineOnly && !identityMissing) {
       views = views.filter((view) => view.isMine);
+    }
+    if (favoritesOnly) {
+      views = views.filter((view) => view.isFavorite);
     }
 
     return { views, warnings };
@@ -430,6 +470,7 @@ function toMergeRequestView(
     readyDelay: ReadyDelayThresholds;
     workdaysOnly: boolean;
   },
+  favoriteKeys: Set<string>,
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const connection = mustGet(
@@ -476,6 +517,7 @@ function toMergeRequestView(
       },
       identity,
     ),
+    isFavorite: isFavorite(mergeRequest, favoriteKeys),
     mergeStatus: toMergeStatusField(mergeRequest),
     connection: toConnectionSummary(connection),
   };

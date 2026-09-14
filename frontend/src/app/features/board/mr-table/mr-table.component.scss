@@ -114,6 +114,25 @@ th.sortable.active .sort-arrow {
   padding: 0 2px;
 }
 
+.favorite-header {
+  width: 36px;
+  padding: 0;
+}
+
+.favorite-cell {
+  width: 36px;
+  padding: 0;
+  text-align: center;
+}
+
+.favorite-toggle {
+  color: var(--color-neutral-500);
+}
+
+.favorite-icon.active {
+  color: var(--color-accent);
+}
+
 .menu-title {
   padding: 8px 14px 6px;
   font-size: 11px;

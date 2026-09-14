@@ -33,6 +33,11 @@ export const ICONS: Record<string, string> = {
   gitlab: '<path d="M12 21 4 9l2.5-7L9 9h6l2.5-7L20 9z"/>',
   github:
     '<path d="M15 22v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 19 4.77 5.07 5.07 0 0 0 18.91.09S17.73-.25 15 1.63a13.38 13.38 0 0 0-6.94 0C5.27-.25 4.09.09 4.09.09A5.07 5.07 0 0 0 4 4.77a5.44 5.44 0 0 0-1.5 3.75c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 8 18.13V22"/><path d="M9 20c-3 .87-5.5 0-7-3"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  // RG-027-08 : seule icône du registre à surcharger le `fill="none"` global,
+  // pour l'état favori plein (couleur portée par `currentColor`).
+  'star-fill':
+    '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>',
 };
 
 /**

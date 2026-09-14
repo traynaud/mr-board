@@ -13,6 +13,8 @@ import {
 export interface UrlState {
   drafts: boolean;
   mine: boolean;
+  /** RG-027-10/11 : filtre de base, toujours présent comme `mine`. */
+  favorites: boolean;
   /** Filtres composables actifs (pastilles affichées), reconstruit depuis la présence des clés dans l'URL. */
   active: FilterKey[];
   /** Noms de connexion (RG-021-04). */
@@ -71,6 +73,7 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
   return {
     drafts: params['drafts'] === '1',
     mine: params['mine'] === '1',
+    favorites: params['fav'] === '1',
     active,
     connection,
     project,
@@ -95,6 +98,7 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
   const params: Record<string, string> = {
     drafts: state.drafts ? '1' : '0',
     mine: state.mine ? '1' : '0',
+    fav: state.favorites ? '1' : '0',
   };
   for (const key of state.active) {
     params[key] = isMultiValueFilter(key) ? state[key].join(',') : encodeBooleanValue(state[key]);

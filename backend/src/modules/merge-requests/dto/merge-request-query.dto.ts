@@ -33,6 +33,11 @@ export class MergeRequestFilterQueryDto {
   @IsIn(BOOLEAN_PARAMS)
   mine?: BooleanParam;
 
+  /** `1` restricts to favorited merge requests. Defaults to `0` (RG-027-10/11). */
+  @IsOptional()
+  @IsIn(BOOLEAN_PARAMS)
+  fav?: BooleanParam;
+
   /** CSV of connection names, matched case-insensitively (RG-021-05). */
   @IsOptional()
   @Transform(toArray)

@@ -99,8 +99,11 @@ export class MrTableComponent {
   readonly resetColumnWidth = output<ResizableColumnKey>();
   /** RG-012-04/05 : item de menu « Réinitialiser les largeurs », toutes colonnes. */
   readonly resetAllWidths = output<void>();
+  /** RG-027-08 : bascule le favori de la ligne cliquée. */
+  readonly favoriteToggle = output<MergeRequestView>();
 
   protected readonly displayedColumns = computed(() => [
+    'favorite',
     ...COLUMNS_BEFORE_STATUS,
     ...(this.showStatus() ? ['status'] : []),
     ...COLUMNS_AFTER_STATUS,
@@ -143,6 +146,14 @@ export class MrTableComponent {
     return this.i18n.translate('board.columns.resizeAriaLabel', {
       name: this.i18n.translate(columnNameKey),
     });
+  }
+
+  /** RG-027-08 : `aria-label` traduit du bouton étoile, différent selon l'état actuel. */
+  protected favoriteAriaLabel(row: MergeRequestView): string {
+    const key = row.isFavorite
+      ? 'board.mergeRequests.favorite.remove'
+      : 'board.mergeRequests.favorite.add';
+    return this.i18n.translate(key, { title: row.title });
   }
 
   /** `true` si `key` est la colonne actuellement triée (RG-008-06). */

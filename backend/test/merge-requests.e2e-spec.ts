@@ -38,6 +38,7 @@ interface MergeRequestViewBody {
   readyLevel: 'green' | 'orange' | 'red' | null;
   openedDays: number;
   isMine: boolean;
+  isFavorite: boolean;
   mergeStatus: {
     state: 'mergeable' | 'blocked' | 'unknown';
     reasons: { code: string; count?: number }[];
@@ -296,6 +297,7 @@ describe('MergeRequests (e2e)', () => {
         readyLevel: 'red',
         openedDays: 9,
         isMine: false,
+        isFavorite: false,
         mergeStatus: { state: 'mergeable', reasons: [] },
         connection: {
           id: expect.any(Number) as number,
@@ -327,6 +329,7 @@ describe('MergeRequests (e2e)', () => {
           'readyLevel',
           'openedDays',
           'isMine',
+          'isFavorite',
           'mergeStatus',
           'connection',
         ].sort(),
@@ -1154,6 +1157,231 @@ describe('MergeRequests (e2e)', () => {
         state: 'blocked',
         reasons: [{ code: 'conflicts' }],
       });
+    });
+  });
+
+  describe('favorites (US-027)', () => {
+    it('PUT /merge-requests/:id/favorite should_mark_a_merge_request_as_favorite_rg_027_08', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(300)]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr: MergeRequestViewBody) => mr.iid === 300,
+      )!.id;
+
+      const putRes = await api().put(`/api/v1/merge-requests/${id}/favorite`);
+      expect(putRes.status).toBe(204);
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 300,
+      );
+      expect(view?.isFavorite).toBe(true);
+    });
+
+    it('DELETE /merge-requests/:id/favorite should_unmark_a_merge_request_as_favorite_rg_027_08', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(301)]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr: MergeRequestViewBody) => mr.iid === 301,
+      )!.id;
+      await api().put(`/api/v1/merge-requests/${id}/favorite`);
+
+      const deleteRes = await api().delete(
+        `/api/v1/merge-requests/${id}/favorite`,
+      );
+      expect(deleteRes.status).toBe(204);
+
+      const res = await api().get('/api/v1/merge-requests');
+      const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 301,
+      );
+      expect(view?.isFavorite).toBe(false);
+    });
+
+    it('PUT /merge-requests/:id/favorite should_respond_404_for_an_unknown_merge_request_id', async () => {
+      const res = await api().put('/api/v1/merge-requests/999999/favorite');
+
+      expect(res.status).toBe(404);
+    });
+
+    it('GET /merge-requests?fav=1 should_only_return_favorited_merge_requests_rg_027_10', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(310),
+        mergeRequest(311),
+      ]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr: MergeRequestViewBody) => mr.iid === 310,
+      )!.id;
+      await api().put(`/api/v1/merge-requests/${id}/favorite`);
+
+      const res = await api().get('/api/v1/merge-requests?fav=1');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).toEqual([310]);
+    });
+
+    it('GET /merge-requests?fav=1&drafts=1 should_keep_a_favorited_draft_hidden_unless_drafts_are_included_rg_027_13', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([
+        mergeRequest(320, { draft: true }),
+      ]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests?drafts=1');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr: MergeRequestViewBody) => mr.iid === 320,
+      )!.id;
+      await api().put(`/api/v1/merge-requests/${id}/favorite`);
+
+      const hidden = await api().get('/api/v1/merge-requests?fav=1');
+      expect((hidden.body as MergeRequestsResponseBody).mergeRequests).toEqual(
+        [],
+      );
+
+      const shown = await api().get('/api/v1/merge-requests?fav=1&drafts=1');
+      expect(
+        (shown.body as MergeRequestsResponseBody).mergeRequests.map(
+          (v) => v.iid,
+        ),
+      ).toEqual([320]);
+    });
+
+    it('GET /settings/export should_include_a_favorite_resolved_to_its_connection_and_repo_path_rg_027_15', async () => {
+      gitlab.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(330)]);
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr: MergeRequestViewBody) => mr.iid === 330,
+      )!.id;
+      await api().put(`/api/v1/merge-requests/${id}/favorite`);
+
+      const res = await api().get('/api/v1/settings/export');
+
+      expect((res.body as { favorites: unknown[] }).favorites).toEqual(
+        expect.arrayContaining([
+          { connection: 'GitLab', pathWithNamespace: 'equipe/api', iid: 330 },
+        ]),
+      );
+    });
+
+    it('GET /merge-requests?fav=1&project=... should_combine_favorites_with_a_composable_filter_rg_027_10', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([mergeRequest(350)])
+            : Promise.resolve([mergeRequest(351)]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const mergeRequests = (listed.body as MergeRequestsResponseBody)
+        .mergeRequests;
+      const apiMrId = mergeRequests.find((mr) => mr.iid === 350)!.id;
+      const webMrId = mergeRequests.find((mr) => mr.iid === 351)!.id;
+      await api().put(`/api/v1/merge-requests/${apiMrId}/favorite`);
+      await api().put(`/api/v1/merge-requests/${webMrId}/favorite`);
+
+      const res = await api().get('/api/v1/merge-requests?fav=1&project=api');
+      const iids = (res.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      );
+      expect(iids).toEqual([350]);
+    });
+
+    it('should_keep_a_favorite_across_its_merge_requests_disappearance_and_reappearance_rg_027_04', async () => {
+      const onlyOnApi =
+        (mr: ReturnType<typeof mergeRequest> | null) =>
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api' && mr
+            ? Promise.resolve([mr])
+            : Promise.resolve([]);
+
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        onlyOnApi(mergeRequest(340)),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const firstSync = await api().get('/api/v1/merge-requests');
+      const firstId = (
+        firstSync.body as MergeRequestsResponseBody
+      ).mergeRequests.find((mr) => mr.iid === 340)!.id;
+      await api().put(`/api/v1/merge-requests/${firstId}/favorite`);
+
+      // RG-004-03 : la MR disparaît de la réponse de la forge (fermée) —
+      // `deleteMissing` retire sa ligne, le favori (table distincte) survit.
+      gitlab.fetchOpenMergeRequests.mockImplementation(onlyOnApi(null));
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const disappeared = await api().get('/api/v1/merge-requests');
+      expect(
+        (disappeared.body as MergeRequestsResponseBody).mergeRequests.some(
+          (v) => v.iid === 340,
+        ),
+      ).toBe(false);
+
+      // Elle réapparaît : l'upsert crée une NOUVELLE ligne, avec un nouvel id
+      // interne — RG-027-04 exige que le favori la retrouve quand même.
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        onlyOnApi(mergeRequest(340)),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const reappeared = await api().get('/api/v1/merge-requests');
+      const secondView = (
+        reappeared.body as MergeRequestsResponseBody
+      ).mergeRequests.find((mr) => mr.iid === 340);
+      expect(secondView?.id).not.toBe(firstId);
+      expect(secondView?.isFavorite).toBe(true);
+    });
+
+    it('DELETE /projects/:id should_purge_its_favorites_rg_027_05', async () => {
+      gitlab.fetchOpenMergeRequests.mockImplementation(
+        (
+          _url: string,
+          _token: string,
+          project: { pathWithNamespace: string },
+        ) =>
+          project.pathWithNamespace === 'equipe/api'
+            ? Promise.resolve([mergeRequest(360)])
+            : Promise.resolve([]),
+      );
+      await api().post('/api/v1/sync');
+      await waitUntilIdle();
+      const listed = await api().get('/api/v1/merge-requests');
+      const id = (listed.body as MergeRequestsResponseBody).mergeRequests.find(
+        (mr) => mr.iid === 360,
+      )!.id;
+      await api().put(`/api/v1/merge-requests/${id}/favorite`);
+
+      const projects = await api().get('/api/v1/projects');
+      const apiProjectId = (
+        projects.body as { id: number; alias: string }[]
+      ).find((p) => p.alias === 'api')!.id;
+
+      const deleteRes = await api().delete(`/api/v1/projects/${apiProjectId}`);
+      expect(deleteRes.status).toBe(204);
+
+      const exportRes = await api().get('/api/v1/settings/export');
+      const remainingApiFavorites = (
+        exportRes.body as { favorites: { pathWithNamespace: string }[] }
+      ).favorites.filter((f) => f.pathWithNamespace === 'equipe/api');
+      expect(remainingApiFavorites).toEqual([]);
     });
   });
 });

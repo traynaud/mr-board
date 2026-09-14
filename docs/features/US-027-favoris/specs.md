@@ -74,8 +74,9 @@ la couleur de repo (US-025).
   `{ connexion, repo (chemin), iid }`. À l'import, un favori dont le repo n'existe pas (ou n'est pas importé) est
   **ignoré silencieusement**, sans faire échouer l'import (même principe que les repos non résolus, RG-019-19) ;
   l'import est additif (il n'efface jamais un favori existant).
-- **RG-027-16** — Réinitialisation globale (RG-015-05) : la réinitialisation de la configuration efface aussi tous
-  les favoris.
+- **RG-027-16** — Réinitialisation globale (RG-015-05) : « Réinitialiser » ne touche **jamais** aux favoris — comme
+  aux repos et connexions (RG-015-05, RG-019-20), c'est un reset du formulaire non enregistré, sans aucun appel
+  backend ; il ne peut donc pas supprimer une donnée persistée telle qu'un favori.
 
 ## 4. Maquettes de référence
 

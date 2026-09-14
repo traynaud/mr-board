@@ -21,7 +21,7 @@ import {
   encodeQueryParams,
   normalizeParams,
 } from '../../core/url-state/query-params.mapper';
-import { FilterKey } from '../../models/merge-request.model';
+import { FilterKey, MergeRequestView } from '../../models/merge-request.model';
 import { ColumnWidthsStore, ResizableColumnKey } from '../../stores/column-widths.store';
 import { ColumnsStore } from '../../stores/columns.store';
 import { ConnectionsStore } from '../../stores/connections.store';
@@ -156,6 +156,7 @@ export class BoardPageComponent implements OnInit {
   protected readonly hasActiveFilter = computed(
     () =>
       this.filtersStore.mine() ||
+      this.filtersStore.favorites() ||
       this.filtersStore.active().length > 0 ||
       this.filtersStore.search().length > 0,
   );
@@ -165,6 +166,7 @@ export class BoardPageComponent implements OnInit {
     encodeQueryParams({
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
+      favorites: this.filtersStore.favorites(),
       active: this.filtersStore.active(),
       connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),
@@ -333,6 +335,20 @@ export class BoardPageComponent implements OnInit {
     this.mrStore.scheduleReload();
   }
 
+  /** RG-027-10/07. */
+  protected onFavoritesToggle(): void {
+    this.filtersStore.toggleFavorites();
+    this.mrStore.scheduleReload();
+  }
+
+  /** RG-027-08/09 : bascule optimiste de l'étoile, sans rechargement complet. */
+  protected async onFavoriteStarToggle(row: MergeRequestView): Promise<void> {
+    const errorKey = await this.mrStore.toggleFavorite(row);
+    if (errorKey) {
+      this.toast(errorKey);
+    }
+  }
+
   /** RG-009-05/07, RG-010-11 : réinitialise « Mes MRs » et les 5 filtres composables. */
   protected onClearFilters(): void {
     this.filtersStore.clear();
@@ -427,6 +443,7 @@ export class BoardPageComponent implements OnInit {
     this.filtersStore.restore({
       drafts: state.drafts,
       mine: state.mine,
+      favorites: state.favorites,
       active: state.active,
       connection: state.connection,
       project: state.project,

@@ -37,6 +37,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyLevel: 'red',
     openedDays: 6,
     isMine: false,
+    isFavorite: false,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: { id: 1, name: 'GitLab', type: 'gitlab' },
     ...overrides,
@@ -63,6 +64,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       (widthChange)="lastWidthChange = $event"
       (resetColumnWidth)="lastResetColumn = $event"
       (resetAllWidths)="resetAllWidthsCount = resetAllWidthsCount + 1"
+      (favoriteToggle)="lastFavoriteToggle = $event"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,6 +95,7 @@ class HostComponent {
   lastWidthChange: { key: ResizableColumnKey; width: number } | null = null;
   lastResetColumn: ResizableColumnKey | null = null;
   resetAllWidthsCount = 0;
+  lastFavoriteToggle: MergeRequestView | null = null;
 }
 
 describe('MrTableComponent', () => {
@@ -418,11 +421,67 @@ describe('MrTableComponent', () => {
     expect(el.querySelector('.approved-icon')).not.toBeNull();
   });
 
+  describe('favorite column (RG-027-07/08/09)', () => {
+    it('should_show_the_outline_star_for_a_non_favorite_row', async () => {
+      const { el } = await setup();
+
+      const icon = el.querySelector<HTMLElement>('.favorite-icon');
+      expect(icon?.getAttribute('data-mat-icon-name')).toBe('star');
+      expect(icon?.classList.contains('active')).toBe(false);
+    });
+
+    it('should_show_the_filled_star_for_a_favorite_row', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set([mergeRequest({ isFavorite: true })]);
+      await fixture.whenStable();
+
+      const icon = el.querySelector<HTMLElement>('.favorite-icon');
+      expect(icon?.getAttribute('data-mat-icon-name')).toBe('star-fill');
+      expect(icon?.classList.contains('active')).toBe(true);
+    });
+
+    it('should_emit_favorite_toggle_with_the_row_when_the_button_is_clicked', async () => {
+      const { fixture, el } = await setup();
+
+      el.querySelector<HTMLButtonElement>('.favorite-toggle')?.click();
+
+      expect(fixture.componentInstance.lastFavoriteToggle?.id).toBe(1);
+    });
+
+    it('should_expose_a_translated_aria_label_naming_the_title_and_current_state', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set([mergeRequest({ title: 'Refonte facturation' })]);
+      await fixture.whenStable();
+
+      const button = el.querySelector<HTMLButtonElement>('.favorite-toggle');
+      expect(button?.getAttribute('aria-label')).toBe(
+        t('board.mergeRequests.favorite.add', { title: 'Refonte facturation' }),
+      );
+
+      fixture.componentInstance.rows.set([
+        mergeRequest({ title: 'Refonte facturation', isFavorite: true }),
+      ]);
+      await fixture.whenStable();
+
+      expect(el.querySelector('.favorite-toggle')?.getAttribute('aria-label')).toBe(
+        t('board.mergeRequests.favorite.remove', { title: 'Refonte facturation' }),
+      );
+    });
+
+    it('should_render_the_favorite_column_before_project_rg_027_07', async () => {
+      const { el } = await setup();
+
+      const headerCells = Array.from(el.querySelectorAll('th'));
+      expect(headerCells[0].classList.contains('favorite-header')).toBe(true);
+    });
+  });
+
   it('should_render_column_headers', async () => {
     const { el } = await setup();
 
     const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim());
     expect(headers).toEqual([
+      '',
       t('board.mergeRequests.columns.project'),
       t('board.mergeRequests.columns.author'),
       t('board.mergeRequests.columns.title'),

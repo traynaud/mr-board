@@ -70,6 +70,7 @@ export const MergeRequestsStore = signalStore(
           const baseFilters = {
             drafts: filters.drafts(),
             mine: filters.mine(),
+            favorites: filters.favorites(),
             search: filters.search(),
           };
           const composableFilters = filters.composableFilters();
@@ -175,6 +176,32 @@ export const MergeRequestsStore = signalStore(
         scheduleReload(debounceMs: number = FILTER_RELOAD_DEBOUNCE_MS): void {
           clearTimeout(reloadTimer);
           reloadTimer = setTimeout(() => void load(), debounceMs);
+        },
+
+        /**
+         * Bascule optimiste de l'étoile favori (RG-027-09) : patch local
+         * immédiat, sans rechargement complet — rollback + clé d'erreur en
+         * cas d'échec serveur, même convention que `ThemeService.quickToggle()`.
+         * @returns la clé i18n de l'erreur, ou `null` en cas de succès.
+         */
+        async toggleFavorite(row: MergeRequestView): Promise<string | null> {
+          const next = !row.isFavorite;
+          patchState(store, {
+            mergeRequests: store.mergeRequests().map((mr) =>
+              mr.id === row.id ? { ...mr, isFavorite: next } : mr,
+            ),
+          });
+          try {
+            await firstValueFrom(api.setFavorite(row.id, next));
+            return null;
+          } catch (error) {
+            patchState(store, {
+              mergeRequests: store.mergeRequests().map((mr) =>
+                mr.id === row.id ? { ...mr, isFavorite: !next } : mr,
+              ),
+            });
+            return errorKeyOf(error);
+          }
         },
       };
     },

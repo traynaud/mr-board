@@ -23,6 +23,7 @@
       "drafts": "Drafts",
       "mine": "My MRs",
       "mineDisabledTooltip": "Set up your identity in the settings",
+      "favorites": "Favorites",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} project{{projectsSuffix}}",
       "clear": "Clear",
       "add": "Add a filter",
@@ -63,6 +64,10 @@
       "clearFilters": "Clear filters",
       "none": "—",
       "meSuffix": "(me)",
+      "favorite": {
+        "add": "Mark \"{{title}}\" as favorite",
+        "remove": "Remove \"{{title}}\" from favorites"
+      },
       "columns": {
         "project": "Project",
         "author": "Author",

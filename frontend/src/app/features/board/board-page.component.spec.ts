@@ -68,8 +68,8 @@ const PROJECT: Project = {
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
 const CONNECTIONS_URL = '/api/v1/connections';
-const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc';
-const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0';
+const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&fav=0&sort=ready:asc';
+const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0&fav=0';
 const EMPTY_FACETS = {
   connection: [],
   project: [],
@@ -128,6 +128,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     readyLevel: 'red',
     openedDays: 6,
     isMine: false,
+    isFavorite: false,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: MR_CONNECTION,
     ...overrides,
@@ -399,9 +400,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=1&mine=0&sort=ready:asc')
+      .expectOne('/api/v1/merge-requests?drafts=1&mine=0&fav=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
-    http.expectOne('/api/v1/merge-requests/facets?drafts=1&mine=0').flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/merge-requests/facets?drafts=1&mine=0&fav=0').flush(EMPTY_FACETS);
     await settle();
   });
 
@@ -422,9 +423,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=0&mine=1&sort=ready:asc')
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=1&fav=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
-    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=1').flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=1&fav=0').flush(EMPTY_FACETS);
     await settle();
 
     expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
@@ -432,6 +433,70 @@ describe('BoardPageComponent', () => {
     );
     expect(el.querySelector('.empty-state button')?.textContent?.trim()).toBe(
       t('board.mergeRequests.clearFilters'),
+    );
+  });
+
+  it('should_reload_with_fav_1_after_toggling_the_favorites_chip_rg_027_10', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    const favoritesChip = Array.from(
+      el.querySelectorAll<HTMLElement>('app-filter-bar mat-chip-option button'),
+    )[2];
+    favoritesChip.click();
+    await waitForDebounce();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&fav=1&sort=ready:asc')
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=0&fav=1').flush(EMPTY_FACETS);
+    await settle();
+  });
+
+  it('should_call_set_favorite_and_update_the_star_when_the_favorite_button_is_clicked_rg_027_08', async () => {
+    await bootstrap({
+      settings: SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [mergeRequest({ id: 5, isFavorite: false })],
+    });
+
+    el.querySelector<HTMLButtonElement>('.favorite-toggle')?.click();
+    await settle();
+
+    const req = http.expectOne('/api/v1/merge-requests/5/favorite');
+    expect(req.request.method).toBe('PUT');
+    req.flush(null);
+    await settle();
+
+    expect(el.querySelector<HTMLElement>('.favorite-icon')?.classList.contains('active')).toBe(
+      true,
+    );
+  });
+
+  it('should_toast_an_error_and_roll_back_the_star_when_the_toggle_fails_rg_027_09', async () => {
+    await bootstrap({
+      settings: SETTINGS,
+      projects: [PROJECT],
+      status: IDLE_STATUS,
+      mergeRequests: [mergeRequest({ id: 5, isFavorite: false })],
+    });
+
+    el.querySelector<HTMLButtonElement>('.favorite-toggle')?.click();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests/5/favorite')
+      .flush('down', { status: 500, statusText: 'KO' });
+    await settle();
+
+    expect(el.querySelector<HTMLElement>('.favorite-icon')?.classList.contains('active')).toBe(
+      false,
+    );
+    expect(snackBar.open).toHaveBeenCalledWith(
+      t('errors.unexpected'),
+      t('common.ok'),
+      expect.anything(),
     );
   });
 
@@ -458,7 +523,7 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&sort=ready:asc')
+      .expectOne(MERGE_REQUESTS_URL)
       .flush({ mergeRequests: [mergeRequest()], warnings: [] });
     http.expectOne(FACETS_URL).flush(EMPTY_FACETS);
     await settle();
@@ -726,6 +791,29 @@ describe('BoardPageComponent', () => {
       expect(TestBed.inject(FiltersStore).search()).toBe('facturation');
     });
 
+    it('should_restore_fav_1_from_the_url_before_the_first_load_rg_027_11', async () => {
+      TestBed.resetTestingModule();
+      await configureBoardTestingModule({
+        snapshot: { queryParams: { fav: '1' } },
+      });
+
+      fixture = TestBed.createComponent(BoardPageComponent);
+      el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      await settle();
+      http.expectOne('/api/v1/settings').flush(SETTINGS);
+      http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
+      http.expectOne('/api/v1/projects').flush([PROJECT]);
+      const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
+      expect(mrReq.request.params.get('fav')).toBe('1');
+      mrReq.flush({ mergeRequests: [], warnings: [] });
+      http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+
+      expect(TestBed.inject(FiltersStore).favorites()).toBe(true);
+    });
+
     it('should_write_the_url_with_default_params_and_replaceUrl_on_the_very_first_load', async () => {
       // Espionné avant toute création de composant : capture l'appel émis
       // par le premier passage de l'effet d'écriture d'URL, sans changement
@@ -738,7 +826,7 @@ describe('BoardPageComponent', () => {
       expect(navigateSpy).toHaveBeenCalledWith(
         [],
         expect.objectContaining({
-          queryParams: { drafts: '0', mine: '0', sort: 'ready:asc' },
+          queryParams: { drafts: '0', mine: '0', fav: '0', sort: 'ready:asc' },
           replaceUrl: true,
         }),
       );
@@ -810,7 +898,7 @@ describe('BoardPageComponent', () => {
       });
 
       expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toBe(
-        '?drafts=0&mine=0&sort=ready:asc',
+        '?drafts=0&mine=0&fav=0&sort=ready:asc',
       );
     });
 

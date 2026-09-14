@@ -38,6 +38,13 @@ export class MergeRequestsService {
     const params = filterParams(filters, composableFilters);
     return this.http.get<MergeRequestsFacets>('api://merge-requests/facets', { params });
   }
+
+  /** `PUT`/`DELETE /api/v1/merge-requests/:id/favorite` (RG-027-08). */
+  setFavorite(id: number, favorite: boolean): Observable<void> {
+    return favorite
+      ? this.http.put<void>(`api://merge-requests/${id}/favorite`, {})
+      : this.http.delete<void>(`api://merge-requests/${id}/favorite`);
+  }
 }
 
 /** Query params partagés par `getMergeRequests` et `getFacets` (RG-010-01/12). */
@@ -47,7 +54,8 @@ function filterParams(
 ): HttpParams {
   let params = new HttpParams()
     .set('drafts', filters.drafts ? '1' : '0')
-    .set('mine', filters.mine ? '1' : '0');
+    .set('mine', filters.mine ? '1' : '0')
+    .set('fav', filters.favorites ? '1' : '0');
   if (composableFilters.connection.length > 0) {
     params = params.set('connection', composableFilters.connection.join(','));
   }

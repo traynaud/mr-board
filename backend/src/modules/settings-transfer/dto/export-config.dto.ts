@@ -19,10 +19,19 @@ export class ExportProjectDto {
   color!: string | null;
 }
 
+/** One favorite entry of `GET /api/v1/settings/export` (RG-027-15). */
+export class ExportFavoriteDto {
+  /** Name of the connection the favorited merge request's repo belongs to. */
+  connection!: string;
+  pathWithNamespace!: string;
+  iid!: number;
+}
+
 /** Response of `GET /api/v1/settings/export`. Never carries a token. */
 export class ExportConfigDto {
   version!: 2;
   settings!: ExportableSettings;
   connections!: ExportConnectionDto[];
   projects!: ExportProjectDto[];
+  favorites!: ExportFavoriteDto[];
 }

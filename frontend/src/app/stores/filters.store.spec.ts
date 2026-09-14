@@ -14,6 +14,10 @@ describe('FiltersStore', () => {
     expect(store.mine()).toBe(false);
   });
 
+  it('should_default_to_favorites_inactive_rg_027_10', () => {
+    expect(store.favorites()).toBe(false);
+  });
+
   it('should_default_to_no_search_rg_026_08', () => {
     expect(store.search()).toBe('');
   });
@@ -68,6 +72,24 @@ describe('FiltersStore', () => {
     store.clear();
 
     expect(store.mine()).toBe(false);
+    expect(store.drafts()).toBe(true);
+  });
+
+  it('should_toggle_favorites_rg_027_10', () => {
+    store.toggleFavorites();
+    expect(store.favorites()).toBe(true);
+
+    store.toggleFavorites();
+    expect(store.favorites()).toBe(false);
+  });
+
+  it('should_clear_favorites_only_and_never_touch_drafts_rg_027_11', () => {
+    store.toggleDrafts();
+    store.toggleFavorites();
+
+    store.clear();
+
+    expect(store.favorites()).toBe(false);
     expect(store.drafts()).toBe(true);
   });
 

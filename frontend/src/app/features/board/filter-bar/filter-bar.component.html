@@ -16,6 +16,11 @@
       </mat-chip-option>
     </span>
   }
+
+  <mat-chip-option [selected]="favorites()" (selectionChange)="$event.isUserInput && favoritesToggle.emit()">
+    <mat-icon svgIcon="star-fill" matChipAvatar />
+    {{ 'board.filters.favorites' | translate }}
+  </mat-chip-option>
 </mat-chip-listbox>
 
 <span class="separator"></span>

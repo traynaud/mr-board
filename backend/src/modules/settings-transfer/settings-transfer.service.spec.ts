@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ConnectionsService } from '../connections/connections.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import { ProjectsService } from '../projects/projects.service';
 import { SettingsService } from '../settings/settings.service';
 import { ImportConfigDto } from './dto/import-config.dto';
@@ -19,6 +20,11 @@ describe('SettingsTransferService', () => {
     list: jest.fn(),
     importMany: jest.fn(),
   };
+  const favorites = {
+    list: jest.fn(),
+    add: jest.fn(),
+    remove: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -26,12 +32,16 @@ describe('SettingsTransferService', () => {
       name: 'GitLab',
       created: false,
     });
+    connections.findAll.mockResolvedValue([]);
+    projects.list.mockResolvedValue([]);
+    favorites.list.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         SettingsTransferService,
         { provide: SettingsService, useValue: settings },
         { provide: ConnectionsService, useValue: connections },
         { provide: ProjectsService, useValue: projects },
+        { provide: FavoritesService, useValue: favorites },
       ],
     }).compile();
     service = moduleRef.get(SettingsTransferService);
@@ -83,7 +93,62 @@ describe('SettingsTransferService', () => {
             color: 'sage',
           },
         ],
+        favorites: [],
       });
+    });
+
+    it('should_include_favorites_resolved_to_their_connection_and_repo_path_rg_027_15', async () => {
+      settings.getExportableSettings.mockResolvedValue({});
+      connections.findAll.mockResolvedValue([
+        {
+          id: 1,
+          type: 'gitlab',
+          name: 'GitLab',
+          url: 'https://gitlab.com',
+          meUsername: 'mdupont',
+        },
+      ]);
+      projects.list.mockResolvedValue([
+        {
+          id: 5,
+          connectionId: 1,
+          pathWithNamespace: 'equipe/backend-api',
+          alias: 'api',
+          remoteProjectId: '42',
+          color: null,
+        },
+      ]);
+      favorites.list.mockResolvedValue([
+        { id: 1, projectId: 5, iid: 42, createdAt: '2026-09-01T00:00:00.000Z' },
+      ]);
+
+      const result = await service.export();
+
+      expect(result.favorites).toEqual([
+        {
+          connection: 'GitLab',
+          pathWithNamespace: 'equipe/backend-api',
+          iid: 42,
+        },
+      ]);
+    });
+
+    it('should_silently_omit_a_favorite_whose_project_no_longer_exists', async () => {
+      settings.getExportableSettings.mockResolvedValue({});
+      connections.findAll.mockResolvedValue([]);
+      projects.list.mockResolvedValue([]);
+      favorites.list.mockResolvedValue([
+        {
+          id: 1,
+          projectId: 999,
+          iid: 42,
+          createdAt: '2026-09-01T00:00:00.000Z',
+        },
+      ]);
+
+      const result = await service.export();
+
+      expect(result.favorites).toEqual([]);
     });
   });
 
@@ -289,6 +354,110 @@ describe('SettingsTransferService', () => {
           reason: 'connections.unknown',
         },
       ]);
+    });
+
+    it('should_add_a_favorite_resolved_by_connection_name_and_repo_path_rg_027_15', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [],
+        favorites: [
+          {
+            connection: 'gitlab.com',
+            pathWithNamespace: 'equipe/backend-api',
+            iid: 42,
+          },
+        ],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+      connections.findAll.mockResolvedValue([{ id: 1, name: 'gitlab.com' }]);
+      projects.list.mockResolvedValue([
+        { id: 5, connectionId: 1, pathWithNamespace: 'equipe/backend-api' },
+      ]);
+
+      await service.import(dto);
+
+      expect(favorites.add).toHaveBeenCalledWith(5, 42);
+    });
+
+    it('should_silently_ignore_a_favorite_whose_connection_is_unknown_rg_027_15', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [],
+        favorites: [
+          {
+            connection: 'inconnue',
+            pathWithNamespace: 'equipe/backend-api',
+            iid: 42,
+          },
+        ],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+      connections.findAll.mockResolvedValue([]);
+      projects.list.mockResolvedValue([]);
+
+      await expect(service.import(dto)).resolves.toBeDefined();
+
+      expect(favorites.add).not.toHaveBeenCalled();
+    });
+
+    it('should_silently_ignore_a_favorite_whose_repo_path_is_unknown_rg_027_15', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [],
+        favorites: [
+          {
+            connection: 'gitlab.com',
+            pathWithNamespace: 'equipe/introuvable',
+            iid: 42,
+          },
+        ],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+      connections.findAll.mockResolvedValue([{ id: 1, name: 'gitlab.com' }]);
+      projects.list.mockResolvedValue([
+        { id: 5, connectionId: 1, pathWithNamespace: 'equipe/backend-api' },
+      ]);
+
+      await service.import(dto);
+
+      expect(favorites.add).not.toHaveBeenCalled();
+    });
+
+    it('should_not_touch_favorites_when_the_array_is_absent', async () => {
+      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
+        version: 2,
+        settings: {},
+        projects: [],
+      });
+      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      projects.importMany.mockResolvedValue({
+        added: 0,
+        updated: 0,
+        skipped: [],
+      });
+
+      await service.import(dto);
+
+      expect(favorites.add).not.toHaveBeenCalled();
+      expect(connections.findAll).not.toHaveBeenCalled();
     });
   });
 });

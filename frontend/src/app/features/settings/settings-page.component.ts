@@ -240,6 +240,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     return encodeQueryParams({
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
+      favorites: this.filtersStore.favorites(),
       active: this.filtersStore.active(),
       connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),

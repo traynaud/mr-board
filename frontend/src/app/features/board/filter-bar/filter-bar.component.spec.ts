@@ -56,6 +56,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     readyLevel: 'green',
     openedDays: 1,
     isMine: false,
+    isFavorite: false,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: { id: 1, name: 'GitLab', type: 'gitlab' },
     ...overrides,
@@ -68,6 +69,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     <app-filter-bar
       [drafts]="drafts()"
       [mine]="mine()"
+      [favorites]="favorites()"
       [identityConfigured]="identityConfigured()"
       [rows]="rows()"
       [active]="active()"
@@ -77,6 +79,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       [search]="search()"
       (draftsToggle)="draftsToggleCount = draftsToggleCount + 1"
       (mineToggle)="mineToggleCount = mineToggleCount + 1"
+      (favoritesToggle)="favoritesToggleCount = favoritesToggleCount + 1"
       (clearFilters)="clearCount = clearCount + 1"
       (filterAdd)="added.push($event)"
       (filterRemove)="removed.push($event)"
@@ -90,6 +93,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
 class HostComponent {
   readonly drafts = signal(false);
   readonly mine = signal(false);
+  readonly favorites = signal(false);
   readonly identityConfigured = signal(true);
   readonly rows = signal<MergeRequestView[]>([mr({ id: 1 }), mr({ id: 2, projectAlias: 'web' })]);
   readonly active = signal<FilterKey[]>([]);
@@ -99,6 +103,7 @@ class HostComponent {
   readonly search = signal('');
   draftsToggleCount = 0;
   mineToggleCount = 0;
+  favoritesToggleCount = 0;
   clearCount = 0;
   added: FilterKey[] = [];
   removed: FilterKey[] = [];
@@ -119,14 +124,15 @@ describe('FilterBarComponent', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement, loader };
   };
 
-  it('should_render_the_drafts_and_mine_chips', async () => {
+  it('should_render_the_drafts_mine_and_favorites_chips', async () => {
     const { loader } = await setup();
     const listbox = await loader.getHarness(MatChipListboxHarness);
     const chips = await listbox.getChips();
 
-    expect(chips).toHaveLength(2);
+    expect(chips).toHaveLength(3);
     expect(await chips[0].getText()).toBe(t('board.filters.drafts'));
     expect(await chips[1].getText()).toBe(t('board.filters.mine'));
+    expect(await chips[2].getText()).toBe(t('board.filters.favorites'));
   });
 
   it('should_reflect_the_drafts_and_mine_selected_state', async () => {
@@ -165,6 +171,28 @@ describe('FilterBarComponent', () => {
     await mineChip.toggle();
 
     expect(fixture.componentInstance.mineToggleCount).toBe(1);
+  });
+
+  it('should_reflect_the_favorites_selected_state_rg_027_10', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.favorites.set(true);
+    await fixture.whenStable();
+
+    const favoritesChip = await loader.getHarness(
+      MatChipOptionHarness.with({ text: t('board.filters.favorites') }),
+    );
+    expect(await favoritesChip.isSelected()).toBe(true);
+  });
+
+  it('should_emit_favorites_toggle_when_the_favorites_chip_is_clicked_rg_027_10', async () => {
+    const { fixture, loader } = await setup();
+    const favoritesChip = await loader.getHarness(
+      MatChipOptionHarness.with({ text: t('board.filters.favorites') }),
+    );
+
+    await favoritesChip.toggle();
+
+    expect(fixture.componentInstance.favoritesToggleCount).toBe(1);
   });
 
   it('should_disable_the_mine_chip_and_show_a_tooltip_when_identity_is_not_configured', async () => {
@@ -259,6 +287,14 @@ describe('FilterBarComponent', () => {
   it('should_show_the_clear_button_when_a_composable_filter_is_active_even_without_mine', async () => {
     const { fixture, el } = await setup();
     fixture.componentInstance.active.set(['project']);
+    await fixture.whenStable();
+
+    expect(el.querySelector('.summary button')).not.toBeNull();
+  });
+
+  it('should_show_the_clear_button_when_favorites_is_active_rg_027_11', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.favorites.set(true);
     await fixture.whenStable();
 
     expect(el.querySelector('.summary button')).not.toBeNull();

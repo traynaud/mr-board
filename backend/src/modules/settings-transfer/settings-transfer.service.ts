@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionsService } from '../connections/connections.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import {
   ImportProjectEntry,
   ProjectsService,
@@ -7,6 +8,7 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { ExportConfigDto } from './dto/export-config.dto';
 import { ImportConfigDto } from './dto/import-config.dto';
+import { ImportFavoriteDto } from './dto/import-favorite.dto';
 import { ImportSettingsLegacyDto } from './dto/import-settings-legacy.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { ImportProjectLegacyDto } from './dto/import-project-legacy.dto';
@@ -27,16 +29,19 @@ export class SettingsTransferService {
     private readonly settings: SettingsService,
     private readonly connections: ConnectionsService,
     private readonly projects: ProjectsService,
+    private readonly favorites: FavoritesService,
   ) {}
 
-  /** Every global preference, connection and repo, `version: 2` (RG-019-18). */
+  /** Every global preference, connection, repo and favorite, `version: 2` (RG-019-18, RG-027-15). */
   async export(): Promise<ExportConfigDto> {
-    const [settings, connections, projects] = await Promise.all([
+    const [settings, connections, projects, favorites] = await Promise.all([
       this.settings.getExportableSettings(),
       this.connections.findAll(),
       this.projects.list(),
+      this.favorites.list(),
     ]);
     const connectionsById = new Map(connections.map((c) => [c.id, c]));
+    const projectsById = new Map(projects.map((p) => [p.id, p]));
     return {
       version: 2,
       settings,
@@ -52,6 +57,22 @@ export class SettingsTransferService {
         alias: project.alias,
         color: project.color,
       })),
+      // RG-027-15 : un favori dont le projet a disparu (cas impossible en
+      // pratique, cascade RG-027-05) est silencieusement omis plutôt que de
+      // faire échouer l'export.
+      favorites: favorites.flatMap((favorite) => {
+        const project = projectsById.get(favorite.projectId);
+        if (!project) {
+          return [];
+        }
+        return [
+          {
+            connection: connectionsById.get(project.connectionId)!.name,
+            pathWithNamespace: project.pathWithNamespace,
+            iid: favorite.iid,
+          },
+        ];
+      }),
     };
   }
 
@@ -112,7 +133,47 @@ export class SettingsTransferService {
       connectionName: entry.connection,
       color: entry.color,
     }));
-    return this.applyProjects(settings, connections, entries);
+    const result = await this.applyProjects(settings, connections, entries);
+    await this.importFavorites(dto.favorites ?? []);
+    return result;
+  }
+
+  /**
+   * RG-027-15 : resolves each favorite entry to a repo by (connection name,
+   * chemin) among the repos just imported/already configured — a favorite
+   * whose repo can't be resolved is **ignored silently**. Additive : never
+   * removes an existing favorite (`FavoritesService.add` is idempotent).
+   */
+  private async importFavorites(entries: ImportFavoriteDto[]): Promise<void> {
+    if (entries.length === 0) {
+      return;
+    }
+    const [projects, connections] = await Promise.all([
+      this.projects.list(),
+      this.connections.findAll(),
+    ]);
+    const connectionIdByName = new Map(
+      connections.map((connection) => [connection.name, connection.id]),
+    );
+    const projectByKey = new Map(
+      projects.map((project) => [
+        `${project.connectionId}:${project.pathWithNamespace}`,
+        project,
+      ]),
+    );
+    for (const entry of entries) {
+      const connectionId = connectionIdByName.get(entry.connection);
+      if (connectionId === undefined) {
+        continue;
+      }
+      const project = projectByKey.get(
+        `${connectionId}:${entry.pathWithNamespace}`,
+      );
+      if (!project) {
+        continue;
+      }
+      await this.favorites.add(project.id, entry.iid);
+    }
   }
 
   private async applyProjects(

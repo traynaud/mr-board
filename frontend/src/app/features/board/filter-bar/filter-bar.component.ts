@@ -51,6 +51,7 @@ export class FilterBarComponent {
 
   readonly drafts = input.required<boolean>();
   readonly mine = input.required<boolean>();
+  readonly favorites = input.required<boolean>();
   readonly identityConfigured = input.required<boolean>();
   readonly rows = input.required<MergeRequestView[]>();
   readonly active = input.required<FilterKey[]>();
@@ -65,6 +66,7 @@ export class FilterBarComponent {
 
   readonly draftsToggle = output<void>();
   readonly mineToggle = output<void>();
+  readonly favoritesToggle = output<void>();
   readonly clearFilters = output<void>();
   readonly filterAdd = output<FilterKey>();
   readonly filterRemove = output<FilterKey>();
@@ -85,7 +87,11 @@ export class FilterBarComponent {
 
   /** RG-026-11 : le bouton « Effacer » reste visible dès qu'une recherche est saisie. */
   protected readonly hasActiveFilter = computed(
-    () => this.mine() || this.active().length > 0 || this.search().length > 0,
+    () =>
+      this.mine() ||
+      this.favorites() ||
+      this.active().length > 0 ||
+      this.search().length > 0,
   );
 
   /** RG-026-11 : croix du champ — vide la recherche seule, sans toucher aux autres filtres. */

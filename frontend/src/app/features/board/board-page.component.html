@@ -35,6 +35,7 @@
     <app-filter-bar
       [drafts]="filtersStore.drafts()"
       [mine]="filtersStore.mine()"
+      [favorites]="filtersStore.favorites()"
       [identityConfigured]="identityConfigured()"
       [rows]="mrStore.mergeRequests()"
       [active]="filtersStore.active()"
@@ -45,6 +46,7 @@
       [search]="filtersStore.search()"
       (draftsToggle)="onDraftsToggle()"
       (mineToggle)="onMineToggle()"
+      (favoritesToggle)="onFavoritesToggle()"
       (clearFilters)="onClearFilters()"
       (filterAdd)="onFilterAdd($event)"
       (filterRemove)="onFilterRemove($event)"
@@ -83,6 +85,7 @@
         (widthChange)="onWidthChange($event)"
         (resetColumnWidth)="onResetColumnWidth($event)"
         (resetAllWidths)="onResetAllWidths()"
+        (favoriteToggle)="onFavoriteStarToggle($event)"
       />
     }
     @if (showFooter()) {

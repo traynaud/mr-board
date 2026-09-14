@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsOptional, ValidateNested } from 'class-validator';
 import { ImportConnectionDto } from './import-connection.dto';
+import { ImportFavoriteDto } from './import-favorite.dto';
 import { ImportProjectDto } from './import-project.dto';
 import { ImportProjectLegacyDto } from './import-project-legacy.dto';
 import { ImportSettingsDto } from './import-settings.dto';
@@ -35,4 +36,11 @@ export class ImportConfigDto {
   @ValidateNested({ each: true })
   @Type(() => ImportConnectionDto)
   connections?: ImportConnectionDto[];
+
+  /** `version: 2` only ; absent/ignored on a `version: 1` file (RG-027-15). */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ImportFavoriteDto)
+  favorites?: ImportFavoriteDto[];
 }
