@@ -105,3 +105,5 @@ docker-compose-prod.yml
 #   - CLAUDE.md (instructions projet pour Claude)
 #   - .claude/settings.json (configuration partagée)
 #   - .claude/commands/*.md (workflows et agents)
+
+/graphify-out/
