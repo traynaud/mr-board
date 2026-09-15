@@ -239,8 +239,14 @@ export class MergeRequestsService {
 
     const mergeRequestIds = mergeRequests.map((mr) => mr.id);
     const [reviewerRows, assigneeRows] = await Promise.all([
-      this.reviewers.findBy({ mergeRequestId: In(mergeRequestIds) }),
-      this.assignees.findBy({ mergeRequestId: In(mergeRequestIds) }),
+      this.reviewers.find({
+        where: { mergeRequestId: In(mergeRequestIds) },
+        order: { mergeRequestId: 'ASC', position: 'ASC' },
+      }),
+      this.assignees.find({
+        where: { mergeRequestId: In(mergeRequestIds) },
+        order: { mergeRequestId: 'ASC', position: 'ASC' },
+      }),
     ]);
     const reviewerIdsByMr = groupUserIds(reviewerRows);
     const assigneeIdsByMr = groupUserIds(assigneeRows);
@@ -381,6 +387,10 @@ export class MergeRequestsService {
     await this.replaceAssociations(this.assignees, saved.id, assigneeUsers);
   }
 
+  /**
+   * `users` order is preserved as `position` (RG-G06) so it can be restored
+   * on read, since SQLite otherwise restitutes rows by primary key order.
+   */
   private async replaceAssociations(
     repository: Repository<MergeRequestReviewer | MergeRequestAssignee>,
     mergeRequestId: number,
@@ -389,7 +399,11 @@ export class MergeRequestsService {
     await repository.delete({ mergeRequestId });
     if (users.length > 0) {
       await repository.insert(
-        users.map((user) => ({ mergeRequestId, userId: user.id })),
+        users.map((user, position) => ({
+          mergeRequestId,
+          userId: user.id,
+          position,
+        })),
       );
     }
   }

@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 /**
  * Association table: a merge request can have several assignees (RG-G06).
@@ -11,4 +11,8 @@ export class MergeRequestAssignee {
 
   @PrimaryColumn({ name: 'user_id', type: 'integer' })
   userId!: number;
+
+  /** Insertion order (forge order), since SQLite sorts by primary key otherwise. */
+  @Column({ name: 'position', type: 'integer', default: 0 })
+  position!: number;
 }

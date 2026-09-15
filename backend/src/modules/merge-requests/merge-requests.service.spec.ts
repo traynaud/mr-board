@@ -61,7 +61,7 @@ interface MergeRequestRepoMock {
   createQueryBuilder: jest.Mock;
 }
 interface AssociationRepoMock {
-  findBy: jest.Mock;
+  find: jest.Mock;
   delete: jest.Mock;
   insert: jest.Mock;
 }
@@ -119,7 +119,7 @@ describe('MergeRequestsService', () => {
         {
           provide: getRepositoryToken(MergeRequestReviewer),
           useValue: {
-            findBy: jest.fn().mockResolvedValue([]),
+            find: jest.fn().mockResolvedValue([]),
             delete: jest.fn(),
             insert: jest.fn(),
           },
@@ -127,7 +127,7 @@ describe('MergeRequestsService', () => {
         {
           provide: getRepositoryToken(MergeRequestAssignee),
           useValue: {
-            findBy: jest.fn().mockResolvedValue([]),
+            find: jest.fn().mockResolvedValue([]),
             delete: jest.fn(),
             insert: jest.fn(),
           },
@@ -343,12 +343,12 @@ describe('MergeRequestsService', () => {
       );
       expect(reviewersRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
       expect(reviewersRepo.insert).toHaveBeenCalledWith([
-        { mergeRequestId: 99, userId: 20 },
-        { mergeRequestId: 99, userId: 30 },
+        { mergeRequestId: 99, userId: 20, position: 0 },
+        { mergeRequestId: 99, userId: 30, position: 1 },
       ]);
       expect(assigneesRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
       expect(assigneesRepo.insert).toHaveBeenCalledWith([
-        { mergeRequestId: 99, userId: 20 },
+        { mergeRequestId: 99, userId: 20, position: 0 },
       ]);
     });
 
@@ -422,8 +422,8 @@ describe('MergeRequestsService', () => {
         warnings: [],
       });
 
-      expect(reviewersRepo.findBy).not.toHaveBeenCalled();
-      expect(assigneesRepo.findBy).not.toHaveBeenCalled();
+      expect(reviewersRepo.find).not.toHaveBeenCalled();
+      expect(assigneesRepo.find).not.toHaveBeenCalled();
       expect(projectsService.findByIds).not.toHaveBeenCalled();
       expect(usersService.findByIds).not.toHaveBeenCalled();
     });
@@ -645,13 +645,11 @@ describe('MergeRequestsService', () => {
         persistedMergeRequest({ id: 1, authorId: 10 }),
         persistedMergeRequest({ id: 2, iid: 8, authorId: 10 }),
       ]);
-      reviewersRepo.findBy.mockResolvedValue([
+      reviewersRepo.find.mockResolvedValue([
         { mergeRequestId: 1, userId: 20 },
         { mergeRequestId: 1, userId: 30 },
       ]);
-      assigneesRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 2, userId: 20 },
-      ]);
+      assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 2, userId: 20 }]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
@@ -911,12 +909,8 @@ describe('MergeRequestsService', () => {
       connectionsService.findAll.mockResolvedValue([
         { ...CONNECTION, meUsername: 'mdupont' },
       ]);
-      reviewersRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 1, userId: 20 },
-      ]);
-      assigneesRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 1, userId: 30 },
-      ]);
+      reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
+      assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 30 }]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
@@ -938,12 +932,8 @@ describe('MergeRequestsService', () => {
       connectionsService.findAll.mockResolvedValue([
         { ...CONNECTION, meUsername: 'mdupont' },
       ]);
-      reviewersRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 1, userId: 20 },
-      ]);
-      assigneesRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 1, userId: 20 },
-      ]);
+      reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
+      assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
@@ -1105,9 +1095,7 @@ describe('MergeRequestsService', () => {
         persistedMergeRequest({ id: 1, iid: 1 }),
         persistedMergeRequest({ id: 2, iid: 2 }),
       ]);
-      reviewersRepo.findBy.mockResolvedValue([
-        { mergeRequestId: 1, userId: 10 },
-      ]);
+      reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 10 }]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },

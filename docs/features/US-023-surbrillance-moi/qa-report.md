@@ -70,13 +70,18 @@ qui vérifient la présence de la classe CSS `.highlighted` et le contenu du too
   soumise par le client au lieu de celle déjà convertie par `enableImplicitConversion`, avant que `@IsBoolean()` ne
   s'exécute — ces champs sont désormais rejetés avec 400 s'ils ne sont pas des booléens stricts. Test de régression
   e2e ajouté (`settings.e2e-spec.ts::should_reject_a_non_boolean_value_for_a_boolean_field`).
-- **BUG-002** (mineur, **pré-existant, hors périmètre de l'US-023**) : l'ordre des reviewers/assignees renvoyé par
-  `GET /merge-requests` n'est pas garanti égal à l'ordre GitLab (RG-G06) lorsque plusieurs reviewers sont présents :
-  la table d'association `merge_request_reviewers` a une clé primaire composite `(merge_request_id, user_id)`,
-  et SQLite restitue les lignes triées par cette clé (donc par `user_id` croissant) plutôt que par ordre
-  d'insertion. Découvert pendant le développement de cette US (voir dev-report.md) en écrivant un test e2e
-  supposant l'ordre préservé. **Recommandation** : ajouter un ordre explicite de restitution (colonne d'ordre
-  dédiée ou tri applicatif) dans une US ou un correctif dédié à RG-G06 ; sans lien avec le calcul `isMe` de
+- **BUG-002** (mineur à modéré, **pré-existant, hors périmètre de l'US-023**) — ✅ **corrigé le 2026-09-15
+  (`/project:bugfix`)** : l'ordre des reviewers/assignees renvoyé par `GET /merge-requests` n'était pas garanti égal
+  à l'ordre GitLab (RG-G06) lorsque plusieurs reviewers étaient présents : la table d'association
+  `merge_request_reviewers` a une clé primaire composite `(merge_request_id, user_id)`, et SQLite restituait les
+  lignes triées par cette clé (donc par `user_id` croissant) plutôt que par ordre d'insertion. Découvert pendant le
+  développement de cette US (voir dev-report.md) en écrivant un test e2e supposant l'ordre préservé. Corrigé en
+  ajoutant une colonne `position` (migration `AddReviewerAssigneePosition`) sur `merge_request_reviewers` et
+  `merge_request_assignees`, renseignée à l'ordre d'insertion (ordre forge) dans `replaceAssociations`, et en
+  triant explicitement par `position` à la lecture au lieu de `findBy` (sans ordre garanti). Test de régression e2e
+  ajouté (`merge-requests.e2e-spec.ts::should_preserve_the_forge_order_of_reviewers_and_assignees_rg_g06`), qui
+  utilise un utilisateur existant à id bas placé après un utilisateur nouvellement créé à id haut pour prouver que
+  l'ordre restitué n'est plus celui du tri par id. Sans lien avec le calcul `isMe` de
   cette US, qui reste correct quel que soit l'ordre.
 
 Aucun bug fonctionnel n'a été trouvé dans le périmètre propre de l'US-023 (calcul `isMe`, paramètre `highlightMe`,

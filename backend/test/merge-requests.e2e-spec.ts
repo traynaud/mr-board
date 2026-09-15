@@ -343,6 +343,41 @@ describe('MergeRequests (e2e)', () => {
     });
   });
 
+  it('GET /merge-requests should_preserve_the_forge_order_of_reviewers_and_assignees_rg_g06', async () => {
+    // 'kbenali' and 'lrousseau' already exist (created by an earlier test in
+    // this suite) so they carry a lower internal user id than any brand-new
+    // user upserted below — SQLite would sort association rows by that id
+    // (ascending) unless the insertion order is explicitly preserved.
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(500, {
+        reviewers: [
+          forgeUser(777, 'zbrand', { name: 'Zoé Brand' }),
+          forgeUser(2, 'kbenali', { name: 'Karim Benali' }),
+        ],
+        assignees: [
+          forgeUser(778, 'abrand', { name: 'Amir Brand' }),
+          forgeUser(3, 'lrousseau', { name: 'Léa Rousseau' }),
+        ],
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+      (mr) => mr.iid === 500,
+    );
+    expect(view?.reviewers.map((r) => r.username)).toEqual([
+      'zbrand',
+      'kbenali',
+    ]);
+    expect(view?.assignees.map((a) => a.username)).toEqual([
+      'abrand',
+      'lrousseau',
+    ]);
+  });
+
   it('GET /merge-requests should_expose_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {
     await withFrozenTime('2026-09-11T08:00:00.000Z', async () => {
       gitlab.fetchOpenMergeRequests.mockResolvedValue([
