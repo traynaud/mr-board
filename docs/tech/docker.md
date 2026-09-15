@@ -63,10 +63,17 @@ Fixées dans l'image : `DB_PATH=/app/data/mr-board.sqlite` (bind mount `./data`)
 
 ## Étapes du Dockerfile
 
-1. `frontend-build` : `npm@11 ci` (npm 10.9 échoue sur ce projet) puis `ng build --configuration production`
-2. `backend-build` : `npm ci`, `nest build`, `npm prune --omit=dev`
+1. `frontend-build` : upgrade npm (`npm install -g npm@12`, npm 10.9 échoue sur ce projet) puis `npm ci` et
+   `ng build --configuration production`
+2. `backend-build` : upgrade npm puis `npm ci`, `nest build`, `npm prune --omit=dev`
 3. `runtime` : `node:22-bookworm-slim` (glibc → binaires précompilés `better-sqlite3` disponibles, pas de toolchain
    de compilation nécessaire) ; copie de `dist/`, `node_modules/` de prod et du build Angular dans `/app/public`
+
+> npm ≥ 11 bloque par défaut les scripts d'installation des dépendances natives non explicitement approuvés
+> (`allowScripts` dans `package.json`). `backend/package.json` approuve `better-sqlite3` (nécessaire à son binding
+> natif) ; toute nouvelle dépendance native devra être approuvée de la même façon (`npm install-scripts approve
+> <pkg>`, qui met à jour `allowScripts`), sous peine de `npm ci` silencieusement fonctionnel mais avec un module
+> natif non compilé (échec seulement au premier appel runtime, pas au build).
 
 ## Impacts côté backend
 
