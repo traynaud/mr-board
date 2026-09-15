@@ -1,4 +1,4 @@
-import { ConnectionType } from '../../forges/types/connection-type';
+import { ConnectionType } from '../../forges/types/connection-type.js';
 
 /** Response of every `/api/v1/connections` endpoint. Never carries the token. */
 export class ConnectionResponseDto {

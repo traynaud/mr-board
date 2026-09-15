@@ -6,7 +6,7 @@ import {
 } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { APP_CONFIG, AppConfig } from '../../config/configuration';
+import { APP_CONFIG, AppConfig } from '../../config/configuration.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;

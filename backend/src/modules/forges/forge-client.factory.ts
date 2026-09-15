@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { GithubClientService } from '../github/github-client.service';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
-import { ForgeClient } from './forge-client.interface';
-import { ConnectionType } from './types/connection-type';
+import { GithubClientService } from '../github/github-client.service.js';
+import { GitlabClientService } from '../gitlab/gitlab-client.service.js';
+import { ForgeClient } from './forge-client.interface.js';
+import { ConnectionType } from './types/connection-type.js';
 
 /**
  * Selects the `ForgeClient` implementation for a connection type

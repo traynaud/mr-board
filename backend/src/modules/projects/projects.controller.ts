@@ -9,10 +9,10 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { ProjectResponseDto } from './dto/project-response.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto.js';
+import { ProjectResponseDto } from './dto/project-response.dto.js';
+import { UpdateProjectDto } from './dto/update-project.dto.js';
+import { ProjectsService } from './projects.service.js';
 
 /** REST facade of the configured GitLab repositories. */
 @Controller('projects')

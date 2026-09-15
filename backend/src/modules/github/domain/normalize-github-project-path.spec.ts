@@ -1,4 +1,4 @@
-import { normalizeGithubProjectPath } from './normalize-github-project-path';
+import { normalizeGithubProjectPath } from './normalize-github-project-path.js';
 
 describe('normalizeGithubProjectPath', () => {
   it('should_accept_a_bare_path', () => {

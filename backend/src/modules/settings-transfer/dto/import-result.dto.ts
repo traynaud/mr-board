@@ -1,4 +1,4 @@
-import { SettingsResponseDto } from '../../settings/dto/settings-response.dto';
+import { SettingsResponseDto } from '../../settings/dto/settings-response.dto.js';
 
 /** One repo of an import that could not be applied (RG-015-04). */
 export class ImportSkippedProjectDto {

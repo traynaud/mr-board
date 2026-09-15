@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { GithubModule } from '../github/github.module';
-import { GitlabModule } from '../gitlab/gitlab.module';
-import { ForgeClientFactory } from './forge-client.factory';
+import { GithubModule } from '../github/github.module.js';
+import { GitlabModule } from '../gitlab/gitlab.module.js';
+import { ForgeClientFactory } from './forge-client.factory.js';
 
 /**
  * Exposes `ForgeClientFactory`, the sole entry point other modules use to

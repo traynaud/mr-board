@@ -8,14 +8,14 @@ import {
   ConnectionTokenMissingException,
   EntityNotFoundException,
   ForgeAuthException,
-} from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { deriveDefaultAlias } from './domain/derive-default-alias';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { ProjectResponseDto } from './dto/project-response.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { Project } from './entities/project.entity';
+} from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { deriveDefaultAlias } from './domain/derive-default-alias.js';
+import { CreateProjectDto } from './dto/create-project.dto.js';
+import { ProjectResponseDto } from './dto/project-response.dto.js';
+import { UpdateProjectDto } from './dto/update-project.dto.js';
+import { Project } from './entities/project.entity.js';
 
 /** Outcome of `importMany` (RG-015-04). */
 export interface ImportProjectsResult {

@@ -1,10 +1,10 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConnectionsService } from '../connections/connections.service';
-import { SettingsService } from '../settings/settings.service';
-import { SyncRun } from './entities/sync-run.entity';
-import { SyncScheduler } from './sync-scheduler.service';
-import { SyncService } from './sync.service';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { SyncRun } from './entities/sync-run.entity.js';
+import { SyncScheduler } from './sync-scheduler.service.js';
+import { SyncService } from './sync.service.js';
 
 describe('SyncScheduler', () => {
   let scheduler: SyncScheduler;

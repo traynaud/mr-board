@@ -1,4 +1,4 @@
-import { resolveReadyAt } from './resolve-ready-at';
+import { resolveReadyAt } from './resolve-ready-at.js';
 
 const CREATED = '2026-09-01T10:00:00.000Z';
 const NOW = '2026-09-11T08:00:00.000Z';

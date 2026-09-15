@@ -1,4 +1,7 @@
-import { SortableMergeRequest, sortMergeRequests } from './sort-merge-requests';
+import {
+  SortableMergeRequest,
+  sortMergeRequests,
+} from './sort-merge-requests.js';
 
 function mr(
   overrides: Partial<SortableMergeRequest> & { iid: number },

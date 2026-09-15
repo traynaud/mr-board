@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConnectionsService } from '../connections/connections.service';
-import { SettingsService } from '../settings/settings.service';
-import { computeNextRunAt } from './domain/compute-next-run-at';
-import { SyncRun } from './entities/sync-run.entity';
-import { SyncService } from './sync.service';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { computeNextRunAt } from './domain/compute-next-run-at.js';
+import { SyncRun } from './entities/sync-run.entity.js';
+import { SyncService } from './sync.service.js';
 
 /** Cadence at which the scheduler re-evaluates whether a sync is due. */
 export const SCHEDULER_TICK_MS = 15_000;

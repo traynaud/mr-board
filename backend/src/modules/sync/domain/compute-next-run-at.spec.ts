@@ -1,4 +1,4 @@
-import { computeNextRunAt } from './compute-next-run-at';
+import { computeNextRunAt } from './compute-next-run-at.js';
 
 describe('computeNextRunAt', () => {
   it('should_return_null_in_manual_mode', () => {

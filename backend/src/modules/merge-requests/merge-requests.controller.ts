@@ -9,15 +9,15 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ComposableFilters } from './domain/filter-merge-requests';
+import { ComposableFilters } from './domain/filter-merge-requests.js';
 import {
   MergeRequestFacetsQueryDto,
   MergeRequestFilterQueryDto,
   MergeRequestQueryDto,
-} from './dto/merge-request-query.dto';
-import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
-import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
-import { MergeRequestsService } from './merge-requests.service';
+} from './dto/merge-request-query.dto.js';
+import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto.js';
+import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto.js';
+import { MergeRequestsService } from './merge-requests.service.js';
 
 /** REST facade of the synchronised merge requests (RG-005-*, RG-008-*, RG-009-*, RG-010-*, RG-027-*, RG-028-*). */
 @Controller('merge-requests')

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConnectionsModule } from '../connections/connections.module';
-import { Settings } from './entities/settings.entity';
-import { SettingsController } from './settings.controller';
-import { SettingsService } from './settings.service';
+import { ConnectionsModule } from '../connections/connections.module.js';
+import { Settings } from './entities/settings.entity.js';
+import { SettingsController } from './settings.controller.js';
+import { SettingsService } from './settings.service.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Settings]), ConnectionsModule],

@@ -11,7 +11,7 @@ import {
   ForgeTimeoutException,
   ForgeUnavailableException,
   MissingConfigurationException,
-} from './business.exception';
+} from './business.exception.js';
 
 describe('Business exceptions', () => {
   it.each([

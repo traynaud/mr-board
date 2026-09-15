@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-import { buildTypeOrmOptions } from './typeorm-options';
+import { buildTypeOrmOptions } from './typeorm-options.js';
 
 /**
  * DataSource used by the TypeORM CLI (`npm run migration:*`).

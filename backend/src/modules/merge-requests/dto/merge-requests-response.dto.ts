@@ -1,4 +1,4 @@
-import { MergeRequestViewDto } from './merge-request-view.dto';
+import { MergeRequestViewDto } from './merge-request-view.dto.js';
 
 /**
  * Response of `GET /api/v1/merge-requests`. `warnings` carries non-fatal

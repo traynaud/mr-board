@@ -3,7 +3,7 @@ import {
   matchesCompiledSearch,
   matchesSearch,
   searchMergeRequests,
-} from './search-merge-requests';
+} from './search-merge-requests.js';
 
 function mr(overrides: Partial<{ title: string; iid: number }> = {}) {
   return { title: 'Refonte de la facturation', iid: 7, ...overrides };

@@ -2,7 +2,7 @@ import {
   DEFAULT_DIFFICULTY_THRESHOLDS,
   DIFFICULTY_ORDER,
   calculateDifficulty,
-} from './calculate-difficulty';
+} from './calculate-difficulty.js';
 
 describe('calculateDifficulty', () => {
   it.each([

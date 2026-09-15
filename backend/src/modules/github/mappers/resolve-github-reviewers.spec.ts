@@ -1,5 +1,5 @@
-import { ForgeUser } from '../../forges/types/forge-user';
-import { resolveGithubReviewers } from './resolve-github-reviewers';
+import { ForgeUser } from '../../forges/types/forge-user.js';
+import { resolveGithubReviewers } from './resolve-github-reviewers.js';
 
 const user = (username: string): ForgeUser => ({
   remoteUserId: username,

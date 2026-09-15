@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Favorite } from './entities/favorite.entity';
-import { FavoritesService } from './favorites.service';
+import { Favorite } from './entities/favorite.entity.js';
+import { FavoritesService } from './favorites.service.js';
 
 describe('FavoritesService', () => {
   let service: FavoritesService;

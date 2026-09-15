@@ -1,10 +1,10 @@
-import { ForgeMergeRequest } from '../../forges/types/forge-merge-request';
-import { ForgeUser } from '../../forges/types/forge-user';
+import { ForgeMergeRequest } from '../../forges/types/forge-merge-request.js';
+import { ForgeUser } from '../../forges/types/forge-user.js';
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlUserNode,
-} from '../types/gitlab-merge-request';
-import { computeGitlabMergeStatus } from './compute-gitlab-merge-status';
+} from '../types/gitlab-merge-request.js';
+import { computeGitlabMergeStatus } from './compute-gitlab-merge-status.js';
 
 /**
  * Extracts the trailing numeric id from a GitLab GraphQL Global ID

@@ -1,4 +1,4 @@
-import { PROJECT_COLOR_IDS } from './project-color';
+import { PROJECT_COLOR_IDS } from './project-color.js';
 
 describe('PROJECT_COLOR_IDS', () => {
   it('should_expose_exactly_ten_colors_rg_025_02', () => {

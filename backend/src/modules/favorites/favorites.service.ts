@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Favorite } from './entities/favorite.entity';
+import { Favorite } from './entities/favorite.entity.js';
 
 /**
  * Persists favorite merge requests (RG-027-01/03), keyed by

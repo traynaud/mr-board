@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BusinessValidationException } from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import type { DifficultyThresholds } from '../merge-requests/domain/calculate-difficulty';
-import type { ReadyDelayThresholds } from '../merge-requests/domain/calculate-ready-delay';
-import { SettingsResponseDto } from './dto/settings-response.dto';
-import { UpdateSettingsDto } from './dto/update-settings.dto';
-import { SETTINGS_ID, Settings } from './entities/settings.entity';
-import type { Language, ThemePreference } from './entities/settings.entity';
+import { BusinessValidationException } from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import type { DifficultyThresholds } from '../merge-requests/domain/calculate-difficulty.js';
+import type { ReadyDelayThresholds } from '../merge-requests/domain/calculate-ready-delay.js';
+import { SettingsResponseDto } from './dto/settings-response.dto.js';
+import { UpdateSettingsDto } from './dto/update-settings.dto.js';
+import { SETTINGS_ID, Settings } from './entities/settings.entity.js';
+import type { Language, ThemePreference } from './entities/settings.entity.js';
 
 /** Fields shared by a full update (`UpdateSettingsDto`) and a config import. */
 export interface MergeableSettingsFields {

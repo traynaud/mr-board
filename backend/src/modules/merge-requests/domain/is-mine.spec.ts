@@ -1,4 +1,4 @@
-import { isMe, isMine } from './is-mine';
+import { isMe, isMine } from './is-mine.js';
 
 function subject(
   overrides: Partial<{

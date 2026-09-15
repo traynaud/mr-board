@@ -1,4 +1,4 @@
-import { SyncRunStatus, SyncTrigger } from '../entities/sync-run.entity';
+import { SyncRunStatus, SyncTrigger } from '../entities/sync-run.entity.js';
 
 /** Trace of one completed synchronisation run (RG-004-06). */
 export class SyncRunDto {

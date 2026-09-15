@@ -1,4 +1,4 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
 /**
  * Joi schema validating environment variables at startup.

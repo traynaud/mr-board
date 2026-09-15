@@ -1,11 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
-import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
-import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
-import { createTestApp } from './utils/create-test-app';
+import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request.js';
+import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service.js';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url.js';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path.js';
+import { createTestApp } from './utils/create-test-app.js';
 
 interface SyncRunBody {
   status?: string;

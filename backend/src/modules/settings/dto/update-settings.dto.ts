@@ -11,8 +11,8 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import type { Language, ThemePreference } from '../entities/settings.entity';
-import { IdentityDto } from './identity.dto';
+import type { Language, ThemePreference } from '../entities/settings.entity.js';
+import { IdentityDto } from './identity.dto.js';
 
 /** RG-013-01 : `0` = manual, no other value is accepted. */
 export const REFRESH_INTERVAL_OPTIONS = [0, 1, 5, 15, 30] as const;

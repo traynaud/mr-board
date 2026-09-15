@@ -2,12 +2,12 @@ import {
   ComposableFilters,
   EMPTY_COMPOSABLE_FILTERS,
   FilterableMergeRequest,
-} from './filter-merge-requests';
+} from './filter-merge-requests.js';
 import {
   ConfiguredConnection,
   ConfiguredProject,
   buildFacets,
-} from './build-facets';
+} from './build-facets.js';
 
 function person(
   username: string,

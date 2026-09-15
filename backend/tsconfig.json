@@ -13,8 +13,12 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "rootDir": ".",
     "incremental": true,
+    "types": ["jest", "node"],
+    "paths": {
+      "supertest/types": ["./node_modules/@types/supertest/types.d.ts"]
+    },
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,

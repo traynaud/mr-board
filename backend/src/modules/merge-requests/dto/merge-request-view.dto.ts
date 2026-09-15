@@ -1,8 +1,8 @@
-import { Difficulty } from '../domain/calculate-difficulty';
-import { ReadyLevel } from '../domain/calculate-ready-delay';
-import { ConnectionSummaryDto } from './connection-summary.dto';
-import { MergeRequestUserDto } from './merge-request-user.dto';
-import { MergeStatusDto } from './merge-status.dto';
+import { Difficulty } from '../domain/calculate-difficulty.js';
+import { ReadyLevel } from '../domain/calculate-ready-delay.js';
+import { ConnectionSummaryDto } from './connection-summary.dto.js';
+import { MergeRequestUserDto } from './merge-request-user.dto.js';
+import { MergeStatusDto } from './merge-status.dto.js';
 
 /**
  * Response of `GET /api/v1/merge-requests` (RG-005-11, extended by

@@ -4,23 +4,23 @@ import { Repository } from 'typeorm';
 import {
   EntityNotFoundException,
   ForgeAuthException,
-} from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import { Connection } from '../connections/entities/connection.entity';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { MergeRequestsService } from '../merge-requests/merge-requests.service';
-import { Project } from '../projects/entities/project.entity';
-import { ProjectsService } from '../projects/projects.service';
-import { SettingsService } from '../settings/settings.service';
-import { computeNextRunAt } from './domain/compute-next-run-at';
+} from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { Connection } from '../connections/entities/connection.entity.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { ProjectsService } from '../projects/projects.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { computeNextRunAt } from './domain/compute-next-run-at.js';
 import {
   ProjectSyncOutcome,
   summarizeSyncRun,
-} from './domain/summarize-sync-run';
-import { SyncRunDto } from './dto/sync-run.dto';
-import { SyncStatusResponseDto } from './dto/sync-status-response.dto';
-import { SyncTriggerResponseDto } from './dto/sync-trigger-response.dto';
-import { SyncRun, SyncTrigger } from './entities/sync-run.entity';
+} from './domain/summarize-sync-run.js';
+import { SyncRunDto } from './dto/sync-run.dto.js';
+import { SyncStatusResponseDto } from './dto/sync-status-response.dto.js';
+import { SyncTriggerResponseDto } from './dto/sync-trigger-response.dto.js';
+import { SyncRun, SyncTrigger } from './entities/sync-run.entity.js';
 
 /** Time budget granted to synchronising a single project (ms). See RG-004-14. */
 export const PROJECT_SYNC_TIMEOUT_MS = 60_000;

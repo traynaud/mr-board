@@ -1,8 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { App } from 'supertest/types';
-import { AppModule } from '../../src/app.module';
-import { setupApp } from '../../src/app.setup';
+import { AppModule } from '../../src/app.module.js';
+import { setupApp } from '../../src/app.setup.js';
 
 /**
  * Builds a fully wired application on an in-memory SQLite database, with the

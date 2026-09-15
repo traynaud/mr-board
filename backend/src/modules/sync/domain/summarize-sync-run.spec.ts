@@ -1,4 +1,4 @@
-import { summarizeSyncRun } from './summarize-sync-run';
+import { summarizeSyncRun } from './summarize-sync-run.js';
 
 describe('summarizeSyncRun', () => {
   it('should_return_success_when_no_project_failed', () => {

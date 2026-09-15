@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import type { MergeStatusState } from '../../forges/types/merge-status';
+import type { MergeStatusState } from '../../forges/types/merge-status.js';
 
 /**
  * A merge/pull request synchronised locally (RG-004-02). Unique per

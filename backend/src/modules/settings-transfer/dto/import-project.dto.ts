@@ -1,5 +1,5 @@
 import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { PROJECT_COLOR_IDS } from '../../projects/domain/project-color';
+import { PROJECT_COLOR_IDS } from '../../projects/domain/project-color.js';
 
 /** One repo entry of a `version: 2` imported config file (RG-015-04, RG-019-18/19). */
 export class ImportProjectDto {

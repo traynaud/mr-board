@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
-import { ExportConfigDto } from './dto/export-config.dto';
-import { ImportConfigDto } from './dto/import-config.dto';
-import { ImportResultDto } from './dto/import-result.dto';
-import { SettingsTransferService } from './settings-transfer.service';
+import { ExportConfigDto } from './dto/export-config.dto.js';
+import { ImportConfigDto } from './dto/import-config.dto.js';
+import { ImportResultDto } from './dto/import-result.dto.js';
+import { SettingsTransferService } from './settings-transfer.service.js';
 
 /**
  * Export/import of the whole configuration (RG-015-03, RG-015-04). Shares

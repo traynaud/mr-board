@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { GithubClientService } from './github-client.service';
+import { GithubClientService } from './github-client.service.js';
 
 /** GitHub implementation of the `ForgeClient` contract (RG-019-21, US-020), consumed via `ForgesModule`. */
 @Module({

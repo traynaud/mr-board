@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { SORT_PARAMS, type SortParam } from '../domain/sort-merge-requests';
+import { SORT_PARAMS, type SortParam } from '../domain/sort-merge-requests.js';
 
 const BOOLEAN_PARAMS = ['0', '1'] as const;
 type BooleanParam = (typeof BOOLEAN_PARAMS)[number];

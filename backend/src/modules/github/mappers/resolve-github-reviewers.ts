@@ -1,4 +1,4 @@
-import { ForgeUser } from '../../forges/types/forge-user';
+import { ForgeUser } from '../../forges/types/forge-user.js';
 
 /**
  * Resolves the `reviewers` of a pull request (RG-020-08): GitHub removes a

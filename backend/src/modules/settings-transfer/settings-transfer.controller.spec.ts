@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { ImportConfigDto } from './dto/import-config.dto';
-import { SettingsTransferController } from './settings-transfer.controller';
-import { SettingsTransferService } from './settings-transfer.service';
+import { ImportConfigDto } from './dto/import-config.dto.js';
+import { SettingsTransferController } from './settings-transfer.controller.js';
+import { SettingsTransferService } from './settings-transfer.service.js';
 
 describe('SettingsTransferController', () => {
   let controller: SettingsTransferController;

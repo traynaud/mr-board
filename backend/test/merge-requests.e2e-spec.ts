@@ -1,13 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { computeGitlabMergeStatus } from '../src/modules/gitlab/mappers/compute-gitlab-merge-status';
-import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request';
-import { ForgeUser } from '../src/modules/forges/types/forge-user';
-import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
-import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
-import { createTestApp } from './utils/create-test-app';
+import { computeGitlabMergeStatus } from '../src/modules/gitlab/mappers/compute-gitlab-merge-status.js';
+import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service.js';
+import { ForgeMergeRequest } from '../src/modules/forges/types/forge-merge-request.js';
+import { ForgeUser } from '../src/modules/forges/types/forge-user.js';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url.js';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path.js';
+import { createTestApp } from './utils/create-test-app.js';
 
 interface MergeRequestUserBody {
   username: string;

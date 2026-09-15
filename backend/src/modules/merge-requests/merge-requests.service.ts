@@ -1,58 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { EntityNotFoundException } from '../../common/exceptions';
-import { Connection } from '../connections/entities/connection.entity';
-import { ConnectionsService } from '../connections/connections.service';
-import { FavoritesService } from '../favorites/favorites.service';
-import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
-import { MergeStatusResult } from '../forges/types/merge-status';
-import { Project } from '../projects/entities/project.entity';
-import { ProjectsService } from '../projects/projects.service';
-import { SettingsService } from '../settings/settings.service';
-import { User } from '../users/entities/user.entity';
-import { UsersService } from '../users/users.service';
+import { EntityNotFoundException } from '../../common/exceptions/index.js';
+import { Connection } from '../connections/entities/connection.entity.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { FavoritesService } from '../favorites/favorites.service.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { MergeStatusResult } from '../forges/types/merge-status.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { ProjectsService } from '../projects/projects.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { User } from '../users/entities/user.entity.js';
+import { UsersService } from '../users/users.service.js';
 import {
   DifficultyThresholds,
   calculateDifficulty,
-} from './domain/calculate-difficulty';
+} from './domain/calculate-difficulty.js';
 import {
   ReadyDelayThresholds,
   calculateElapsedDays,
   readyLevelForDays,
-} from './domain/calculate-ready-delay';
+} from './domain/calculate-ready-delay.js';
 import {
   ConfiguredConnection,
   ConfiguredProject,
   buildFacets,
-} from './domain/build-facets';
+} from './domain/build-facets.js';
 import {
   ComposableFilters,
   EMPTY_COMPOSABLE_FILTERS,
   applyComposableFilters,
-} from './domain/filter-merge-requests';
-import { favoriteKey, isFavorite } from './domain/is-favorite';
-import { isIgnoredByLabel } from './domain/is-ignored-by-label';
-import { Identity, isMe, isMine } from './domain/is-mine';
+} from './domain/filter-merge-requests.js';
+import { favoriteKey, isFavorite } from './domain/is-favorite.js';
+import { isIgnoredByLabel } from './domain/is-ignored-by-label.js';
+import { Identity, isMe, isMine } from './domain/is-mine.js';
 import {
   compileSearch,
   matchesCompiledSearch,
-} from './domain/search-merge-requests';
-import { resolveReadyAt } from './domain/resolve-ready-at';
+} from './domain/search-merge-requests.js';
+import { resolveReadyAt } from './domain/resolve-ready-at.js';
 import {
   DEFAULT_SORT,
   SortParam,
   sortMergeRequests,
-} from './domain/sort-merge-requests';
-import { ConnectionSummaryDto } from './dto/connection-summary.dto';
-import { MergeRequestUserDto } from './dto/merge-request-user.dto';
-import { MergeRequestViewDto } from './dto/merge-request-view.dto';
-import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
-import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
-import { MergeRequestApprover } from './entities/merge-request-approver.entity';
-import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
-import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
-import { MergeRequest } from './entities/merge-request.entity';
+} from './domain/sort-merge-requests.js';
+import { ConnectionSummaryDto } from './dto/connection-summary.dto.js';
+import { MergeRequestUserDto } from './dto/merge-request-user.dto.js';
+import { MergeRequestViewDto } from './dto/merge-request-view.dto.js';
+import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto.js';
+import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto.js';
+import { MergeRequestApprover } from './entities/merge-request-approver.entity.js';
+import { MergeRequestAssignee } from './entities/merge-request-assignee.entity.js';
+import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity.js';
+import { MergeRequest } from './entities/merge-request.entity.js';
 
 export interface ListOpenOptions {
   sort?: SortParam;

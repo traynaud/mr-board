@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CryptoModule } from '../../common/crypto/crypto.module';
-import { ForgesModule } from '../forges/forges.module';
-import { Project } from '../projects/entities/project.entity';
-import { ConnectionsController } from './connections.controller';
-import { ConnectionsService } from './connections.service';
-import { Connection } from './entities/connection.entity';
+import { CryptoModule } from '../../common/crypto/crypto.module.js';
+import { ForgesModule } from '../forges/forges.module.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { ConnectionsController } from './connections.controller.js';
+import { ConnectionsService } from './connections.service.js';
+import { Connection } from './entities/connection.entity.js';
 
 /**
  * Manages forge connections (RG-019-*). Depends only on `ForgesModule` and

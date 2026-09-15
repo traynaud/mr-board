@@ -1,4 +1,4 @@
-import { SyncRunStatus } from '../entities/sync-run.entity';
+import { SyncRunStatus } from '../entities/sync-run.entity.js';
 
 /**
  * Outcome of synchronising a single project during one run, or of a whole

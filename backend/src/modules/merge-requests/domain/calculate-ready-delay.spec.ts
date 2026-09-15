@@ -2,7 +2,7 @@ import {
   DEFAULT_READY_DELAY_THRESHOLDS,
   calculateElapsedDays,
   readyLevelForDays,
-} from './calculate-ready-delay';
+} from './calculate-ready-delay.js';
 
 describe('calculateElapsedDays', () => {
   const NOW = '2026-09-11T10:00:00Z';

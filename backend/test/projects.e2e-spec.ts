@@ -4,13 +4,13 @@ import { App } from 'supertest/types';
 import {
   BusinessValidationException,
   ForgeUnavailableException,
-} from '../src/common/exceptions';
-import { normalizeGithubProjectPath } from '../src/modules/github/domain/normalize-github-project-path';
-import { GithubClientService } from '../src/modules/github/github-client.service';
-import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
-import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path';
-import { createTestApp } from './utils/create-test-app';
+} from '../src/common/exceptions/index.js';
+import { normalizeGithubProjectPath } from '../src/modules/github/domain/normalize-github-project-path.js';
+import { GithubClientService } from '../src/modules/github/github-client.service.js';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url.js';
+import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service.js';
+import { normalizeProjectPath } from '../src/modules/projects/domain/normalize-project-path.js';
+import { createTestApp } from './utils/create-test-app.js';
 
 interface Body {
   code?: string;

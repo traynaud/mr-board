@@ -4,26 +4,26 @@ import {
   ForgeScopeException,
   ForgeTimeoutException,
   ForgeUnavailableException,
-} from '../../common/exceptions';
+} from '../../common/exceptions/index.js';
 import {
   FetchOpenMergeRequestsOptions,
   ForgeClient,
-} from '../forges/forge-client.interface';
-import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
-import { ForgeProject } from '../forges/types/forge-project';
-import { ForgeTestResult } from '../forges/types/forge-test-result';
-import { hasRequiredScope } from './domain/check-token-scopes';
-import { normalizeGitlabUrl } from './domain/normalize-gitlab-url';
-import { normalizeProjectPath } from '../projects/domain/normalize-project-path';
-import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request';
+} from '../forges/forge-client.interface.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { ForgeProject } from '../forges/types/forge-project.js';
+import { ForgeTestResult } from '../forges/types/forge-test-result.js';
+import { hasRequiredScope } from './domain/check-token-scopes.js';
+import { normalizeGitlabUrl } from './domain/normalize-gitlab-url.js';
+import { normalizeProjectPath } from '../projects/domain/normalize-project-path.js';
+import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request.js';
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlMergeRequestsPage,
   GitlabGraphqlMergeRequestsResponse,
-} from './types/gitlab-merge-request';
-import { GitlabProject } from './types/gitlab-project';
-import { GitlabTokenInfo } from './types/gitlab-token-info';
-import { GitlabUser } from './types/gitlab-user';
+} from './types/gitlab-merge-request.js';
+import { GitlabProject } from './types/gitlab-project.js';
+import { GitlabTokenInfo } from './types/gitlab-token-info.js';
+import { GitlabUser } from './types/gitlab-user.js';
 
 /** Request timeout applied to every GitLab call (ms). */
 export const GITLAB_TIMEOUT_MS = 15_000;

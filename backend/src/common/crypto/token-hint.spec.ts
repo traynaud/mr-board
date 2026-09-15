@@ -1,4 +1,4 @@
-import { tokenHint } from './token-hint';
+import { tokenHint } from './token-hint.js';
 
 describe('tokenHint', () => {
   it('should_return_last_four_characters', () => {

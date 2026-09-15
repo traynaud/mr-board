@@ -6,7 +6,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { PROJECT_COLOR_IDS } from '../domain/project-color';
+import { PROJECT_COLOR_IDS } from '../domain/project-color.js';
 
 /** Alias charset/length (RG-003-04): URL-safe, no comma (breaks the CSV query params of RG-011-01). */
 export const ALIAS_PATTERN = /^[A-Za-z0-9._-]{1,20}$/;

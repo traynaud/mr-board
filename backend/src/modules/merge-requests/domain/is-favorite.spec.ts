@@ -1,4 +1,4 @@
-import { favoriteKey, isFavorite } from './is-favorite';
+import { favoriteKey, isFavorite } from './is-favorite.js';
 
 describe('favoriteKey', () => {
   it('should_combine_project_id_and_iid_rg_027_04', () => {

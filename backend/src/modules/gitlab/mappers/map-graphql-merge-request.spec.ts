@@ -1,12 +1,12 @@
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlUserNode,
-} from '../types/gitlab-merge-request';
+} from '../types/gitlab-merge-request.js';
 import {
   extractNumericId,
   mapGraphqlMergeRequest,
   mapGraphqlUser,
-} from './map-graphql-merge-request';
+} from './map-graphql-merge-request.js';
 
 function buildUser(id: string, username: string): GitlabGraphqlUserNode {
   return {

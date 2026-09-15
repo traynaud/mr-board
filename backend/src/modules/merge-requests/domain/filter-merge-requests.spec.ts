@@ -4,7 +4,7 @@ import {
   FilterableMergeRequest,
   applyComposableFilters,
   applyComposableFiltersExcept,
-} from './filter-merge-requests';
+} from './filter-merge-requests.js';
 
 function person(
   username: string,

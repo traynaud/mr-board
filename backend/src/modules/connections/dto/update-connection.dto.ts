@@ -12,7 +12,7 @@ import {
   CONNECTION_NAME_PATTERN,
   FORGE_URL_OPTIONS,
   TOKEN_MIN_LENGTH,
-} from './create-connection.dto';
+} from './create-connection.dto.js';
 
 /**
  * Body of `PUT /api/v1/connections/:id`. `type` is never accepted — not

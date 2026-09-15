@@ -6,26 +6,26 @@ import {
   ForgeScopeException,
   ForgeTimeoutException,
   ForgeUnavailableException,
-} from '../../common/exceptions';
+} from '../../common/exceptions/index.js';
 import {
   FetchOpenMergeRequestsOptions,
   ForgeClient,
-} from '../forges/forge-client.interface';
-import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
-import { ForgeProject } from '../forges/types/forge-project';
-import { ForgeTestResult } from '../forges/types/forge-test-result';
-import { normalizeGitlabUrl } from '../gitlab/domain/normalize-gitlab-url';
-import { hasRequiredScope } from './domain/check-github-token-scopes';
-import { deriveGithubApiBases } from './domain/derive-github-api-bases';
-import { normalizeGithubProjectPath } from './domain/normalize-github-project-path';
-import { mapGraphqlPullRequest } from './mappers/map-graphql-pull-request';
+} from '../forges/forge-client.interface.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { ForgeProject } from '../forges/types/forge-project.js';
+import { ForgeTestResult } from '../forges/types/forge-test-result.js';
+import { normalizeGitlabUrl } from '../gitlab/domain/normalize-gitlab-url.js';
+import { hasRequiredScope } from './domain/check-github-token-scopes.js';
+import { deriveGithubApiBases } from './domain/derive-github-api-bases.js';
+import { normalizeGithubProjectPath } from './domain/normalize-github-project-path.js';
+import { mapGraphqlPullRequest } from './mappers/map-graphql-pull-request.js';
 import {
   GithubGraphqlPullRequestNode,
   GithubGraphqlPullRequestsPage,
   GithubGraphqlPullRequestsResponse,
-} from './types/github-pull-request';
-import { GithubRepo } from './types/github-repo';
-import { GithubUser } from './types/github-user';
+} from './types/github-pull-request.js';
+import { GithubRepo } from './types/github-repo.js';
+import { GithubUser } from './types/github-user.js';
 
 /** Request timeout applied to every GitHub call (ms). See RG-020-03. */
 export const GITHUB_TIMEOUT_MS = 15_000;

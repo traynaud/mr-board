@@ -1,10 +1,10 @@
 import { ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
-import { EntityNotFoundException } from '../exceptions';
+import { EntityNotFoundException } from '../exceptions/index.js';
 import {
   ErrorResponse,
   HttpExceptionFilter,
   reasonPhrase,
-} from './http-exception.filter';
+} from './http-exception.filter.js';
 
 describe('HttpExceptionFilter', () => {
   const json = jest.fn<void, [ErrorResponse]>();

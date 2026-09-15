@@ -1,20 +1,20 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { EntityNotFoundException } from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import { FavoritesService } from '../favorites/favorites.service';
-import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
-import { ProjectsService } from '../projects/projects.service';
-import { SettingsService } from '../settings/settings.service';
-import { UsersService } from '../users/users.service';
-import { DEFAULT_DIFFICULTY_THRESHOLDS } from './domain/calculate-difficulty';
-import { DEFAULT_READY_DELAY_THRESHOLDS } from './domain/calculate-ready-delay';
-import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests';
-import { MergeRequestApprover } from './entities/merge-request-approver.entity';
-import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
-import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
-import { MergeRequest } from './entities/merge-request.entity';
-import { MergeRequestsService } from './merge-requests.service';
+import { EntityNotFoundException } from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { FavoritesService } from '../favorites/favorites.service.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { ProjectsService } from '../projects/projects.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { UsersService } from '../users/users.service.js';
+import { DEFAULT_DIFFICULTY_THRESHOLDS } from './domain/calculate-difficulty.js';
+import { DEFAULT_READY_DELAY_THRESHOLDS } from './domain/calculate-ready-delay.js';
+import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests.js';
+import { MergeRequestApprover } from './entities/merge-request-approver.entity.js';
+import { MergeRequestAssignee } from './entities/merge-request-assignee.entity.js';
+import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity.js';
+import { MergeRequest } from './entities/merge-request.entity.js';
+import { MergeRequestsService } from './merge-requests.service.js';
 
 const CONNECTION = {
   id: 1,

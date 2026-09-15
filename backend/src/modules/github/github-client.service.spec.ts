@@ -6,10 +6,10 @@ import {
   ForgeScopeException,
   ForgeTimeoutException,
   ForgeUnavailableException,
-} from '../../common/exceptions';
-import { ForgeProject } from '../forges/types/forge-project';
-import { GithubClientService } from './github-client.service';
-import { GithubGraphqlPullRequestNode } from './types/github-pull-request';
+} from '../../common/exceptions/index.js';
+import { ForgeProject } from '../forges/types/forge-project.js';
+import { GithubClientService } from './github-client.service.js';
+import { GithubGraphqlPullRequestNode } from './types/github-pull-request.js';
 
 const BASE = 'https://github.com';
 const GHES_BASE = 'https://github.exemple.fr';

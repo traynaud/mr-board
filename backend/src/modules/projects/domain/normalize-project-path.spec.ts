@@ -1,4 +1,4 @@
-import { normalizeProjectPath } from './normalize-project-path';
+import { normalizeProjectPath } from './normalize-project-path.js';
 
 describe('normalizeProjectPath', () => {
   it.each([

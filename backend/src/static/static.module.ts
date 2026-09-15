@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { API_PREFIX } from '../app.setup';
-import { APP_CONFIG, AppConfig } from '../config/configuration';
+import { API_PREFIX } from '../app.setup.js';
+import { APP_CONFIG, AppConfig } from '../config/configuration.js';
 
 /**
  * Serves the built frontend (Angular) from `STATIC_DIR` on the same origin as

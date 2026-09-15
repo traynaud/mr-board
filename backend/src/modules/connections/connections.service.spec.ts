@@ -1,18 +1,18 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
-import { TokenCipherService } from '../../common/crypto/token-cipher.service';
+import { TokenCipherService } from '../../common/crypto/token-cipher.service.js';
 import {
   BusinessValidationException,
   ConnectionMissingException,
   ConnectionNameDuplicateException,
   ConnectionTokenMissingException,
   EntityNotFoundException,
-} from '../../common/exceptions';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { Project } from '../projects/entities/project.entity';
-import { ConnectionsService } from './connections.service';
-import { Connection } from './entities/connection.entity';
+} from '../../common/exceptions/index.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { ConnectionsService } from './connections.service.js';
+import { Connection } from './entities/connection.entity.js';
 
 describe('ConnectionsService', () => {
   let service: ConnectionsService;

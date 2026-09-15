@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { ConnectionsService } from '../connections/connections.service';
-import { FavoritesService } from '../favorites/favorites.service';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { FavoritesService } from '../favorites/favorites.service.js';
 import {
   ImportProjectEntry,
   ProjectsService,
-} from '../projects/projects.service';
-import { SettingsService } from '../settings/settings.service';
-import { ExportConfigDto } from './dto/export-config.dto';
-import { ImportConfigDto } from './dto/import-config.dto';
-import { ImportFavoriteDto } from './dto/import-favorite.dto';
-import { ImportSettingsLegacyDto } from './dto/import-settings-legacy.dto';
-import { ImportProjectDto } from './dto/import-project.dto';
-import { ImportProjectLegacyDto } from './dto/import-project-legacy.dto';
-import { ImportResultDto } from './dto/import-result.dto';
+} from '../projects/projects.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { ExportConfigDto } from './dto/export-config.dto.js';
+import { ImportConfigDto } from './dto/import-config.dto.js';
+import { ImportFavoriteDto } from './dto/import-favorite.dto.js';
+import { ImportSettingsLegacyDto } from './dto/import-settings-legacy.dto.js';
+import { ImportProjectDto } from './dto/import-project.dto.js';
+import { ImportProjectLegacyDto } from './dto/import-project-legacy.dto.js';
+import { ImportResultDto } from './dto/import-result.dto.js';
 
 /** Name given to the connection created from a `version: 1` file (RG-019-06/19). */
 const LEGACY_CONNECTION_NAME = 'GitLab';

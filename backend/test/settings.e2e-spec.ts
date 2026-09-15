@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { createTestApp } from './utils/create-test-app';
+import { createTestApp } from './utils/create-test-app.js';
 
 interface Body {
   code?: string;

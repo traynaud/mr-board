@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { HealthResponseDto } from './dto/health-response.dto';
+import { HealthResponseDto } from './dto/health-response.dto.js';
 
 /** Checks the liveness of the application and its dependencies. */
 @Injectable()

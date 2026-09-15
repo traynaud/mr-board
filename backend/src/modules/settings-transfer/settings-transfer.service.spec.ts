@@ -1,10 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { ConnectionsService } from '../connections/connections.service';
-import { FavoritesService } from '../favorites/favorites.service';
-import { ProjectsService } from '../projects/projects.service';
-import { SettingsService } from '../settings/settings.service';
-import { ImportConfigDto } from './dto/import-config.dto';
-import { SettingsTransferService } from './settings-transfer.service';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { FavoritesService } from '../favorites/favorites.service.js';
+import { ProjectsService } from '../projects/projects.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { ImportConfigDto } from './dto/import-config.dto.js';
+import { SettingsTransferService } from './settings-transfer.service.js';
 
 describe('SettingsTransferService', () => {
   let service: SettingsTransferService;

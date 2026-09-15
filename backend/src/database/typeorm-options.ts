@@ -1,5 +1,8 @@
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DataSourceOptions } from 'typeorm';
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Builds the TypeORM options shared by the Nest module and the CLI DataSource.
@@ -10,8 +13,8 @@ export function buildTypeOrmOptions(dbPath: string): DataSourceOptions {
   return {
     type: 'better-sqlite3',
     database: dbPath,
-    entities: [join(__dirname, '..', 'modules', '**', '*.entity.{ts,js}')],
-    migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
+    entities: [join(currentDir, '..', 'modules', '**', '*.entity.{ts,js}')],
+    migrations: [join(currentDir, 'migrations', '*.{ts,js}')],
     synchronize: false,
     migrationsRun: true,
     logging: false,

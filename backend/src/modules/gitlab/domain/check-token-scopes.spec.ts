@@ -1,4 +1,4 @@
-import { hasRequiredScope } from './check-token-scopes';
+import { hasRequiredScope } from './check-token-scopes.js';
 
 describe('hasRequiredScope', () => {
   it.each([

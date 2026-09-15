@@ -7,8 +7,8 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { CONNECTION_TYPES } from '../../forges/types/connection-type';
-import type { ConnectionType } from '../../forges/types/connection-type';
+import { CONNECTION_TYPES } from '../../forges/types/connection-type.js';
+import type { ConnectionType } from '../../forges/types/connection-type.js';
 
 /** Shape validation shared by every connection URL — RG-001-01. */
 export const FORGE_URL_OPTIONS = {

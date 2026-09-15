@@ -1,6 +1,6 @@
-import { ForgeMergeRequest } from './types/forge-merge-request';
-import { ForgeProject } from './types/forge-project';
-import { ForgeTestResult } from './types/forge-test-result';
+import { ForgeMergeRequest } from './types/forge-merge-request.js';
+import { ForgeProject } from './types/forge-project.js';
+import { ForgeTestResult } from './types/forge-test-result.js';
 
 /** Options bounding the time budget of a merge/pull requests fetch (RG-004-14). */
 export interface FetchOpenMergeRequestsOptions {

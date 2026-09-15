@@ -6,6 +6,7 @@
 backend/node_modules/
 backend/dist/
 backend/coverage/
+backend/*.tsbuildinfo
 
 # --- Base de données SQLite locale ---
 backend/data/

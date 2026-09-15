@@ -4,10 +4,10 @@ import {
   ForgeScopeException,
   ForgeTimeoutException,
   ForgeUnavailableException,
-} from '../../common/exceptions';
-import { ForgeProject } from '../forges/types/forge-project';
-import { GitlabGraphqlMergeRequestNode } from './types/gitlab-merge-request';
-import { GitlabClientService } from './gitlab-client.service';
+} from '../../common/exceptions/index.js';
+import { ForgeProject } from '../forges/types/forge-project.js';
+import { GitlabGraphqlMergeRequestNode } from './types/gitlab-merge-request.js';
+import { GitlabClientService } from './gitlab-client.service.js';
 
 const BASE = 'https://gitlab.example.com';
 const TOKEN = 'glpat-secret-token-value';

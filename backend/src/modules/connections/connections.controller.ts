@@ -9,12 +9,12 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ForgeTestResult } from '../forges/types/forge-test-result';
-import { ConnectionsService } from './connections.service';
-import { ConnectionResponseDto } from './dto/connection-response.dto';
-import { CreateConnectionDto } from './dto/create-connection.dto';
-import { TestConnectionDto } from './dto/test-connection.dto';
-import { UpdateConnectionDto } from './dto/update-connection.dto';
+import { ForgeTestResult } from '../forges/types/forge-test-result.js';
+import { ConnectionsService } from './connections.service.js';
+import { ConnectionResponseDto } from './dto/connection-response.dto.js';
+import { CreateConnectionDto } from './dto/create-connection.dto.js';
+import { TestConnectionDto } from './dto/test-connection.dto.js';
+import { UpdateConnectionDto } from './dto/update-connection.dto.js';
 
 /** REST facade of the configured forge connections (RG-019-22). */
 @Controller('connections')

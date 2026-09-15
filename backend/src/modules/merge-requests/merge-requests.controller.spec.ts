@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests';
-import { MergeRequestsController } from './merge-requests.controller';
-import { MergeRequestsService } from './merge-requests.service';
+import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests.js';
+import { MergeRequestsController } from './merge-requests.controller.js';
+import { MergeRequestsService } from './merge-requests.service.js';
 
 describe('MergeRequestsController', () => {
   let controller: MergeRequestsController;

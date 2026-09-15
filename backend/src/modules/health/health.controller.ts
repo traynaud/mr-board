@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthResponseDto } from './dto/health-response.dto';
-import { HealthService } from './health.service';
+import { HealthResponseDto } from './dto/health-response.dto.js';
+import { HealthService } from './health.service.js';
 
 /** Liveness endpoint. */
 @Controller('health')

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TokenCipherService } from './token-cipher.service';
+import { TokenCipherService } from './token-cipher.service.js';
 
 /** Provides symmetric encryption for secrets at rest. */
 @Module({

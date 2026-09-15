@@ -1,4 +1,4 @@
-import { SyncRunDto } from './sync-run.dto';
+import { SyncRunDto } from './sync-run.dto.js';
 
 /** Response of `GET /api/v1/sync/status` (RG-004-08). */
 export class SyncStatusResponseDto {

@@ -2,10 +2,10 @@ import { LogLevel } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
-import { AppModule } from './app.module';
-import { setupApp } from './app.setup';
-import { APP_CONFIG, AppConfig } from './config/configuration';
-import { buildHelmetOptions } from './config/helmet-options';
+import { AppModule } from './app.module.js';
+import { setupApp } from './app.setup.js';
+import { APP_CONFIG, AppConfig } from './config/configuration.js';
+import { buildHelmetOptions } from './config/helmet-options.js';
 
 const LOG_LEVELS: readonly LogLevel[] = [
   'error',

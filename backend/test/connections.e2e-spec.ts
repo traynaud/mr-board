@@ -4,11 +4,11 @@ import { App } from 'supertest/types';
 import {
   ForgeRateLimitedException,
   ForgeScopeException,
-} from '../src/common/exceptions';
-import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url';
-import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service';
-import { GithubClientService } from '../src/modules/github/github-client.service';
-import { createTestApp } from './utils/create-test-app';
+} from '../src/common/exceptions/index.js';
+import { normalizeGitlabUrl } from '../src/modules/gitlab/domain/normalize-gitlab-url.js';
+import { GitlabClientService } from '../src/modules/gitlab/gitlab-client.service.js';
+import { GithubClientService } from '../src/modules/github/github-client.service.js';
+import { createTestApp } from './utils/create-test-app.js';
 
 interface Body {
   id?: number;

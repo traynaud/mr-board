@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { ForgeUser } from '../forges/types/forge-user';
-import { User } from './entities/user.entity';
+import { ForgeUser } from '../forges/types/forge-user.js';
+import { User } from './entities/user.entity.js';
 
 /** Manages the users encountered while synchronising merge requests. */
 @Injectable()

@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConnectionsService } from '../connections/connections.service';
-import { Settings } from './entities/settings.entity';
-import { SettingsService } from './settings.service';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { Settings } from './entities/settings.entity.js';
+import { SettingsService } from './settings.service.js';
 
 describe('SettingsService', () => {
   let service: SettingsService;

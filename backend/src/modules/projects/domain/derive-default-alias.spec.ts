@@ -1,4 +1,4 @@
-import { deriveDefaultAlias } from './derive-default-alias';
+import { deriveDefaultAlias } from './derive-default-alias.js';
 
 describe('deriveDefaultAlias', () => {
   it.each([

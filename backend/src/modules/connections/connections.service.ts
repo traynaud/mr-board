@@ -1,24 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { TokenCipherService } from '../../common/crypto/token-cipher.service';
-import { tokenHint } from '../../common/crypto/token-hint';
+import { TokenCipherService } from '../../common/crypto/token-cipher.service.js';
+import { tokenHint } from '../../common/crypto/token-hint.js';
 import {
   BusinessValidationException,
   ConnectionMissingException,
   ConnectionNameDuplicateException,
   ConnectionTokenMissingException,
   EntityNotFoundException,
-} from '../../common/exceptions';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { ConnectionType } from '../forges/types/connection-type';
-import { ForgeTestResult } from '../forges/types/forge-test-result';
-import { Project } from '../projects/entities/project.entity';
-import { CreateConnectionDto } from './dto/create-connection.dto';
-import { ConnectionResponseDto } from './dto/connection-response.dto';
-import { TestConnectionDto } from './dto/test-connection.dto';
-import { UpdateConnectionDto } from './dto/update-connection.dto';
-import { Connection } from './entities/connection.entity';
+} from '../../common/exceptions/index.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { ConnectionType } from '../forges/types/connection-type.js';
+import { ForgeTestResult } from '../forges/types/forge-test-result.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { CreateConnectionDto } from './dto/create-connection.dto.js';
+import { ConnectionResponseDto } from './dto/connection-response.dto.js';
+import { TestConnectionDto } from './dto/test-connection.dto.js';
+import { UpdateConnectionDto } from './dto/update-connection.dto.js';
+import { Connection } from './entities/connection.entity.js';
 
 /** Manages the list of forge connections (RG-019-*). */
 @Injectable()

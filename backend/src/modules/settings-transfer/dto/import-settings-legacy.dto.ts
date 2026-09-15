@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
-import { FORGE_URL_OPTIONS } from '../../connections/dto/create-connection.dto';
-import { ImportSettingsDto } from './import-settings.dto';
+import { FORGE_URL_OPTIONS } from '../../connections/dto/create-connection.dto.js';
+import { ImportSettingsDto } from './import-settings.dto.js';
 
 /** Maximum length accepted for a legacy GitLab username (RG-002-02). */
 export const ME_USERNAME_MAX_LENGTH = 255;

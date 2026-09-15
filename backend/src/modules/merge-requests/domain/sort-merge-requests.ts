@@ -1,4 +1,4 @@
-import { DIFFICULTY_ORDER, Difficulty } from './calculate-difficulty';
+import { DIFFICULTY_ORDER, Difficulty } from './calculate-difficulty.js';
 
 export type SortKey = 'ready' | 'diff';
 export type SortDirection = 'asc' | 'desc';

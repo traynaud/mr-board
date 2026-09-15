@@ -1,4 +1,4 @@
-import { normalizeGitlabUrl } from './normalize-gitlab-url';
+import { normalizeGitlabUrl } from './normalize-gitlab-url.js';
 
 describe('normalizeGitlabUrl', () => {
   it.each([

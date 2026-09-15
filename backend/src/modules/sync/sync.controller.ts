@@ -6,9 +6,9 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { SyncStatusResponseDto } from './dto/sync-status-response.dto';
-import { SyncTriggerResponseDto } from './dto/sync-trigger-response.dto';
-import { SyncService } from './sync.service';
+import { SyncStatusResponseDto } from './dto/sync-status-response.dto.js';
+import { SyncTriggerResponseDto } from './dto/sync-trigger-response.dto.js';
+import { SyncService } from './sync.service.js';
 
 /** REST facade of the GitLab synchronisation (RG-004-*). */
 @Controller('sync')

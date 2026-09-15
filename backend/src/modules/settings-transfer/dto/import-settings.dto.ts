@@ -13,11 +13,11 @@ import {
   LANGUAGE_OPTIONS,
   REFRESH_INTERVAL_OPTIONS,
   THEME_OPTIONS,
-} from '../../settings/dto/update-settings.dto';
+} from '../../settings/dto/update-settings.dto.js';
 import type {
   Language,
   ThemePreference,
-} from '../../settings/entities/settings.entity';
+} from '../../settings/entities/settings.entity.js';
 
 /**
  * The `settings` section of a `version: 2` imported config file (RG-015-04,

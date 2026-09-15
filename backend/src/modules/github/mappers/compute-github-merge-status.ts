@@ -1,7 +1,7 @@
 import {
   MergeStatusReason,
   MergeStatusResult,
-} from '../../forges/types/merge-status';
+} from '../../forges/types/merge-status.js';
 
 /**
  * Raw GitHub mergeability signals for one pull request (RG-020-09).

@@ -1,8 +1,11 @@
-import * as fs from 'node:fs';
-import { ensureDatabaseDirectory } from './database.module';
-import { buildTypeOrmOptions } from './typeorm-options';
+import { jest as jestGlobals } from '@jest/globals';
 
-jest.mock('node:fs', () => ({ mkdirSync: jest.fn() }));
+const actualFs = await import('node:fs');
+const mkdirSync = jest.fn();
+jestGlobals.unstable_mockModule('node:fs', () => ({ ...actualFs, mkdirSync }));
+
+const { ensureDatabaseDirectory } = await import('./database.module.js');
+const { buildTypeOrmOptions } = await import('./typeorm-options.js');
 
 describe('ensureDatabaseDirectory', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -10,13 +13,13 @@ describe('ensureDatabaseDirectory', () => {
   it('should_create_parent_directory_for_file_database', () => {
     ensureDatabaseDirectory('./data/mr-board.sqlite');
 
-    expect(fs.mkdirSync).toHaveBeenCalledWith('./data', { recursive: true });
+    expect(mkdirSync).toHaveBeenCalledWith('./data', { recursive: true });
   });
 
   it('should_skip_in_memory_database', () => {
     ensureDatabaseDirectory(':memory:');
 
-    expect(fs.mkdirSync).not.toHaveBeenCalled();
+    expect(mkdirSync).not.toHaveBeenCalled();
   });
 });
 

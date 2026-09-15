@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
-import { SyncController } from './sync.controller';
-import { SyncService } from './sync.service';
+import { SyncController } from './sync.controller.js';
+import { SyncService } from './sync.service.js';
 
 describe('SyncController', () => {
   let controller: SyncController;

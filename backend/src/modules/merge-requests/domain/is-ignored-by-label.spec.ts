@@ -1,4 +1,4 @@
-import { isIgnoredByLabel } from './is-ignored-by-label';
+import { isIgnoredByLabel } from './is-ignored-by-label.js';
 
 describe('isIgnoredByLabel', () => {
   it('should_return_false_when_no_label_is_ignored', () => {

@@ -1,4 +1,4 @@
-import { hasRequiredScope } from './check-github-token-scopes';
+import { hasRequiredScope } from './check-github-token-scopes.js';
 
 describe('hasRequiredScope', () => {
   it.each([['repo'], ['public_repo']])(

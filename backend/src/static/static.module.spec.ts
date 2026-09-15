@@ -1,4 +1,4 @@
-import { buildStaticOptions } from './static.module';
+import { buildStaticOptions } from './static.module.js';
 
 describe('buildStaticOptions', () => {
   it('should_serve_root_path_and_exclude_api_routes', () => {

@@ -1,11 +1,11 @@
-import { ForgeMergeRequest } from '../../forges/types/forge-merge-request';
-import { ForgeUser } from '../../forges/types/forge-user';
+import { ForgeMergeRequest } from '../../forges/types/forge-merge-request.js';
+import { ForgeUser } from '../../forges/types/forge-user.js';
 import {
   GithubGraphqlActorNode,
   GithubGraphqlPullRequestNode,
-} from '../types/github-pull-request';
-import { computeGithubMergeStatus } from './compute-github-merge-status';
-import { resolveGithubReviewers } from './resolve-github-reviewers';
+} from '../types/github-pull-request.js';
+import { computeGithubMergeStatus } from './compute-github-merge-status.js';
+import { resolveGithubReviewers } from './resolve-github-reviewers.js';
 
 /**
  * Maps a GraphQL actor node to the common `ForgeUser` shape (RG-020-07).

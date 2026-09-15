@@ -3,8 +3,8 @@ import { dirname } from 'node:path';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { APP_CONFIG, AppConfig } from '../config/configuration';
-import { buildTypeOrmOptions } from './typeorm-options';
+import { APP_CONFIG, AppConfig } from '../config/configuration.js';
+import { buildTypeOrmOptions } from './typeorm-options.js';
 
 /**
  * Ensures the directory holding the SQLite file exists.

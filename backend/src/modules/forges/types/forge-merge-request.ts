@@ -1,5 +1,5 @@
-import { ForgeUser } from './forge-user';
-import { MergeStatusResult } from './merge-status';
+import { ForgeUser } from './forge-user.js';
+import { MergeStatusResult } from './merge-status.js';
 
 /**
  * A merge/pull request fetched from a forge, already normalised by the

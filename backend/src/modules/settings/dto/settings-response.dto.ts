@@ -1,4 +1,4 @@
-import { Language, ThemePreference } from '../entities/settings.entity';
+import { Language, ThemePreference } from '../entities/settings.entity.js';
 
 /**
  * Response of `GET|PUT /api/v1/settings` — global preferences only

@@ -1,7 +1,7 @@
 import {
   MergeStatusReason,
   MergeStatusResult,
-} from '../../forges/types/merge-status';
+} from '../../forges/types/merge-status.js';
 
 /**
  * Raw GitLab mergeability signals for one merge request (US-017, RG-017-01).

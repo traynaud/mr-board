@@ -1,4 +1,4 @@
-import { deriveGithubApiBases } from './derive-github-api-bases';
+import { deriveGithubApiBases } from './derive-github-api-bases.js';
 
 describe('deriveGithubApiBases', () => {
   it('should_use_the_dedicated_api_host_for_github_com', () => {

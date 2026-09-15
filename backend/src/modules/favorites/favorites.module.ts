@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Favorite } from './entities/favorite.entity';
-import { FavoritesService } from './favorites.service';
+import { Favorite } from './entities/favorite.entity.js';
+import { FavoritesService } from './favorites.service.js';
 
 /**
  * Local favorites store (RG-027-*). Exposes no controller of its own: the

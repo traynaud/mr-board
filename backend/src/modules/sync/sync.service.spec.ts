@@ -5,16 +5,16 @@ import {
   EntityNotFoundException,
   ForgeAuthException,
   ForgeTimeoutException,
-} from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { ForgeMergeRequest } from '../forges/types/forge-merge-request';
-import { Project } from '../projects/entities/project.entity';
-import { ProjectsService } from '../projects/projects.service';
-import { MergeRequestsService } from '../merge-requests/merge-requests.service';
-import { SettingsService } from '../settings/settings.service';
-import { SyncRun } from './entities/sync-run.entity';
-import { SyncService } from './sync.service';
+} from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { Project } from '../projects/entities/project.entity.js';
+import { ProjectsService } from '../projects/projects.service.js';
+import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { SyncRun } from './entities/sync-run.entity.js';
+import { SyncService } from './sync.service.js';
 
 function flush(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));

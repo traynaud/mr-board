@@ -1,7 +1,7 @@
 import {
   GitlabMergeStatusInput,
   computeGitlabMergeStatus,
-} from './compute-gitlab-merge-status';
+} from './compute-gitlab-merge-status.js';
 
 function input(
   overrides: Partial<GitlabMergeStatusInput> = {},

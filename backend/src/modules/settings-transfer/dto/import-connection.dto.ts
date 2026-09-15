@@ -9,9 +9,9 @@ import {
 import {
   CONNECTION_NAME_MAX_LENGTH,
   FORGE_URL_OPTIONS,
-} from '../../connections/dto/create-connection.dto';
-import { CONNECTION_TYPES } from '../../forges/types/connection-type';
-import type { ConnectionType } from '../../forges/types/connection-type';
+} from '../../connections/dto/create-connection.dto.js';
+import { CONNECTION_TYPES } from '../../forges/types/connection-type.js';
+import type { ConnectionType } from '../../forges/types/connection-type.js';
 
 /**
  * One connection entry of a `version: 2` imported config file (RG-019-18/19).

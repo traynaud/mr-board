@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { HealthService } from './health.service';
+import { HealthService } from './health.service.js';
 
 describe('HealthService', () => {
   let service: HealthService;

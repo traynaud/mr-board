@@ -1,5 +1,5 @@
-import { APP_CONFIG, configuration } from './configuration';
-import { validationSchema } from './validation.schema';
+import { APP_CONFIG, configuration } from './configuration.js';
+import { validationSchema } from './validation.schema.js';
 
 describe('configuration', () => {
   const env = process.env;

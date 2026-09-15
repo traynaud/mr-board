@@ -1,5 +1,5 @@
-import { ConnectionType } from '../../forges/types/connection-type';
-import type { ExportableSettings } from '../../settings/settings.service';
+import { ConnectionType } from '../../forges/types/connection-type.js';
+import type { ExportableSettings } from '../../settings/settings.service.js';
 
 /** One connection entry of `GET /api/v1/settings/export` (RG-019-18). Never carries the token. */
 export class ExportConnectionDto {

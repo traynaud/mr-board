@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { APP_CONFIG } from '../../config/configuration';
-import { TokenCipherService } from './token-cipher.service';
+import { APP_CONFIG } from '../../config/configuration.js';
+import { TokenCipherService } from './token-cipher.service.js';
 
 function cipherWith(secret: string): TokenCipherService {
   const config = {

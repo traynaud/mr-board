@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import type { ConnectionType } from '../../forges/types/connection-type';
+import type { ConnectionType } from '../../forges/types/connection-type.js';
 
 /**
  * A forge instance MR Board is configured to read from (RG-019-01). Repos

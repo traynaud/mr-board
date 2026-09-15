@@ -1,4 +1,4 @@
-import { buildHelmetOptions } from './helmet-options';
+import { buildHelmetOptions } from './helmet-options.js';
 
 describe('buildHelmetOptions', () => {
   it('should_keep_helmet_defaults_in_api_only_mode', () => {

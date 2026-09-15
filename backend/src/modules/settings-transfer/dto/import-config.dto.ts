@@ -1,11 +1,11 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsIn, IsOptional, ValidateNested } from 'class-validator';
-import { ImportConnectionDto } from './import-connection.dto';
-import { ImportFavoriteDto } from './import-favorite.dto';
-import { ImportProjectDto } from './import-project.dto';
-import { ImportProjectLegacyDto } from './import-project-legacy.dto';
-import { ImportSettingsDto } from './import-settings.dto';
-import { ImportSettingsLegacyDto } from './import-settings-legacy.dto';
+import { ImportConnectionDto } from './import-connection.dto.js';
+import { ImportFavoriteDto } from './import-favorite.dto.js';
+import { ImportProjectDto } from './import-project.dto.js';
+import { ImportProjectLegacyDto } from './import-project-legacy.dto.js';
+import { ImportSettingsDto } from './import-settings.dto.js';
+import { ImportSettingsLegacyDto } from './import-settings-legacy.dto.js';
 
 /** Body of `POST /api/v1/settings/import` (RG-015-04, RG-019-18/19). */
 export class ImportConfigDto {

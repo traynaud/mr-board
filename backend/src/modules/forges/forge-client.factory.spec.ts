@@ -1,6 +1,6 @@
-import { GithubClientService } from '../github/github-client.service';
-import { GitlabClientService } from '../gitlab/gitlab-client.service';
-import { ForgeClientFactory } from './forge-client.factory';
+import { GithubClientService } from '../github/github-client.service.js';
+import { GitlabClientService } from '../gitlab/gitlab-client.service.js';
+import { ForgeClientFactory } from './forge-client.factory.js';
 
 describe('ForgeClientFactory', () => {
   const gitlab = {} as GitlabClientService;

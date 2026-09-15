@@ -1,5 +1,5 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
-import { computeGitlabMergeStatus } from '../../modules/gitlab/mappers/compute-gitlab-merge-status';
+import { computeGitlabMergeStatus } from '../../modules/gitlab/mappers/compute-gitlab-merge-status.js';
 
 /**
  * US-019, RG-019-21 — `mergeStatus` becomes a value computed once by the

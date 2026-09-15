@@ -1,9 +1,9 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
-import { ForgeUser } from '../forges/types/forge-user';
-import { User } from './entities/user.entity';
-import { UsersService } from './users.service';
+import { ForgeUser } from '../forges/types/forge-user.js';
+import { User } from './entities/user.entity.js';
+import { UsersService } from './users.service.js';
 
 function forgeUser(overrides: Partial<ForgeUser> = {}): ForgeUser {
   return {

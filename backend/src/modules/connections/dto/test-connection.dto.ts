@@ -6,9 +6,12 @@ import {
   IsUrl,
   MinLength,
 } from 'class-validator';
-import { CONNECTION_TYPES } from '../../forges/types/connection-type';
-import type { ConnectionType } from '../../forges/types/connection-type';
-import { FORGE_URL_OPTIONS, TOKEN_MIN_LENGTH } from './create-connection.dto';
+import { CONNECTION_TYPES } from '../../forges/types/connection-type.js';
+import type { ConnectionType } from '../../forges/types/connection-type.js';
+import {
+  FORGE_URL_OPTIONS,
+  TOKEN_MIN_LENGTH,
+} from './create-connection.dto.js';
 
 /**
  * Body of `POST /api/v1/connections/test` (RG-001-04, RG-019-14).

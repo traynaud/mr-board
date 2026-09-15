@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { configuration } from './config/configuration';
-import { validationSchema } from './config/validation.schema';
-import { DatabaseModule } from './database/database.module';
-import { ConnectionsModule } from './modules/connections/connections.module';
-import { ForgesModule } from './modules/forges/forges.module';
-import { HealthModule } from './modules/health/health.module';
-import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module';
-import { ProjectsModule } from './modules/projects/projects.module';
-import { SettingsModule } from './modules/settings/settings.module';
-import { SettingsTransferModule } from './modules/settings-transfer/settings-transfer.module';
-import { SyncModule } from './modules/sync/sync.module';
-import { UsersModule } from './modules/users/users.module';
-import { StaticModule } from './static/static.module';
+import { configuration } from './config/configuration.js';
+import { validationSchema } from './config/validation.schema.js';
+import { DatabaseModule } from './database/database.module.js';
+import { ConnectionsModule } from './modules/connections/connections.module.js';
+import { ForgesModule } from './modules/forges/forges.module.js';
+import { HealthModule } from './modules/health/health.module.js';
+import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
+import { SettingsModule } from './modules/settings/settings.module.js';
+import { SettingsTransferModule } from './modules/settings-transfer/settings-transfer.module.js';
+import { SyncModule } from './modules/sync/sync.module.js';
+import { UsersModule } from './modules/users/users.module.js';
+import { StaticModule } from './static/static.module.js';
 
 @Module({
   imports: [

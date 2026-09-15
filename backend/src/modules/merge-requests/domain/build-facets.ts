@@ -3,7 +3,7 @@ import {
   FilterKey,
   FilterableMergeRequest,
   applyComposableFiltersExcept,
-} from './filter-merge-requests';
+} from './filter-merge-requests.js';
 
 export interface FacetOption {
   value: string;

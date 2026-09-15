@@ -1,4 +1,4 @@
-import { computeGithubMergeStatus } from './compute-github-merge-status';
+import { computeGithubMergeStatus } from './compute-github-merge-status.js';
 
 const base = {
   mergeable: 'MERGEABLE',

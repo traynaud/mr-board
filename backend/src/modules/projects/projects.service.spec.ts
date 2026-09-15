@@ -9,11 +9,11 @@ import {
   EntityNotFoundException,
   ForgeAuthException,
   ForgeUnavailableException,
-} from '../../common/exceptions';
-import { ConnectionsService } from '../connections/connections.service';
-import { ForgeClientFactory } from '../forges/forge-client.factory';
-import { Project } from './entities/project.entity';
-import { ProjectsService } from './projects.service';
+} from '../../common/exceptions/index.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { Project } from './entities/project.entity.js';
+import { ProjectsService } from './projects.service.js';
 
 describe('ProjectsService', () => {
   let service: ProjectsService;

@@ -1,5 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 
 /** Global API prefix. */
 export const API_PREFIX = 'api/v1';

@@ -1,11 +1,11 @@
 import {
   GithubGraphqlActorNode,
   GithubGraphqlPullRequestNode,
-} from '../types/github-pull-request';
+} from '../types/github-pull-request.js';
 import {
   mapGraphqlActor,
   mapGraphqlPullRequest,
-} from './map-graphql-pull-request';
+} from './map-graphql-pull-request.js';
 
 const actor = (
   overrides: Partial<GithubGraphqlActorNode> = {},
