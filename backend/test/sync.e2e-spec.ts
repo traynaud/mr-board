@@ -49,6 +49,7 @@ function forgeMergeRequest(iid: number): ForgeMergeRequest {
     },
     reviewers: [],
     assignees: [],
+    approvedBy: [],
     mergeStatus: { state: 'mergeable', reasons: [] },
   };
 }

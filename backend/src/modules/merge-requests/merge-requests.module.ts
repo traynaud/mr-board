@@ -5,6 +5,7 @@ import { FavoritesModule } from '../favorites/favorites.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
+import { MergeRequestApprover } from './entities/merge-request-approver.entity';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
@@ -17,6 +18,7 @@ import { MergeRequestsService } from './merge-requests.service';
       MergeRequest,
       MergeRequestReviewer,
       MergeRequestAssignee,
+      MergeRequestApprover,
     ]),
     UsersModule,
     ProjectsModule,

@@ -30,7 +30,7 @@ function buildMergeRequest(
     createdAt: '2026-09-01T10:00:00Z',
     updatedAt: '2026-09-05T09:00:00Z',
     userNotesCount: 3,
-    approvedBy: { nodes: [{ id: 'gid://gitlab/User/2' }] },
+    approvedBy: { nodes: [buildUser('gid://gitlab/User/2', 'kbenali')] },
     labels: { nodes: [{ title: 'backend' }, { title: 'urgent' }] },
     diffStatsSummary: { fileCount: 12, additions: 340, deletions: 58 },
     author: buildUser('gid://gitlab/User/1', 'mdupont'),
@@ -90,6 +90,7 @@ describe('mapGraphqlMergeRequest', () => {
       updatedAt: '2026-09-05T09:00:00Z',
       commentsCount: 3,
       approved: true,
+      approvedBy: [expect.objectContaining({ username: 'kbenali' })],
       labels: ['backend', 'urgent'],
       changedFiles: 12,
       additions: 340,
@@ -122,6 +123,7 @@ describe('mapGraphqlMergeRequest', () => {
     );
 
     expect(mapped.approved).toBe(false);
+    expect(mapped.approvedBy).toEqual([]);
   });
 
   it('should_not_count_the_authors_own_approval_towards_approved', () => {
@@ -129,23 +131,53 @@ describe('mapGraphqlMergeRequest', () => {
     // parmi les approbateurs (demande explicite du bugfix).
     const mapped = mapGraphqlMergeRequest(
       buildMergeRequest({
-        approvedBy: { nodes: [{ id: 'gid://gitlab/User/1' }] }, // = author.id
+        approvedBy: {
+          nodes: [buildUser('gid://gitlab/User/1', 'mdupont')], // = author.id
+        },
       }),
     );
 
     expect(mapped.approved).toBe(false);
+    expect(mapped.approvedBy).toEqual([]);
   });
 
   it('should_report_approved_when_someone_other_than_the_author_approved', () => {
     const mapped = mapGraphqlMergeRequest(
       buildMergeRequest({
         approvedBy: {
-          nodes: [{ id: 'gid://gitlab/User/1' }, { id: 'gid://gitlab/User/2' }],
-        }, // author + one real approver
+          nodes: [
+            buildUser('gid://gitlab/User/1', 'mdupont'), // author, excluded
+            buildUser('gid://gitlab/User/2', 'kbenali'),
+          ],
+        },
       }),
     );
 
     expect(mapped.approved).toBe(true);
+    expect(mapped.approvedBy).toEqual([
+      expect.objectContaining({ username: 'kbenali' }),
+    ]);
+  });
+
+  it('should_expose_the_full_list_and_order_of_approvers_rg_029_01', () => {
+    // RG-029-01/029-05 : approvedBy porte exactement les mêmes utilisateurs
+    // que ceux comptés par `approved`, dans l'ordre renvoyé par l'API.
+    const mapped = mapGraphqlMergeRequest(
+      buildMergeRequest({
+        approvedBy: {
+          nodes: [
+            buildUser('gid://gitlab/User/2', 'kbenali'),
+            buildUser('gid://gitlab/User/3', 'lrousseau'),
+          ],
+        },
+      }),
+    );
+
+    expect(mapped.approved).toBe(true);
+    expect(mapped.approvedBy.map((user) => user.username)).toEqual([
+      'kbenali',
+      'lrousseau',
+    ]);
   });
 
   it('should_compute_the_merge_status_from_the_raw_gitlab_signals', () => {

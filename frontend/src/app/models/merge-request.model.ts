@@ -77,6 +77,8 @@ export interface MergeRequestView {
   reviewers: MergeRequestUser[];
   assignees: MergeRequestUser[];
   approved: boolean;
+  /** Utilisateurs ayant réellement approuvé (RG-029-01) — vide si la MR n'a pas encore été resynchronisée depuis US-029. */
+  approvedBy: MergeRequestUser[];
   commentsCount: number;
   difficulty: Difficulty;
   /** `null` quand les statistiques de diff sont indisponibles (RG-006-02). */

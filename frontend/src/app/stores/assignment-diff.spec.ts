@@ -20,6 +20,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     reviewers: [],
     assignees: [],
     approved: false,
+    approvedBy: [],
     commentsCount: 0,
     difficulty: 'easy',
     changedFiles: 1,

@@ -26,6 +26,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     reviewers: [],
     assignees: [],
     approved: false,
+    approvedBy: [],
     commentsCount: 0,
     difficulty: 'easy',
     changedFiles: 1,
@@ -424,6 +425,58 @@ describe('MrTableComponent', () => {
     await fixture.whenStable();
 
     expect(el.querySelector('.approved-icon')).not.toBeNull();
+  });
+
+  describe('approved column tooltip (RG-029-02)', () => {
+    it('should_show_the_name_of_the_single_approver', async () => {
+      const { fixture } = await setup();
+      fixture.componentInstance.rows.set([
+        mergeRequest({
+          approved: true,
+          approvedBy: [
+            { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+          ],
+        }),
+      ]);
+      await fixture.whenStable();
+
+      const tooltip = fixture.debugElement
+        .query(By.css('.approved-icon'))
+        .injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Karim Benali');
+    });
+
+    it('should_list_every_approver_name_separated_by_a_comma_when_several_approved', async () => {
+      const { fixture } = await setup();
+      fixture.componentInstance.rows.set([
+        mergeRequest({
+          approved: true,
+          approvedBy: [
+            { username: 'kbenali', name: 'Karim Benali', avatarUrl: null, isMe: false },
+            { username: 'lrousseau', name: 'Léa Rousseau', avatarUrl: null, isMe: false },
+          ],
+        }),
+      ]);
+      await fixture.whenStable();
+
+      const tooltip = fixture.debugElement
+        .query(By.css('.approved-icon'))
+        .injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Karim Benali, Léa Rousseau');
+    });
+
+    it('should_show_no_tooltip_when_approved_but_not_yet_resynced_since_this_us_rg_029_04', async () => {
+      const { fixture } = await setup();
+      fixture.componentInstance.rows.set([
+        mergeRequest({ approved: true, approvedBy: [] }),
+      ]);
+      await fixture.whenStable();
+
+      const tooltip = fixture.debugElement
+        .query(By.css('.approved-icon'))
+        .injector.get(MatTooltip);
+      expect(tooltip.message).toBe('');
+    });
   });
 
   describe('favorite column (RG-027-07/08/09)', () => {

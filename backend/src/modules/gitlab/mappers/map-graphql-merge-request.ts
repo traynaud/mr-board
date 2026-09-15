@@ -39,6 +39,17 @@ export function mapGraphqlUser(node: GitlabGraphqlUserNode): ForgeUser {
 export function mapGraphqlMergeRequest(
   node: GitlabGraphqlMergeRequestNode,
 ): ForgeMergeRequest {
+  // RG-G07, RG-029-01 : au moins un approbateur autre que l'auteur — jamais
+  // le champ GitLab `approved`, qui reflète les règles d'approbation du
+  // projet (vrai par défaut sans règle configurée, même à zéro approbation)
+  // et non les approbations réellement données (bug corrigé le 2026-09-14).
+  // `approved` et `approvedBy` dérivent tous deux de cette même liste
+  // filtrée pour qu'ils ne puissent jamais diverger (RG-029-01).
+  const approvers = node.approvedBy.nodes
+    .filter(
+      (user) => extractNumericId(user.id) !== extractNumericId(node.author.id),
+    )
+    .map(mapGraphqlUser);
   return {
     remoteId: extractNumericId(node.id),
     iid: Number(node.iid),
@@ -48,13 +59,8 @@ export function mapGraphqlMergeRequest(
     createdAt: node.createdAt,
     updatedAt: node.updatedAt,
     commentsCount: node.userNotesCount,
-    // RG-G07 : au moins un approbateur autre que l'auteur — jamais le champ
-    // GitLab `approved`, qui reflète les règles d'approbation du projet
-    // (vrai par défaut sans règle configurée, même à zéro approbation) et
-    // non les approbations réellement données (bug corrigé le 2026-09-14).
-    approved: node.approvedBy.nodes.some(
-      (user) => extractNumericId(user.id) !== extractNumericId(node.author.id),
-    ),
+    approved: approvers.length > 0,
+    approvedBy: approvers,
     labels: node.labels.nodes.map((label) => label.title),
     changedFiles: node.diffStatsSummary?.fileCount ?? null,
     additions: node.diffStatsSummary?.additions ?? null,

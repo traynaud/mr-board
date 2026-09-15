@@ -118,6 +118,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     reviewers: [],
     assignees: [],
     approved: false,
+    approvedBy: [],
     commentsCount: 0,
     difficulty: 'easy',
     changedFiles: 1,

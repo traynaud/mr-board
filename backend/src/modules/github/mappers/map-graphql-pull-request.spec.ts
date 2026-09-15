@@ -155,6 +155,44 @@ describe('mapGraphqlPullRequest', () => {
 
     expect(result.reviewers).toEqual([]);
     expect(result.approved).toBe(true);
+    // RG-029-01 : l'approbation reste comptée dans `approved`, mais ne peut
+    // pas apparaître dans `approvedBy` faute d'identité à afficher.
+    expect(result.approvedBy).toEqual([]);
+  });
+
+  it('should_expose_the_full_list_and_order_of_approvers_rg_029_01', () => {
+    const result = mapGraphqlPullRequest(
+      node({
+        latestOpinionatedReviews: {
+          nodes: [
+            { state: 'APPROVED', author: actor({ login: 'kbenali' }) },
+            { state: 'CHANGES_REQUESTED', author: actor({ login: 'pmartin' }) },
+            { state: 'APPROVED', author: actor({ login: 'lrousseau' }) },
+          ],
+        },
+      }),
+    );
+
+    expect(result.approved).toBe(true);
+    expect(result.approvedBy.map((user) => user.username)).toEqual([
+      'kbenali',
+      'lrousseau',
+    ]);
+  });
+
+  it('should_report_no_approvers_when_nobody_approved', () => {
+    const result = mapGraphqlPullRequest(
+      node({
+        latestOpinionatedReviews: {
+          nodes: [
+            { state: 'CHANGES_REQUESTED', author: actor({ login: 'pmartin' }) },
+          ],
+        },
+      }),
+    );
+
+    expect(result.approved).toBe(false);
+    expect(result.approvedBy).toEqual([]);
   });
 
   it('should_use_the_last_commits_status_check_rollup_for_the_merge_status', () => {

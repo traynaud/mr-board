@@ -49,6 +49,7 @@ import { MergeRequestUserDto } from './dto/merge-request-user.dto';
 import { MergeRequestViewDto } from './dto/merge-request-view.dto';
 import { MergeRequestsFacetsDto } from './dto/merge-requests-facets.dto';
 import { MergeRequestsResponseDto } from './dto/merge-requests-response.dto';
+import { MergeRequestApprover } from './entities/merge-request-approver.entity';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
@@ -92,6 +93,8 @@ export class MergeRequestsService {
     private readonly reviewers: Repository<MergeRequestReviewer>,
     @InjectRepository(MergeRequestAssignee)
     private readonly assignees: Repository<MergeRequestAssignee>,
+    @InjectRepository(MergeRequestApprover)
+    private readonly approvers: Repository<MergeRequestApprover>,
     private readonly users: UsersService,
     private readonly projects: ProjectsService,
     private readonly settings: SettingsService,
@@ -238,7 +241,7 @@ export class MergeRequestsService {
     const thresholds = await this.settings.getThresholds();
 
     const mergeRequestIds = mergeRequests.map((mr) => mr.id);
-    const [reviewerRows, assigneeRows] = await Promise.all([
+    const [reviewerRows, assigneeRows, approverRows] = await Promise.all([
       this.reviewers.find({
         where: { mergeRequestId: In(mergeRequestIds) },
         order: { mergeRequestId: 'ASC', position: 'ASC' },
@@ -247,9 +250,14 @@ export class MergeRequestsService {
         where: { mergeRequestId: In(mergeRequestIds) },
         order: { mergeRequestId: 'ASC', position: 'ASC' },
       }),
+      this.approvers.find({
+        where: { mergeRequestId: In(mergeRequestIds) },
+        order: { mergeRequestId: 'ASC', position: 'ASC' },
+      }),
     ]);
     const reviewerIdsByMr = groupUserIds(reviewerRows);
     const assigneeIdsByMr = groupUserIds(assigneeRows);
+    const approverIdsByMr = groupUserIds(approverRows);
 
     const projectIds = [...new Set(mergeRequests.map((mr) => mr.projectId))];
     const userIds = [
@@ -257,6 +265,7 @@ export class MergeRequestsService {
         ...mergeRequests.map((mr) => mr.authorId),
         ...reviewerRows.map((row) => row.userId),
         ...assigneeRows.map((row) => row.userId),
+        ...approverRows.map((row) => row.userId),
       ]),
     ];
     const [projectRows, userRows] = await Promise.all([
@@ -275,6 +284,7 @@ export class MergeRequestsService {
         meEmail,
         reviewerIdsByMr.get(mr.id) ?? [],
         assigneeIdsByMr.get(mr.id) ?? [],
+        approverIdsByMr.get(mr.id) ?? [],
         now,
         thresholds,
         favoriteKeys,
@@ -344,6 +354,11 @@ export class MergeRequestsService {
         this.users.upsert(connectionId, assignee),
       ),
     );
+    const approverUsers = await Promise.all(
+      mergeRequest.approvedBy.map((approver) =>
+        this.users.upsert(connectionId, approver),
+      ),
+    );
 
     const existing = await this.mergeRequests.findOneBy({
       projectId,
@@ -385,6 +400,7 @@ export class MergeRequestsService {
 
     await this.replaceAssociations(this.reviewers, saved.id, reviewerUsers);
     await this.replaceAssociations(this.assignees, saved.id, assigneeUsers);
+    await this.replaceAssociations(this.approvers, saved.id, approverUsers);
   }
 
   /**
@@ -392,7 +408,9 @@ export class MergeRequestsService {
    * on read, since SQLite otherwise restitutes rows by primary key order.
    */
   private async replaceAssociations(
-    repository: Repository<MergeRequestReviewer | MergeRequestAssignee>,
+    repository: Repository<
+      MergeRequestReviewer | MergeRequestAssignee | MergeRequestApprover
+    >,
     mergeRequestId: number,
     users: { id: number }[],
   ): Promise<void> {
@@ -478,6 +496,7 @@ function toMergeRequestView(
   meEmail: string | null,
   reviewerIds: number[],
   assigneeIds: number[],
+  approverIds: number[],
   now: string,
   thresholds: {
     difficulty: DifficultyThresholds;
@@ -504,6 +523,9 @@ function toMergeRequestView(
   const assignees = assigneeIds.map((id) =>
     toMergeRequestUser(mustGet(usersById, id, 'User'), identity),
   );
+  const approvedBy = approverIds.map((id) =>
+    toMergeRequestUser(mustGet(usersById, id, 'User'), identity),
+  );
   return {
     id: mergeRequest.id,
     projectAlias: project.alias,
@@ -516,6 +538,7 @@ function toMergeRequestView(
     reviewers,
     assignees,
     approved: mergeRequest.approved,
+    approvedBy,
     commentsCount: mergeRequest.commentsCount,
     ...toDifficultyFields(mergeRequest, thresholds.difficulty),
     ...toReadyFields(

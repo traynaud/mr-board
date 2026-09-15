@@ -45,6 +45,18 @@ export function mapGraphqlPullRequest(
   const reviewAuthors = reviewNodes
     .filter((review) => review.author !== null)
     .map((review) => mapGraphqlActor(review.author as GithubGraphqlActorNode));
+  // RG-029-01 : dernière revue par utilisateur (latestOpinionatedReviews) à
+  // l'état APPROVED. `author` peut être `null` quand le compte GitHub a été
+  // supprimé depuis (cf. `should_skip_a_review_whose_author_was_deleted`) —
+  // dans ce cas l'approbation compte toujours pour `approved` (comportement
+  // préexistant, RG-020-07), mais ne peut pas apparaître dans `approvedBy`
+  // faute d'identité à afficher.
+  const approvedReviews = reviewNodes.filter(
+    (review) => review.state === 'APPROVED',
+  );
+  const approvers = approvedReviews
+    .filter((review) => review.author !== null)
+    .map((review) => mapGraphqlActor(review.author as GithubGraphqlActorNode));
   const statusCheckRollupState =
     node.commits.nodes[0]?.commit.statusCheckRollup?.state ?? null;
 
@@ -59,7 +71,8 @@ export function mapGraphqlPullRequest(
     // RG-020-07 : approximation — comments generaux + fils de revue (un fil de 5 messages compte 1, QO-020-01).
     commentsCount: node.comments.totalCount + node.reviewThreads.totalCount,
     // RG-020-07 : indépendant de `reviewDecision` (RG-G07), jamais recalculé depuis les règles du dépôt.
-    approved: reviewNodes.some((review) => review.state === 'APPROVED'),
+    approved: approvedReviews.length > 0,
+    approvedBy: approvers,
     labels: node.labels.nodes.map((label) => label.name),
     changedFiles: node.changedFiles,
     additions: node.additions,

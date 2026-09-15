@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-15",
+    "type": "feat",
+    "user-story": "US-029",
+    "title": "Colonne Approved : survoler la coche affiche maintenant le nom des personnes ayant approuvé la MR."
+  },
+  {
+    "date": "2026-09-15",
     "type": "fix",
     "user-story": "",
     "title": "L'ordre des reviewers et assignees dans le tableau respecte maintenant l'ordre GitLab, au lieu d'être trié par id interne d'utilisateur."

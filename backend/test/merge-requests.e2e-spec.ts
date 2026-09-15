@@ -27,6 +27,7 @@ interface MergeRequestViewBody {
   reviewers: MergeRequestUserBody[];
   assignees: MergeRequestUserBody[];
   approved: boolean;
+  approvedBy: MergeRequestUserBody[];
   commentsCount: number;
   difficulty: 'easy' | 'medium' | 'hard';
   changedFiles: number | null;
@@ -119,6 +120,7 @@ interface RawOverrides {
   reviewers?: ForgeUser[];
   assignees?: ForgeUser[];
   approved?: boolean;
+  approvedBy?: ForgeUser[];
   commentsCount?: number;
   diffStats?: {
     fileCount: number;
@@ -158,6 +160,7 @@ function mergeRequest(
       overrides.author ?? forgeUser(1, 'mdupont', { name: 'Marie Dupont' }),
     reviewers: overrides.reviewers ?? [],
     assignees: overrides.assignees ?? [],
+    approvedBy: overrides.approvedBy ?? [],
     mergeStatus: computeGitlabMergeStatus({
       detailedMergeStatus: overrides.detailedMergeStatus ?? 'MERGEABLE',
       conflicts: overrides.conflicts ?? false,
@@ -289,6 +292,7 @@ describe('MergeRequests (e2e)', () => {
           },
         ],
         approved: true,
+        approvedBy: [],
         commentsCount: 3,
         difficulty: 'easy',
         changedFiles: 1,
@@ -322,6 +326,7 @@ describe('MergeRequests (e2e)', () => {
           'reviewers',
           'assignees',
           'approved',
+          'approvedBy',
           'commentsCount',
           'difficulty',
           'changedFiles',
@@ -376,6 +381,79 @@ describe('MergeRequests (e2e)', () => {
       'abrand',
       'lrousseau',
     ]);
+  });
+
+  it('GET /merge-requests should_expose_the_names_of_everyone_who_approved_rg_029_01', async () => {
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(501, {
+        approved: true,
+        approvedBy: [
+          forgeUser(2, 'kbenali', { name: 'Karim Benali' }),
+          forgeUser(3, 'lrousseau', { name: 'Léa Rousseau' }),
+        ],
+      }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+      (mr) => mr.iid === 501,
+    );
+    expect(view?.approved).toBe(true);
+    expect(view?.approvedBy.map((a) => a.username)).toEqual([
+      'kbenali',
+      'lrousseau',
+    ]);
+  });
+
+  it('GET /merge-requests should_expose_no_approver_when_the_merge_request_is_not_approved', async () => {
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(502, { approved: false, approvedBy: [] }),
+    ]);
+
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+      (mr) => mr.iid === 502,
+    );
+    expect(view?.approved).toBe(false);
+    expect(view?.approvedBy).toEqual([]);
+  });
+
+  it('GET /merge-requests should_keep_an_approvers_name_after_they_are_removed_from_reviewers_rg_029_01', async () => {
+    // Un approbateur reste dans approvedBy même s'il est retiré des
+    // reviewers lors d'une synchronisation ultérieure (RG-029-01 :
+    // approvedBy est une liste indépendante de reviewers).
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(503, {
+        reviewers: [forgeUser(2, 'kbenali', { name: 'Karim Benali' })],
+        approved: true,
+        approvedBy: [forgeUser(2, 'kbenali', { name: 'Karim Benali' })],
+      }),
+    ]);
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(503, {
+        reviewers: [],
+        approved: true,
+        approvedBy: [forgeUser(2, 'kbenali', { name: 'Karim Benali' })],
+      }),
+    ]);
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests');
+    const view = (res.body as MergeRequestsResponseBody).mergeRequests.find(
+      (mr) => mr.iid === 503,
+    );
+    expect(view?.reviewers).toEqual([]);
+    expect(view?.approvedBy.map((a) => a.username)).toEqual(['kbenali']);
   });
 
   it('GET /merge-requests should_expose_a_green_ready_level_for_a_merge_request_ready_since_yesterday', async () => {

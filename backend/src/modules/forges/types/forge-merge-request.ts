@@ -18,6 +18,8 @@ export interface ForgeMergeRequest {
   reviewers: ForgeUser[];
   assignees: ForgeUser[];
   approved: boolean;
+  /** Users who actually approved (RG-029-01) — exactly those counting toward `approved`. */
+  approvedBy: ForgeUser[];
   commentsCount: number;
   /** `null` together with `additions`/`deletions` when diff stats are unavailable (RG-006-02). */
   changedFiles: number | null;

@@ -10,6 +10,7 @@ import { UsersService } from '../users/users.service';
 import { DEFAULT_DIFFICULTY_THRESHOLDS } from './domain/calculate-difficulty';
 import { DEFAULT_READY_DELAY_THRESHOLDS } from './domain/calculate-ready-delay';
 import { EMPTY_COMPOSABLE_FILTERS } from './domain/filter-merge-requests';
+import { MergeRequestApprover } from './entities/merge-request-approver.entity';
 import { MergeRequestAssignee } from './entities/merge-request-assignee.entity';
 import { MergeRequestReviewer } from './entities/merge-request-reviewer.entity';
 import { MergeRequest } from './entities/merge-request.entity';
@@ -48,6 +49,7 @@ function forgeMergeRequest(
     },
     reviewers: [],
     assignees: [],
+    approvedBy: [],
     mergeStatus: { state: 'mergeable', reasons: [] },
     ...overrides,
   };
@@ -71,6 +73,7 @@ describe('MergeRequestsService', () => {
   let mergeRequestsRepo: MergeRequestRepoMock;
   let reviewersRepo: AssociationRepoMock;
   let assigneesRepo: AssociationRepoMock;
+  let approversRepo: AssociationRepoMock;
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock; list: jest.Mock };
   let settingsService: {
@@ -133,6 +136,14 @@ describe('MergeRequestsService', () => {
           },
         },
         {
+          provide: getRepositoryToken(MergeRequestApprover),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            delete: jest.fn(),
+            insert: jest.fn(),
+          },
+        },
+        {
           provide: UsersService,
           useValue: {
             upsert: jest.fn(
@@ -182,6 +193,7 @@ describe('MergeRequestsService', () => {
     mergeRequestsRepo = module.get(getRepositoryToken(MergeRequest));
     reviewersRepo = module.get(getRepositoryToken(MergeRequestReviewer));
     assigneesRepo = module.get(getRepositoryToken(MergeRequestAssignee));
+    approversRepo = module.get(getRepositoryToken(MergeRequestApprover));
     usersService = module.get(UsersService);
     projectsService = module.get(ProjectsService);
     settingsService = module.get(SettingsService);
@@ -300,7 +312,7 @@ describe('MergeRequestsService', () => {
       );
     });
 
-    it('should_upsert_each_reviewer_and_assignee_on_the_projects_connection_and_replace_the_association_rows', async () => {
+    it('should_upsert_each_reviewer_assignee_and_approver_on_the_projects_connection_and_replace_the_association_rows', async () => {
       await service.upsertForProject(
         1,
         7,
@@ -331,12 +343,21 @@ describe('MergeRequestsService', () => {
                 webUrl: 'https://gitlab.example.com/kbenali',
               },
             ],
+            approvedBy: [
+              {
+                remoteUserId: '3',
+                username: 'lrousseau',
+                name: 'Léa Rousseau',
+                avatarUrl: null,
+                webUrl: 'https://gitlab.example.com/lrousseau',
+              },
+            ],
           }),
         ],
         '2026-09-11T08:00:00.000Z',
       );
 
-      expect(usersService.upsert).toHaveBeenCalledTimes(4); // author + 2 reviewers + 1 assignee
+      expect(usersService.upsert).toHaveBeenCalledTimes(5); // author + 2 reviewers + 1 assignee + 1 approver
       expect(usersService.upsert).toHaveBeenCalledWith(
         7,
         expect.objectContaining({ username: 'mdupont' }),
@@ -350,9 +371,13 @@ describe('MergeRequestsService', () => {
       expect(assigneesRepo.insert).toHaveBeenCalledWith([
         { mergeRequestId: 99, userId: 20, position: 0 },
       ]);
+      expect(approversRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
+      expect(approversRepo.insert).toHaveBeenCalledWith([
+        { mergeRequestId: 99, userId: 30, position: 0 },
+      ]);
     });
 
-    it('should_not_insert_association_rows_when_there_is_no_reviewer_or_assignee', async () => {
+    it('should_not_insert_association_rows_when_there_is_no_reviewer_assignee_or_approver', async () => {
       await service.upsertForProject(
         1,
         1,
@@ -364,6 +389,8 @@ describe('MergeRequestsService', () => {
       expect(reviewersRepo.insert).not.toHaveBeenCalled();
       expect(assigneesRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
       expect(assigneesRepo.insert).not.toHaveBeenCalled();
+      expect(approversRepo.delete).toHaveBeenCalledWith({ mergeRequestId: 99 });
+      expect(approversRepo.insert).not.toHaveBeenCalled();
     });
   });
 
@@ -424,6 +451,7 @@ describe('MergeRequestsService', () => {
 
       expect(reviewersRepo.find).not.toHaveBeenCalled();
       expect(assigneesRepo.find).not.toHaveBeenCalled();
+      expect(approversRepo.find).not.toHaveBeenCalled();
       expect(projectsService.findByIds).not.toHaveBeenCalled();
       expect(usersService.findByIds).not.toHaveBeenCalled();
     });
@@ -484,6 +512,7 @@ describe('MergeRequestsService', () => {
             reviewers: [],
             assignees: [],
             approved: true,
+            approvedBy: [],
             commentsCount: 3,
             difficulty: 'medium',
             changedFiles: 12,
@@ -640,7 +669,7 @@ describe('MergeRequestsService', () => {
       expect(view.difficulty).toBe('easy');
     });
 
-    it('should_group_reviewers_and_assignees_by_merge_request', async () => {
+    it('should_group_reviewers_assignees_and_approvers_by_merge_request', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, authorId: 10 }),
         persistedMergeRequest({ id: 2, iid: 8, authorId: 10 }),
@@ -650,6 +679,7 @@ describe('MergeRequestsService', () => {
         { mergeRequestId: 1, userId: 30 },
       ]);
       assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 2, userId: 20 }]);
+      approversRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 30 }]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
@@ -669,8 +699,12 @@ describe('MergeRequestsService', () => {
         'lrousseau',
       ]);
       expect(result[0].assignees).toEqual([]);
+      expect(result[0].approvedBy.map((u) => u.username)).toEqual([
+        'lrousseau',
+      ]);
       expect(result[1].reviewers).toEqual([]);
       expect(result[1].assignees.map((u) => u.username)).toEqual(['kbenali']);
+      expect(result[1].approvedBy).toEqual([]);
       expect(usersService.findByIds).toHaveBeenCalledWith(
         expect.arrayContaining([10, 20, 30]),
       );

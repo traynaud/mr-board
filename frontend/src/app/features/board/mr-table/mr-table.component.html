@@ -235,7 +235,11 @@
     </th>
     <td mat-cell *matCellDef="let row">
       @if (row.approved) {
-        <mat-icon svgIcon="check" class="approved-icon" />
+        <mat-icon
+          svgIcon="check"
+          class="approved-icon"
+          [matTooltip]="summarizeUsers(row.approvedBy).tooltip"
+        />
       }
     </td>
   </ng-container>

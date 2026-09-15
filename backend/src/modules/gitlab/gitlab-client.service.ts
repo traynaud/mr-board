@@ -48,7 +48,7 @@ const MERGE_REQUESTS_QUERY = `
           createdAt
           updatedAt
           userNotesCount
-          approvedBy { nodes { id } }
+          approvedBy { nodes { id username name avatarUrl webUrl } }
           labels { nodes { title } }
           diffStatsSummary { fileCount additions deletions }
           author { id username name avatarUrl webUrl }

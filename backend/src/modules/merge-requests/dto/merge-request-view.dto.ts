@@ -21,6 +21,8 @@ export class MergeRequestViewDto {
   reviewers!: MergeRequestUserDto[];
   assignees!: MergeRequestUserDto[];
   approved!: boolean;
+  /** Utilisateurs ayant réellement approuvé (RG-029-01) — mêmes utilisateurs que ceux comptant dans `approved`. Vide si la MR n'a pas encore été resynchronisée depuis la livraison de US-029 (RG-029-04). */
+  approvedBy!: MergeRequestUserDto[];
   commentsCount!: number;
   difficulty!: Difficulty;
   /** `null` when the diff stats were unavailable at sync time (RG-006-02). */
