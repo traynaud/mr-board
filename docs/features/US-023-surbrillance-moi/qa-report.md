@@ -61,14 +61,15 @@ qui vérifient la présence de la classe CSS `.highlighted` et le contenu du too
 
 ## 4. Bugs trouvés
 
-- **BUG-001** (mineur, **pré-existant, hors périmètre de l'US-023**) : `PUT /api/v1/settings` accepte des valeurs
-  non booléennes pour tout champ booléen (`highlightMe` inclus) à cause de la conversion implicite du
-  `ValidationPipe` global (`app.setup.ts`). Exemple : `highlightMe: "false"` (chaîne) est accepté et stocké comme
-  `true`. Ce comportement existe pour tous les booleans de l'application depuis leur introduction respective
-  (`openInNewTab`, US-015 ; `notifyAssigned`/`tabBadge`, US-016) et n'est pas une régression de cette US.
-  **Recommandation** : ouvrir un ticket technique séparé (`puretech`) pour retirer
-  `transformOptions.enableImplicitConversion` ou ajouter un `@Transform` explicite et strict sur les champs
-  booléens ; ne bloque pas la livraison de l'US-023.
+- **BUG-001** (mineur, **pré-existant, hors périmètre de l'US-023**) — ✅ **corrigé le 2026-09-15 (`/project:bugfix`)** :
+  `PUT /api/v1/settings` acceptait des valeurs non booléennes pour tout champ booléen (`highlightMe` inclus) à cause
+  de la conversion implicite du `ValidationPipe` global (`app.setup.ts`). Exemple : `highlightMe: "false"` (chaîne)
+  était accepté et stocké comme `true`. Ce comportement existait pour tous les booleans de l'application depuis leur
+  introduction respective (`openInNewTab`, US-015 ; `notifyAssigned`/`tabBadge`, US-016). Corrigé en ajoutant un
+  `@Transform` explicite (`rawBoolean`) sur chaque champ booléen d'`UpdateSettingsDto`, qui relit la valeur brute
+  soumise par le client au lieu de celle déjà convertie par `enableImplicitConversion`, avant que `@IsBoolean()` ne
+  s'exécute — ces champs sont désormais rejetés avec 400 s'ils ne sont pas des booléens stricts. Test de régression
+  e2e ajouté (`settings.e2e-spec.ts::should_reject_a_non_boolean_value_for_a_boolean_field`).
 - **BUG-002** (mineur, **pré-existant, hors périmètre de l'US-023**) : l'ordre des reviewers/assignees renvoyé par
   `GET /merge-requests` n'est pas garanti égal à l'ordre GitLab (RG-G06) lorsque plusieurs reviewers sont présents :
   la table d'association `merge_request_reviewers` a une clé primaire composite `(merge_request_id, user_id)`,

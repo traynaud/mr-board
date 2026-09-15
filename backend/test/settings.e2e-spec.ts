@@ -166,6 +166,22 @@ describe('Settings (e2e)', () => {
     ]);
   });
 
+  it('PUT /settings should_reject_a_non_boolean_value_for_a_boolean_field', async () => {
+    const res = await api().put('/api/v1/settings').send({
+      pauseWhenHidden: 'yes',
+    });
+
+    expect(res.status).toBe(400);
+    expect(body(res).message).toEqual([
+      expect.stringContaining('pauseWhenHidden'),
+    ]);
+
+    const get = await api().get('/api/v1/settings');
+    expect(get.body).toEqual(
+      expect.objectContaining({ pauseWhenHidden: false }),
+    );
+  });
+
   it('PUT /settings should_store_valid_thresholds', async () => {
     const res = await api().put('/api/v1/settings').send({
       easyFiles: 10,

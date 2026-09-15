@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-09-15",
+    "type": "fix",
+    "user-story": "",
+    "title": "Réglages : un champ booléen (ex. « Suspendre pendant l'inactivité ») envoyé avec une valeur non booléenne (chaîne, nombre) est maintenant rejeté (400) au lieu d'être silencieusement stocké à vrai."
+  },
+  {
+    "date": "2026-09-15",
     "type": "feat",
     "user-story": "US-028",
     "title": "Labels : filtre composable « Label » (avec « Sans label ») et colonne optionnelle « Labels » dans le tableau, entre Titre et Difficulté."

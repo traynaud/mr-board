@@ -27,6 +27,21 @@ const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
 /**
+ * Reads the raw client-submitted value instead of the one already coerced by
+ * `enableImplicitConversion` (`app.setup.ts`), which turns any truthy value
+ * (`"false"`, `"yes"`, `1`…) into `true` before `@IsBoolean()` runs. Applied
+ * to every boolean field so non-boolean input is rejected with 400 instead
+ * of being silently stored as `true`.
+ */
+const rawBoolean = ({
+  obj,
+  key,
+}: {
+  obj: Record<string, unknown>;
+  key: string;
+}): unknown => obj[key];
+
+/**
  * Body of `PUT /api/v1/settings` — global preferences only (RG-019-23); the
  * per-connection identity is carried by `identities` instead of a single
  * `meUsername` (RG-019-08).
@@ -59,6 +74,7 @@ export class UpdateSettingsDto {
   refreshIntervalMin?: number;
 
   /** Suspend frontend polling/reload while the tab is hidden (RG-013-05). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   pauseWhenHidden?: boolean;
@@ -96,11 +112,13 @@ export class UpdateSettingsDto {
   readyOrangeDays?: number;
 
   /** Count only Monday-Friday for the Ready delay (RG-G04, RG-014-01). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   workdaysOnly?: boolean;
 
   /** Open MR titles in a new tab (RG-G11, RG-015-01). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   openInNewTab?: boolean;
@@ -112,11 +130,13 @@ export class UpdateSettingsDto {
   ignoredLabels?: string[];
 
   /** Browser notification when a merge request is newly assigned to me (RG-016-01/02). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   notifyAssigned?: boolean;
 
   /** Tab title badge counting red Ready-level merge requests (RG-016-04). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   tabBadge?: boolean;
@@ -127,6 +147,7 @@ export class UpdateSettingsDto {
   theme?: ThemePreference;
 
   /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
+  @Transform(rawBoolean)
   @IsOptional()
   @IsBoolean()
   highlightMe?: boolean;

@@ -73,7 +73,7 @@ le rapport se régénère normalement avec un horodatage frais. **Couverture ré
 légère hausse par rapport à US-012.
 
 **BUG-002 — `@IsBoolean()` ne peut rejeter aucune valeur véridique non booléenne (comportement pré-existant, non
-spécifique à cette US)**
+spécifique à cette US) — ✅ corrigé le 2026-09-15 (`/project:bugfix`, voir US-023 BUG-001)**
 `PUT /settings` avec `pauseWhenHidden: "yes"` (ou toute valeur véridique non booléenne) renvoie `200` et stocke
 `true`, sans jamais déclencher de `400`. Cause : le `ValidationPipe` global (`transformOptions:
 { enableImplicitConversion: true }`) convertit toute valeur véridique en `true` **avant** l'exécution de
