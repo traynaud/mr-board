@@ -66,7 +66,7 @@ frontend/
             │   └── empty-state/
             └── settings/
                 ├── settings-page.component.*     # layout 2 colonnes, Annuler/Enregistrer
-                ├── sections/                     # me, gitlab-connection, repositories, refresh, thresholds, misc
+                ├── sections/                     # me, gitlab-connection, repositories, refresh, difficulty, ready-delay, misc
                 └── ...
 ```
 

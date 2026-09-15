@@ -276,38 +276,40 @@
       "pauseWhenHidden": "Pause when the tab is inactive",
       "hint": "Automatic sync ; the Refresh button always forces one."
     },
-    "thresholds": {
+    "difficulty": {
       "number": "04",
-      "title": "Thresholds",
-      "description": "Rules for computing difficulty and the Ready delay.",
-      "difficulty": {
-        "title": "Difficulty",
-        "easy": "Easy",
-        "medium": "Medium",
-        "hard": "Hard",
-        "filesSuffix": "files",
-        "linesSuffix": "l.",
-        "between": "in between"
-      },
-      "ready": {
-        "title": "Time since Ready",
-        "green": "Green",
-        "orange": "Orange",
-        "red": "Red",
-        "daysSuffix": "days",
-        "beyond": "beyond"
-      },
-      "workdaysOnly": "Count working days only",
+      "title": "Difficulty",
+      "description": "Rules for computing an MR's difficulty.",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "filesSuffix": "files",
+      "linesSuffix": "l.",
+      "between": "in between",
       "errors": {
-        "required": "This field is required.",
         "min": "Must be an integer ≥ {{min}}.",
         "integer": "Must be a whole number.",
-        "mustExceedEasy": "Must be greater than Easy",
+        "mustExceedEasy": "Must be greater than Easy"
+      }
+    },
+    "readyDelay": {
+      "number": "05",
+      "title": "Time since Ready",
+      "description": "Color thresholds for the Ready delay.",
+      "green": "Green",
+      "orange": "Orange",
+      "red": "Red",
+      "daysSuffix": "days",
+      "beyond": "beyond",
+      "workdaysOnly": "Count working days only",
+      "errors": {
+        "min": "Must be an integer ≥ {{min}}.",
+        "integer": "Must be a whole number.",
         "mustExceedReadyGreen": "Must be greater than Green"
       }
     },
     "misc": {
-      "number": "05",
+      "number": "06",
       "title": "Miscellaneous",
       "description": "Convenience options and configuration backup.",
       "theme": {

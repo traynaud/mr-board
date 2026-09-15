@@ -34,11 +34,12 @@ import { syncIdentitiesFormArray } from './connections-form';
 import { resolveMeIdentity } from './me-identity';
 import { collectDirtyRepoChanges, syncReposFormArray } from './repos-form';
 import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
+import { DifficultySectionComponent } from './sections/difficulty/difficulty-section.component';
 import { IdentityRow, MeSectionComponent } from './sections/me/me-section.component';
+import { ReadyDelaySectionComponent } from './sections/ready-delay/ready-delay-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import { RepoRow } from './sections/repositories/repositories-section.component';
 import { MiscellaneousSectionComponent } from './sections/miscellaneous/miscellaneous-section.component';
-import { ThresholdsSectionComponent } from './sections/thresholds/thresholds-section.component';
 import {
   buildSettingsForm,
   resetSettingsForm,
@@ -71,7 +72,8 @@ const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
     ConnectionsSectionComponent,
     MeSectionComponent,
     RefreshSectionComponent,
-    ThresholdsSectionComponent,
+    DifficultySectionComponent,
+    ReadyDelaySectionComponent,
     MiscellaneousSectionComponent,
   ],
   templateUrl: './settings-page.component.html',

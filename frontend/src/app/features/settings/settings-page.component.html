@@ -59,11 +59,18 @@
         <app-refresh-section [form]="form" />
       </app-settings-section>
       <app-settings-section
-        [number]="'settings.thresholds.number' | translate"
-        titleKey="settings.thresholds.title"
-        descriptionKey="settings.thresholds.description"
+        [number]="'settings.difficulty.number' | translate"
+        titleKey="settings.difficulty.title"
+        descriptionKey="settings.difficulty.description"
       >
-        <app-thresholds-section [form]="form" />
+        <app-difficulty-section [form]="form" />
+      </app-settings-section>
+      <app-settings-section
+        [number]="'settings.readyDelay.number' | translate"
+        titleKey="settings.readyDelay.title"
+        descriptionKey="settings.readyDelay.description"
+      >
+        <app-ready-delay-section [form]="form" />
       </app-settings-section>
       <app-settings-section
         [number]="'settings.misc.number' | translate"

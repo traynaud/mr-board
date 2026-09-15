@@ -1,0 +1,58 @@
+<div class="rows difficulty-rows" [formGroup]="form()">
+  <span class="row-label"
+    ><i class="square easy"></i>{{ 'settings.difficulty.easy' | translate }}</span
+  >
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <span matTextPrefix>&lt;&nbsp;</span>
+    <input matInput type="number" formControlName="easyFiles" />
+    <span matTextSuffix>&nbsp;{{ 'settings.difficulty.filesSuffix' | translate }}</span>
+    @if (form().controls.easyFiles.hasError('integer')) {
+      <mat-error>{{ 'settings.difficulty.errors.integer' | translate }}</mat-error>
+    } @else if (form().controls.easyFiles.invalid) {
+      <mat-error>{{ 'settings.difficulty.errors.min' | translate: { min: 1 } }}</mat-error>
+    }
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <span matTextPrefix>&lt;&nbsp;</span>
+    <input matInput type="number" formControlName="easyLines" />
+    <span matTextSuffix>&nbsp;{{ 'settings.difficulty.linesSuffix' | translate }}</span>
+    @if (form().controls.easyLines.hasError('integer')) {
+      <mat-error>{{ 'settings.difficulty.errors.integer' | translate }}</mat-error>
+    } @else if (form().controls.easyLines.invalid) {
+      <mat-error>{{ 'settings.difficulty.errors.min' | translate: { min: 1 } }}</mat-error>
+    }
+  </mat-form-field>
+
+  <span class="row-label"
+    ><i class="square medium"></i>{{ 'settings.difficulty.medium' | translate }}</span
+  >
+  <span class="between">{{ 'settings.difficulty.between' | translate }}</span>
+
+  <span class="row-label"
+    ><i class="square hard"></i>{{ 'settings.difficulty.hard' | translate }}</span
+  >
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <span matTextPrefix>&gt;&nbsp;</span>
+    <input matInput type="number" formControlName="hardFiles" />
+    <span matTextSuffix>&nbsp;{{ 'settings.difficulty.filesSuffix' | translate }}</span>
+    @if (form().controls.hardFiles.hasError('mustExceed')) {
+      <mat-error>{{ 'settings.difficulty.errors.mustExceedEasy' | translate }}</mat-error>
+    } @else if (form().controls.hardFiles.hasError('integer')) {
+      <mat-error>{{ 'settings.difficulty.errors.integer' | translate }}</mat-error>
+    } @else if (form().controls.hardFiles.invalid) {
+      <mat-error>{{ 'settings.difficulty.errors.min' | translate: { min: 1 } }}</mat-error>
+    }
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <span matTextPrefix>&gt;&nbsp;</span>
+    <input matInput type="number" formControlName="hardLines" />
+    <span matTextSuffix>&nbsp;{{ 'settings.difficulty.linesSuffix' | translate }}</span>
+    @if (form().controls.hardLines.hasError('mustExceed')) {
+      <mat-error>{{ 'settings.difficulty.errors.mustExceedEasy' | translate }}</mat-error>
+    } @else if (form().controls.hardLines.hasError('integer')) {
+      <mat-error>{{ 'settings.difficulty.errors.integer' | translate }}</mat-error>
+    } @else if (form().controls.hardLines.invalid) {
+      <mat-error>{{ 'settings.difficulty.errors.min' | translate: { min: 1 } }}</mat-error>
+    }
+  </mat-form-field>
+</div>

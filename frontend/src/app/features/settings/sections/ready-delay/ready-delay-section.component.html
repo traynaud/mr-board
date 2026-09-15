@@ -1,0 +1,42 @@
+<div [formGroup]="form()">
+  <div class="rows ready-rows">
+    <span class="row-label"
+      ><i class="square green"></i>{{ 'settings.readyDelay.green' | translate }}</span
+    >
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <span matTextPrefix>&le;&nbsp;</span>
+      <input matInput type="number" formControlName="readyGreenDays" />
+      <span matTextSuffix>&nbsp;{{ 'settings.readyDelay.daysSuffix' | translate }}</span>
+      @if (form().controls.readyGreenDays.hasError('integer')) {
+        <mat-error>{{ 'settings.readyDelay.errors.integer' | translate }}</mat-error>
+      } @else if (form().controls.readyGreenDays.invalid) {
+        <mat-error>{{ 'settings.readyDelay.errors.min' | translate: { min: 0 } }}</mat-error>
+      }
+    </mat-form-field>
+
+    <span class="row-label"
+      ><i class="square orange"></i>{{ 'settings.readyDelay.orange' | translate }}</span
+    >
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <span matTextPrefix>&le;&nbsp;</span>
+      <input matInput type="number" formControlName="readyOrangeDays" />
+      <span matTextSuffix>&nbsp;{{ 'settings.readyDelay.daysSuffix' | translate }}</span>
+      @if (form().controls.readyOrangeDays.hasError('mustExceed')) {
+        <mat-error>{{ 'settings.readyDelay.errors.mustExceedReadyGreen' | translate }}</mat-error>
+      } @else if (form().controls.readyOrangeDays.hasError('integer')) {
+        <mat-error>{{ 'settings.readyDelay.errors.integer' | translate }}</mat-error>
+      } @else if (form().controls.readyOrangeDays.invalid) {
+        <mat-error>{{ 'settings.readyDelay.errors.min' | translate: { min: 0 } }}</mat-error>
+      }
+    </mat-form-field>
+
+    <span class="row-label"
+      ><i class="square red"></i>{{ 'settings.readyDelay.red' | translate }}</span
+    >
+    <span class="between">{{ 'settings.readyDelay.beyond' | translate }}</span>
+  </div>
+
+  <mat-slide-toggle formControlName="workdaysOnly" class="workdays-toggle">
+    {{ 'settings.readyDelay.workdaysOnly' | translate }}
+  </mat-slide-toggle>
+</div>

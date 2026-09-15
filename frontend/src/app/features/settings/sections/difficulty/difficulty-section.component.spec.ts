@@ -2,18 +2,18 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideI18nTesting, t } from '../../../../core/i18n/testing';
 import { SettingsForm, buildSettingsForm } from '../../settings-form';
-import { ThresholdsSectionComponent } from './thresholds-section.component';
+import { DifficultySectionComponent } from './difficulty-section.component';
 
 @Component({
-  imports: [ThresholdsSectionComponent],
-  template: `<app-thresholds-section [form]="form" />`,
+  imports: [DifficultySectionComponent],
+  template: `<app-difficulty-section [form]="form" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HostComponent {
   readonly form: SettingsForm = buildSettingsForm();
 }
 
-describe('ThresholdsSectionComponent', () => {
+describe('DifficultySectionComponent', () => {
   let fixture: ComponentFixture<HostComponent>;
   let host: HostComponent;
   let el: HTMLElement;
@@ -33,20 +33,15 @@ describe('ThresholdsSectionComponent', () => {
     return el.querySelector<HTMLInputElement>(`input[formControlName="${name}"]`)!;
   }
 
-  it('should_render_the_seven_threshold_fields_with_default_values', () => {
+  it('should_render_the_four_difficulty_fields_with_default_values', () => {
     expect(numberInput('easyFiles').value).toBe('5');
     expect(numberInput('easyLines').value).toBe('100');
     expect(numberInput('hardFiles').value).toBe('20');
     expect(numberInput('hardLines').value).toBe('800');
-    expect(numberInput('readyGreenDays').value).toBe('1');
-    expect(numberInput('readyOrangeDays').value).toBe('3');
-    expect(el.querySelector('mat-slide-toggle')).not.toBeNull();
   });
 
-  it('should_render_the_block_titles_and_labels', () => {
-    expect(el.textContent).toContain(t('settings.thresholds.difficulty.title'));
-    expect(el.textContent).toContain(t('settings.thresholds.ready.title'));
-    expect(el.textContent).toContain(t('settings.thresholds.workdaysOnly'));
+  it('should_not_render_a_section_title', () => {
+    expect(el.querySelector('.block-title')).toBeNull();
   });
 
   it('should_update_the_form_when_a_field_is_edited', async () => {
@@ -65,24 +60,12 @@ describe('ThresholdsSectionComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(el.textContent).toContain(t('settings.thresholds.errors.mustExceedEasy'));
+    expect(el.textContent).toContain(t('settings.difficulty.errors.mustExceedEasy'));
   });
-
-  it('should_show_the_cross_field_error_on_ready_orange_days', async () => {
-    host.form.controls.readyGreenDays.setValue(3);
-    host.form.controls.readyOrangeDays.setValue(3);
-    host.form.controls.readyOrangeDays.markAsTouched();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(el.textContent).toContain(t('settings.thresholds.errors.mustExceedReadyGreen'));
-  });
-
 
   describe.each([
     ['easyFiles', 1],
     ['easyLines', 1],
-    ['readyGreenDays', 0],
   ] as const)('%s field validation messages', (name, min) => {
     it('should_show_the_integer_error', async () => {
       host.form.controls[name].setValue(2.5);
@@ -90,7 +73,7 @@ describe('ThresholdsSectionComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      expect(el.textContent).toContain(t('settings.thresholds.errors.integer'));
+      expect(el.textContent).toContain(t('settings.difficulty.errors.integer'));
     });
 
     it('should_show_the_min_error', async () => {
@@ -99,14 +82,13 @@ describe('ThresholdsSectionComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      expect(el.textContent).toContain(t('settings.thresholds.errors.min', { min }));
+      expect(el.textContent).toContain(t('settings.difficulty.errors.min', { min }));
     });
   });
 
   describe.each([
     ['hardFiles', 'easyFiles', 1],
     ['hardLines', 'easyLines', 1],
-    ['readyOrangeDays', 'readyGreenDays', 0],
   ] as const)('%s field validation messages (guarded by %s)', (name, reference, min) => {
     it('should_show_the_integer_error_when_the_cross_field_check_passes', async () => {
       // Le seuil de référence est mis très bas pour isoler l'erreur `integer`
@@ -118,7 +100,7 @@ describe('ThresholdsSectionComponent', () => {
       await fixture.whenStable();
 
       expect(host.form.controls[name].hasError('mustExceed')).toBe(false);
-      expect(el.textContent).toContain(t('settings.thresholds.errors.integer'));
+      expect(el.textContent).toContain(t('settings.difficulty.errors.integer'));
     });
 
     it('should_show_the_min_error_when_the_cross_field_check_passes', async () => {
@@ -131,7 +113,7 @@ describe('ThresholdsSectionComponent', () => {
       await fixture.whenStable();
 
       expect(host.form.controls[name].hasError('mustExceed')).toBe(false);
-      expect(el.textContent).toContain(t('settings.thresholds.errors.min', { min }));
+      expect(el.textContent).toContain(t('settings.difficulty.errors.min', { min }));
     });
   });
 });

@@ -272,9 +272,10 @@ describe('SettingsPageComponent', () => {
     );
   });
 
-  it('should_number_the_sections_01_to_05_with_no_separate_repos_section_us_021_0', async () => {
+  it('should_number_the_sections_01_to_06_after_the_us_030_thresholds_split', async () => {
     // US-021 §0 : « 03 · Repos à scanner » a disparu (absorbée par « 02 ·
-    // Connexions ») ; Actualisation/Seuils/Divers sont renumérotés 03/04/05.
+    // Connexions »). US-030 : « 04 · Seuils » est scindée en « 04 ·
+    // Difficulté » / « 05 · Temps depuis Ready », Divers passe à 06.
     await loadSettings();
 
     const headings = Array.from(el.querySelectorAll('.heading h6')).map((h) =>
@@ -284,8 +285,9 @@ describe('SettingsPageComponent', () => {
       `01 · ${t('settings.me.title')}`,
       `02 · ${t('settings.connections.title')}`,
       `03 · ${t('settings.refresh.title')}`,
-      `04 · ${t('settings.thresholds.title')}`,
-      `05 · ${t('settings.misc.title')}`,
+      `04 · ${t('settings.difficulty.title')}`,
+      `05 · ${t('settings.readyDelay.title')}`,
+      `06 · ${t('settings.misc.title')}`,
     ]);
   });
 

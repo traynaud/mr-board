@@ -7,12 +7,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { SettingsForm } from '../../settings-form';
 
 /**
- * Section « 05 · Seuils » : seuils de difficulté (RG-G03) et de délai Ready
- * (RG-G04), configurables par l'utilisateur (RG-014-01). Composant
- * présentationnel : le formulaire vient de la page.
+ * Section « 05 · Temps depuis Ready » : seuils de couleur du délai depuis
+ * Ready (RG-G04) et option jours ouvrés, configurables par l'utilisateur
+ * (RG-014-01, RG-030-01). Composant présentationnel : le formulaire vient
+ * de la page.
  */
 @Component({
-  selector: 'app-thresholds-section',
+  selector: 'app-ready-delay-section',
   imports: [
     ReactiveFormsModule,
     MatFormFieldModule,
@@ -20,10 +21,10 @@ import { SettingsForm } from '../../settings-form';
     MatSlideToggleModule,
     TranslatePipe,
   ],
-  templateUrl: './thresholds-section.component.html',
-  styleUrl: './thresholds-section.component.scss',
+  templateUrl: './ready-delay-section.component.html',
+  styleUrl: './ready-delay-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ThresholdsSectionComponent {
+export class ReadyDelaySectionComponent {
   readonly form = input.required<SettingsForm>();
 }

@@ -1,23 +1,7 @@
-.blocks {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4) var(--space-6);
-}
-
-.block-title {
-  font-size: 12px;
-  margin-bottom: var(--space-2);
-  color: var(--color-neutral-700);
-}
-
 .rows {
   display: grid;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-}
-
-.difficulty-rows {
-  grid-template-columns: auto 1fr 1fr;
 }
 
 .ready-rows {
@@ -37,30 +21,23 @@
   display: block;
   flex: none;
 
-  &.easy,
   &.green {
     background: var(--color-success);
   }
 
-  &.medium,
   &.orange {
     background: var(--color-warning);
   }
 
-  &.hard,
   &.red {
     background: var(--color-accent);
   }
 }
 
 .between {
-  grid-column: span 2;
+  grid-column: span 1;
   font-size: 12px;
   color: var(--color-neutral-600);
-}
-
-.ready-rows .between {
-  grid-column: span 1;
 }
 
 mat-form-field {
@@ -68,17 +45,7 @@ mat-form-field {
   min-width: 92px;
 }
 
-.difficulty-rows mat-form-field {
-  min-width: 132px;
-}
-
 .workdays-toggle {
   display: block;
   margin-top: var(--space-4);
-}
-
-@media (max-width: 640px) {
-  .blocks {
-    grid-template-columns: 1fr;
-  }
 }

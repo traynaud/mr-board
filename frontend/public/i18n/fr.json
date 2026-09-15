@@ -276,38 +276,40 @@
       "pauseWhenHidden": "Mettre en pause quand l'onglet est inactif",
       "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
     },
-    "thresholds": {
+    "difficulty": {
       "number": "04",
-      "title": "Seuils",
-      "description": "Règles de calcul de la difficulté et du délai Ready.",
-      "difficulty": {
-        "title": "Difficulté",
-        "easy": "Easy",
-        "medium": "Medium",
-        "hard": "Hard",
-        "filesSuffix": "fich.",
-        "linesSuffix": "l.",
-        "between": "entre les deux"
-      },
-      "ready": {
-        "title": "Temps depuis Ready",
-        "green": "Vert",
-        "orange": "Orange",
-        "red": "Rouge",
-        "daysSuffix": "jours",
-        "beyond": "au-delà"
-      },
-      "workdaysOnly": "Compter uniquement les jours ouvrés",
+      "title": "Difficulté",
+      "description": "Règles de calcul de la difficulté d'une MR.",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "filesSuffix": "fich.",
+      "linesSuffix": "l.",
+      "between": "entre les deux",
       "errors": {
-        "required": "Ce champ est obligatoire.",
         "min": "Doit être un entier ≥ {{min}}.",
         "integer": "Doit être un nombre entier.",
-        "mustExceedEasy": "Doit être supérieur à Easy",
+        "mustExceedEasy": "Doit être supérieur à Easy"
+      }
+    },
+    "readyDelay": {
+      "number": "05",
+      "title": "Temps depuis Ready",
+      "description": "Seuils de couleur du délai depuis Ready.",
+      "green": "Vert",
+      "orange": "Orange",
+      "red": "Rouge",
+      "daysSuffix": "jours",
+      "beyond": "au-delà",
+      "workdaysOnly": "Compter uniquement les jours ouvrés",
+      "errors": {
+        "min": "Doit être un entier ≥ {{min}}.",
+        "integer": "Doit être un nombre entier.",
         "mustExceedReadyGreen": "Doit être supérieur à Vert"
       }
     },
     "misc": {
-      "number": "05",
+      "number": "06",
       "title": "Divers",
       "description": "Options de confort et sauvegarde de la configuration.",
       "theme": {

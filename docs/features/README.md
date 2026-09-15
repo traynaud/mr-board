@@ -85,8 +85,9 @@ contenu à droite), sections :
 - `01 · Moi` — un nom d'utilisateur **par connexion** configurée (US-019), email (optionnel), aperçu de l'identité détectée par ligne, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
 - `02 · Connexions` — liste des connexions (type, nom, URL, état du jeton), chaque ligne repliable ; dépliée, elle affiche le formulaire de la connexion (tester/modifier/supprimer) **suivi de son propre tableau de repos** (chemin, alias, supprimer, ligne d'ajout) — les repos sont rattachés à leur connexion dans l'UI, il n'existe pas de section « Repos à scanner » séparée (US-019 corrigée par US-021, voir US-021 §0)
 - `03 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
-- `04 · Seuils` — difficulté (Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes), délai Ready (vert ≤ N j, orange ≤ N j), jours ouvrés
-- `05 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `04 · Difficulté` — Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes (US-030 : scindée de l'ex-« 04 · Seuils »)
+- `05 · Temps depuis Ready` — vert ≤ N j, orange ≤ N j, jours ouvrés (US-030 : scindée de l'ex-« 04 · Seuils »)
+- `06 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -188,6 +189,7 @@ une fois ses dépendances réalisées.
 | US-027 | Favoris : suivre une MR en particulier (étoile + filtre rapide)                    | Should   | M          | US-004, US-005, US-009, US-011, US-015 | ✅ |
 | US-028 | Labels dans le tableau : colonne optionnelle et filtre                             | Should   | M          | US-005, US-010, US-011, US-012, US-015 | ✅ |
 | US-029 | Infobulle des approbateurs sur la colonne Approved                                 | Should   | L          | US-005, US-017, US-019, US-020         | ✅ |
+| US-030 | Paramètres : scission de la section Seuils en Difficulté / Temps depuis Ready      | Should   | S          | US-014                 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
@@ -246,7 +248,8 @@ Synchronisation/Moi/Jeton), §4.1 (bandeau différenciant absence de connexion /
 « Forge »/« Projet / Repo », ajout du terme « PR »), §9 (retrait de « GitHub » de la liste des forges hors
 périmètre), §7 roadmap (✅) ; US-021 — §4.2 (section 02 « Connexions » absorbant les repos, ex-« 03 · Repos à
 scanner » supprimée, renumérotation 03/04/05 des sections suivantes — voir US-021 §0), §9 (retrait de la mention
-des indicateurs de forge/filtre « Connexion » restant à livrer), §7 roadmap (✅).
+des indicateurs de forge/filtre « Connexion » restant à livrer), §7 roadmap (✅) ; US-030 — §4.2 (ex-« 04 · Seuils »
+scindée en « 04 · Difficulté » / « 05 · Temps depuis Ready », « Divers » renumérotée 05 → 06), §7 roadmap (✅).
 
 Impacts documentaires restant prévus : RG-G09/G17/G18 (jetons et identités au pluriel dans leur formulation exacte),
 §6 (modèle conceptuel : renommer `Connections` en toutes lettres si une future US y touche).

@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-16",
+    "type": "feat",
+    "user-story": "US-030",
+    "title": "Réglages : la section Seuils est scindée en deux sections « Difficulté » et « Temps depuis Ready »."
+  },
+  {
     "date": "2026-09-15",
     "type": "feat",
     "user-story": "US-029",
