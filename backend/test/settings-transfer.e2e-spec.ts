@@ -15,7 +15,6 @@ interface Body {
     type: string;
     name: string;
     url: string;
-    meUsername: string | null;
   }[];
   projects?: {
     connection: string;
@@ -108,7 +107,6 @@ describe('SettingsTransfer (e2e)', () => {
         type: 'gitlab',
         name: 'GitLab',
         url: 'https://gitlab.com',
-        meUsername: null,
       },
     ]);
     expect(JSON.stringify(res.body)).not.toContain('transfer-e2e-token');
@@ -214,6 +212,8 @@ describe('SettingsTransfer (e2e)', () => {
             type: 'gitlab',
             name: 'gitlab.exemple.fr',
             url: 'https://gitlab.exemple.fr',
+            // RG-031-14 : champ hérité d'un export antérieur à cette US,
+            // accepté mais ignoré — l'identité n'est plus jamais importée.
             meUsername: 'mdupont',
           },
         ],
@@ -236,7 +236,7 @@ describe('SettingsTransfer (e2e)', () => {
         expect.objectContaining({
           name: 'gitlab.exemple.fr',
           tokenConfigured: false,
-          meUsername: 'mdupont',
+          identity: null,
         }),
       ]),
     );

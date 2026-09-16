@@ -1,4 +1,8 @@
 <div class="fields" [formGroup]="form()">
+  <mat-checkbox formControlName="highlightMe">
+    {{ 'settings.misc.highlightMe' | translate }}
+  </mat-checkbox>
+
   <div class="theme-field">
     <div class="block-title">{{ 'settings.misc.theme.title' | translate }}</div>
     <mat-radio-group

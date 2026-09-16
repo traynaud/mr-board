@@ -19,18 +19,18 @@ describe('SettingsController', () => {
   });
 
   it('should_get_settings', async () => {
-    const dto = { meEmail: null, theme: 'system' };
+    const dto = { theme: 'system' };
     service.get.mockResolvedValue(dto);
 
     await expect(controller.getSettings()).resolves.toBe(dto);
   });
 
   it('should_update_settings', async () => {
-    const body = { meEmail: 'marie@exemple.fr' };
-    service.update.mockResolvedValue({ meEmail: 'marie@exemple.fr' });
+    const body = { highlightMe: false };
+    service.update.mockResolvedValue({ highlightMe: false });
 
     await expect(controller.putSettings(body)).resolves.toEqual({
-      meEmail: 'marie@exemple.fr',
+      highlightMe: false,
     });
     expect(service.update).toHaveBeenCalledWith(body);
   });

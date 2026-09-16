@@ -20,7 +20,8 @@ const CONNECTION = {
   id: 1,
   name: 'GitLab',
   type: 'gitlab' as const,
-  meUsername: null as string | null,
+  resolvedUsername: null as string | null,
+  resolvedEmail: null as string | null,
 };
 
 function forgeMergeRequest(
@@ -77,7 +78,6 @@ describe('MergeRequestsService', () => {
   let usersService: { upsert: jest.Mock; findByIds: jest.Mock };
   let projectsService: { findByIds: jest.Mock; list: jest.Mock };
   let settingsService: {
-    getMeEmail: jest.Mock;
     getThresholds: jest.Mock;
     getIgnoredLabels: jest.Mock;
   };
@@ -163,7 +163,6 @@ describe('MergeRequestsService', () => {
         {
           provide: SettingsService,
           useValue: {
-            getMeEmail: jest.fn().mockResolvedValue(null),
             getThresholds: jest.fn().mockResolvedValue({
               difficulty: DEFAULT_DIFFICULTY_THRESHOLDS,
               readyDelay: DEFAULT_READY_DELAY_THRESHOLDS,
@@ -923,7 +922,7 @@ describe('MergeRequestsService', () => {
 
     it('should_report_is_mine_true_when_my_username_matches_the_author', async () => {
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, meUsername: 'mdupont' },
+        { ...CONNECTION, resolvedUsername: 'mdupont' },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
@@ -941,7 +940,7 @@ describe('MergeRequestsService', () => {
     it('should_report_is_me_true_on_the_author_and_false_on_reviewers_and_assignees_who_do_not_match', async () => {
       // RG-023-04/05 : `isMe` is computed per role, independently of `isMine`.
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, meUsername: 'mdupont' },
+        { ...CONNECTION, resolvedUsername: 'mdupont' },
       ]);
       reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
       assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 30 }]);
@@ -964,7 +963,7 @@ describe('MergeRequestsService', () => {
 
     it('should_report_is_me_true_on_a_reviewer_and_an_assignee_case_insensitively', async () => {
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, meUsername: 'mdupont' },
+        { ...CONNECTION, resolvedUsername: 'mdupont' },
       ]);
       reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
       assigneesRepo.find.mockResolvedValue([{ mergeRequestId: 1, userId: 20 }]);
@@ -1005,12 +1004,12 @@ describe('MergeRequestsService', () => {
       // RG-019-25 : « mdupont » est mon identité sur la connexion 1, mais pas
       // sur la connexion 2 — un homonyme n'y déclenche jamais isMe.
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, id: 1, meUsername: 'mdupont' },
+        { ...CONNECTION, id: 1, resolvedUsername: 'mdupont' },
         {
           id: 2,
           name: 'gitlab.exemple.fr',
           type: 'gitlab' as const,
-          meUsername: null,
+          resolvedUsername: null,
         },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([
@@ -1034,7 +1033,7 @@ describe('MergeRequestsService', () => {
 
     it('should_filter_to_merge_requests_where_i_have_a_role_when_mine_only_is_requested', async () => {
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, meUsername: 'mdupont' },
+        { ...CONNECTION, resolvedUsername: 'mdupont' },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1, authorId: 10 }),
@@ -1072,12 +1071,32 @@ describe('MergeRequestsService', () => {
       expect(warnings).toEqual(['identity.missing']);
     });
 
-    it('should_not_warn_when_the_global_email_is_configured_even_without_any_connection_username', async () => {
-      settingsService.getMeEmail.mockResolvedValue('marie@exemple.fr');
+    it('should_report_is_me_true_via_the_connections_resolved_email_fallback', async () => {
+      // RG-031-08 : à défaut de resolvedUsername, le repli se fait sur
+      // resolvedEmail *de la même connexion* — plus de repli global.
+      connectionsService.findAll.mockResolvedValue([
+        {
+          ...CONNECTION,
+          resolvedUsername: null,
+          resolvedEmail: 'marie@exemple.fr',
+        },
+      ]);
+      mergeRequestsRepo.find.mockResolvedValue([persistedMergeRequest()]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        {
+          id: 10,
+          username: 'marie@exemple.fr',
+          name: 'Marie Dupont',
+          avatarUrl: null,
+        },
+      ]);
 
-      await expect(service.listOpen({ mineOnly: true })).resolves.toEqual(
-        expect.objectContaining({ warnings: [] }),
-      );
+      const {
+        mergeRequests: [view],
+      } = await service.listOpen({});
+
+      expect(view.author.isMe).toBe(true);
     });
 
     it('should_apply_the_project_composable_filter', async () => {
@@ -1370,7 +1389,7 @@ describe('MergeRequestsService', () => {
 
     it('should_scope_the_base_set_to_drafts_and_mine_before_counting_facets', async () => {
       connectionsService.findAll.mockResolvedValue([
-        { ...CONNECTION, meUsername: 'someone-else' },
+        { ...CONNECTION, resolvedUsername: 'someone-else' },
       ]);
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, authorId: 10 }),

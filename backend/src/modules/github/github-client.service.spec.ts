@@ -152,7 +152,12 @@ describe('GithubClientService', () => {
       fetchSpy.mockResolvedValue(
         jsonResponse(
           200,
-          { login: 'mdupont', name: 'Marie Dupont', avatar_url: null },
+          {
+            login: 'mdupont',
+            name: 'Marie Dupont',
+            email: 'mdupont@exemple.fr',
+            avatar_url: null,
+          },
           {
             'X-OAuth-Scopes': 'repo, read:org',
             'GitHub-Authentication-Token-Expiration': '2027-03-12 10:00:00 UTC',
@@ -165,6 +170,7 @@ describe('GithubClientService', () => {
       expect(result).toEqual({
         username: 'mdupont',
         name: 'Marie Dupont',
+        email: 'mdupont@exemple.fr',
         avatarUrl: null,
         expiresAt: new Date('2027-03-12 10:00:00 UTC').toISOString(),
         expirationKnown: true,

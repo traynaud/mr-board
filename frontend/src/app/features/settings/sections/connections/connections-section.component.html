@@ -74,6 +74,26 @@
             </span>
             <mat-icon svgIcon="chevron-down" class="chevron" [class.open]="isEditing(connection)" />
           </div>
+          @if (connection.tokenConfigured) {
+            <div class="identity-row">
+              @if (connection.identity; as identity) {
+                <app-avatar [name]="identity.name" [avatarUrl]="identity.avatarUrl" />
+                <span class="identity-text">
+                  {{
+                    'settings.connections.identity.resolved'
+                      | translate: { name: identity.name, username: identity.username }
+                  }}
+                  @if (identity.email) {
+                    · {{ identity.email }}
+                  }
+                </span>
+              } @else {
+                <span class="identity-text unresolved">
+                  {{ 'settings.connections.identity.unresolved' | translate }}
+                </span>
+              }
+            </div>
+          }
           @if (isEditing(connection)) {
             <div class="connection-details">
               <ng-container [ngTemplateOutlet]="formFields" />

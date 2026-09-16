@@ -19,6 +19,12 @@ interface Body {
   code?: string;
   username?: string;
   scopeKnown?: boolean;
+  identity?: {
+    username: string;
+    name: string;
+    email: string | null;
+    avatarUrl: string | null;
+  } | null;
 }
 const body = (res: request.Response): Body => res.body as Body;
 const bodyList = (res: request.Response): Body[] => res.body as Body[];
@@ -89,7 +95,7 @@ describe('Connections (e2e)', () => {
       url: 'https://gitlab.com',
       tokenConfigured: true,
       tokenHint: 'wxyz',
-      meUsername: null,
+      identity: null,
       projectsCount: 0,
     });
   });
@@ -157,6 +163,7 @@ describe('Connections (e2e)', () => {
     github.testConnection.mockResolvedValue({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: 'mdupont@exemple.fr',
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
@@ -173,6 +180,7 @@ describe('Connections (e2e)', () => {
     expect(body(res)).toEqual({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: 'mdupont@exemple.fr',
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
@@ -224,6 +232,41 @@ describe('Connections (e2e)', () => {
 
     expect(res.status).toBe(502);
     expect(body(res).code).toBe('forge.rateLimited');
+  });
+
+  it('POST /connections/test should_persist_the_resolved_identity_on_the_tested_connection_rg_031_04', async () => {
+    const created = await api().post('/api/v1/connections').send({
+      type: 'gitlab',
+      name: 'gitlab-identity',
+      url: 'https://gitlab-identity.exemple.fr',
+      token: 'glpat-abcdwxyz',
+    });
+    const id = body(created).id;
+    gitlab.testConnection.mockResolvedValue({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      email: 'marie.dupont@exemple.fr',
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+      scopeKnown: true,
+    });
+
+    const res = await api()
+      .post('/api/v1/connections/test')
+      .send({ connectionId: id });
+
+    expect(res.status).toBe(201);
+    const list = await api().get('/api/v1/connections');
+    const connection = bodyList(list).find((c) => c.id === id);
+    expect(connection?.identity).toEqual({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      email: 'marie.dupont@exemple.fr',
+      avatarUrl: null,
+    });
+
+    await api().delete(`/api/v1/connections/${id}`);
   });
 
   it('PUT /connections/:id should_update_the_github_connection_name', async () => {

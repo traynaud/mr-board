@@ -8,7 +8,6 @@ import { ThemeService } from './theme.service';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
   return {
-    meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,

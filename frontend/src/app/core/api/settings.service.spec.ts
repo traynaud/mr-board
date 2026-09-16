@@ -26,23 +26,23 @@ describe('SettingsService', () => {
     const pending = firstValueFrom(service.getSettings());
     const req = ctrl.expectOne('/api/v1/settings');
     expect(req.request.method).toBe('GET');
-    req.flush({ meEmail: null, theme: 'system' });
+    req.flush({ theme: 'system' });
 
     await expect(pending).resolves.toEqual(
-      expect.objectContaining({ meEmail: null }),
+      expect.objectContaining({ theme: 'system' }),
     );
   });
 
   it('should_put_settings', async () => {
-    const body = { meEmail: 'marie@exemple.fr' };
+    const body = { highlightMe: false };
     const pending = firstValueFrom(service.putSettings(body));
     const req = ctrl.expectOne('/api/v1/settings');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(body);
-    req.flush({ meEmail: 'marie@exemple.fr' });
+    req.flush({ highlightMe: false });
 
     await expect(pending).resolves.toEqual(
-      expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
+      expect.objectContaining({ highlightMe: false }),
     );
   });
 
@@ -56,16 +56,6 @@ describe('SettingsService', () => {
     await expect(pending).resolves.toEqual(
       expect.objectContaining({ refreshIntervalMin: 15, pauseWhenHidden: false }),
     );
-  });
-
-  it('should_put_identities', async () => {
-    const body = { identities: [{ connectionId: 1, username: 'mdupont' }] };
-    const pending = firstValueFrom(service.putSettings(body));
-    const req = ctrl.expectOne('/api/v1/settings');
-    expect(req.request.body).toEqual(body);
-    req.flush({ meEmail: null });
-
-    await expect(pending).resolves.toEqual(expect.objectContaining({ meEmail: null }));
   });
 
   it('should_get_export_config', async () => {

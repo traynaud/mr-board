@@ -32,7 +32,7 @@ const CONNECTION: Connection = {
   url: 'https://gitlab.com',
   tokenConfigured: true,
   tokenHint: 'wxyz',
-  meUsername: null,
+  identity: null,
   projectsCount: 1,
 };
 

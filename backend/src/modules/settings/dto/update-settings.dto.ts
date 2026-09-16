@@ -1,18 +1,14 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
   IsString,
   Min,
-  ValidateIf,
-  ValidateNested,
 } from 'class-validator';
 import type { Language, ThemePreference } from '../entities/settings.entity.js';
-import { IdentityDto } from './identity.dto.js';
 
 /** RG-013-01 : `0` = manual, no other value is accepted. */
 export const REFRESH_INTERVAL_OPTIONS = [0, 1, 5, 15, 30] as const;
@@ -22,9 +18,6 @@ export const THEME_OPTIONS = ['system', 'light', 'dark'] as const;
 
 /** RG-022-01 : the only accepted values for the UI language preference. */
 export const LANGUAGE_OPTIONS = ['fr', 'en'] as const;
-
-const trim = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
 
 /**
  * Reads the raw client-submitted value instead of the one already coerced by
@@ -42,32 +35,11 @@ const rawBoolean = ({
 }): unknown => obj[key];
 
 /**
- * Body of `PUT /api/v1/settings` — global preferences only (RG-019-23); the
- * per-connection identity is carried by `identities` instead of a single
- * `meUsername` (RG-019-08).
- *
- * `meEmail` follows a semantic different from most other fields (RG-002-02):
- * omitted from the body → left unchanged; empty string → cleared (stored
- * `null`); non-empty → stored trimmed. Trimming happens before validation so
- * a value like `"  marie@exemple.fr  "` still passes `@IsEmail` and a value
- * that is only whitespace is treated as empty.
+ * Body of `PUT /api/v1/settings` — global preferences only (RG-019-23); my
+ * identity is resolved automatically per connection from its token
+ * (RG-031-02) and never carried by this body.
  */
 export class UpdateSettingsDto {
-  /** My username per connection (RG-019-08) ; a connection absent from this array is left unchanged. */
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => IdentityDto)
-  identities?: IdentityDto[];
-
-  @Transform(trim)
-  @IsOptional()
-  @ValidateIf(
-    (o: UpdateSettingsDto) => o.meEmail !== undefined && o.meEmail !== '',
-  )
-  @IsEmail()
-  meEmail?: string;
-
   /** Scheduled sync cadence in minutes ; `0` = manual (RG-013-01). */
   @IsOptional()
   @IsIn(REFRESH_INTERVAL_OPTIONS)

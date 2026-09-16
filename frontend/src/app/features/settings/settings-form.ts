@@ -8,7 +8,6 @@ import {
   Validators,
 } from '@angular/forms';
 import { Language, Settings, ThemePreference, UpdateSettingsRequest } from '../../models/settings.model';
-import { IdentityForm } from './connections-form';
 import { RepoAliasForm } from './repos-form';
 
 /** Valeurs par défaut des seuils (RG-G03, RG-G04, RG-014-01), reprises par « Réinitialiser » (RG-015-05). */
@@ -26,7 +25,6 @@ export const DEFAULT_THRESHOLDS = {
 export const DEFAULT_IGNORED_LABELS = ['wip', 'on-hold'] as const;
 
 export interface SettingsFormControls {
-  meEmail: FormControl<string>;
   /** Cadence de synchro planifiée en minutes ; `0` = manuel (RG-013-01). */
   refreshIntervalMin: FormControl<number>;
   /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
@@ -57,8 +55,6 @@ export interface SettingsFormControls {
   language: FormControl<Language>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
-  /** Un groupe par connexion existante (RG-019-08) ; reconstruit par `syncIdentitiesFormArray`. */
-  identities: FormArray<IdentityForm>;
 }
 
 export type SettingsForm = FormGroup<SettingsFormControls>;
@@ -109,12 +105,6 @@ function applyMustExceed(target: FormControl<number>, reference: FormControl<num
 export function buildSettingsForm(): SettingsForm {
   return new FormGroup<SettingsFormControls>(
     {
-      // Validators.email renvoie null pour une chaîne vide (RG-002-06) : pas
-      // besoin de validateur custom pour autoriser un email optionnel.
-      meEmail: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.email],
-      }),
       refreshIntervalMin: new FormControl(5, { nonNullable: true }),
       pauseWhenHidden: new FormControl(true, { nonNullable: true }),
       easyFiles: new FormControl(DEFAULT_THRESHOLDS.easyFiles, {
@@ -149,10 +139,9 @@ export function buildSettingsForm(): SettingsForm {
       theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
       highlightMe: new FormControl(true, { nonNullable: true }),
       language: new FormControl<Language>('fr', { nonNullable: true }),
-      // Peuplés par un effect de la page à partir de ProjectsStore/ConnectionsStore ;
-      // jamais touchés par resetSettingsForm (voir ci-dessous).
+      // Peuplé par un effect de la page à partir de ProjectsStore ;
+      // jamais touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
-      identities: new FormArray<IdentityForm>([]),
     },
     { validators: [thresholdsCrossValidator] },
   );
@@ -160,15 +149,12 @@ export function buildSettingsForm(): SettingsForm {
 
 /**
  * Réinitialise les champs de préférences globales depuis les paramètres
- * chargés (état pristine). Ne touche **jamais** `repos` ni `identities` : ces
- * sous-formulaires ont leur propre cycle de synchronisation
- * (`syncReposFormArray`/`syncIdentitiesFormArray`, pilotés respectivement par
- * `ProjectsStore`/`ConnectionsStore`) — un `form.reset()` global écraserait
- * leurs contrôles avec des valeurs `null` (un `FormArray` n'a pas de valeur
- * de repli sensée ici).
+ * chargés (état pristine). Ne touche **jamais** `repos` : ce sous-formulaire
+ * a son propre cycle de synchronisation (`syncReposFormArray`, piloté par
+ * `ProjectsStore`) — un `form.reset()` global écraserait ses contrôles avec
+ * des valeurs `null` (un `FormArray` n'a pas de valeur de repli sensée ici).
  */
 export function resetSettingsForm(form: SettingsForm, settings: Settings): void {
-  form.controls.meEmail.reset(settings.meEmail ?? '');
   form.controls.refreshIntervalMin.reset(settings.refreshIntervalMin);
   form.controls.pauseWhenHidden.reset(settings.pauseWhenHidden);
   form.controls.easyFiles.reset(settings.easyFiles);
@@ -189,13 +175,12 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
 
 /**
  * Remet le formulaire aux valeurs par défaut de toutes les sections
- * (RG-015-05), sans rien enregistrer. Ne touche **jamais** `repos` ni
- * `identities` (même raison que `resetSettingsForm`). Marque les champs
- * concernés comme modifiés, pour que « Enregistrer » se réactive.
+ * (RG-015-05), sans rien enregistrer. Ne touche **jamais** `repos` (même
+ * raison que `resetSettingsForm`). Marque les champs concernés comme
+ * modifiés, pour que « Enregistrer » se réactive.
  */
 export function resetSettingsFormToDefaults(form: SettingsForm): void {
   const { controls } = form;
-  controls.meEmail.setValue('');
   controls.refreshIntervalMin.setValue(5);
   controls.pauseWhenHidden.setValue(true);
   controls.easyFiles.setValue(DEFAULT_THRESHOLDS.easyFiles);
@@ -213,22 +198,20 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.highlightMe.setValue(true);
   controls.language.setValue('fr');
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
-    if (name !== 'repos' && name !== 'identities') {
+    if (name !== 'repos') {
       controls[name].markAsDirty();
     }
   }
 }
 
 /**
- * Convertit le formulaire en corps de `PUT /settings`. `meEmail` est
- * **toujours** envoyé, y compris vide, pour permettre son effacement
- * (RG-002-02). `identities` porte une entrée par connexion existante — les
- * envoyer toutes est sans effet indésirable (RG-019-08) ; `repos` n'en fait
- * pas partie (suit son propre appel `PUT /projects/:id`).
+ * Convertit le formulaire en corps de `PUT /settings`. `repos` n'en fait pas
+ * partie (suit son propre appel `PUT /projects/:id`) ; mon identité n'en fait
+ * plus partie non plus, elle est résolue depuis le jeton de chaque connexion
+ * (RG-031-02).
  */
 export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
   const {
-    meEmail,
     refreshIntervalMin,
     pauseWhenHidden,
     easyFiles,
@@ -245,10 +228,8 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     theme,
     highlightMe,
     language,
-    identities,
   } = form.getRawValue();
   return {
-    meEmail: meEmail.trim(),
     refreshIntervalMin,
     pauseWhenHidden,
     easyFiles,
@@ -265,9 +246,5 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     theme,
     highlightMe,
     language,
-    identities: identities.map(({ connectionId, username }) => ({
-      connectionId,
-      username: username.trim(),
-    })),
   };
 }

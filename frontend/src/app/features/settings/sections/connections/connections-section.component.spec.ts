@@ -22,7 +22,7 @@ const CONNECTION: Connection = {
   url: 'https://gitlab.com',
   tokenConfigured: true,
   tokenHint: 'wxyz',
-  meUsername: null,
+  identity: null,
   projectsCount: 1,
 };
 const PROJECT: Project = {
@@ -154,6 +154,41 @@ describe('ConnectionsSectionComponent', () => {
     // RG-021-00a : nombre de repos affiché sur la ligne repliée.
     expect(el.textContent).toContain(t('settings.connections.list.repoCount', { count: 1 }));
     expect(el.querySelector('.connection-details')).toBeNull();
+  });
+
+  it('should_show_an_unresolved_identity_message_when_a_token_is_configured_but_nothing_was_resolved_yet', async () => {
+    await loadConnections([CONNECTION]);
+
+    expect(el.querySelector('.identity-row')?.textContent?.trim()).toBe(
+      t('settings.connections.identity.unresolved'),
+    );
+  });
+
+  it('should_show_the_resolved_identity_rg_031_06', async () => {
+    await loadConnections([
+      {
+        ...CONNECTION,
+        identity: {
+          username: 'mdupont',
+          name: 'Marie Dupont',
+          email: 'marie.dupont@exemple.fr',
+          avatarUrl: null,
+        },
+      },
+    ]);
+
+    const identityRow = el.querySelector('.identity-row');
+    expect(identityRow?.querySelector('app-avatar')).not.toBeNull();
+    expect(identityRow?.textContent).toContain(
+      t('settings.connections.identity.resolved', { name: 'Marie Dupont', username: 'mdupont' }),
+    );
+    expect(identityRow?.textContent).toContain('marie.dupont@exemple.fr');
+  });
+
+  it('should_hide_the_identity_row_when_no_token_is_configured', async () => {
+    await loadConnections([{ ...CONNECTION, tokenConfigured: false, tokenHint: null }]);
+
+    expect(el.querySelector('.identity-row')).toBeNull();
   });
 
   it('should_open_the_add_form_prefilled_with_defaults', async () => {
@@ -364,6 +399,7 @@ describe('ConnectionsSectionComponent', () => {
     http.expectOne('/api/v1/connections/test').flush({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: null,
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
@@ -385,6 +421,7 @@ describe('ConnectionsSectionComponent', () => {
     req.flush({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: null,
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,
@@ -418,6 +455,7 @@ describe('ConnectionsSectionComponent', () => {
     req.flush({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: null,
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: true,

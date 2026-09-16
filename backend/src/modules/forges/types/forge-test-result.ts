@@ -2,6 +2,8 @@
 export interface ForgeTestResult {
   username: string;
   name: string;
+  /** `null` when the forge does not expose an email for this account (RG-031-02, e.g. GitHub without `user:email`). */
+  email: string | null;
   avatarUrl: string | null;
   /** ISO date of expiry, `null` when the token never expires or expiry is unknown. */
   expiresAt: string | null;

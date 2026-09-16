@@ -25,9 +25,25 @@ export class Connection {
   @Column({ name: 'token_encrypted', type: 'text', nullable: true })
   tokenEncrypted!: string | null;
 
-  /** My username on this connection, used by "Mes MRs" (RG-019-07/08). */
-  @Column({ name: 'me_username', type: 'text', nullable: true })
-  meUsername!: string | null;
+  /**
+   * My identity on this connection, resolved automatically from its token
+   * (RG-031-02) — never entered by hand. `null` on all four columns until a
+   * resolution has succeeded at least once (no token yet, or every attempt
+   * so far has failed). Used by "Mes MRs" (RG-G09, RG-031-08) and displayed
+   * as "Connecté en tant que" (RG-031-06). A failed resolution never clears
+   * a previously resolved value (RG-031-03).
+   */
+  @Column({ name: 'resolved_username', type: 'text', nullable: true })
+  resolvedUsername!: string | null;
+
+  @Column({ name: 'resolved_name', type: 'text', nullable: true })
+  resolvedName!: string | null;
+
+  @Column({ name: 'resolved_email', type: 'text', nullable: true })
+  resolvedEmail!: string | null;
+
+  @Column({ name: 'resolved_avatar_url', type: 'text', nullable: true })
+  resolvedAvatarUrl!: string | null;
 
   @Column({ name: 'created_at', type: 'text' })
   createdAt!: string;

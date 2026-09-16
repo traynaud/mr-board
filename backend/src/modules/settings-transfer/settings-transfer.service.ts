@@ -49,7 +49,6 @@ export class SettingsTransferService {
         type: connection.type,
         name: connection.name,
         url: connection.url,
-        meUsername: connection.meUsername,
       })),
       projects: projects.map((project) => ({
         connection: connectionsById.get(project.connectionId)!.name,
@@ -101,7 +100,6 @@ export class SettingsTransferService {
       type: 'gitlab',
       name: LEGACY_CONNECTION_NAME,
       url: settingsDto.gitlabUrl,
-      meUsername: settingsDto.meUsername?.trim() || null,
     });
     const entries: ImportProjectEntry[] = projectEntries.map((entry) => ({
       pathWithNamespace: entry.pathWithNamespace,
@@ -121,7 +119,6 @@ export class SettingsTransferService {
           type: connection.type,
           name: connection.name,
           url: connection.url,
-          meUsername: connection.meUsername?.trim() || null,
         }),
       );
     }

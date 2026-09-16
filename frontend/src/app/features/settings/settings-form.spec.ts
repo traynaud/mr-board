@@ -1,4 +1,4 @@
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import { buildRepoAliasGroup } from './repos-form';
 import {
   DEFAULT_IGNORED_LABELS,
@@ -20,23 +20,8 @@ describe('integerValidator', () => {
   });
 });
 
-describe('meEmail validator (Validators.email)', () => {
-  it('should_build_form_with_email_control_accepting_empty_value', () => {
-    const form = buildSettingsForm();
-
-    expect(form.controls.meEmail.valid).toBe(true);
-
-    form.controls.meEmail.setValue('marie@');
-    expect(form.controls.meEmail.hasError('email')).toBe(true);
-
-    form.controls.meEmail.setValue('marie@exemple.fr');
-    expect(form.controls.meEmail.valid).toBe(true);
-  });
-});
-
 describe('settings form helpers', () => {
   const settings = {
-    meEmail: 'marie@exemple.fr',
     refreshIntervalMin: 15,
     pauseWhenHidden: false,
     easyFiles: 10,
@@ -57,13 +42,12 @@ describe('settings form helpers', () => {
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
     const form = buildSettingsForm();
-    form.controls.meEmail.setValue('x');
+    form.controls.refreshIntervalMin.setValue(0);
     form.markAsDirty();
 
     resetSettingsForm(form, settings);
 
     expect(form.getRawValue()).toEqual({
-      meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 15,
       pauseWhenHidden: false,
       easyFiles: 10,
@@ -81,7 +65,6 @@ describe('settings form helpers', () => {
       highlightMe: false,
       language: 'en',
       repos: [],
-      identities: [],
     });
     expect(form.pristine).toBe(true);
     expect(form.valid).toBe(true);
@@ -95,20 +78,10 @@ describe('settings form helpers', () => {
     expect(form.controls.ignoreWip.value).toBe(false);
   });
 
-  it('should_reset_the_email_field_to_empty_string_when_null', () => {
+  it('should_always_include_every_global_preference_even_at_defaults', () => {
     const form = buildSettingsForm();
-
-    resetSettingsForm(form, { ...settings, meEmail: null });
-
-    expect(form.controls.meEmail.value).toBe('');
-  });
-
-  it('should_always_include_the_email_field_even_when_empty', () => {
-    const form = buildSettingsForm();
-    form.patchValue({ meEmail: '' });
 
     expect(toUpdateRequest(form)).toEqual({
-      meEmail: '',
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
       ...DEFAULT_THRESHOLDS,
@@ -119,27 +92,7 @@ describe('settings form helpers', () => {
       theme: 'system',
       highlightMe: true,
       language: 'fr',
-      identities: [],
     });
-  });
-
-  it('should_trim_the_email_field', () => {
-    const form = buildSettingsForm();
-    form.patchValue({ meEmail: ' marie@exemple.fr ' });
-
-    expect(toUpdateRequest(form).meEmail).toBe('marie@exemple.fr');
-  });
-
-  it('should_include_an_identities_entry_per_connection_form_group', () => {
-    const form = buildSettingsForm();
-    form.controls.identities.push(
-      new FormGroup({
-        connectionId: new FormControl(1, { nonNullable: true }),
-        username: new FormControl(' mdupont ', { nonNullable: true }),
-      }),
-    );
-
-    expect(toUpdateRequest(form).identities).toEqual([{ connectionId: 1, username: 'mdupont' }]);
   });
 
   it('should_include_the_refresh_settings_in_the_update_request', () => {
@@ -160,7 +113,7 @@ describe('settings form helpers', () => {
     expect(form.controls.pauseWhenHidden.value).toBe(false);
   });
 
-  it('should_not_include_repos_or_identities_arrays_verbatim_in_the_update_request', () => {
+  it('should_not_include_the_repos_array_verbatim_in_the_update_request', () => {
     const form = buildSettingsForm();
 
     expect(toUpdateRequest(form)).not.toHaveProperty('repos');
@@ -272,7 +225,6 @@ describe('resetSettingsFormToDefaults', () => {
   it('should_reset_every_section_to_its_default_value', () => {
     const form = buildSettingsForm();
     form.patchValue({
-      meEmail: 'marie@exemple.fr',
       refreshIntervalMin: 30,
       pauseWhenHidden: false,
       easyFiles: 1,
@@ -289,7 +241,6 @@ describe('resetSettingsFormToDefaults', () => {
 
     expect(form.getRawValue()).toEqual(
       expect.objectContaining({
-        meEmail: '',
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
         ...DEFAULT_THRESHOLDS,
@@ -304,7 +255,7 @@ describe('resetSettingsFormToDefaults', () => {
     );
   });
 
-  it('should_mark_the_form_dirty_without_touching_the_repos_or_identities', () => {
+  it('should_mark_the_form_dirty_without_touching_the_repos', () => {
     const form = buildSettingsForm();
     form.controls.repos.push(
       buildRepoAliasGroup({
@@ -323,7 +274,6 @@ describe('resetSettingsFormToDefaults', () => {
     expect(form.dirty).toBe(true);
     expect(form.controls.repos.length).toBe(1);
     expect(form.controls.repos.dirty).toBe(false);
-    expect(form.controls.identities.dirty).toBe(false);
   });
 });
 

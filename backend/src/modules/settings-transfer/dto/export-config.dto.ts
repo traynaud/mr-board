@@ -1,12 +1,15 @@
 import { ConnectionType } from '../../forges/types/connection-type.js';
 import type { ExportableSettings } from '../../settings/settings.service.js';
 
-/** One connection entry of `GET /api/v1/settings/export` (RG-019-18). Never carries the token. */
+/**
+ * One connection entry of `GET /api/v1/settings/export` (RG-019-18). Never
+ * carries the token, nor the resolved identity (RG-031-14) — it is
+ * reconstituted from the token after import, once one is configured.
+ */
 export class ExportConnectionDto {
   type!: ConnectionType;
   name!: string;
   url!: string;
-  meUsername!: string | null;
 }
 
 /** One repo entry of `GET /api/v1/settings/export` (RG-019-18). */

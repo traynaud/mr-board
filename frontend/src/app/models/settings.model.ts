@@ -12,8 +12,6 @@ export type Language = 'fr' | 'en';
  * ont migré vers `Connection` (US-019).
  */
 export interface Settings {
-  /** Email de repli pour la correspondance (RG-002-01, RG-G09, RG-019-07). */
-  meEmail: string | null;
   /** Cadence de synchro planifiée en minutes ; `0` = manuel (RG-013-01). */
   refreshIntervalMin: number;
   /** Met en pause le polling frontend quand l'onglet est masqué (RG-013-05). */
@@ -44,22 +42,12 @@ export interface Settings {
   language: Language;
 }
 
-/** Mon nom d'utilisateur sur une connexion (RG-019-08), un élément de `UpdateSettingsRequest.identities`. */
-export interface Identity {
-  connectionId: number;
-  username: string;
-}
-
 /**
- * Corps de `PUT /settings` — préférences globales uniquement (RG-019-23).
- * `meEmail` suit une sémantique différente (RG-002-02) : absent = inchangé,
- * mais chaîne vide = efface la valeur existante. `identities` porte
- * uniquement les connexions dont le username change ; une connexion absente
- * du tableau reste inchangée.
+ * Corps de `PUT /settings` — préférences globales uniquement (RG-019-23) ;
+ * mon identité n'en fait plus partie, elle est résolue depuis le jeton de
+ * chaque connexion (RG-031-02).
  */
 export interface UpdateSettingsRequest {
-  identities?: Identity[];
-  meEmail?: string;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
   easyFiles?: number;
@@ -83,7 +71,6 @@ export interface TransferConnection {
   type: ConnectionType;
   name: string;
   url: string;
-  meUsername: string | null;
 }
 
 /** Un repo tel qu'exporté/importé (RG-015-03/04, RG-019-18/19) : jamais son id interne. */
@@ -121,11 +108,14 @@ export interface ExportConfig {
  */
 export interface ImportConfig {
   version: 1 | 2;
-  settings: Partial<Omit<Settings, 'meEmail'>> & {
-    meEmail?: string;
+  settings: Partial<Settings> & {
     /** `version: 1` seulement. */
     gitlabUrl?: string;
-    /** `version: 1` seulement. */
+    /**
+     * Champ hérité d'un export antérieur à US-031, accepté mais ignoré par
+     * le backend (RG-031-14) — l'identité est désormais résolue depuis le
+     * jeton, jamais importée.
+     */
     meUsername?: string;
   };
   connections?: TransferConnection[];

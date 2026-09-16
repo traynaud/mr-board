@@ -22,7 +22,7 @@
       "ariaLabel": "Filtres rapides",
       "drafts": "Drafts",
       "mine": "Mes MRs",
-      "mineDisabledTooltip": "Configurez votre identité dans les paramètres",
+      "mineDisabledTooltip": "Ajoutez une connexion avec un jeton valide",
       "favorites": "Favoris",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} projet{{projectsSuffix}}",
       "clear": "Effacer",
@@ -161,24 +161,8 @@
       "stay": "Rester",
       "discard": "Abandonner"
     },
-    "me": {
-      "number": "01",
-      "title": "Moi",
-      "description": "Utilisé par « Mes MRs » et pour repérer mes rôles.",
-      "usernameFor": "Nom d'utilisateur sur {{connection}}",
-      "noConnection": "Ajoutez d'abord une connexion.",
-      "noConnectionLink": "Aller à la section Connexions",
-      "email": "Email (optionnel)",
-      "emailInvalid": "Saisir un email valide.",
-      "status": {
-        "matched": "détecté via le jeton",
-        "mismatch": "ne correspond pas au jeton",
-        "manual": "saisi manuellement"
-      },
-      "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)"
-    },
     "connections": {
-      "number": "02",
+      "number": "01",
       "title": "Connexions",
       "description": "Forges interrogées par MR Board. Jeton en lecture seule, stocké chiffré côté serveur. Chaque dépôt est rattaché à sa connexion.",
       "loadError": "Impossible de charger les connexions.",
@@ -187,6 +171,10 @@
       "added": "Connexion ajoutée",
       "updated": "Connexion modifiée",
       "removed": "Connexion supprimée",
+      "identity": {
+        "resolved": "Connecté en tant que {{name}} (@{{username}})",
+        "unresolved": "Identité non résolue"
+      },
       "list": {
         "tokenConfigured": "Jeton configuré (…{{hint}})",
         "tokenNone": "Aucun jeton",
@@ -265,7 +253,7 @@
       }
     },
     "refresh": {
-      "number": "03",
+      "number": "02",
       "title": "Actualisation",
       "description": "Fréquence de synchronisation automatique avec les forges.",
       "frequency": "Fréquence de synchronisation",
@@ -277,7 +265,7 @@
       "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
     },
     "difficulty": {
-      "number": "04",
+      "number": "03",
       "title": "Difficulté",
       "description": "Règles de calcul de la difficulté d'une MR.",
       "easy": "Easy",
@@ -293,7 +281,7 @@
       }
     },
     "readyDelay": {
-      "number": "05",
+      "number": "04",
       "title": "Temps depuis Ready",
       "description": "Seuils de couleur du délai depuis Ready.",
       "green": "Vert",
@@ -309,9 +297,10 @@
       }
     },
     "misc": {
-      "number": "06",
+      "number": "05",
       "title": "Divers",
       "description": "Options de confort et sauvegarde de la configuration.",
+      "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)",
       "theme": {
         "title": "Thème",
         "system": "Système",

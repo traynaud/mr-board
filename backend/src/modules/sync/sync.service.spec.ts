@@ -83,6 +83,7 @@ interface ConnectionsServiceMock {
   findAll: jest.Mock;
   findOrThrow: jest.Mock;
   getToken: jest.Mock;
+  resolveIdentity: jest.Mock;
 }
 interface ProjectsServiceMock {
   findById: jest.Mock;
@@ -132,6 +133,7 @@ describe('SyncService', () => {
             findAll: jest.fn().mockResolvedValue([CONNECTION]),
             findOrThrow: jest.fn().mockResolvedValue(CONNECTION),
             getToken: jest.fn().mockResolvedValue('glpat-token'),
+            resolveIdentity: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -268,6 +270,25 @@ describe('SyncService', () => {
       expect(syncRunsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'success', mrCount: 3 }),
       );
+    });
+
+    it('should_resolve_the_identity_of_every_connection_on_a_full_sync_rg_031_03', async () => {
+      projects.listActiveByConnection.mockResolvedValue([]);
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(connections.resolveIdentity).toHaveBeenCalledWith(CONNECTION);
+    });
+
+    it('should_not_resolve_any_identity_when_resyncing_a_single_project', async () => {
+      projects.findById.mockResolvedValue(project({ id: 5 }));
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([]);
+
+      await service.trigger('manual', 5);
+      await flush();
+
+      expect(connections.resolveIdentity).not.toHaveBeenCalled();
     });
 
     it('should_only_sync_the_given_project_when_a_project_id_is_provided', async () => {

@@ -19,7 +19,6 @@ import { SettingsPageComponent } from './settings-page.component';
 
 describe('SettingsPageComponent', () => {
   const settings: Settings = {
-    meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,
@@ -44,7 +43,7 @@ describe('SettingsPageComponent', () => {
     url: 'https://gitlab.exemple.fr',
     tokenConfigured: true,
     tokenHint: 'wxyz',
-    meUsername: null,
+    identity: null,
     projectsCount: 0,
   };
   const projectApi: Project = {
@@ -110,9 +109,7 @@ describe('SettingsPageComponent', () => {
     http.expectOne('/api/v1/sync/status').flush({ running: true, lastRun: null, nextRunAt: null });
     await settle();
   };
-  const emailInput = () => el.querySelector<HTMLInputElement>('input[formControlName="meEmail"]')!;
-  const usernameInputs = () =>
-    el.querySelectorAll<HTMLInputElement>('input[formControlName="username"]');
+  const easyFilesInput = () => el.querySelector<HTMLInputElement>('input[formControlName="easyFiles"]')!;
   const repoAliasInputs = () =>
     el.querySelectorAll<HTMLInputElement>('.repos-table tbody tr:not(.add-row) input[formControlName="alias"]');
   const saveButton = () => el.querySelector<HTMLButtonElement>('button.save')!;
@@ -144,8 +141,6 @@ describe('SettingsPageComponent', () => {
   };
 
   const FULL_UPDATE_REQUEST = {
-    identities: [{ connectionId: 1, username: '' }],
-    meEmail: '',
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,
@@ -170,7 +165,6 @@ describe('SettingsPageComponent', () => {
     await loadSettings();
 
     expect(el.querySelector('mat-progress-bar')).toBeNull();
-    expect(emailInput().value).toBe('');
     expect(saveButton().disabled).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
@@ -185,17 +179,17 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLButtonElement>('button.retry')!.click();
     await loadSettings();
 
-    expect(emailInput().value).toBe('');
+    expect(saveButton().disabled).toBe(true);
   });
 
   it('should_enable_save_when_dirty_and_valid', async () => {
     await loadSettings();
 
-    await type(emailInput(), 'marie@exemple.fr');
+    await type(easyFilesInput(), '10');
     expect(saveButton().disabled).toBe(false);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
 
-    await type(emailInput(), 'pas-un-email');
+    await type(easyFilesInput(), '25');
     expect(saveButton().disabled).toBe(true);
   });
 
@@ -205,13 +199,13 @@ describe('SettingsPageComponent', () => {
     saveButton().click();
     // Rien n'est modifié : le bouton est désactivé, donc `save()` ne doit
     // rien envoyer — on force plutôt une modification avant de sauvegarder.
-    await type(emailInput(), 'marie@exemple.fr');
+    await type(easyFilesInput(), '10');
 
     saveButton().click();
     const req = http.expectOne('/api/v1/settings');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ ...FULL_UPDATE_REQUEST, meEmail: 'marie@exemple.fr' });
-    req.flush({ ...settings, meEmail: 'marie@exemple.fr' });
+    expect(req.request.body).toEqual({ ...FULL_UPDATE_REQUEST, easyFiles: 10 });
+    req.flush({ ...settings, easyFiles: 10 });
     await settle();
     await flushSync();
 
@@ -226,23 +220,9 @@ describe('SettingsPageComponent', () => {
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
-  it('should_save_with_trimmed_identity_fields', async () => {
-    await loadSettings();
-    await type(usernameInputs()[0], '  mdupont  ');
-    await type(emailInput(), 'marie@exemple.fr');
-
-    saveButton().click();
-    const req = http.expectOne('/api/v1/settings');
-    expect(req.request.body).toEqual({
-      ...FULL_UPDATE_REQUEST,
-      meEmail: 'marie@exemple.fr',
-      identities: [{ connectionId: 1, username: 'mdupont' }],
-    });
-  });
-
   it('should_toast_error_and_stay_when_save_fails', async () => {
     await loadSettings();
-    await type(emailInput(), 'marie@exemple.fr');
+    await type(easyFilesInput(), '10');
 
     saveButton().click();
     http.expectOne('/api/v1/settings').flush({ statusCode: 500 }, { status: 500, statusText: 'KO' });
@@ -250,7 +230,7 @@ describe('SettingsPageComponent', () => {
 
     expect(snackBar.open).toHaveBeenCalledWith(t('settings.saveError'), t('common.ok'), expect.anything());
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(emailInput().value).toBe('marie@exemple.fr');
+    expect(easyFilesInput().value).toBe('10');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
 
@@ -261,7 +241,7 @@ describe('SettingsPageComponent', () => {
     resetButton().click();
     await settle();
 
-    expect(emailInput().value).toBe('');
+    expect(easyFilesInput().value).toBe('5');
     expect(repoAliasInputs()).toHaveLength(1);
     expect(repoAliasInputs()[0].value).toBe('api');
     expect(saveButton().disabled).toBe(false);
@@ -272,22 +252,20 @@ describe('SettingsPageComponent', () => {
     );
   });
 
-  it('should_number_the_sections_01_to_06_after_the_us_030_thresholds_split', async () => {
-    // US-021 §0 : « 03 · Repos à scanner » a disparu (absorbée par « 02 ·
-    // Connexions »). US-030 : « 04 · Seuils » est scindée en « 04 ·
-    // Difficulté » / « 05 · Temps depuis Ready », Divers passe à 06.
+  it('should_number_the_sections_01_to_05_after_the_us_031_removal_of_moi', async () => {
+    // US-031 : la section « Moi » disparaît, les suivantes se renumérotent
+    // 02→01, 03→02, 04→03, 05→04, 06→05.
     await loadSettings();
 
     const headings = Array.from(el.querySelectorAll('.heading h6')).map((h) =>
       h.textContent?.trim(),
     );
     expect(headings).toEqual([
-      `01 · ${t('settings.me.title')}`,
-      `02 · ${t('settings.connections.title')}`,
-      `03 · ${t('settings.refresh.title')}`,
-      `04 · ${t('settings.difficulty.title')}`,
-      `05 · ${t('settings.readyDelay.title')}`,
-      `06 · ${t('settings.misc.title')}`,
+      `01 · ${t('settings.connections.title')}`,
+      `02 · ${t('settings.refresh.title')}`,
+      `03 · ${t('settings.difficulty.title')}`,
+      `04 · ${t('settings.readyDelay.title')}`,
+      `05 · ${t('settings.misc.title')}`,
     ]);
   });
 
@@ -320,34 +298,6 @@ describe('SettingsPageComponent', () => {
 
     const backLink = el.querySelector<HTMLAnchorElement>('a[routerLink="/"]');
     expect(backLink?.getAttribute('href')).toContain('mine=1');
-  });
-
-  it('should_render_one_identity_row_per_connection', async () => {
-    await loadSettings(settings, [
-      connection,
-      { ...connection, id: 2, name: 'gitlab.exemple.fr' },
-    ]);
-
-    expect(usernameInputs()).toHaveLength(2);
-  });
-
-  it('should_show_the_no_connection_message_when_there_is_no_connection', async () => {
-    await loadSettings(settings, []);
-
-    expect(el.querySelector('.no-connection')).not.toBeNull();
-    expect(usernameInputs()).toHaveLength(0);
-  });
-
-  it('should_show_manual_status_for_a_typed_username_without_a_matching_test', async () => {
-    await loadSettings();
-    await type(usernameInputs()[0], 'lrousseau');
-
-    expect(el.querySelector('.identity-status')?.textContent?.trim()).toBe(
-      t('settings.me.status.manual'),
-    );
-
-    await type(usernameInputs()[0], '');
-    expect(el.querySelector('.identity-preview')).toBeNull();
   });
 
   it('should_render_repo_rows_from_the_projects_store', async () => {
@@ -396,10 +346,10 @@ describe('SettingsPageComponent', () => {
 
   it('should_not_send_a_rename_request_when_no_alias_was_touched', async () => {
     await loadSettings(settings, [connection], [projectApi]);
-    await type(emailInput(), 'marie@exemple.fr');
+    await type(easyFilesInput(), '10');
 
     saveButton().click();
-    http.expectOne('/api/v1/settings').flush({ ...settings, meEmail: 'marie@exemple.fr' });
+    http.expectOne('/api/v1/settings').flush({ ...settings, easyFiles: 10 });
     await settle();
     await flushSync();
 

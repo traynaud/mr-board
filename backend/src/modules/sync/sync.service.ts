@@ -124,6 +124,14 @@ export class SyncService {
     }
     const outcomes: ProjectSyncOutcome[] = [];
     for (const connection of await this.connections.findAll()) {
+      // RG-031-03 : résolution d'identité en tâche de fond, y compris pour
+      // une connexion sans repo actif — jamais reflétée dans le résumé du
+      // run (best-effort, géré par `ConnectionsService.resolveIdentity`).
+      // Non attendue et non suivie par le verrou `running` : deux cycles
+      // rapprochés peuvent résoudre la même connexion en parallèle, course
+      // sans conséquence (écriture idempotente, au pire une valeur légèrement
+      // périmée écrasée par la suivante).
+      void this.connections.resolveIdentity(connection);
       const projects = await this.projects.listActiveByConnection(
         connection.id,
       );

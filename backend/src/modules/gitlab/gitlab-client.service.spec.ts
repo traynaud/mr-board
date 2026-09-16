@@ -126,6 +126,7 @@ describe('GitlabClientService', () => {
             id: 1,
             username: 'mdupont',
             name: 'Marie Dupont',
+            email: 'marie.dupont@exemple.fr',
             avatar_url: null,
           }),
         )
@@ -134,6 +135,7 @@ describe('GitlabClientService', () => {
       await expect(service.testConnection(BASE, TOKEN)).resolves.toEqual({
         username: 'mdupont',
         name: 'Marie Dupont',
+        email: 'marie.dupont@exemple.fr',
         avatarUrl: null,
         expiresAt: null,
         expirationKnown: false,

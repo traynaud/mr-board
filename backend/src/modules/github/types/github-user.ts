@@ -2,5 +2,7 @@
 export interface GithubUser {
   login: string;
   name: string | null;
+  /** Public email of the account, `null` when private/unset (RG-031-02). */
+  email: string | null;
   avatar_url: string | null;
 }

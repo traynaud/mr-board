@@ -3,11 +3,9 @@ import { Language, ThemePreference } from '../entities/settings.entity.js';
 /**
  * Response of `GET|PUT /api/v1/settings` — global preferences only
  * (RG-019-23). Per-connection identity is exposed by `GET /connections`
- * (`meUsername` there), not here.
+ * (`identity` there, resolved from the token — RG-031-02), not here.
  */
 export class SettingsResponseDto {
-  /** Fallback email for role matching (RG-002-01, RG-G09, RG-019-07). */
-  meEmail!: string | null;
   /** Scheduled sync cadence in minutes ; `0` = manual (RG-013-01). */
   refreshIntervalMin!: number;
   /** Suspend frontend polling/reload while the tab is hidden (RG-013-05). */

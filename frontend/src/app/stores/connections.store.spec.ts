@@ -20,7 +20,7 @@ describe('ConnectionsStore', () => {
     url: 'https://gitlab.com',
     tokenConfigured: true,
     tokenHint: 'wxyz',
-    meUsername: null,
+    identity: null,
     projectsCount: 0,
   };
   let store: InstanceType<typeof ConnectionsStore>;
@@ -131,6 +131,7 @@ describe('ConnectionsStore', () => {
     const result = {
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: 'marie.dupont@exemple.fr',
       avatarUrl: null,
       expiresAt: '2027-03-12',
       expirationKnown: true,
@@ -143,6 +144,51 @@ describe('ConnectionsStore', () => {
     await pending;
 
     expect(store.test()).toEqual({ status: 'success', result, errorKey: null });
+  });
+
+  it('should_patch_the_tested_connections_identity_on_success_rg_031_04', async () => {
+    api.getConnections.mockReturnValue(of([connection]));
+    await store.load();
+    api.postTestConnection.mockReturnValue(
+      of({
+        username: 'mdupont',
+        name: 'Marie Dupont',
+        email: 'marie.dupont@exemple.fr',
+        avatarUrl: null,
+        expiresAt: null,
+        expirationKnown: true,
+        scopeKnown: true,
+      }),
+    );
+
+    await store.testConnection({ connectionId: 1 });
+
+    expect(store.connections()[0].identity).toEqual({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      email: 'marie.dupont@exemple.fr',
+      avatarUrl: null,
+    });
+  });
+
+  it('should_not_touch_connections_when_testing_ad_hoc_values_without_a_connectionId', async () => {
+    api.getConnections.mockReturnValue(of([connection]));
+    await store.load();
+    api.postTestConnection.mockReturnValue(
+      of({
+        username: 'someone-else',
+        name: 'Quelqu’un d’autre',
+        email: null,
+        avatarUrl: null,
+        expiresAt: null,
+        expirationKnown: true,
+        scopeKnown: true,
+      }),
+    );
+
+    await store.testConnection({ type: 'gitlab', url: 'https://gitlab.com', token: 'glpat-x' });
+
+    expect(store.connections()).toEqual([connection]);
   });
 
   it('should_test_connection_with_error_key', async () => {

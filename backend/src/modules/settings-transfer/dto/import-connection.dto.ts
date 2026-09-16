@@ -30,6 +30,13 @@ export class ImportConnectionDto {
   @IsUrl(FORGE_URL_OPTIONS)
   url!: string;
 
+  /**
+   * Accepted-but-ignored (RG-031-14): an export predating US-031 still
+   * carries a manually-entered username here. The global `ValidationPipe`
+   * (`forbidNonWhitelisted: true`) would 400 on an undeclared property, so
+   * this field must stay declared even though `ConnectionsService.importUpsert`
+   * never reads it — the identity is now resolved from the token instead.
+   */
   @IsOptional()
   @IsString()
   meUsername?: string;

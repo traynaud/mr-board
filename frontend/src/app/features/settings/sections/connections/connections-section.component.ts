@@ -25,6 +25,7 @@ import {
 } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { formatShortDate } from '../../../../shared/format/format-date';
 import { Connection, ConnectionType, TestConnectionResult } from '../../../../models/connection.model';
+import { AvatarComponent } from '../../../../shared/avatar/avatar.component';
 import { ConnectionsStore } from '../../../../stores/connections.store';
 import { ProjectsStore } from '../../../../stores/projects.store';
 import {
@@ -64,6 +65,7 @@ type OpenForm = { mode: 'add' } | { mode: 'edit'; connectionId: number } | null;
     MatTooltipModule,
     TranslatePipe,
     RepositoriesSectionComponent,
+    AvatarComponent,
   ],
   templateUrl: './connections-section.component.html',
   styleUrl: './connections-section.component.scss',

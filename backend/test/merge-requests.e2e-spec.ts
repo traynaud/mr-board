@@ -649,11 +649,32 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('setup: should_configure_my_identity_for_the_rest_of_this_suite', async () => {
-    const res = await api()
-      .put('/api/v1/settings')
-      .send({ identities: [{ connectionId, username: 'mdupont' }] });
+    // RG-031-02/04 : l'identité n'est plus saisie, elle est résolue depuis le
+    // jeton — un « Tester » réussi la persiste immédiatement sur la connexion.
+    gitlab.testConnection.mockResolvedValue({
+      username: 'mdupont',
+      name: 'Marie Dupont',
+      email: null,
+      avatarUrl: null,
+      expiresAt: null,
+      expirationKnown: true,
+      scopeKnown: true,
+    });
 
-    expect(res.status).toBe(200);
+    const res = await api()
+      .post('/api/v1/connections/test')
+      .send({ connectionId });
+
+    expect(res.status).toBe(201);
+    const connections = await api().get('/api/v1/connections');
+    expect(connections.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: connectionId,
+          identity: expect.objectContaining({ username: 'mdupont' }) as unknown,
+        }),
+      ]),
+    );
   });
 
   it('GET /merge-requests?mine=1 should_filter_to_merge_requests_where_i_am_the_author', async () => {

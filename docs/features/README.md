@@ -55,7 +55,7 @@ d'utilisateur par connexion et un email global (US-019) — configurée dans les
 | **Projet / Repo**    | Dépôt d'une connexion (`groupe/projet` sur GitLab, `owner/repo` sur GitHub) configuré pour être scanné    |
 | **Alias**            | Nom court d'un projet, choisi par l'utilisateur, affiché dans le tableau et les filtres                 |
 | **Synchronisation**  | Récupération des MRs depuis l'API de chaque connexion et mise à jour du cache local (SQLite)            |
-| **Moi**              | Identité de l'utilisateur courant : un nom d'utilisateur **par connexion** (US-019) et un email global, utilisée par « Mes MRs » |
+| **Moi**              | Identité de l'utilisateur courant, résolue automatiquement depuis le jeton **de chaque connexion** (username, nom, email, avatar — US-031), sans aucune saisie ; utilisée par « Mes MRs » |
 | **Jeton**            | Personal Access Token d'une connexion, stocké chiffré côté backend, jamais renvoyé en clair              |
 | **Thème**            | Préférence d'affichage `system` / `light` / `dark` (US-018)                                             |
 | **Langue**           | Langue de l'interface, `fr` (défaut) ou `en` ; préférence backend, dictionnaire `i18n/<langue>.json` (US-022) |
@@ -82,12 +82,11 @@ Zones, de haut en bas :
 
 En-tête : retour, titre « Paramètres », « Annuler », « Enregistrer ». Corps en deux colonnes (titre de section à gauche,
 contenu à droite), sections :
-- `01 · Moi` — un nom d'utilisateur **par connexion** configurée (US-019), email (optionnel), aperçu de l'identité détectée par ligne, case « Surligner mes MRs dans le tableau » (US-023, activée par défaut)
-- `02 · Connexions` — liste des connexions (type, nom, URL, état du jeton), chaque ligne repliable ; dépliée, elle affiche le formulaire de la connexion (tester/modifier/supprimer) **suivi de son propre tableau de repos** (chemin, alias, supprimer, ligne d'ajout) — les repos sont rattachés à leur connexion dans l'UI, il n'existe pas de section « Repos à scanner » séparée (US-019 corrigée par US-021, voir US-021 §0)
-- `03 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
-- `04 · Difficulté` — Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes (US-030 : scindée de l'ex-« 04 · Seuils »)
-- `05 · Temps depuis Ready` — vert ≤ N j, orange ≤ N j, jours ouvrés (US-030 : scindée de l'ex-« 04 · Seuils »)
-- `06 · Divers` — thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `01 · Connexions` — liste des connexions (type, nom, URL, état du jeton), chaque ligne repliable, affichant désormais aussi « Connecté en tant que <nom> (@<username>) · <email> » (identité résolue automatiquement depuis le jeton, ou « Identité non résolue » tant qu'aucune résolution n'a réussi — US-031, section « 01 · Moi » supprimée) ; dépliée, elle affiche le formulaire de la connexion (tester/modifier/supprimer) **suivi de son propre tableau de repos** (chemin, alias, supprimer, ligne d'ajout) — les repos sont rattachés à leur connexion dans l'UI, il n'existe pas de section « Repos à scanner » séparée (US-019 corrigée par US-021, voir US-021 §0)
+- `02 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
+- `03 · Difficulté` — Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes (US-030 : scindée de l'ex-« 04 · Seuils »)
+- `04 · Temps depuis Ready` — vert ≤ N j, orange ≤ N j, jours ouvrés (US-030 : scindée de l'ex-« 04 · Seuils »)
+- `05 · Divers` — case « Surligner mes MRs dans le tableau » en tête (US-023, activée par défaut, déplacée depuis l'ex-« 01 · Moi » par US-031), thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -105,7 +104,7 @@ Ces règles s'appliquent à toutes les US. Chaque US les référence par identif
 | RG-G06   | **Reviewer / Affecté** : GitLab permet plusieurs reviewers et assignees. MR Board affiche le premier (ordre GitLab) et indique « +N » avec la liste complète au survol. Les filtres et « Mes MRs » considèrent **tous** les reviewers/assignees. Amendé par **US-023** (RG-023-06) : quand l'anneau « moi » est actif (RG-023-01) et que je figure parmi les reviewers/assignees sans être le premier, mon avatar est promu en position affichée ; le « +N » et l'infobulle restent en ordre GitLab.                                                                                                                                  |
 | RG-G07   | **Approved** : une MR est approuvée si elle a au moins une approbation (`approved_by` non vide), indépendamment des règles d'approbation du projet.                                                                                                                                                                                                                              |
 | RG-G08   | **Commentaires** : nombre de notes utilisateur (`user_notes_count`), hors notes système.                                                                                                                                                                                                                                                                                       |
-| RG-G09   | **Mes MRs** : une MR est « à moi » si mon nom d'utilisateur **sur la connexion de son projet** (US-019 ; ou, à défaut, mon email global en repli quand la forge l'expose) correspond à l'auteur, à l'un des reviewers ou à l'un des assignees. Comparaison insensible à la casse. Un même username sur deux connexions différentes désigne deux identités distinctes.               |
+| RG-G09   | **Mes MRs** : une MR est « à moi » si mon identité résolue **sur la connexion de son projet** (username, ou à défaut email de la même connexion — US-031, identité résolue automatiquement depuis le jeton) correspond à l'auteur, à l'un des reviewers ou à l'un des assignees. Comparaison insensible à la casse. Un même username sur deux connexions différentes désigne deux identités distinctes.               |
 | RG-G10   | **Tri par défaut** : MRs Ready par date Ready croissante (la plus ancienne en haut). Si les drafts sont affichés, ils viennent **après** toutes les MRs Ready, triés par date d'ouverture croissante. Un seul tri de colonne actif à la fois ; le tri de colonne ne s'applique qu'au bloc Ready, le bloc Drafts garde son ordre.                                                    |
 | RG-G11   | **Titre** : tronqué avec ellipse sur une ligne, titre complet au survol ; le clic ouvre la page GitLab de la MR (même onglet par défaut, nouvel onglet si l'option est activée).                                                                                                                                                                                                 |
 | RG-G12   | **Identité visuelle des utilisateurs** : avatar GitLab (carré 28 px) si disponible, sinon initiales (2 lettres max, majuscules, première lettre de chaque mot du nom). Nom complet au survol. Amendée par **US-024** : le repli sur les initiales s'applique aussi quand l'URL existe mais que l'image échoue à charger (lien mort), pas seulement quand elle est absente.       |
@@ -129,9 +128,9 @@ Settings (singleton, préférences globales) ── Connections (1..n, US-019) �
 SyncRuns (historique des synchronisations)
 ```
 
-Chaque `Connection` (type, nom, URL, jeton chiffré, mon nom d'utilisateur sur cette forge) possède ses propres
-`Projects` et `Users` (US-019) ; `Settings` ne porte plus que les préférences globales (email de repli, seuils,
-thème, langue…), jamais l'URL, le jeton ou un nom d'utilisateur.
+Chaque `Connection` (type, nom, URL, jeton chiffré, identité résolue automatiquement depuis ce jeton — username, nom,
+email, avatar — US-031) possède ses propres `Projects` et `Users` (US-019) ; `Settings` ne porte plus que les
+préférences globales (seuils, thème, langue, `highlightMe`…), jamais l'URL, le jeton ou une identité.
 
 Attributs d'une MR affichée (DTO `MergeRequestView`) : `id`, `projectAlias`, `connection` (`{ id, name, type }`,
 US-019), `iid`, `title`, `webUrl`, `draft`, `author`, `reviewers[]`, `assignees[]`, `approved`, `commentsCount`,
@@ -161,7 +160,7 @@ une fois ses dépendances réalisées.
 | ID     | Titre                                                    | Priorité | Complexité | Dépend de              | Statut |
 |--------|----------------------------------------------------------|----------|------------|------------------------|--------|
 | US-001 | Paramètres — Connexion GitLab (URL, jeton, test)         | Must     | M          | TECH-001, TECH-002     | ✅ |
-| US-002 | Paramètres — Identité « Moi »                            | Must     | S          | US-001                 | ✅ |
+| US-002 | Paramètres — Identité « Moi »                            | Must     | S          | US-001                 | ✅ (remplacée par US-031) |
 | US-003 | Paramètres — Repos à scanner avec alias                  | Must     | M          | US-001                 | ✅ |
 | US-004 | Synchronisation des MRs depuis GitLab                    | Must     | L          | US-001, US-003         | ✅ |
 | US-005 | Tableau des MRs — colonnes de base                       | Must     | L          | US-004                 | ✅ |
@@ -190,6 +189,7 @@ une fois ses dépendances réalisées.
 | US-028 | Labels dans le tableau : colonne optionnelle et filtre                             | Should   | M          | US-005, US-010, US-011, US-012, US-015 | ✅ |
 | US-029 | Infobulle des approbateurs sur la colonne Approved                                 | Should   | L          | US-005, US-017, US-019, US-020         | ✅ |
 | US-030 | Paramètres : scission de la section Seuils en Difficulté / Temps depuis Ready      | Should   | S          | US-014                 | ✅ |
+| US-031 | Identité « Moi » résolue depuis le jeton (section Moi supprimée, surbrillance déplacée dans Divers) | Must | L | US-002, US-019, US-023 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.
@@ -249,7 +249,12 @@ Synchronisation/Moi/Jeton), §4.1 (bandeau différenciant absence de connexion /
 périmètre), §7 roadmap (✅) ; US-021 — §4.2 (section 02 « Connexions » absorbant les repos, ex-« 03 · Repos à
 scanner » supprimée, renumérotation 03/04/05 des sections suivantes — voir US-021 §0), §9 (retrait de la mention
 des indicateurs de forge/filtre « Connexion » restant à livrer), §7 roadmap (✅) ; US-030 — §4.2 (ex-« 04 · Seuils »
-scindée en « 04 · Difficulté » / « 05 · Temps depuis Ready », « Divers » renumérotée 05 → 06), §7 roadmap (✅).
+scindée en « 04 · Difficulté » / « 05 · Temps depuis Ready », « Divers » renumérotée 05 → 06), §7 roadmap (✅) ;
+US-031 — §3 (glossaire, terme « Moi » reformulé : identité résolue depuis le jeton, plus de saisie), §4.2
+(suppression de « 01 · Moi », renumérotation 02→01 … 06→05, « Connecté en tant que » dans « 01 · Connexions »,
+case de surbrillance déplacée en tête de « 05 · Divers »), §5 (RG-G09 amendée : repli sur l'email de la même
+connexion, plus de repli global), §6 (`Connection` porte l'identité résolue au lieu d'une identité saisie,
+`Settings` perd `meEmail`), §7 roadmap (✅, US-002 marquée remplacée).
 
 Impacts documentaires restant prévus : RG-G09/G17/G18 (jetons et identités au pluriel dans leur formulation exacte),
 §6 (modèle conceptuel : renommer `Connections` en toutes lettres si une future US y touche).

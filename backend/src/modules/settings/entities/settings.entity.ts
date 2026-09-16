@@ -20,10 +20,6 @@ export class Settings {
   @PrimaryColumn({ type: 'integer' })
   id!: number;
 
-  /** Fallback email for role matching (RG-002-01, RG-G09, RG-019-07). */
-  @Column({ name: 'me_email', type: 'text', nullable: true })
-  meEmail!: string | null;
-
   /** Scheduled sync cadence in minutes ; `0` = manual (RG-013-01). */
   @Column({ name: 'refresh_interval_min', type: 'integer', default: 5 })
   refreshIntervalMin!: number;

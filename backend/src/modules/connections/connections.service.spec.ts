@@ -22,7 +22,10 @@ describe('ConnectionsService', () => {
     name: 'gitlab.com',
     url: 'https://gitlab.com',
     tokenEncrypted: 'enc(glpat-token-value)',
-    meUsername: null,
+    resolvedUsername: null,
+    resolvedName: null,
+    resolvedEmail: null,
+    resolvedAvatarUrl: null,
     createdAt: '2026-09-01T00:00:00.000Z',
     updatedAt: '2026-09-01T00:00:00.000Z',
     ...overrides,
@@ -69,6 +72,7 @@ describe('ConnectionsService', () => {
     gitlabForge.testConnection.mockResolvedValue({
       username: 'mdupont',
       name: 'Marie Dupont',
+      email: 'marie.dupont@exemple.fr',
       avatarUrl: null,
       expiresAt: null,
       expirationKnown: false,
@@ -106,10 +110,42 @@ describe('ConnectionsService', () => {
           url: 'https://gitlab.com',
           tokenConfigured: true,
           tokenHint: 'alue',
-          meUsername: null,
+          identity: null,
           projectsCount: 3,
         },
       ]);
+    });
+
+    it('should_expose_the_resolved_identity_when_one_has_succeeded', async () => {
+      repository.find.mockResolvedValue([
+        row({
+          resolvedUsername: 'mdupont',
+          resolvedName: 'Marie Dupont',
+          resolvedEmail: 'marie.dupont@exemple.fr',
+          resolvedAvatarUrl: 'https://gitlab.com/mdupont.png',
+        }),
+      ]);
+
+      const [connection] = await service.list();
+
+      expect(connection.identity).toEqual({
+        username: 'mdupont',
+        name: 'Marie Dupont',
+        email: 'marie.dupont@exemple.fr',
+        avatarUrl: 'https://gitlab.com/mdupont.png',
+      });
+    });
+
+    it('should_fall_back_to_the_username_as_the_display_name_when_unresolved', async () => {
+      repository.find.mockResolvedValue([
+        row({ resolvedUsername: 'mdupont', resolvedName: null }),
+      ]);
+
+      const [connection] = await service.list();
+
+      expect(connection.identity).toEqual(
+        expect.objectContaining({ username: 'mdupont', name: 'mdupont' }),
+      );
     });
   });
 
@@ -176,6 +212,23 @@ describe('ConnectionsService', () => {
       ).rejects.toBeInstanceOf(ConnectionNameDuplicateException);
       expect(repository.save).not.toHaveBeenCalled();
     });
+
+    it('should_start_with_no_resolved_identity_and_resolve_it_in_the_background', async () => {
+      // RG-031-03 : la réponse HTTP ne l'attend pas...
+      const result = await service.add({
+        type: 'gitlab',
+        name: 'gitlab.com',
+        url: 'https://gitlab.com/',
+        token: 'glpat-abcdwxyz',
+      });
+
+      expect(result.identity).toBeNull();
+      // ...mais l'appel forge, lui, part bien immédiatement (fire-and-forget).
+      expect(gitlabForge.testConnection).toHaveBeenCalledWith(
+        'https://gitlab.com',
+        'glpat-abcdwxyz',
+      );
+    });
   });
 
   describe('update', () => {
@@ -202,6 +255,25 @@ describe('ConnectionsService', () => {
           tokenEncrypted: 'enc(glpat-new-token-wxyz)',
         }),
       );
+    });
+
+    it('should_resolve_the_identity_in_the_background_when_the_token_changes', async () => {
+      repository.findOneBy.mockResolvedValue(row());
+
+      await service.update(1, { token: 'glpat-new-token-wxyz' });
+
+      expect(gitlabForge.testConnection).toHaveBeenCalledWith(
+        'https://gitlab.com',
+        'glpat-new-token-wxyz',
+      );
+    });
+
+    it('should_not_resolve_the_identity_when_only_the_name_or_url_changes', async () => {
+      repository.findOneBy.mockResolvedValue(row());
+
+      await service.update(1, { url: 'https://gitlab.exemple.fr' });
+
+      expect(gitlabForge.testConnection).not.toHaveBeenCalled();
     });
 
     it('should_throw_404_for_an_unknown_id', async () => {
@@ -297,6 +369,30 @@ describe('ConnectionsService', () => {
         ConnectionTokenMissingException,
       );
     });
+
+    it('should_persist_the_resolved_identity_on_a_successful_test_of_a_stored_connection', async () => {
+      repository.findOneBy.mockResolvedValue(row());
+
+      await service.test({ connectionId: 1 });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resolvedUsername: 'mdupont',
+          resolvedName: 'Marie Dupont',
+          resolvedEmail: 'marie.dupont@exemple.fr',
+        }),
+      );
+    });
+
+    it('should_not_persist_anything_when_testing_ad_hoc_values_without_a_stored_connection', async () => {
+      await service.test({
+        type: 'gitlab',
+        url: 'https://gitlab.com',
+        token: 'glpat-abcdwxyz',
+      });
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('getToken', () => {
@@ -313,25 +409,55 @@ describe('ConnectionsService', () => {
     });
   });
 
-  describe('updateIdentity', () => {
-    it('should_set_the_trimmed_username', async () => {
-      repository.findOneBy.mockResolvedValue(row());
+  describe('resolveIdentity', () => {
+    it('should_persist_the_forge_result_on_success', async () => {
+      const connection = row();
 
-      await service.updateIdentity(1, '  mdupont  ');
+      await service.resolveIdentity(connection);
 
+      expect(gitlabForge.testConnection).toHaveBeenCalledWith(
+        'https://gitlab.com',
+        'glpat-token-value',
+      );
       expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ meUsername: 'mdupont' }),
+        expect.objectContaining({
+          resolvedUsername: 'mdupont',
+          resolvedName: 'Marie Dupont',
+          resolvedEmail: 'marie.dupont@exemple.fr',
+          resolvedAvatarUrl: null,
+        }),
       );
     });
 
-    it('should_clear_the_username_when_blank', async () => {
-      repository.findOneBy.mockResolvedValue(row({ meUsername: 'mdupont' }));
+    it('should_do_nothing_when_no_token_is_configured', async () => {
+      const connection = row({ tokenEncrypted: null });
 
-      await service.updateIdentity(1, '   ');
+      await service.resolveIdentity(connection);
 
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ meUsername: null }),
-      );
+      expect(gitlabForge.testConnection).not.toHaveBeenCalled();
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('should_keep_the_previous_identity_when_the_forge_call_fails', async () => {
+      gitlabForge.testConnection.mockRejectedValue(new Error('unauthorized'));
+      const connection = row({ resolvedUsername: 'mdupont' });
+
+      await expect(
+        service.resolveIdentity(connection),
+      ).resolves.toBeUndefined();
+
+      expect(repository.save).not.toHaveBeenCalled();
+      expect(connection.resolvedUsername).toBe('mdupont');
+    });
+
+    it('should_do_nothing_when_the_stored_token_cannot_be_decrypted', async () => {
+      cipher.decrypt.mockReturnValue(null);
+      const connection = row();
+
+      await service.resolveIdentity(connection);
+
+      expect(gitlabForge.testConnection).not.toHaveBeenCalled();
+      expect(repository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -350,37 +476,40 @@ describe('ConnectionsService', () => {
   });
 
   describe('importUpsert', () => {
-    it('should_update_url_and_username_of_an_existing_connection_without_touching_its_token', async () => {
-      repository.find.mockResolvedValue([row({ name: 'GitLab' })]);
+    it('should_update_the_url_of_an_existing_connection_without_touching_its_token_or_identity', async () => {
+      repository.find.mockResolvedValue([
+        row({ name: 'GitLab', resolvedUsername: 'mdupont' }),
+      ]);
 
       const result = await service.importUpsert({
         type: 'gitlab',
         name: 'GITLAB',
         url: 'https://gitlab.exemple.fr',
-        meUsername: 'mdupont',
       });
 
       expect(result).toEqual({ name: 'GitLab', created: false });
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'https://gitlab.exemple.fr',
-          meUsername: 'mdupont',
+          resolvedUsername: 'mdupont',
           tokenEncrypted: 'enc(glpat-token-value)',
         }),
       );
     });
 
-    it('should_create_a_new_connection_without_a_token_when_no_match_exists', async () => {
+    it('should_create_a_new_connection_without_a_token_or_a_resolved_identity_when_no_match_exists', async () => {
       const result = await service.importUpsert({
         type: 'gitlab',
         name: 'gitlab.exemple.fr',
         url: 'https://gitlab.exemple.fr',
-        meUsername: null,
       });
 
       expect(result).toEqual({ name: 'gitlab.exemple.fr', created: true });
       expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ tokenEncrypted: null }),
+        expect.objectContaining({
+          tokenEncrypted: null,
+          resolvedUsername: null,
+        }),
       );
     });
   });

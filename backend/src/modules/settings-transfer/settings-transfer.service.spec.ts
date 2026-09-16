@@ -50,7 +50,7 @@ describe('SettingsTransferService', () => {
   describe('export', () => {
     it('should_combine_exportable_settings_connections_and_repo_list', async () => {
       settings.getExportableSettings.mockResolvedValue({
-        meEmail: 'marie@exemple.fr',
+        theme: 'system',
       });
       connections.findAll.mockResolvedValue([
         {
@@ -58,7 +58,6 @@ describe('SettingsTransferService', () => {
           type: 'gitlab',
           name: 'GitLab',
           url: 'https://gitlab.com',
-          meUsername: 'mdupont',
         },
       ]);
       projects.list.mockResolvedValue([
@@ -76,13 +75,12 @@ describe('SettingsTransferService', () => {
 
       expect(result).toEqual({
         version: 2,
-        settings: { meEmail: 'marie@exemple.fr' },
+        settings: { theme: 'system' },
         connections: [
           {
             type: 'gitlab',
             name: 'GitLab',
             url: 'https://gitlab.com',
-            meUsername: 'mdupont',
           },
         ],
         projects: [
@@ -105,7 +103,6 @@ describe('SettingsTransferService', () => {
           type: 'gitlab',
           name: 'GitLab',
           url: 'https://gitlab.com',
-          meUsername: 'mdupont',
         },
       ]);
       projects.list.mockResolvedValue([
@@ -156,10 +153,11 @@ describe('SettingsTransferService', () => {
     it('should_apply_settings_and_merge_the_legacy_connection_then_the_repos', async () => {
       const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
         version: 1,
+        // RG-031-14 : `meUsername` d'un export hérité, accepté mais ignoré.
         settings: { gitlabUrl: 'https://gitlab.com', meUsername: 'mdupont' },
         projects: [{ pathWithNamespace: 'equipe/backend-api', alias: 'api' }],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({ theme: 'system' });
       projects.importMany.mockResolvedValue({
         added: 1,
         updated: 0,
@@ -173,7 +171,6 @@ describe('SettingsTransferService', () => {
         type: 'gitlab',
         name: 'GitLab',
         url: 'https://gitlab.com',
-        meUsername: 'mdupont',
       });
       expect(projects.importMany).toHaveBeenCalledWith([
         {
@@ -183,7 +180,7 @@ describe('SettingsTransferService', () => {
         },
       ]);
       expect(result).toEqual({
-        settings: { meEmail: null },
+        settings: { theme: 'system' },
         connectionsAdded: 0,
         connectionsUpdated: 1,
         newConnectionNames: [],
@@ -192,38 +189,19 @@ describe('SettingsTransferService', () => {
         projectsSkipped: [],
       });
     });
-
-    it('should_pass_a_null_username_when_absent', async () => {
-      const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
-        version: 1,
-        settings: { gitlabUrl: 'https://gitlab.com' },
-        projects: [],
-      });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
-      projects.importMany.mockResolvedValue({
-        added: 0,
-        updated: 0,
-        skipped: [],
-      });
-
-      await service.import(dto);
-
-      expect(connections.importUpsert).toHaveBeenCalledWith(
-        expect.objectContaining({ meUsername: null }),
-      );
-    });
   });
 
   describe('import — version 2', () => {
-    it('should_apply_settings_merge_every_connection_then_the_repos_by_connection_name', async () => {
+    it('should_apply_settings_merge_every_connection_then_the_repos_by_connection_name_and_ignore_a_legacy_meUsername', async () => {
       const dto: ImportConfigDto = Object.assign(new ImportConfigDto(), {
         version: 2,
-        settings: { meEmail: 'marie@exemple.fr' },
+        settings: { theme: 'dark' },
         connections: [
           {
             type: 'gitlab',
             name: 'gitlab.com',
             url: 'https://gitlab.com',
+            // RG-031-14 : d'un export hérité, accepté mais ignoré.
             meUsername: 'mdupont',
           },
         ],
@@ -235,9 +213,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({
-        meEmail: 'marie@exemple.fr',
-      });
+      settings.applyImportedSettings.mockResolvedValue({ theme: 'dark' });
       connections.importUpsert.mockResolvedValue({
         name: 'gitlab.com',
         created: true,
@@ -254,7 +230,6 @@ describe('SettingsTransferService', () => {
         type: 'gitlab',
         name: 'gitlab.com',
         url: 'https://gitlab.com',
-        meUsername: 'mdupont',
       });
       expect(projects.importMany).toHaveBeenCalledWith([
         {
@@ -282,7 +257,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 1,
         updated: 0,
@@ -307,7 +282,7 @@ describe('SettingsTransferService', () => {
         settings: {},
         projects: [],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
@@ -334,7 +309,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
@@ -369,7 +344,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
@@ -398,7 +373,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
@@ -425,7 +400,7 @@ describe('SettingsTransferService', () => {
           },
         ],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,
@@ -447,7 +422,7 @@ describe('SettingsTransferService', () => {
         settings: {},
         projects: [],
       });
-      settings.applyImportedSettings.mockResolvedValue({ meEmail: null });
+      settings.applyImportedSettings.mockResolvedValue({});
       projects.importMany.mockResolvedValue({
         added: 0,
         updated: 0,

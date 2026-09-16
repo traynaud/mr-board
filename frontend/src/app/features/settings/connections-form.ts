@@ -1,6 +1,5 @@
 import {
   AbstractControl,
-  FormArray,
   FormControl,
   FormGroup,
   ValidationErrors,
@@ -119,36 +118,4 @@ export function applyConnectionTypeDefaults(form: ConnectionForm, type: Connecti
 /** Pré-remplit le formulaire de modification depuis une connexion existante (RG-019-11). */
 export function resetConnectionFormForEdit(form: ConnectionForm, connection: Connection): void {
   form.reset({ type: connection.type, name: connection.name, url: connection.url, token: '' });
-}
-
-export interface IdentityFormControls {
-  connectionId: FormControl<number>;
-  username: FormControl<string>;
-}
-
-export type IdentityForm = FormGroup<IdentityFormControls>;
-
-/** Un groupe de formulaire par connexion : mon nom d'utilisateur sur cette connexion (RG-019-08). */
-export function buildIdentityGroup(connection: Connection): IdentityForm {
-  return new FormGroup<IdentityFormControls>({
-    connectionId: new FormControl(connection.id, { nonNullable: true }),
-    username: new FormControl(connection.meUsername ?? '', { nonNullable: true }),
-  });
-}
-
-/**
- * Reconstruit le tableau de formulaires d'identité à partir de la liste des
- * connexions (RG-019-08). Reconstruction inconditionnelle, dans le même
- * ordre que `connections` — la page zippe les deux tableaux par index,
- * comme `syncReposFormArray` le fait pour les repos (RG-003-07).
- */
-export function syncIdentitiesFormArray(
-  array: FormArray<IdentityForm>,
-  connections: Connection[],
-): void {
-  array.clear();
-  for (const connection of connections) {
-    array.push(buildIdentityGroup(connection));
-  }
-  array.markAsPristine();
 }

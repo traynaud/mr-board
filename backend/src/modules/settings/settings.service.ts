@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BusinessValidationException } from '../../common/exceptions/index.js';
-import { ConnectionsService } from '../connections/connections.service.js';
 import type { DifficultyThresholds } from '../merge-requests/domain/calculate-difficulty.js';
 import type { ReadyDelayThresholds } from '../merge-requests/domain/calculate-ready-delay.js';
 import { SettingsResponseDto } from './dto/settings-response.dto.js';
@@ -12,7 +11,6 @@ import type { Language, ThemePreference } from './entities/settings.entity.js';
 
 /** Fields shared by a full update (`UpdateSettingsDto`) and a config import. */
 export interface MergeableSettingsFields {
-  meEmail?: string;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
   easyFiles?: number;
@@ -33,7 +31,6 @@ export interface MergeableSettingsFields {
 
 /** Every global preference, as exported/imported by US-015 (RG-019-23). */
 export interface ExportableSettings {
-  meEmail: string | null;
   refreshIntervalMin: number;
   pauseWhenHidden: boolean;
   easyFiles: number;
@@ -60,7 +57,6 @@ export class SettingsService {
   constructor(
     @InjectRepository(Settings)
     private readonly repository: Repository<Settings>,
-    private readonly connections: ConnectionsService,
   ) {}
 
   /** Current settings. */
@@ -69,10 +65,8 @@ export class SettingsService {
   }
 
   /**
-   * Updates the global preferences (RG-014-01) and, when given, my
-   * per-connection identities (RG-019-08).
+   * Updates the global preferences (RG-014-01).
    * @throws BusinessValidationException when the merged thresholds are incoherent.
-   * @throws EntityNotFoundException when an `identities` entry names an unknown connection (404).
    */
   async update(dto: UpdateSettingsDto): Promise<SettingsResponseDto> {
     const settings = await this.load();
@@ -80,14 +74,6 @@ export class SettingsService {
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
     const saved = await this.repository.save(settings);
-    if (dto.identities) {
-      for (const identity of dto.identities) {
-        await this.connections.updateIdentity(
-          identity.connectionId,
-          identity.username,
-        );
-      }
-    }
     return this.toResponse(saved);
   }
 
@@ -104,14 +90,6 @@ export class SettingsService {
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
     return this.toResponse(await this.repository.save(settings));
-  }
-
-  /**
-   * Fallback email for role matching (RG-002-01, RG-G09, RG-019-07).
-   * `null` means it is not configured.
-   */
-  async getMeEmail(): Promise<string | null> {
-    return (await this.load()).meEmail;
   }
 
   /**
@@ -160,7 +138,6 @@ export class SettingsService {
   async getExportableSettings(): Promise<ExportableSettings> {
     const settings = await this.load();
     return {
-      meEmail: settings.meEmail,
       refreshIntervalMin: settings.refreshIntervalMin,
       pauseWhenHidden: settings.pauseWhenHidden,
       easyFiles: settings.easyFiles,
@@ -187,13 +164,6 @@ export class SettingsService {
     settings: Settings,
     dto: MergeableSettingsFields,
   ): void {
-    if (dto.meEmail !== undefined) {
-      // `@IsOptional()` lets `null` through validation (it only skips the
-      // remaining validators, RG-002-02) — a re-imported export whose email
-      // was never configured sends exactly that (`getExportableSettings()`
-      // returns `meEmail: null`), so it must be handled here too, not just `''`.
-      settings.meEmail = (dto.meEmail ?? '').trim() || null;
-    }
     if (dto.refreshIntervalMin !== undefined) {
       settings.refreshIntervalMin = dto.refreshIntervalMin;
     }
@@ -253,7 +223,6 @@ export class SettingsService {
     return this.repository.save(
       this.repository.create({
         id: SETTINGS_ID,
-        meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
         easyFiles: 5,
@@ -304,7 +273,6 @@ export class SettingsService {
 
   private toResponse(settings: Settings): SettingsResponseDto {
     return {
-      meEmail: settings.meEmail,
       refreshIntervalMin: settings.refreshIntervalMin,
       pauseWhenHidden: settings.pauseWhenHidden,
       easyFiles: settings.easyFiles,

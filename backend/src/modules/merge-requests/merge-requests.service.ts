@@ -199,8 +199,8 @@ export class MergeRequestsService {
    * composable filters.
    *
    * The identity used for `isMe`/`isMine` is resolved per merge request,
-   * from the `meUsername` of *its own project's connection* (RG-019-25) —
-   * never a single identity for the whole response.
+   * from the resolved identity of *its own project's connection* (RG-031-08)
+   * — never a single identity for the whole response.
    */
   private async loadBase(
     includeDrafts: boolean,
@@ -211,13 +211,11 @@ export class MergeRequestsService {
     const allMergeRequests = await this.mergeRequests.find({
       where: includeDrafts ? {} : { draft: false },
     });
-    const [ignoredLabels, meEmail, allConnections, allFavorites] =
-      await Promise.all([
-        this.settings.getIgnoredLabels(),
-        this.settings.getMeEmail(),
-        this.connections.findAll(),
-        this.favorites.list(),
-      ]);
+    const [ignoredLabels, allConnections, allFavorites] = await Promise.all([
+      this.settings.getIgnoredLabels(),
+      this.connections.findAll(),
+      this.favorites.list(),
+    ]);
     const favoriteKeys = new Set(
       allFavorites.map((favorite) => favoriteKey(favorite)),
     );
@@ -229,8 +227,9 @@ export class MergeRequestsService {
       .filter((mr) => !isIgnoredByLabel(mr.labels, ignoredLabels))
       .filter((mr) => matchesCompiledSearch(mr, compiledSearch));
     const connectionsById = new Map(allConnections.map((c) => [c.id, c]));
-    const identityMissing =
-      meEmail === null && allConnections.every((c) => c.meUsername === null);
+    const identityMissing = allConnections.every(
+      (c) => c.resolvedUsername === null,
+    );
     const warnings: string[] =
       mineOnly && identityMissing ? ['identity.missing'] : [];
 
@@ -281,7 +280,6 @@ export class MergeRequestsService {
         projectsById,
         usersById,
         connectionsById,
-        meEmail,
         reviewerIdsByMr.get(mr.id) ?? [],
         assigneeIdsByMr.get(mr.id) ?? [],
         approverIdsByMr.get(mr.id) ?? [],
@@ -460,18 +458,17 @@ function mustGet<T>(byId: Map<number, T>, id: number, label: string): T {
 
 /**
  * The identity a merge request's `isMe`/`isMine` are resolved against: the
- * `meUsername` of *its own project's connection*, falling back to the global
- * email (RG-019-07, RG-019-25) — never a single identity for the whole
- * response.
+ * identity resolved from the token of *its own project's connection*
+ * (RG-031-08) — never a single identity for the whole response.
  */
-function resolveIdentity(
+function identityFor(
   connectionId: number,
   connectionsById: Map<number, Connection>,
-  meEmail: string | null,
 ): Identity {
+  const connection = connectionsById.get(connectionId);
   return {
-    username: connectionsById.get(connectionId)?.meUsername ?? null,
-    email: meEmail,
+    username: connection?.resolvedUsername ?? null,
+    email: connection?.resolvedEmail ?? null,
   };
 }
 
@@ -493,7 +490,6 @@ function toMergeRequestView(
   projectsById: Map<number, Project>,
   usersById: Map<number, User>,
   connectionsById: Map<number, Connection>,
-  meEmail: string | null,
   reviewerIds: number[],
   assigneeIds: number[],
   approverIds: number[],
@@ -511,11 +507,7 @@ function toMergeRequestView(
     project.connectionId,
     'Connection',
   );
-  const identity = resolveIdentity(
-    project.connectionId,
-    connectionsById,
-    meEmail,
-  );
+  const identity = identityFor(project.connectionId, connectionsById);
   const author = mustGet(usersById, mergeRequest.authorId, 'User');
   const reviewers = reviewerIds.map((id) =>
     toMergeRequestUser(mustGet(usersById, id, 'User'), identity),

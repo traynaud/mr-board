@@ -1,7 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConnectionsService } from '../connections/connections.service.js';
 import { Settings } from './entities/settings.entity.js';
 import { SettingsService } from './settings.service.js';
 
@@ -9,7 +8,6 @@ describe('SettingsService', () => {
   let service: SettingsService;
   const row = (): Settings => ({
     id: 1,
-    meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,
@@ -33,7 +31,6 @@ describe('SettingsService', () => {
     save: jest.fn(),
     create: jest.fn(),
   };
-  const connections = { updateIdentity: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -41,12 +38,10 @@ describe('SettingsService', () => {
     repository.findOneBy.mockResolvedValue(row());
     repository.save.mockImplementation((s: Settings) => Promise.resolve(s));
     repository.create.mockImplementation((s: Settings) => s);
-    connections.updateIdentity.mockResolvedValue(undefined);
     const moduleRef = await Test.createTestingModule({
       providers: [
         SettingsService,
         { provide: getRepositoryToken(Settings), useValue: repository },
-        { provide: ConnectionsService, useValue: connections },
       ],
     }).compile();
     service = moduleRef.get(SettingsService);
@@ -55,7 +50,6 @@ describe('SettingsService', () => {
   describe('get', () => {
     it('should_return_defaults', async () => {
       await expect(service.get()).resolves.toEqual({
-        meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
         easyFiles: 5,
@@ -96,77 +90,6 @@ describe('SettingsService', () => {
           updatedAt: expect.not.stringMatching(/^2026-09-01/) as string,
         }),
       );
-    });
-
-    it('should_set_the_email_when_provided', async () => {
-      const result = await service.update({ meEmail: '  marie@exemple.fr  ' });
-
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
-      );
-      expect(result.meEmail).toBe('marie@exemple.fr');
-    });
-
-    it('should_clear_the_email_when_empty_string', async () => {
-      repository.findOneBy.mockResolvedValue({
-        ...row(),
-        meEmail: 'karim@exemple.fr',
-      });
-
-      const result = await service.update({ meEmail: '' });
-
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ meEmail: null }),
-      );
-      expect(result.meEmail).toBeNull();
-    });
-
-    it('should_clear_the_email_when_null', async () => {
-      // `@IsOptional()` lets `null` through DTO validation (RG-002-02) — a
-      // re-imported export whose email was never configured sends exactly
-      // that (regression: used to throw, see `getExportableSettings`).
-      repository.findOneBy.mockResolvedValue({
-        ...row(),
-        meEmail: 'karim@exemple.fr',
-      });
-
-      const result = await service.update({
-        meEmail: null as unknown as string,
-      });
-
-      expect(repository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ meEmail: null }),
-      );
-      expect(result.meEmail).toBeNull();
-    });
-
-    it('should_keep_the_email_when_omitted', async () => {
-      repository.findOneBy.mockResolvedValue({
-        ...row(),
-        meEmail: 'karim@exemple.fr',
-      });
-
-      const result = await service.update({});
-
-      expect(result.meEmail).toBe('karim@exemple.fr');
-    });
-
-    it('should_apply_every_identity_entry_via_connections_service', async () => {
-      await service.update({
-        identities: [
-          { connectionId: 1, username: 'mdupont' },
-          { connectionId: 2, username: 'marie.d' },
-        ],
-      });
-
-      expect(connections.updateIdentity).toHaveBeenCalledWith(1, 'mdupont');
-      expect(connections.updateIdentity).toHaveBeenCalledWith(2, 'marie.d');
-    });
-
-    it('should_not_touch_identities_when_omitted', async () => {
-      await service.update({ meEmail: 'marie@exemple.fr' });
-
-      expect(connections.updateIdentity).not.toHaveBeenCalled();
     });
 
     it('should_set_refresh_settings_when_provided', async () => {
@@ -310,19 +233,6 @@ describe('SettingsService', () => {
   });
 
   describe('getters for other modules', () => {
-    it('should_expose_the_configured_email', async () => {
-      repository.findOneBy.mockResolvedValue({
-        ...row(),
-        meEmail: 'marie@exemple.fr',
-      });
-
-      await expect(service.getMeEmail()).resolves.toBe('marie@exemple.fr');
-    });
-
-    it('should_expose_a_null_email_when_not_configured', async () => {
-      await expect(service.getMeEmail()).resolves.toBeNull();
-    });
-
     it('should_expose_the_configured_refresh_interval', async () => {
       repository.findOneBy.mockResolvedValue({
         ...row(),
@@ -375,7 +285,6 @@ describe('SettingsService', () => {
       const result = await service.getExportableSettings();
 
       expect(result).toEqual({
-        meEmail: null,
         refreshIntervalMin: 5,
         pauseWhenHidden: true,
         easyFiles: 5,

@@ -105,7 +105,12 @@ export const ConnectionsStore = signalStore(
       }
     },
 
-    /** Teste une connexion et mémorise le résultat (RG-001-04, RG-019-14). */
+    /**
+     * Teste une connexion et mémorise le résultat (RG-001-04, RG-019-14). Un
+     * succès sur une connexion existante met aussi à jour son identité
+     * résolue localement (RG-031-04), miroir de ce que le backend vient de
+     * persister — sans re-charger toute la liste.
+     */
     async testConnection(request: TestConnectionRequest): Promise<void> {
       patchState(store, {
         test: { status: 'pending', result: null, errorKey: null },
@@ -114,6 +119,19 @@ export const ConnectionsStore = signalStore(
       try {
         const result = await firstValueFrom(api.postTestConnection(request));
         patchState(store, { test: { status: 'success', result, errorKey: null } });
+        if (request.connectionId !== undefined) {
+          const identity = {
+            username: result.username,
+            name: result.name,
+            email: result.email,
+            avatarUrl: result.avatarUrl,
+          };
+          patchState(store, {
+            connections: store
+              .connections()
+              .map((c) => (c.id === request.connectionId ? { ...c, identity } : c)),
+          });
+        }
       } catch (error) {
         patchState(store, {
           test: { status: 'error', result: null, errorKey: errorKeyOf(error) },

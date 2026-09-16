@@ -189,6 +189,7 @@ export class GithubClientService implements ForgeClient {
     return {
       username: user.login,
       name: user.name ?? user.login,
+      email: user.email ?? null,
       avatarUrl: user.avatar_url,
       expiresAt: expiresHeader ? parseExpiryHeader(expiresHeader) : null,
       // RG-020-03: absent header means "no expiration", a known fact —

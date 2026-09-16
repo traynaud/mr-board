@@ -24,18 +24,14 @@ import { ThemeService } from '../../core/theme/theme.service';
 import { encodeQueryParams } from '../../core/url-state/query-params.mapper';
 import { SettingsSectionComponent } from '../../shared/settings-section/settings-section.component';
 import { ColumnsStore } from '../../stores/columns.store';
-import { ConnectionsStore } from '../../stores/connections.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore } from '../../stores/merge-requests.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
-import { syncIdentitiesFormArray } from './connections-form';
-import { resolveMeIdentity } from './me-identity';
 import { collectDirtyRepoChanges, syncReposFormArray } from './repos-form';
 import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
 import { DifficultySectionComponent } from './sections/difficulty/difficulty-section.component';
-import { IdentityRow, MeSectionComponent } from './sections/me/me-section.component';
 import { ReadyDelaySectionComponent } from './sections/ready-delay/ready-delay-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import { RepoRow } from './sections/repositories/repositories-section.component';
@@ -50,8 +46,6 @@ import { HasUnsavedChanges } from './unsaved-changes.guard';
 
 /** Durée d'affichage des toasts (ms). */
 export const TOAST_DURATION_MS = 3500;
-
-const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
 
 /**
  * Écran Paramètres (route `/settings`) : chargement, sections, Enregistrer /
@@ -70,7 +64,6 @@ const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
     TranslatePipe,
     SettingsSectionComponent,
     ConnectionsSectionComponent,
-    MeSectionComponent,
     RefreshSectionComponent,
     DifficultySectionComponent,
     ReadyDelaySectionComponent,
@@ -83,7 +76,6 @@ const IDLE_TEST = { status: 'idle' as const, result: null, errorKey: null };
 export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly store = inject(SettingsStore);
   protected readonly projectsStore = inject(ProjectsStore);
-  protected readonly connectionsStore = inject(ConnectionsStore);
   private readonly syncStore = inject(SyncStore);
   private readonly filtersStore = inject(FiltersStore);
   private readonly mrStore = inject(MergeRequestsStore);
@@ -110,24 +102,6 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   protected readonly canSave = computed(() => {
     this.formEvents();
     return this.form.valid && this.form.dirty && !this.store.saving();
-  });
-
-  /** Une ligne d'identité résolue par connexion (RG-019-08), pour la section « 01 · Moi ». */
-  protected readonly identityRows = computed<IdentityRow[]>(() => {
-    this.formEvents();
-    const testedConnectionId = this.connectionsStore.testedConnectionId();
-    const test = this.connectionsStore.test();
-    return this.connectionsStore.connections().map((connection, i) => {
-      const group = this.form.controls.identities.at(i);
-      return {
-        connection,
-        group,
-        identity: resolveMeIdentity(
-          group.controls.username.value,
-          testedConnectionId === connection.id ? test : IDLE_TEST,
-        ),
-      };
-    });
   });
 
   constructor() {
@@ -157,12 +131,6 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
           group: this.form.controls.repos.at(i),
         })),
       );
-    });
-    // Reconstruit le FormArray des identités à chaque changement de la liste
-    // des connexions (ajout/suppression immédiats, RG-019-08) — même
-    // principe que pour les repos.
-    effect(() => {
-      syncIdentitiesFormArray(this.form.controls.identities, this.connectionsStore.connections());
     });
   }
 
@@ -213,7 +181,6 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
     // immédiatement pristine avant la navigation, sans dépendre du moment où
     // l'effect sera exécuté.
     syncReposFormArray(this.form.controls.repos, this.projectsStore.projects());
-    syncIdentitiesFormArray(this.form.controls.identities, this.connectionsStore.connections());
     const settings = this.store.settings();
     if (settings) {
       resetSettingsForm(this.form, settings);

@@ -22,7 +22,7 @@
       "ariaLabel": "Quick filters",
       "drafts": "Drafts",
       "mine": "My MRs",
-      "mineDisabledTooltip": "Set up your identity in the settings",
+      "mineDisabledTooltip": "Add a connection with a valid token",
       "favorites": "Favorites",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} project{{projectsSuffix}}",
       "clear": "Clear",
@@ -161,24 +161,8 @@
       "stay": "Stay",
       "discard": "Discard"
     },
-    "me": {
-      "number": "01",
-      "title": "Me",
-      "description": "Used by « My MRs » and to spot my roles.",
-      "usernameFor": "Username on {{connection}}",
-      "noConnection": "Add a connection first.",
-      "noConnectionLink": "Go to the Connections section",
-      "email": "Email (optional)",
-      "emailInvalid": "Enter a valid email.",
-      "status": {
-        "matched": "detected from the token",
-        "mismatch": "does not match the token",
-        "manual": "entered manually"
-      },
-      "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)"
-    },
     "connections": {
-      "number": "02",
+      "number": "01",
       "title": "Connections",
       "description": "Forges queried by MR Board. Token read-only, stored encrypted server-side. Each repo is attached to its connection.",
       "loadError": "Could not load connections.",
@@ -187,6 +171,10 @@
       "added": "Connection added",
       "updated": "Connection updated",
       "removed": "Connection removed",
+      "identity": {
+        "resolved": "Connected as {{name}} (@{{username}})",
+        "unresolved": "Identity not resolved"
+      },
       "list": {
         "tokenConfigured": "Token configured (…{{hint}})",
         "tokenNone": "No token",
@@ -265,7 +253,7 @@
       }
     },
     "refresh": {
-      "number": "03",
+      "number": "02",
       "title": "Refresh",
       "description": "Automatic sync frequency with the configured forges.",
       "frequency": "Sync frequency",
@@ -277,7 +265,7 @@
       "hint": "Automatic sync ; the Refresh button always forces one."
     },
     "difficulty": {
-      "number": "04",
+      "number": "03",
       "title": "Difficulty",
       "description": "Rules for computing an MR's difficulty.",
       "easy": "Easy",
@@ -293,7 +281,7 @@
       }
     },
     "readyDelay": {
-      "number": "05",
+      "number": "04",
       "title": "Time since Ready",
       "description": "Color thresholds for the Ready delay.",
       "green": "Green",
@@ -309,9 +297,10 @@
       }
     },
     "misc": {
-      "number": "06",
+      "number": "05",
       "title": "Miscellaneous",
       "description": "Convenience options and configuration backup.",
+      "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)",
       "theme": {
         "title": "Theme",
         "system": "System",

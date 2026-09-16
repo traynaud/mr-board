@@ -26,6 +26,12 @@ import type {
  * Mirrors `UpdateSettingsDto` minus `identities`.
  */
 export class ImportSettingsDto {
+  /**
+   * Accepted-but-ignored (RG-031-14) : a pre-US-031 export still carries the
+   * global fallback email here. Kept declared only so the global
+   * `ValidationPipe` (`forbidNonWhitelisted: true`) doesn't 400 on it —
+   * `SettingsService.applyImportedSettings` never reads it any more.
+   */
   @IsOptional()
   @ValidateIf(
     (o: ImportSettingsDto) => o.meEmail !== undefined && o.meEmail !== '',

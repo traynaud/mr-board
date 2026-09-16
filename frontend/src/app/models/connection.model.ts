@@ -1,6 +1,18 @@
 /** Forge types a connection can point to (RG-019-01, RG-020-01). */
 export type ConnectionType = 'gitlab' | 'github';
 
+/**
+ * Mon identité sur une connexion, résolue automatiquement depuis son jeton
+ * (RG-031-02) — jamais saisie. Utilisée par « Mes MRs » (RG-G09) et affichée
+ * comme « Connecté en tant que » (RG-031-06).
+ */
+export interface ConnectionIdentity {
+  username: string;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
 /** Miroir de `ConnectionResponseDto` (backend). Ne contient jamais le jeton. */
 export interface Connection {
   id: number;
@@ -9,8 +21,8 @@ export interface Connection {
   url: string;
   tokenConfigured: boolean;
   tokenHint: string | null;
-  /** Mon nom d'utilisateur sur cette connexion, utilisé par « Mes MRs » (RG-019-07). */
-  meUsername: string | null;
+  /** `null` tant qu'aucune résolution n'a réussi (RG-031-05). */
+  identity: ConnectionIdentity | null;
   /** Nombre de repos rattachés à cette connexion (RG-019-10). */
   projectsCount: number;
 }
@@ -47,6 +59,7 @@ export interface TestConnectionRequest {
 export interface TestConnectionResult {
   username: string;
   name: string;
+  email: string | null;
   avatarUrl: string | null;
   expiresAt: string | null;
   expirationKnown: boolean;

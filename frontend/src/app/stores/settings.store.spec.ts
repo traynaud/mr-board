@@ -7,7 +7,6 @@ import { SettingsStore } from './settings.store';
 
 describe('SettingsStore', () => {
   const settings: Settings = {
-    meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,
@@ -61,10 +60,10 @@ describe('SettingsStore', () => {
   });
 
   it('should_save_and_update_settings', async () => {
-    const saved = { ...settings, meEmail: 'marie@exemple.fr' };
+    const saved = { ...settings, highlightMe: false };
     api.putSettings.mockReturnValue(of(saved));
 
-    const error = await store.save({ meEmail: 'marie@exemple.fr' });
+    const error = await store.save({ highlightMe: false });
 
     expect(error).toBeNull();
     expect(store.saving()).toBe(false);

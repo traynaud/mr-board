@@ -24,7 +24,6 @@ import { FilterBarComponent } from './filter-bar/filter-bar.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
 
 const SETTINGS: Settings = {
-  meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
   easyFiles: 5,
@@ -49,7 +48,7 @@ const CONNECTION: Connection = {
   url: 'https://gitlab.exemple.fr',
   tokenConfigured: true,
   tokenHint: 'wxyz',
-  meUsername: null,
+  identity: null,
   projectsCount: 1,
 };
 const NO_CONNECTIONS: Connection[] = [];
@@ -57,7 +56,12 @@ const WITH_TOKEN_CONNECTIONS: Connection[] = [CONNECTION];
 const WITHOUT_TOKEN_CONNECTIONS: Connection[] = [
   { ...CONNECTION, tokenConfigured: false, tokenHint: null },
 ];
-const WITH_IDENTITY_CONNECTIONS: Connection[] = [{ ...CONNECTION, meUsername: 'mdupont' }];
+const WITH_IDENTITY_CONNECTIONS: Connection[] = [
+  {
+    ...CONNECTION,
+    identity: { username: 'mdupont', name: 'Marie Dupont', email: null, avatarUrl: null },
+  },
+];
 const PROJECT: Project = {
   id: 1,
   connectionId: 1,

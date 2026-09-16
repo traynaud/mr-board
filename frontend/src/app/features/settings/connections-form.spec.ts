@@ -1,18 +1,15 @@
-import { FormArray, FormControl } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import { Connection } from '../../models/connection.model';
 import {
   DEFAULT_URLS,
-  IdentityForm,
   TOKEN_MIN_LENGTH,
   applyConnectionTypeDefaults,
   buildConnectionForm,
-  buildIdentityGroup,
   deriveDefaultConnectionName,
   forgeUrlValidator,
   optionalTokenLengthValidator,
   resetConnectionFormForAdd,
   resetConnectionFormForEdit,
-  syncIdentitiesFormArray,
 } from './connections-form';
 
 function connection(overrides: Partial<Connection> = {}): Connection {
@@ -23,7 +20,7 @@ function connection(overrides: Partial<Connection> = {}): Connection {
     url: 'https://gitlab.com',
     tokenConfigured: true,
     tokenHint: 'wxyz',
-    meUsername: null,
+    identity: null,
     projectsCount: 0,
     ...overrides,
   };
@@ -158,57 +155,5 @@ describe('resetConnectionFormForEdit', () => {
       url: 'https://gitlab.exemple.fr',
       token: '',
     });
-  });
-});
-
-describe('buildIdentityGroup', () => {
-  it('should_seed_connectionId_and_username_from_the_connection', () => {
-    const group = buildIdentityGroup(connection({ id: 2, meUsername: 'mdupont' }));
-
-    expect(group.getRawValue()).toEqual({ connectionId: 2, username: 'mdupont' });
-  });
-
-  it('should_default_username_to_empty_string_when_null', () => {
-    const group = buildIdentityGroup(connection({ meUsername: null }));
-
-    expect(group.controls.username.value).toBe('');
-  });
-});
-
-describe('syncIdentitiesFormArray', () => {
-  it('should_rebuild_array_in_the_same_order_as_connections', () => {
-    const array = new FormArray<IdentityForm>([]);
-    const connections = [connection({ id: 1, meUsername: 'mdupont' }), connection({ id: 2 })];
-
-    syncIdentitiesFormArray(array, connections);
-
-    expect(array.length).toBe(2);
-    expect(array.at(0).getRawValue()).toEqual({ connectionId: 1, username: 'mdupont' });
-    expect(array.at(1).getRawValue()).toEqual({ connectionId: 2, username: '' });
-  });
-
-  it('should_discard_unsaved_edits_on_rebuild', () => {
-    const array = new FormArray<IdentityForm>([]);
-    const connections = [connection({ id: 1 })];
-    syncIdentitiesFormArray(array, connections);
-    array.at(0).controls.username.setValue('edited');
-    array.at(0).controls.username.markAsDirty();
-
-    syncIdentitiesFormArray(array, connections);
-
-    expect(array.at(0).controls.username.value).toBe('');
-    expect(array.dirty).toBe(false);
-  });
-
-  it('should_shrink_and_grow_to_match_a_new_list', () => {
-    const array = new FormArray<IdentityForm>([]);
-    const connections = [connection({ id: 1 }), connection({ id: 2 })];
-    syncIdentitiesFormArray(array, connections);
-
-    syncIdentitiesFormArray(array, [connections[0]]);
-    expect(array.length).toBe(1);
-
-    syncIdentitiesFormArray(array, [...connections, connection({ id: 3 })]);
-    expect(array.length).toBe(3);
   });
 });

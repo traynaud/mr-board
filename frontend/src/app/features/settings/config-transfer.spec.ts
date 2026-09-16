@@ -110,12 +110,11 @@ describe('summarizeImport', () => {
       version: 2 as const,
       settings: {},
       connections: [
-        { type: 'gitlab' as const, name: 'gitlab.com', url: 'https://gitlab.com', meUsername: null },
+        { type: 'gitlab' as const, name: 'gitlab.com', url: 'https://gitlab.com' },
         {
           type: 'gitlab' as const,
           name: 'gitlab.exemple.fr',
           url: 'https://gitlab.exemple.fr',
-          meUsername: null,
         },
       ],
       projects: [],

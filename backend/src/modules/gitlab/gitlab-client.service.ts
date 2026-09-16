@@ -121,6 +121,7 @@ export class GitlabClientService implements ForgeClient {
     return {
       username: (user as GitlabUser).username,
       name: (user as GitlabUser).name,
+      email: (user as GitlabUser).email ?? null,
       avatarUrl: (user as GitlabUser).avatar_url ?? null,
       expiresAt: info?.expires_at ?? null,
       expirationKnown: info !== null,

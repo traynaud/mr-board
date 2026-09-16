@@ -70,7 +70,6 @@ const EMPTY_FACETS: MergeRequestsFacets = {
 };
 
 const SETTINGS: Settings = {
-  meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
   easyFiles: 5,
@@ -498,8 +497,8 @@ describe('MergeRequestsStore', () => {
     it('should_name_the_connection_in_the_body_when_at_least_two_are_configured_rg_021_08', async () => {
       connectionsApi.getConnections.mockReturnValue(
         of([
-          { id: 1, type: 'gitlab', name: 'GitLab', url: 'https://gitlab.com', tokenConfigured: true, tokenHint: null, meUsername: null, projectsCount: 1 },
-          { id: 2, type: 'github', name: 'GitHub', url: 'https://github.com', tokenConfigured: true, tokenHint: null, meUsername: null, projectsCount: 1 },
+          { id: 1, type: 'gitlab', name: 'GitLab', url: 'https://gitlab.com', tokenConfigured: true, tokenHint: null, identity: null, projectsCount: 1 },
+          { id: 2, type: 'github', name: 'GitHub', url: 'https://github.com', tokenConfigured: true, tokenHint: null, identity: null, projectsCount: 1 },
         ]),
       );
       await connectionsStore.load();

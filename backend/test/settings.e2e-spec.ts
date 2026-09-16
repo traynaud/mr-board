@@ -6,7 +6,6 @@ import { createTestApp } from './utils/create-test-app.js';
 interface Body {
   code?: string;
   message?: string[];
-  meEmail?: string | null;
   refreshIntervalMin?: number;
   pauseWhenHidden?: boolean;
 }
@@ -30,7 +29,6 @@ describe('Settings (e2e)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      meEmail: null,
       refreshIntervalMin: 5,
       pauseWhenHidden: true,
       easyFiles: 5,
@@ -53,71 +51,27 @@ describe('Settings (e2e)', () => {
   it('PUT /settings should_reject_unknown_fields', async () => {
     const res = await api()
       .put('/api/v1/settings')
-      .send({ meEmail: 'marie@exemple.fr', hack: true });
+      .send({ refreshIntervalMin: 5, hack: true });
 
     expect(res.status).toBe(400);
   });
 
-  it('PUT /settings should_set_identity_fields_trimmed', async () => {
-    const res = await api().put('/api/v1/settings').send({
-      meEmail: '  marie@exemple.fr  ',
-    });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
-    );
-  });
-
-  it('PUT /settings should_keep_identity_fields_when_omitted', async () => {
-    const res = await api().put('/api/v1/settings').send({});
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      expect.objectContaining({ meEmail: 'marie@exemple.fr' }),
-    );
-  });
-
-  it('PUT /settings should_reject_invalid_email', async () => {
-    const res = await api().put('/api/v1/settings').send({ meEmail: 'marie@' });
-
-    expect(res.status).toBe(400);
-    expect(body(res).message).toEqual([expect.stringContaining('meEmail')]);
-  });
-
-  it('PUT /settings should_clear_identity_fields_with_empty_strings', async () => {
-    const res = await api().put('/api/v1/settings').send({ meEmail: '' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(expect.objectContaining({ meEmail: null }));
-  });
-
-  it('PUT /settings should_apply_a_per_connection_identity', async () => {
-    const connection = await api().post('/api/v1/connections').send({
-      type: 'gitlab',
-      name: 'gitlab.exemple.fr',
-      url: 'https://gitlab.exemple.fr',
-      token: 'glpat-settings-e2e-token',
-    });
-
+  it('PUT /settings should_reject_meEmail_rg_031_01', async () => {
+    // RG-031-01 : l'identité n'est plus un champ manuel de `/settings`, elle
+    // est résolue par connexion depuis son jeton (`GET /connections`).
     const res = await api()
       .put('/api/v1/settings')
-      .send({
-        identities: [
-          {
-            connectionId: (connection.body as { id: number }).id,
-            username: 'mdupont',
-          },
-        ],
-      });
+      .send({ meEmail: 'marie@exemple.fr' });
 
-    expect(res.status).toBe(200);
-    const list = await api().get('/api/v1/connections');
-    expect(list.body).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ meUsername: 'mdupont' }),
-      ]),
-    );
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /settings should_reject_identities_rg_031_01', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ identities: [{ connectionId: 1, username: 'mdupont' }] });
+
+    expect(res.status).toBe(400);
   });
 
   it('PUT /settings should_store_refresh_settings', async () => {

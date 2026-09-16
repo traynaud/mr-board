@@ -14,6 +14,7 @@ import { ForgeClientFactory } from '../forges/forge-client.factory.js';
 import { ConnectionType } from '../forges/types/connection-type.js';
 import { ForgeTestResult } from '../forges/types/forge-test-result.js';
 import { Project } from '../projects/entities/project.entity.js';
+import { ConnectionIdentityDto } from './dto/connection-identity.dto.js';
 import { CreateConnectionDto } from './dto/create-connection.dto.js';
 import { ConnectionResponseDto } from './dto/connection-response.dto.js';
 import { TestConnectionDto } from './dto/test-connection.dto.js';
@@ -58,11 +59,17 @@ export class ConnectionsService {
         name: dto.name.trim(),
         url,
         tokenEncrypted: this.cipher.encrypt(dto.token),
-        meUsername: null,
+        resolvedUsername: null,
+        resolvedName: null,
+        resolvedEmail: null,
+        resolvedAvatarUrl: null,
         createdAt: now,
         updatedAt: now,
       }),
     );
+    // RG-031-03 : résolution best-effort en tâche de fond — la réponse HTTP
+    // ne l'attend pas, `identity` y vaut donc toujours `null` (RG-031-15).
+    void this.resolveIdentity(connection);
     return this.toResponse(connection, 0);
   }
 
@@ -81,7 +88,7 @@ export class ConnectionsService {
     // literal `null` through DTO validation too (it only skips the other
     // validators, same pitfall as `SettingsService.mergeCommonFields`) —
     // treated the same as "absent" here, since none of these fields has a
-    // "null clears the value" semantic (unlike `meEmail`, RG-002-02).
+    // "null clears the value" semantic.
     if (dto.name != null) {
       await this.assertNameAvailable(dto.name, id);
       connection.name = dto.name.trim();
@@ -92,11 +99,18 @@ export class ConnectionsService {
         dto.url,
       );
     }
+    const tokenChanged = dto.token != null;
     if (dto.token != null) {
       connection.tokenEncrypted = this.cipher.encrypt(dto.token);
     }
     connection.updatedAt = new Date().toISOString();
     const saved = await this.repository.save(connection);
+    if (tokenChanged) {
+      // RG-031-03 : un nouveau jeton peut identifier un autre compte —
+      // résolution best-effort en tâche de fond, même principe qu'à la
+      // création (l'identité affichée reste l'ancienne jusque-là).
+      void this.resolveIdentity(saved);
+    }
     return this.toResponse(saved, await this.countProjects(saved.id));
   }
 
@@ -141,7 +155,13 @@ export class ConnectionsService {
     }
     const forge = this.forges.forType(type);
     const url = this.requireUrl(forge, rawUrl);
-    return forge.testConnection(url, token);
+    const result = await forge.testConnection(url, token);
+    if (stored) {
+      // RG-031-04 : un test réussi met à jour l'identité affichée sans
+      // attendre le prochain cycle de synchronisation.
+      await this.applyResolvedIdentity(stored, result);
+    }
+    return result;
   }
 
   /**
@@ -156,18 +176,48 @@ export class ConnectionsService {
       : null;
   }
 
-  /** Sets my username on a connection (RG-019-08), called by `SettingsService.update`. */
-  async updateIdentity(connectionId: number, username: string): Promise<void> {
-    const connection = await this.findOrThrow(connectionId);
-    connection.meUsername = username.trim() || null;
+  /**
+   * Resolves my identity on a connection from its own stored token
+   * (RG-031-02/03) and persists it on success. Best-effort: any forge
+   * failure (invalid token, unreachable forge…) is swallowed, leaving the
+   * previously resolved identity untouched — never thrown to the caller,
+   * called fire-and-forget from `add`/`update` and from `SyncService`.
+   */
+  async resolveIdentity(connection: Connection): Promise<void> {
+    if (!connection.tokenEncrypted) {
+      return;
+    }
+    try {
+      const token = this.cipher.decrypt(connection.tokenEncrypted);
+      if (!token) {
+        return;
+      }
+      const forge = this.forges.forType(connection.type);
+      const result = await forge.testConnection(connection.url, token);
+      await this.applyResolvedIdentity(connection, result);
+    } catch {
+      // RG-031-03 : échec silencieux, la dernière identité connue est conservée.
+    }
+  }
+
+  /** Persists a successful `ForgeTestResult` as the connection's resolved identity. */
+  private async applyResolvedIdentity(
+    connection: Connection,
+    result: ForgeTestResult,
+  ): Promise<void> {
+    connection.resolvedUsername = result.username;
+    connection.resolvedName = result.name;
+    connection.resolvedEmail = result.email;
+    connection.resolvedAvatarUrl = result.avatarUrl;
     connection.updatedAt = new Date().toISOString();
     await this.repository.save(connection);
   }
 
   /**
    * Merges an imported connection by name (RG-019-19, case-insensitive):
-   * updates `url`/`meUsername` of an existing connection without touching
-   * its token, or creates a new one without a token when no match exists.
+   * updates `url` of an existing connection without touching its token or
+   * its resolved identity, or creates a new one without a token when no
+   * match exists (its identity starts unresolved, RG-031-14).
    * @returns the connection's own name (to resolve `ProjectsService.importMany`
    * entries) and whether it was newly created (always tokenless, RG-019-19 —
    * used by the caller to prompt the user to configure its token).
@@ -177,7 +227,6 @@ export class ConnectionsService {
     type: ConnectionType;
     name: string;
     url: string;
-    meUsername: string | null;
   }): Promise<{ name: string; created: boolean }> {
     const trimmedName = entry.name.trim();
     const existing = (await this.repository.find()).find(
@@ -187,7 +236,6 @@ export class ConnectionsService {
     const now = new Date().toISOString();
     if (existing) {
       existing.url = url;
-      existing.meUsername = entry.meUsername;
       existing.updatedAt = now;
       await this.repository.save(existing);
       return { name: existing.name, created: false };
@@ -198,7 +246,10 @@ export class ConnectionsService {
         name: trimmedName,
         url,
         tokenEncrypted: null,
-        meUsername: entry.meUsername,
+        resolvedUsername: null,
+        resolvedName: null,
+        resolvedEmail: null,
+        resolvedAvatarUrl: null,
         createdAt: now,
         updatedAt: now,
       }),
@@ -296,8 +347,20 @@ export class ConnectionsService {
       url: connection.url,
       tokenConfigured: token !== null,
       tokenHint: token ? tokenHint(token) : null,
-      meUsername: connection.meUsername,
+      identity: this.toIdentity(connection),
       projectsCount,
+    };
+  }
+
+  private toIdentity(connection: Connection): ConnectionIdentityDto | null {
+    if (connection.resolvedUsername === null) {
+      return null;
+    }
+    return {
+      username: connection.resolvedUsername,
+      name: connection.resolvedName ?? connection.resolvedUsername,
+      email: connection.resolvedEmail,
+      avatarUrl: connection.resolvedAvatarUrl,
     };
   }
 }

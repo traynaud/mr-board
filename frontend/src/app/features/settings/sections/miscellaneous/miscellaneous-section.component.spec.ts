@@ -30,8 +30,6 @@ const FULL_SETTINGS = {
   gitlabUrl: 'https://gitlab.com',
   tokenConfigured: false,
   tokenHint: null,
-  meUsername: null,
-  meEmail: null,
   refreshIntervalMin: 5,
   pauseWhenHidden: true,
   easyFiles: 5,
@@ -110,13 +108,23 @@ describe('MiscellaneousSectionComponent', () => {
     await settle();
   };
 
-  it('should_render_the_four_checkboxes', () => {
+  it('should_render_the_five_checkboxes', () => {
     const boxes = el.querySelectorAll('mat-checkbox');
-    expect(boxes.length).toBe(4);
+    expect(boxes.length).toBe(5);
     expect(boxes[0].querySelector('input')?.disabled).toBe(false);
     expect(boxes[1].querySelector('input')?.disabled).toBe(false);
     expect(boxes[2].querySelector('input')?.disabled).toBe(false);
     expect(boxes[3].querySelector('input')?.disabled).toBe(false);
+    expect(boxes[4].querySelector('input')?.disabled).toBe(false);
+  });
+
+  it('should_render_the_highlight_me_checkbox_first_bound_to_the_shared_form_rg_031_07', () => {
+    const box = el.querySelectorAll('mat-checkbox')[0];
+
+    expect(box.textContent?.trim()).toBe(t('settings.misc.highlightMe'));
+    host.form.controls.highlightMe.setValue(false);
+    fixture.detectChanges();
+    expect(box.querySelector('input')?.checked).toBe(false);
   });
 
   describe('theme radio group', () => {
@@ -182,11 +190,11 @@ describe('MiscellaneousSectionComponent', () => {
     el = fixture.nativeElement as HTMLElement;
 
     const boxes = el.querySelectorAll('mat-checkbox');
-    expect(boxes[0].querySelector('input')?.disabled).toBe(true);
+    expect(boxes[1].querySelector('input')?.disabled).toBe(true);
   });
 
   describe('notify assigned checkbox', () => {
-    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[0];
+    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[1];
 
     it('should_request_permission_and_check_the_box_when_granted', async () => {
       notifications.requestPermission.mockResolvedValue('granted');

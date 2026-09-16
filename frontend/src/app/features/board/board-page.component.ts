@@ -139,13 +139,10 @@ export class BoardPageComponent implements OnInit {
       !this.mrStore.loading(),
   );
 
-  /** Identité configurée (RG-002-05, RG-019-09) : active le chip « Mes MRs » (RG-009-03). */
-  protected readonly identityConfigured = computed(() => {
-    const settings = this.settingsStore.settings();
-    return (
-      !!settings?.meEmail || this.connectionsStore.connections().some((c) => !!c.meUsername)
-    );
-  });
+  /** Au moins une connexion a une identité résolue (RG-031-05) : active le chip « Mes MRs » (RG-009-03). */
+  protected readonly identityConfigured = computed(() =>
+    this.connectionsStore.connections().some((c) => !!c.identity),
+  );
 
   /**
    * « Mes MRs » et les filtres composables (dont « Titre », RG-026-01) sont

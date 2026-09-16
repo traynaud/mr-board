@@ -8,7 +8,6 @@ import { LanguageService } from './language.service';
 
 function settings(overrides: Partial<Settings> = {}): Settings {
   return {
-    meEmail: null,
     refreshIntervalMin: 5,
     pauseWhenHidden: true,
     easyFiles: 5,
