@@ -24,6 +24,7 @@
       "mine": "Mes MRs",
       "mineDisabledTooltip": "Ajoutez une connexion avec un jeton valide",
       "favorites": "Favoris",
+      "toReview": "À relire",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} projet{{projectsSuffix}}",
       "clear": "Effacer",
       "add": "Ajouter un filtre",

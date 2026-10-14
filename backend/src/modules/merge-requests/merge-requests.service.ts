@@ -32,6 +32,7 @@ import {
   applyComposableFilters,
 } from './domain/filter-merge-requests.js';
 import { favoriteKey, isFavorite } from './domain/is-favorite.js';
+import { isToReview } from './domain/is-to-review.js';
 import { isIgnoredByLabel } from './domain/is-ignored-by-label.js';
 import { Identity, isMe, isMine } from './domain/is-mine.js';
 import {
@@ -62,6 +63,8 @@ export interface ListOpenOptions {
   mineOnly?: boolean;
   /** RG-027-10/11. Defaults to `false`. */
   favoritesOnly?: boolean;
+  /** RG-032-01/06. Defaults to `false`. */
+  toReviewOnly?: boolean;
   /** RG-010-01/02. Defaults to no filter active. */
   filters?: ComposableFilters;
   /** RG-026-*. Defaults to `''` (no search, nothing excluded). */
@@ -73,6 +76,8 @@ export interface FacetsOptions {
   mineOnly?: boolean;
   /** RG-027-10/11. Defaults to `false`. */
   favoritesOnly?: boolean;
+  /** RG-032-01/06. Defaults to `false`. */
+  toReviewOnly?: boolean;
   filters?: ComposableFilters;
   /** RG-026-07 : applied before facet counts are computed, never excludable per-facet. */
   search?: string;
@@ -118,6 +123,7 @@ export class MergeRequestsService {
       includeDrafts = false,
       mineOnly = false,
       favoritesOnly = false,
+      toReviewOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
       search = '',
     } = options;
@@ -125,6 +131,7 @@ export class MergeRequestsService {
       includeDrafts,
       mineOnly,
       favoritesOnly,
+      toReviewOnly,
       search,
     );
     const filtered = applyComposableFilters(base, filters);
@@ -144,6 +151,7 @@ export class MergeRequestsService {
       includeDrafts = false,
       mineOnly = false,
       favoritesOnly = false,
+      toReviewOnly = false,
       filters = EMPTY_COMPOSABLE_FILTERS,
       search = '',
     } = options;
@@ -151,6 +159,7 @@ export class MergeRequestsService {
       includeDrafts,
       mineOnly,
       favoritesOnly,
+      toReviewOnly,
       search,
     );
     const [configuredProjects, allConnections]: [
@@ -206,6 +215,7 @@ export class MergeRequestsService {
     includeDrafts: boolean,
     mineOnly: boolean,
     favoritesOnly: boolean,
+    toReviewOnly: boolean,
     search = '',
   ): Promise<{ views: MergeRequestViewDto[]; warnings: string[] }> {
     const allMergeRequests = await this.mergeRequests.find({
@@ -293,6 +303,9 @@ export class MergeRequestsService {
     }
     if (favoritesOnly) {
       views = views.filter((view) => view.isFavorite);
+    }
+    if (toReviewOnly) {
+      views = views.filter(isToReview);
     }
 
     return { views, warnings };

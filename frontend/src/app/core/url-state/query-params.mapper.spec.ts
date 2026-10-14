@@ -5,6 +5,7 @@ const DEFAULT_STATE: UrlState = {
   drafts: false,
   mine: false,
   favorites: false,
+  toReview: false,
   active: [],
   connection: [],
   project: [],
@@ -48,6 +49,12 @@ describe('decodeQueryParams', () => {
     expect(decodeQueryParams({ fav: '1' })).toMatchObject({ favorites: true });
     expect(decodeQueryParams({ fav: '0' })).toMatchObject({ favorites: false });
     expect(decodeQueryParams({})).toMatchObject({ favorites: false });
+  });
+
+  it('should_decode_to_review_as_1_only_rg_032_07', () => {
+    expect(decodeQueryParams({ toReview: '1' })).toMatchObject({ toReview: true });
+    expect(decodeQueryParams({ toReview: '0' })).toMatchObject({ toReview: false });
+    expect(decodeQueryParams({})).toMatchObject({ toReview: false });
   });
 
   it('should_activate_a_list_filter_present_with_values', () => {
@@ -228,6 +235,7 @@ describe('encodeQueryParams', () => {
       drafts: '0',
       mine: '0',
       fav: '0',
+      toReview: '0',
       sort: 'ready:asc',
     });
   });
@@ -237,6 +245,11 @@ describe('encodeQueryParams', () => {
     expect(params['drafts']).toBe('1');
     expect(params['mine']).toBe('1');
     expect(params['fav']).toBe('1');
+  });
+
+  it('should_encode_to_review_as_1_when_true_and_0_otherwise_rg_032_07', () => {
+    expect(encodeQueryParams({ ...DEFAULT_STATE, toReview: true })['toReview']).toBe('1');
+    expect(encodeQueryParams(DEFAULT_STATE)['toReview']).toBe('0');
   });
 
   it('should_encode_an_active_list_filter_as_csv', () => {
@@ -344,6 +357,7 @@ describe('encodeQueryParams', () => {
       'drafts',
       'mine',
       'fav',
+      'toReview',
       'connection',
       'project',
       'author',

@@ -94,6 +94,28 @@ describe('FiltersStore', () => {
     expect(store.drafts()).toBe(true);
   });
 
+  it('should_default_to_to_review_inactive_rg_032_02', () => {
+    expect(store.toReview()).toBe(false);
+  });
+
+  it('should_toggle_to_review_rg_032_02', () => {
+    store.toggleToReview();
+    expect(store.toReview()).toBe(true);
+
+    store.toggleToReview();
+    expect(store.toReview()).toBe(false);
+  });
+
+  it('should_clear_to_review_and_never_touch_drafts_rg_032_08', () => {
+    store.toggleDrafts();
+    store.toggleToReview();
+
+    store.clear();
+
+    expect(store.toReview()).toBe(false);
+    expect(store.drafts()).toBe(true);
+  });
+
   describe('restore', () => {
     it('should_patch_the_search_value_rg_026_10', () => {
       store.restore({ search: 'facturation' });

@@ -53,6 +53,7 @@ export class FilterBarComponent {
   readonly drafts = input.required<boolean>();
   readonly mine = input.required<boolean>();
   readonly favorites = input.required<boolean>();
+  readonly toReview = input.required<boolean>();
   readonly identityConfigured = input.required<boolean>();
   readonly rows = input.required<MergeRequestView[]>();
   readonly active = input.required<FilterKey[]>();
@@ -68,6 +69,7 @@ export class FilterBarComponent {
   readonly draftsToggle = output<void>();
   readonly mineToggle = output<void>();
   readonly favoritesToggle = output<void>();
+  readonly toReviewToggle = output<void>();
   readonly clearFilters = output<void>();
   readonly filterAdd = output<FilterKey>();
   readonly filterRemove = output<FilterKey>();
@@ -87,7 +89,7 @@ export class FilterBarComponent {
   });
 
   protected readonly hasActiveFilter = computed(
-    () => this.mine() || this.favorites() || this.active().length > 0,
+    () => this.mine() || this.favorites() || this.toReview() || this.active().length > 0,
   );
 
   /** Nom traduit de « Titre », pour l'`aria-label` de sa croix de suppression. */

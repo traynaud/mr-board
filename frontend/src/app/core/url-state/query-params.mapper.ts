@@ -15,6 +15,8 @@ export interface UrlState {
   mine: boolean;
   /** RG-027-10/11 : filtre de base, toujours présent comme `mine`. */
   favorites: boolean;
+  /** RG-032-07 : filtre de base « À relire », toujours présent comme `fav`. */
+  toReview: boolean;
   /** Filtres composables actifs (pastilles affichées), reconstruit depuis la présence des clés dans l'URL. */
   active: FilterKey[];
   /** Noms de connexion (RG-021-04). */
@@ -83,6 +85,7 @@ export function decodeQueryParams(params: Record<string, string | undefined>): U
     drafts: params['drafts'] === '1',
     mine: params['mine'] === '1',
     favorites: params['fav'] === '1',
+    toReview: params['toReview'] === '1',
     active,
     connection,
     project,
@@ -110,6 +113,7 @@ export function encodeQueryParams(state: UrlState): Record<string, string> {
     drafts: state.drafts ? '1' : '0',
     mine: state.mine ? '1' : '0',
     fav: state.favorites ? '1' : '0',
+    toReview: state.toReview ? '1' : '0',
   };
   for (const key of state.active) {
     if (key === 'search') {

@@ -1321,6 +1321,40 @@ describe('MergeRequestsService', () => {
     });
   });
 
+  describe('listOpen — toReviewOnly (RG-032-*)', () => {
+    it('should_keep_only_merge_requests_without_reviewer_and_without_comment_rg_032_01', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, commentsCount: 0 }),
+        persistedMergeRequest({ id: 2, iid: 2, commentsCount: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({
+        toReviewOnly: true,
+      });
+
+      expect(result.map((v) => v.iid)).toEqual([1]);
+    });
+
+    it('should_return_every_merge_request_when_to_review_only_is_not_requested', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, iid: 1, commentsCount: 0 }),
+        persistedMergeRequest({ id: 2, iid: 2, commentsCount: 2 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+
+      const { mergeRequests: result } = await service.listOpen({});
+
+      expect(result.map((v) => v.iid).sort()).toEqual([1, 2]);
+    });
+  });
+
   describe('getFacets', () => {
     it('should_return_empty_facets_when_there_is_no_open_merge_request', async () => {
       projectsService.list.mockResolvedValue([]);

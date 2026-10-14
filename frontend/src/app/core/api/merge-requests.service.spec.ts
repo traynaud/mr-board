@@ -28,7 +28,7 @@ describe('MergeRequestsService', () => {
       const pending = firstValueFrom(
         service.getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false, favorites: false, search: '' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         ),
       );
@@ -68,7 +68,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'diff', direction: 'desc' },
-          { drafts: false, mine: false, favorites: false, search: '' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -83,7 +83,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: true, mine: true, favorites: false, search: '' },
+          { drafts: true, mine: true, favorites: false, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -101,7 +101,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false, favorites: true, search: '' },
+          { drafts: false, mine: false, favorites: true, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -112,11 +112,26 @@ describe('MergeRequestsService', () => {
       req.flush({ mergeRequests: [], warnings: [] });
     });
 
+    it('should_send_to_review_as_1_when_active_rg_032_06', () => {
+      service
+        .getMergeRequests(
+          { key: 'ready', direction: 'asc' },
+          { drafts: false, mine: false, favorites: false, toReview: true, search: '' },
+          EMPTY_COMPOSABLE_FILTERS,
+        )
+        .subscribe();
+
+      const req = ctrl.expectOne(
+        (r) => r.url === '/api/v1/merge-requests' && r.params.get('toReview') === '1',
+      );
+      req.flush({ mergeRequests: [], warnings: [] });
+    });
+
     it('should_omit_composable_filter_params_when_they_are_empty_or_null', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false, favorites: false, search: '' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -139,7 +154,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false, favorites: false, search: 'facturation' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: 'facturation' },
           EMPTY_COMPOSABLE_FILTERS,
         )
         .subscribe();
@@ -154,7 +169,7 @@ describe('MergeRequestsService', () => {
       service
         .getMergeRequests(
           { key: 'ready', direction: 'asc' },
-          { drafts: false, mine: false, favorites: false, search: '' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
           {
             connection: ['gitlab.com', 'github.com'],
             project: ['api', 'web'],
@@ -186,7 +201,7 @@ describe('MergeRequestsService', () => {
     it('should_get_facets_with_the_drafts_and_mine_query_params_but_no_sort', async () => {
       const pending = firstValueFrom(
         service.getFacets(
-          { drafts: true, mine: false, favorites: false, search: '' },
+          { drafts: true, mine: false, favorites: false, toReview: false, search: '' },
           EMPTY_COMPOSABLE_FILTERS,
         ),
       );
@@ -221,7 +236,7 @@ describe('MergeRequestsService', () => {
     it('should_send_the_composable_filter_params_as_csv_or_0_1_when_active', () => {
       service
         .getFacets(
-          { drafts: false, mine: false, favorites: false, search: '' },
+          { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
           {
             connection: ['gitlab.com'],
             project: ['api'],

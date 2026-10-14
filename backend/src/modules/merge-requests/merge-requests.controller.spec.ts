@@ -31,6 +31,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: false,
         mineOnly: false,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: EMPTY_COMPOSABLE_FILTERS,
       });
     });
@@ -47,6 +48,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: false,
         mineOnly: false,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: EMPTY_COMPOSABLE_FILTERS,
       });
     });
@@ -62,6 +64,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: true,
         mineOnly: true,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: EMPTY_COMPOSABLE_FILTERS,
       });
     });
@@ -74,6 +77,17 @@ describe('MergeRequestsController', () => {
 
       expect(service.listOpen).toHaveBeenCalledWith(
         expect.objectContaining({ favoritesOnly: true }),
+      );
+    });
+
+    it('should_translate_the_to_review_query_param_to_a_boolean_rg_032_06', async () => {
+      const response = { mergeRequests: [], warnings: [] };
+      service.listOpen.mockResolvedValue(response);
+
+      await controller.list({ toReview: '1' });
+
+      expect(service.listOpen).toHaveBeenCalledWith(
+        expect.objectContaining({ toReviewOnly: true }),
       );
     });
 
@@ -95,6 +109,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: false,
         mineOnly: false,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: {
           connection: ['gitlab.com'],
           project: ['api', 'web'],
@@ -148,6 +163,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: false,
         mineOnly: false,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: EMPTY_COMPOSABLE_FILTERS,
       });
     });
@@ -175,6 +191,7 @@ describe('MergeRequestsController', () => {
         includeDrafts: true,
         mineOnly: true,
         favoritesOnly: false,
+        toReviewOnly: false,
         filters: {
           connection: ['github.com'],
           project: ['api'],
@@ -222,6 +239,16 @@ describe('MergeRequestsController', () => {
 
       expect(service.getFacets).toHaveBeenCalledWith(
         expect.objectContaining({ favoritesOnly: true }),
+      );
+    });
+
+    it('should_translate_the_to_review_query_param_to_a_boolean_rg_032_06', async () => {
+      service.getFacets.mockResolvedValue({});
+
+      await controller.facets({ toReview: '1' });
+
+      expect(service.getFacets).toHaveBeenCalledWith(
+        expect.objectContaining({ toReviewOnly: true }),
       );
     });
 

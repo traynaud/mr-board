@@ -210,6 +210,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
       favorites: this.filtersStore.favorites(),
+      toReview: this.filtersStore.toReview(),
       active: this.filtersStore.active(),
       connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),

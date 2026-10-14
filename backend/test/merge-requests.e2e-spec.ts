@@ -949,6 +949,40 @@ describe('MergeRequests (e2e)', () => {
     expect(res.status).toBe(400);
   });
 
+  it('GET /merge-requests?toReview=1 should_only_return_merge_requests_without_reviewer_and_comment_rg_032_01', async () => {
+    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+      mergeRequest(330, { commentsCount: 0 }),
+      mergeRequest(331, { commentsCount: 2 }),
+      mergeRequest(332, {
+        commentsCount: 0,
+        reviewers: [forgeUser(2, 'tgirard', { name: 'Thomas Girard' })],
+      }),
+      mergeRequest(333, { commentsCount: 0, draft: true }),
+    ]);
+    await api().post('/api/v1/sync');
+    await waitUntilIdle();
+
+    const res = await api().get('/api/v1/merge-requests?toReview=1');
+    expect(
+      (res.body as MergeRequestsResponseBody).mergeRequests.map((v) => v.iid),
+    ).toEqual([330]);
+
+    const withDrafts = await api().get(
+      '/api/v1/merge-requests?toReview=1&drafts=1',
+    );
+    expect(
+      (withDrafts.body as MergeRequestsResponseBody).mergeRequests.map(
+        (v) => v.iid,
+      ),
+    ).toEqual([330, 333]);
+  });
+
+  it('GET /merge-requests?toReview=2 should_respond_400_for_an_invalid_boolean_value_rg_032_06', async () => {
+    const res = await api().get('/api/v1/merge-requests?toReview=2');
+
+    expect(res.status).toBe(400);
+  });
+
   it('GET /merge-requests?project=inconnu should_respond_200_with_an_empty_list_for_an_unknown_project_alias', async () => {
     gitlab.fetchOpenMergeRequests.mockImplementation(
       (_url: string, _token: string, project: { pathWithNamespace: string }) =>

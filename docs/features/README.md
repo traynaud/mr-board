@@ -73,7 +73,7 @@ Zones, de haut en bas :
 1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », bascule rapide clair/sombre (US-018), icône « Paramètres »
 2. **Barre de progression** 2 px pendant une synchronisation
 3. **Bandeau** « Aucune connexion configurée » (si aucune connexion, RG-019-17), ou « Aucun jeton configuré pour <connexions> » (si au moins une connexion sans jeton), avec bouton « Configurer » (si applicable)
-4. **Barre de filtres** : chips « Drafts » et « Mes MRs » (toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
+4. **Barre de filtres** : chips « Drafts », « Mes MRs », « Favoris » et « À relire » (US-032 : MRs sans relecteur ni commentaire ; toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
 5. **Tableau** des MRs avec colonnes : Projet, Auteur, Titre, Difficulté (triable), Commentaires, Reviewer, Affecté, Approved, Statut (visible par défaut, US-017), Depuis Ready (triable), Ouverte (masquée par défaut), menu colonnes ; anneau accent autour de mon avatar dans les colonnes Auteur/Reviewer/Affecté (US-023, désactivable)
 6. **Pied** : rappel des règles (drafts après les ready, Mes MRs = auteur/reviewer/affecté, anneau « moi » si actif — US-023)
 7. **État vide** : « Aucune MR ne correspond aux filtres. » + « Effacer les filtres »
@@ -190,6 +190,7 @@ une fois ses dépendances réalisées.
 | US-029 | Infobulle des approbateurs sur la colonne Approved                                 | Should   | L          | US-005, US-017, US-019, US-020         | ✅ |
 | US-030 | Paramètres : scission de la section Seuils en Difficulté / Temps depuis Ready      | Should   | S          | US-014                 | ✅ |
 | US-031 | Identité « Moi » résolue depuis le jeton (section Moi supprimée, surbrillance déplacée dans Divers) | Must | L | US-002, US-019, US-023 | ✅ |
+| US-032 | Filtre rapide « À relire » (MRs sans relecteur ni commentaire)                    | Should   | S          | US-009, US-010, US-011, US-027         | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.

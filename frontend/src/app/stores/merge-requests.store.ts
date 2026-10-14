@@ -71,6 +71,7 @@ export const MergeRequestsStore = signalStore(
             drafts: filters.drafts(),
             mine: filters.mine(),
             favorites: filters.favorites(),
+            toReview: filters.toReview(),
             search: filters.search(),
           };
           const composableFilters = filters.composableFilters();
