@@ -24,6 +24,7 @@
       "mine": "My MRs",
       "mineDisabledTooltip": "Add a connection with a valid token",
       "favorites": "Favorites",
+      "toReview": "To review",
       "count": "{{count}} MR{{countSuffix}} · {{projects}} project{{projectsSuffix}}",
       "clear": "Clear",
       "add": "Add a filter",

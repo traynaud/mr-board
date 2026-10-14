@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-10-14",
+    "type": "feat",
+    "user-story": "US-032",
+    "title": "Nouveau filtre rapide « À relire » : n'affiche que les MRs sans relecteur ni commentaire, cumulable avec Drafts, Mes MRs et Favoris."
+  },
+  {
     "date": "2026-09-16",
     "type": "feat",
     "user-story": "US-031",

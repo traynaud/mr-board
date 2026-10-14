@@ -21,6 +21,10 @@
     <mat-icon svgIcon="star-fill" matChipAvatar />
     {{ 'board.filters.favorites' | translate }}
   </mat-chip-option>
+
+  <mat-chip-option [selected]="toReview()" (selectionChange)="$event.isUserInput && toReviewToggle.emit()">
+    {{ 'board.filters.toReview' | translate }}
+  </mat-chip-option>
 </mat-chip-listbox>
 
 <span class="separator"></span>

@@ -72,8 +72,8 @@ const PROJECT: Project = {
 };
 const IDLE_STATUS: SyncStatus = { running: false, lastRun: null, nextRunAt: null };
 const CONNECTIONS_URL = '/api/v1/connections';
-const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&fav=0&sort=ready:asc';
-const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0&fav=0';
+const MERGE_REQUESTS_URL = '/api/v1/merge-requests?drafts=0&mine=0&fav=0&toReview=0&sort=ready:asc';
+const FACETS_URL = '/api/v1/merge-requests/facets?drafts=0&mine=0&fav=0&toReview=0';
 const EMPTY_FACETS = {
   connection: [],
   project: [],
@@ -407,9 +407,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=1&mine=0&fav=0&sort=ready:asc')
+      .expectOne('/api/v1/merge-requests?drafts=1&mine=0&fav=0&toReview=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
-    http.expectOne('/api/v1/merge-requests/facets?drafts=1&mine=0&fav=0').flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/merge-requests/facets?drafts=1&mine=0&fav=0&toReview=0').flush(EMPTY_FACETS);
     await settle();
   });
 
@@ -430,9 +430,9 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=0&mine=1&fav=0&sort=ready:asc')
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=1&fav=0&toReview=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
-    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=1&fav=0').flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=1&fav=0&toReview=0').flush(EMPTY_FACETS);
     await settle();
 
     expect(el.querySelector('.empty-state p')?.textContent?.trim()).toBe(
@@ -454,10 +454,28 @@ describe('BoardPageComponent', () => {
     await settle();
 
     http
-      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&fav=1&sort=ready:asc')
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&fav=1&toReview=0&sort=ready:asc')
       .flush({ mergeRequests: [], warnings: [] });
-    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=0&fav=1').flush(EMPTY_FACETS);
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=0&fav=1&toReview=0').flush(EMPTY_FACETS);
     await settle();
+  });
+
+  it('should_reload_with_to_review_1_after_toggling_the_to_review_chip_rg_032_02', async () => {
+    await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+    const toReviewChip = Array.from(
+      el.querySelectorAll<HTMLElement>('app-filter-bar mat-chip-option button'),
+    )[3];
+    toReviewChip.click();
+    await waitForDebounce();
+    await settle();
+
+    http
+      .expectOne('/api/v1/merge-requests?drafts=0&mine=0&fav=0&toReview=1&sort=ready:asc')
+      .flush({ mergeRequests: [], warnings: [] });
+    http.expectOne('/api/v1/merge-requests/facets?drafts=0&mine=0&fav=0&toReview=1').flush(EMPTY_FACETS);
+    await settle();
+    expect(TestBed.inject(FiltersStore).toReview()).toBe(true);
   });
 
   it('should_call_set_favorite_and_update_the_star_when_the_favorite_button_is_clicked_rg_027_08', async () => {
@@ -826,6 +844,29 @@ describe('BoardPageComponent', () => {
       expect(TestBed.inject(FiltersStore).favorites()).toBe(true);
     });
 
+    it('should_restore_to_review_1_from_the_url_before_the_first_load_rg_032_07', async () => {
+      TestBed.resetTestingModule();
+      await configureBoardTestingModule({
+        snapshot: { queryParams: { toReview: '1' } },
+      });
+
+      fixture = TestBed.createComponent(BoardPageComponent);
+      el = fixture.nativeElement as HTMLElement;
+      fixture.detectChanges();
+      await settle();
+      http.expectOne('/api/v1/settings').flush(SETTINGS);
+      http.expectOne(CONNECTIONS_URL).flush(WITH_TOKEN_CONNECTIONS);
+      http.expectOne('/api/v1/projects').flush([PROJECT]);
+      const mrReq = http.expectOne((r) => r.url === '/api/v1/merge-requests');
+      expect(mrReq.request.params.get('toReview')).toBe('1');
+      mrReq.flush({ mergeRequests: [], warnings: [] });
+      http.expectOne((r) => r.url === '/api/v1/merge-requests/facets').flush(EMPTY_FACETS);
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+
+      expect(TestBed.inject(FiltersStore).toReview()).toBe(true);
+    });
+
     it('should_write_the_url_with_default_params_and_replaceUrl_on_the_very_first_load', async () => {
       // Espionné avant toute création de composant : capture l'appel émis
       // par le premier passage de l'effet d'écriture d'URL, sans changement
@@ -838,7 +879,7 @@ describe('BoardPageComponent', () => {
       expect(navigateSpy).toHaveBeenCalledWith(
         [],
         expect.objectContaining({
-          queryParams: { drafts: '0', mine: '0', fav: '0', sort: 'ready:asc' },
+          queryParams: { drafts: '0', mine: '0', fav: '0', toReview: '0', sort: 'ready:asc' },
           replaceUrl: true,
         }),
       );
@@ -910,7 +951,7 @@ describe('BoardPageComponent', () => {
       });
 
       expect(el.querySelector('.board-footer .query-string')?.textContent?.trim()).toBe(
-        '?drafts=0&mine=0&fav=0&sort=ready:asc',
+        '?drafts=0&mine=0&fav=0&toReview=0&sort=ready:asc',
       );
     });
 

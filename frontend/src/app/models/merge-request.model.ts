@@ -119,6 +119,8 @@ export interface MergeRequestFilters {
   mine: boolean;
   /** RG-027-10/11 : filtre de base, comme `mine` — pas un `FilterKey` composable. */
   favorites: boolean;
+  /** RG-032-01/06 : filtre de base, comme `favorites` — MRs sans relecteur ni commentaire. */
+  toReview: boolean;
   /** Recherche sur le titre (+ iid, RG-026-05), `''` = pas de recherche (RG-026-08). */
   search: string;
 }

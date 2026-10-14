@@ -154,6 +154,7 @@ export class BoardPageComponent implements OnInit {
     () =>
       this.filtersStore.mine() ||
       this.filtersStore.favorites() ||
+      this.filtersStore.toReview() ||
       this.filtersStore.active().length > 0,
   );
 
@@ -163,6 +164,7 @@ export class BoardPageComponent implements OnInit {
       drafts: this.filtersStore.drafts(),
       mine: this.filtersStore.mine(),
       favorites: this.filtersStore.favorites(),
+      toReview: this.filtersStore.toReview(),
       active: this.filtersStore.active(),
       connection: this.filtersStore.connection(),
       project: this.filtersStore.project(),
@@ -339,6 +341,12 @@ export class BoardPageComponent implements OnInit {
     this.mrStore.scheduleReload();
   }
 
+  /** RG-032-02/06. */
+  protected onToReviewToggle(): void {
+    this.filtersStore.toggleToReview();
+    this.mrStore.scheduleReload();
+  }
+
   /** RG-027-08/09 : bascule optimiste de l'étoile, sans rechargement complet. */
   protected async onFavoriteStarToggle(row: MergeRequestView): Promise<void> {
     const errorKey = await this.mrStore.toggleFavorite(row);
@@ -451,6 +459,7 @@ export class BoardPageComponent implements OnInit {
       drafts: state.drafts,
       mine: state.mine,
       favorites: state.favorites,
+      toReview: state.toReview,
       active: state.active,
       connection: state.connection,
       project: state.project,

@@ -73,6 +73,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       [drafts]="drafts()"
       [mine]="mine()"
       [favorites]="favorites()"
+      [toReview]="toReview()"
       [identityConfigured]="identityConfigured()"
       [rows]="rows()"
       [active]="active()"
@@ -83,6 +84,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
       (draftsToggle)="draftsToggleCount = draftsToggleCount + 1"
       (mineToggle)="mineToggleCount = mineToggleCount + 1"
       (favoritesToggle)="favoritesToggleCount = favoritesToggleCount + 1"
+      (toReviewToggle)="toReviewToggleCount = toReviewToggleCount + 1"
       (clearFilters)="clearCount = clearCount + 1"
       (filterAdd)="added.push($event)"
       (filterRemove)="removed.push($event)"
@@ -97,6 +99,7 @@ class HostComponent {
   readonly drafts = signal(false);
   readonly mine = signal(false);
   readonly favorites = signal(false);
+  readonly toReview = signal(false);
   readonly identityConfigured = signal(true);
   readonly rows = signal<MergeRequestView[]>([mr({ id: 1 }), mr({ id: 2, projectAlias: 'web' })]);
   readonly active = signal<FilterKey[]>([]);
@@ -107,6 +110,7 @@ class HostComponent {
   draftsToggleCount = 0;
   mineToggleCount = 0;
   favoritesToggleCount = 0;
+  toReviewToggleCount = 0;
   clearCount = 0;
   added: FilterKey[] = [];
   removed: FilterKey[] = [];
@@ -127,15 +131,16 @@ describe('FilterBarComponent', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement, loader };
   };
 
-  it('should_render_the_drafts_mine_and_favorites_chips', async () => {
+  it('should_render_the_drafts_mine_favorites_and_to_review_chips', async () => {
     const { loader } = await setup();
     const listbox = await loader.getHarness(MatChipListboxHarness);
     const chips = await listbox.getChips();
 
-    expect(chips).toHaveLength(3);
+    expect(chips).toHaveLength(4);
     expect(await chips[0].getText()).toBe(t('board.filters.drafts'));
     expect(await chips[1].getText()).toBe(t('board.filters.mine'));
     expect(await chips[2].getText()).toBe(t('board.filters.favorites'));
+    expect(await chips[3].getText()).toBe(t('board.filters.toReview'));
   });
 
   it('should_reflect_the_drafts_and_mine_selected_state', async () => {
@@ -196,6 +201,36 @@ describe('FilterBarComponent', () => {
     await favoritesChip.toggle();
 
     expect(fixture.componentInstance.favoritesToggleCount).toBe(1);
+  });
+
+  it('should_reflect_the_to_review_selected_state_rg_032_02', async () => {
+    const { fixture, loader } = await setup();
+    fixture.componentInstance.toReview.set(true);
+    await fixture.whenStable();
+
+    const chip = await loader.getHarness(
+      MatChipOptionHarness.with({ text: t('board.filters.toReview') }),
+    );
+    expect(await chip.isSelected()).toBe(true);
+  });
+
+  it('should_emit_to_review_toggle_when_the_to_review_chip_is_clicked_rg_032_02', async () => {
+    const { fixture, loader } = await setup();
+    const chip = await loader.getHarness(
+      MatChipOptionHarness.with({ text: t('board.filters.toReview') }),
+    );
+
+    await chip.toggle();
+
+    expect(fixture.componentInstance.toReviewToggleCount).toBe(1);
+  });
+
+  it('should_show_the_clear_button_when_only_to_review_is_active_rg_032_08', async () => {
+    const { fixture, el } = await setup();
+    fixture.componentInstance.toReview.set(true);
+    await fixture.whenStable();
+
+    expect(el.textContent).toContain(t('board.filters.clear'));
   });
 
   it('should_disable_the_mine_chip_and_show_a_tooltip_when_identity_is_not_configured', async () => {

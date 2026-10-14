@@ -174,7 +174,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -188,7 +188,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: true, mine: true, favorites: false, search: '' },
+      { drafts: true, mine: true, favorites: false, toReview: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -201,7 +201,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, favorites: false, search: 'facturation' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: 'facturation' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });
@@ -216,11 +216,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, project: ['api'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -235,11 +235,11 @@ describe('MergeRequestsStore', () => {
     const expectedComposableFilters = { ...EMPTY_COMPOSABLE_FILTERS, connection: ['gitlab.com'] };
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'ready', direction: 'asc' },
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       expectedComposableFilters,
     );
     expect(api.getFacets).toHaveBeenCalledWith(
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       expectedComposableFilters,
     );
   });
@@ -330,7 +330,7 @@ describe('MergeRequestsStore', () => {
 
     expect(api.getMergeRequests).toHaveBeenCalledWith(
       { key: 'diff', direction: 'asc' },
-      { drafts: false, mine: false, favorites: false, search: '' },
+      { drafts: false, mine: false, favorites: false, toReview: false, search: '' },
       EMPTY_COMPOSABLE_FILTERS,
     );
   });

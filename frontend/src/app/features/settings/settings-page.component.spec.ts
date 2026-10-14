@@ -215,7 +215,7 @@ describe('SettingsPageComponent', () => {
       expect.objectContaining({ panelClass: 'mrb-toast' }),
     );
     expect(router.navigate).toHaveBeenCalledWith(['/'], {
-      queryParams: { drafts: '0', mine: '0', fav: '0', sort: 'ready:asc' },
+      queryParams: { drafts: '0', mine: '0', fav: '0', toReview: '0', sort: 'ready:asc' },
     });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
@@ -275,7 +275,7 @@ describe('SettingsPageComponent', () => {
     el.querySelector<HTMLButtonElement>('button.cancel')!.click();
 
     expect(router.navigate).toHaveBeenCalledWith(['/'], {
-      queryParams: { drafts: '0', mine: '0', fav: '0', sort: 'ready:asc' },
+      queryParams: { drafts: '0', mine: '0', fav: '0', toReview: '0', sort: 'ready:asc' },
     });
   });
 
@@ -288,7 +288,7 @@ describe('SettingsPageComponent', () => {
 
     expect(router.navigate).toHaveBeenCalledWith(['/'], {
       // RG-017-09 : « Statut » reste visible (défaut), donc `cols` liste les deux colonnes.
-      queryParams: { drafts: '0', mine: '1', fav: '0', sort: 'ready:asc', cols: 'status,opened' },
+      queryParams: { drafts: '0', mine: '1', fav: '0', toReview: '0', sort: 'ready:asc', cols: 'status,opened' },
     });
   });
 
@@ -338,7 +338,7 @@ describe('SettingsPageComponent', () => {
       expect.anything(),
     );
     expect(router.navigate).toHaveBeenCalledWith(['/'], {
-      queryParams: { drafts: '0', mine: '0', fav: '0', sort: 'ready:asc' },
+      queryParams: { drafts: '0', mine: '0', fav: '0', toReview: '0', sort: 'ready:asc' },
     });
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     expect(repoAliasInputs()[0].value).toBe('back');
