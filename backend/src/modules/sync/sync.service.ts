@@ -8,7 +8,10 @@ import {
 import { ConnectionsService } from '../connections/connections.service.js';
 import { Connection } from '../connections/entities/connection.entity.js';
 import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { HistoryService } from '../history/history.service.js';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
+import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import { MergeRequestSnapshot } from '../history/domain/merge-request-snapshot.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -43,6 +46,7 @@ export class SyncService {
     private readonly projects: ProjectsService,
     private readonly forges: ForgeClientFactory,
     private readonly mergeRequests: MergeRequestsService,
+    private readonly history: HistoryService,
   ) {}
 
   /**
@@ -191,6 +195,7 @@ export class SyncService {
         },
         { deadlineAt: Date.now() + PROJECT_SYNC_TIMEOUT_MS },
       );
+      const previous = await this.snapshotsForHistory(project);
       const mrCount = await this.mergeRequests.upsertForProject(
         project.id,
         connection.id,
@@ -201,6 +206,7 @@ export class SyncService {
         project.id,
         mergeRequests.map((mr) => mr.iid),
       );
+      await this.recordHistory(project, previous, mergeRequests, now);
       return { projectAlias: project.alias, success: true, mrCount };
     } catch (error) {
       this.logger.warn(
@@ -211,6 +217,48 @@ export class SyncService {
           ? `Jeton refusé (${connection.name})`
           : describe(error);
       return { projectAlias: project.alias, success: false, errorMessage };
+    }
+  }
+
+  /** Previous state for the history; `null` when it could not be read (history skipped, never fatal). */
+  private async snapshotsForHistory(
+    project: Project,
+  ): Promise<MergeRequestSnapshot[] | null> {
+    try {
+      return await this.mergeRequests.getSnapshots(project.id);
+    } catch (error) {
+      this.logger.warn(
+        `History snapshot failed for project "${project.alias}": ${describe(error)}`,
+      );
+      return null;
+    }
+  }
+
+  /** Journals the project's changes; a failure is logged and never fails the sync (RG-034-07). */
+  private async recordHistory(
+    project: Project,
+    previous: MergeRequestSnapshot[] | null,
+    incoming: ForgeMergeRequest[],
+    detectedAt: string,
+  ): Promise<void> {
+    if (previous === null) {
+      return;
+    }
+    try {
+      await this.history.recordProjectChanges({
+        project: {
+          id: project.id,
+          connectionId: project.connectionId,
+          alias: project.alias,
+        },
+        previous,
+        incoming,
+        detectedAt,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `History recording failed for project "${project.alias}": ${describe(error)}`,
+      );
     }
   }
 

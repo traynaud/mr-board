@@ -8,6 +8,7 @@ import { FavoritesService } from '../favorites/favorites.service.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
 import { MergeStatusResult } from '../forges/types/merge-status.js';
 import { Project } from '../projects/entities/project.entity.js';
+import { MergeRequestSnapshot } from '../history/domain/merge-request-snapshot.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { User } from '../users/entities/user.entity.js';
@@ -330,6 +331,56 @@ export class MergeRequestsService {
       await this.upsertOne(projectId, connectionId, mergeRequest, syncedAt);
     }
     return mergeRequests.length;
+  }
+
+  /**
+   * State currently stored for a project's merge requests, reduced to the
+   * fields watched by the history (US-033). Must be read *before*
+   * `upsertForProject` overwrites it.
+   * @returns one snapshot per stored merge request; `[]` when none.
+   */
+  async getSnapshots(projectId: number): Promise<MergeRequestSnapshot[]> {
+    const rows = await this.mergeRequests.find({ where: { projectId } });
+    if (rows.length === 0) {
+      return [];
+    }
+    const ids = rows.map((row) => row.id);
+    const [reviewerRows, assigneeRows, approverRows] = await Promise.all([
+      this.reviewers.find({ where: { mergeRequestId: In(ids) } }),
+      this.assignees.find({ where: { mergeRequestId: In(ids) } }),
+      this.approvers.find({ where: { mergeRequestId: In(ids) } }),
+    ]);
+    const userRows = await this.users.findByIds([
+      ...new Set(
+        [...reviewerRows, ...assigneeRows, ...approverRows].map(
+          (row) => row.userId,
+        ),
+      ),
+    ]);
+    const usersById = indexById(userRows);
+    const toUsers = (
+      associations: { mergeRequestId: number; userId: number }[],
+      mergeRequestId: number,
+    ) =>
+      associations
+        .filter((row) => row.mergeRequestId === mergeRequestId)
+        .map((row) => mustGet(usersById, row.userId, 'User'))
+        .map((user) => ({
+          remoteUserId: user.remoteUserId,
+          username: user.username,
+          name: user.name,
+        }));
+    return rows.map((row) => ({
+      iid: row.iid,
+      title: row.title,
+      webUrl: row.webUrl,
+      draft: row.draft,
+      labels: JSON.parse(row.labels) as string[],
+      reviewers: toUsers(reviewerRows, row.id),
+      assignees: toUsers(assigneeRows, row.id),
+      approvers: toUsers(approverRows, row.id),
+      commentsCount: row.commentsCount,
+    }));
   }
 
   /**

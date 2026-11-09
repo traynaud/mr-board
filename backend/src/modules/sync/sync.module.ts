@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConnectionsModule } from '../connections/connections.module.js';
 import { ForgesModule } from '../forges/forges.module.js';
+import { HistoryModule } from '../history/history.module.js';
 import { MergeRequestsModule } from '../merge-requests/merge-requests.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
@@ -18,6 +19,7 @@ import { SyncService } from './sync.service.js';
     ProjectsModule,
     ForgesModule,
     MergeRequestsModule,
+    HistoryModule,
   ],
   controllers: [SyncController],
   providers: [SyncService, SyncScheduler],

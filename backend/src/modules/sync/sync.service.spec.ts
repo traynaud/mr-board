@@ -11,6 +11,7 @@ import { ForgeClientFactory } from '../forges/forge-client.factory.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { ProjectsService } from '../projects/projects.service.js';
+import { HistoryService } from '../history/history.service.js';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { SyncRun } from './entities/sync-run.entity.js';
@@ -92,6 +93,10 @@ interface ProjectsServiceMock {
 interface MergeRequestsServiceMock {
   upsertForProject: jest.Mock;
   deleteMissing: jest.Mock;
+  getSnapshots: jest.Mock;
+}
+interface HistoryServiceMock {
+  recordProjectChanges: jest.Mock;
 }
 
 describe('SyncService', () => {
@@ -102,6 +107,7 @@ describe('SyncService', () => {
   let projects: ProjectsServiceMock;
   let gitlabForge: { fetchOpenMergeRequests: jest.Mock };
   let mergeRequests: MergeRequestsServiceMock;
+  let history: HistoryServiceMock;
 
   beforeEach(async () => {
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -152,6 +158,13 @@ describe('SyncService', () => {
           useValue: {
             upsertForProject: jest.fn().mockResolvedValue(0),
             deleteMissing: jest.fn().mockResolvedValue(undefined),
+            getSnapshots: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: HistoryService,
+          useValue: {
+            recordProjectChanges: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -163,6 +176,7 @@ describe('SyncService', () => {
     connections = module.get(ConnectionsService);
     projects = module.get(ProjectsService);
     mergeRequests = module.get(MergeRequestsService);
+    history = module.get(HistoryService);
   });
 
   afterEach(() => {
@@ -269,6 +283,65 @@ describe('SyncService', () => {
       expect(mergeRequests.deleteMissing).toHaveBeenNthCalledWith(2, 2, [3]);
       expect(syncRunsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'success', mrCount: 3 }),
+      );
+    });
+
+    it('should_read_the_previous_state_before_the_upsert_then_record_the_history_us_033', async () => {
+      const order: string[] = [];
+      const previous = [{ iid: 1 }];
+      projects.listActiveByConnection.mockResolvedValue([project()]);
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(1)]);
+      mergeRequests.getSnapshots.mockImplementation(() => {
+        order.push('snapshots');
+        return Promise.resolve(previous);
+      });
+      mergeRequests.upsertForProject.mockImplementation(() => {
+        order.push('upsert');
+        return Promise.resolve(1);
+      });
+      history.recordProjectChanges.mockImplementation(() => {
+        order.push('history');
+        return Promise.resolve();
+      });
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(order).toEqual(['snapshots', 'upsert', 'history']);
+      expect(history.recordProjectChanges).toHaveBeenCalledWith({
+        project: { id: 1, connectionId: 1, alias: 'api' },
+        previous,
+        incoming: [expect.objectContaining({ iid: 1 })],
+        detectedAt: expect.any(String) as string,
+      });
+    });
+
+    it('should_keep_the_sync_successful_when_recording_the_history_fails', async () => {
+      projects.listActiveByConnection.mockResolvedValue([project()]);
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(1)]);
+      mergeRequests.upsertForProject.mockResolvedValue(1);
+      history.recordProjectChanges.mockRejectedValue(new Error('disk full'));
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(syncRunsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'success', mrCount: 1 }),
+      );
+    });
+
+    it('should_skip_the_history_but_still_sync_when_the_previous_state_cannot_be_read', async () => {
+      projects.listActiveByConnection.mockResolvedValue([project()]);
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(1)]);
+      mergeRequests.getSnapshots.mockRejectedValue(new Error('db locked'));
+      mergeRequests.upsertForProject.mockResolvedValue(1);
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(history.recordProjectChanges).not.toHaveBeenCalled();
+      expect(syncRunsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'success', mrCount: 1 }),
       );
     });
 

@@ -2,6 +2,12 @@
   {
     "date": "2026-11-09",
     "type": "feat",
+    "user-story": "US-033",
+    "title": "Historique : chaque synchronisation détecte et enregistre les modifications des MRs (création, titre, draft, labels, relecteurs, affectés, approbations)."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
     "user-story": "US-032",
     "title": "Le filtre rapide « À relire » ne tient plus compte des commentaires : il affiche toutes les MRs sans relecteur."
   },

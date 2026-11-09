@@ -417,6 +417,52 @@ describe('MergeRequestsService', () => {
     });
   });
 
+  describe('getSnapshots (US-033)', () => {
+    it('should_return_an_empty_list_when_the_project_has_no_stored_merge_request', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([]);
+
+      await expect(service.getSnapshots(1)).resolves.toEqual([]);
+      expect(mergeRequestsRepo.find).toHaveBeenCalledWith({
+        where: { projectId: 1 },
+      });
+    });
+
+    it('should_assemble_labels_and_users_of_each_stored_merge_request', async () => {
+      mergeRequestsRepo.find.mockResolvedValue([
+        {
+          id: 10,
+          iid: 5,
+          title: 'T',
+          webUrl: 'https://x/5',
+          draft: true,
+          labels: '["bug"]',
+          commentsCount: 3,
+        },
+      ]);
+      reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 10, userId: 1 }]);
+      assigneesRepo.find.mockResolvedValue([]);
+      approversRepo.find.mockResolvedValue([{ mergeRequestId: 10, userId: 2 }]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 1, remoteUserId: 'r1', username: 'alice', name: 'Alice' },
+        { id: 2, remoteUserId: 'r2', username: 'bob', name: 'Bob' },
+      ]);
+
+      await expect(service.getSnapshots(1)).resolves.toEqual([
+        {
+          iid: 5,
+          title: 'T',
+          webUrl: 'https://x/5',
+          draft: true,
+          labels: ['bug'],
+          reviewers: [{ remoteUserId: 'r1', username: 'alice', name: 'Alice' }],
+          assignees: [],
+          approvers: [{ remoteUserId: 'r2', username: 'bob', name: 'Bob' }],
+          commentsCount: 3,
+        },
+      ]);
+    });
+  });
+
   describe('listOpen', () => {
     const NOW = '2026-09-11T08:00:00.000Z';
 
