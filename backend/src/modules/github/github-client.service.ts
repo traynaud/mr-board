@@ -16,12 +16,22 @@ import {
   FetchMergeRequestEventsOptions,
   ForgeMergeRequestEvent,
 } from '../forges/types/forge-merge-request-event.js';
+import {
+  FetchMergeRequestStateOptions,
+  ForgeMergeRequestState,
+} from '../forges/types/forge-merge-request-state.js';
 import { ForgeProject } from '../forges/types/forge-project.js';
 import { ForgeTestResult } from '../forges/types/forge-test-result.js';
 import { normalizeGitlabUrl } from '../gitlab/domain/normalize-gitlab-url.js';
 import { hasRequiredScope } from './domain/check-github-token-scopes.js';
 import { deriveGithubApiBases } from './domain/derive-github-api-bases.js';
 import { normalizeGithubProjectPath } from './domain/normalize-github-project-path.js';
+import {
+  GithubIssueDetail,
+  GithubPullDetail,
+  isClosedUnmerged,
+  mapGithubPullState,
+} from './mappers/map-github-pull-state.js';
 import { mapGraphqlPullRequest } from './mappers/map-graphql-pull-request.js';
 import {
   GithubTimelineItem,
@@ -341,6 +351,70 @@ export class GithubClientService implements ForgeClient {
       }
     }
     return mapGithubTimelineEvents(items, options.since);
+  }
+
+  /**
+   * `GET /repos/{o}/{r}/pulls/{n}` (+ `GET …/issues/{n}` for `closed_by` when
+   * the pull request was closed without being merged) — state, date and
+   * actor of a pull request that left the open list (US-035).
+   * @returns `null` when the pull request is not found (404).
+   */
+  async fetchMergeRequestState(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestStateOptions,
+  ): Promise<ForgeMergeRequestState | null> {
+    const { rest } = deriveGithubApiBases(url);
+    const base = `${rest}/repos/${project.pathWithNamespace}`;
+    const pull = await this.getJson<GithubPullDetail>(
+      `${base}/pulls/${iid}`,
+      token,
+      options.deadlineAt,
+    );
+    if (pull === null) {
+      return null;
+    }
+    const issue = isClosedUnmerged(pull)
+      ? await this.getJson<GithubIssueDetail>(
+          `${base}/issues/${iid}`,
+          token,
+          options.deadlineAt,
+        )
+      : null;
+    return mapGithubPullState(pull, issue);
+  }
+
+  /** GET + JSON decode with the shared status mapping; `null` on 404. */
+  private async getJson<T>(
+    endpoint: string,
+    token: string,
+    deadlineAt: number,
+  ): Promise<T | null> {
+    if (Date.now() >= deadlineAt) {
+      throw new ForgeTimeoutException();
+    }
+    const response = await this.fetchRest(endpoint, token);
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new ForgeAuthException(
+        `GitHub rejected the token (${response.status})`,
+      );
+    }
+    if (!response.ok) {
+      this.logger.warn(`GitHub ${endpoint} responded ${response.status}`);
+      throw new ForgeUnavailableException(
+        `GitHub responded ${response.status}`,
+      );
+    }
+    try {
+      return (await response.json()) as T;
+    } catch {
+      throw new ForgeUnavailableException('GitHub returned an invalid body');
+    }
   }
 
   /** Fetches one page, retrying once after a rate-limit wait (RG-020-11). */

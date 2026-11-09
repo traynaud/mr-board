@@ -14,11 +14,19 @@ import {
   FetchMergeRequestEventsOptions,
   ForgeMergeRequestEvent,
 } from '../forges/types/forge-merge-request-event.js';
+import {
+  FetchMergeRequestStateOptions,
+  ForgeMergeRequestState,
+} from '../forges/types/forge-merge-request-state.js';
 import { ForgeProject } from '../forges/types/forge-project.js';
 import { ForgeTestResult } from '../forges/types/forge-test-result.js';
 import { hasRequiredScope } from './domain/check-token-scopes.js';
 import { normalizeGitlabUrl } from './domain/normalize-gitlab-url.js';
 import { normalizeProjectPath } from '../projects/domain/normalize-project-path.js';
+import {
+  GitlabMergeRequestDetail,
+  mapGitlabMergeRequestState,
+} from './mappers/map-gitlab-merge-request-state.js';
 import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request.js';
 import {
   GitlabLabelEvent,
@@ -365,6 +373,28 @@ export class GitlabClientService implements ForgeClient {
       }
     }
     return mapGitlabNotesToEvents(notes, labelEvents, options.since);
+  }
+
+  /**
+   * `GET /api/v4/projects/:id/merge_requests/:iid` — state, date and actor of
+   * a merge request that left the open list (US-035).
+   * @returns `null` when the merge request is not found (404).
+   */
+  async fetchMergeRequestState(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestStateOptions,
+  ): Promise<ForgeMergeRequestState | null> {
+    this.assertWithinDeadline(options.deadlineAt);
+    const detail = await this.get<GitlabMergeRequestDetail>(
+      url,
+      `/api/v4/projects/${encodeURIComponent(project.remoteProjectId)}/merge_requests/${iid}`,
+      token,
+      { allowNotFound: true },
+    );
+    return detail === null ? null : mapGitlabMergeRequestState(detail);
   }
 
   private assertWithinDeadline(deadlineAt: number): void {

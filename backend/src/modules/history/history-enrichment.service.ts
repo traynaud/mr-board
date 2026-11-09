@@ -5,6 +5,7 @@ import { ConnectionsService } from '../connections/connections.service.js';
 import { ForgeClientFactory } from '../forges/forge-client.factory.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { computeRetryDelayMs } from './domain/compute-retry-delay.js';
+import { buildTerminalEvent } from './domain/build-terminal-event.js';
 import { reconcileEvents } from './domain/reconcile-events.js';
 import { HistoryQueueEntry } from './entities/history-queue-entry.entity.js';
 import { MergeRequestEvent } from './entities/merge-request-event.entity.js';
@@ -96,19 +97,33 @@ export class HistoryEnrichmentService {
       throw new Error('connection has no token');
     }
     const since = entry.since ?? entry.requestedAt;
-    const forgeEvents = await this.forges
-      .forType(connection.type)
-      .fetchMergeRequestEvents(
-        connection.url,
-        token,
-        {
-          remoteProjectId: project.remoteProjectId,
-          pathWithNamespace: project.pathWithNamespace,
-          webUrl: project.webUrl,
-        },
-        entry.mrIid,
-        { since, deadlineAt: Date.now() + ENRICHMENT_CALL_TIMEOUT_MS },
-      );
+    const forge = this.forges.forType(connection.type);
+    const forgeProject = {
+      remoteProjectId: project.remoteProjectId,
+      pathWithNamespace: project.pathWithNamespace,
+      webUrl: project.webUrl,
+    };
+    const forgeEvents = await forge.fetchMergeRequestEvents(
+      connection.url,
+      token,
+      forgeProject,
+      entry.mrIid,
+      { since, deadlineAt: Date.now() + ENRICHMENT_CALL_TIMEOUT_MS },
+    );
+    // RG-035-02: a merge request that left the open list — look up its final state.
+    const terminal =
+      entry.kind === 'disappeared'
+        ? buildTerminalEvent(
+            await forge.fetchMergeRequestState(
+              connection.url,
+              token,
+              forgeProject,
+              entry.mrIid,
+              { deadlineAt: Date.now() + ENRICHMENT_CALL_TIMEOUT_MS },
+            ),
+            entry,
+          )
+        : null;
 
     const provisional = await this.events.find({
       where: {
@@ -133,6 +148,9 @@ export class HistoryEnrichmentService {
       forgeEvents,
       new Set(known.map((row) => row.sourceEventId as string)),
     );
+    if (terminal) {
+      inserts.push(terminal);
+    }
 
     const detectedAt = new Date().toISOString();
     await this.dataSource.transaction(async (manager) => {
@@ -178,6 +196,50 @@ export class HistoryEnrichmentService {
     });
   }
 
+  /**
+   * Gives up on an entry (RG-034-07). A merge request that vanished still
+   * leaves a trace: a provisional `disappeared` event (RG-035-04 repli).
+   */
+  private async abandon(entry: HistoryQueueEntry, now: Date): Promise<void> {
+    const project =
+      entry.kind === 'disappeared'
+        ? await this.projects.findById(entry.projectId)
+        : null;
+    await this.dataSource.transaction(async (manager) => {
+      if (project) {
+        const at = now.toISOString();
+        await manager
+          .createQueryBuilder()
+          .insert()
+          .into(MergeRequestEvent)
+          .values({
+            occurredAt: entry.requestedAt,
+            detectedAt: at,
+            type: 'disappeared',
+            status: 'provisional',
+            sourceEventId: `disappeared:${entry.mrIid}:${entry.requestedAt}`,
+            connectionId: project.connectionId,
+            projectId: project.id,
+            mrIid: entry.mrIid,
+            mrTitle: entry.mrTitle,
+            mrWebUrl: entry.mrWebUrl,
+            projectAlias: project.alias,
+            actorUsername: null,
+            actorName: null,
+            actorAvatarUrl: null,
+            oldValue: JSON.stringify('opened'),
+            newValue: null,
+          })
+          .orIgnore()
+          .execute();
+      }
+      await manager.delete(HistoryQueueEntry, {
+        id: entry.id,
+        requestedAt: entry.requestedAt,
+      });
+    });
+  }
+
   private async recordFailure(
     entry: HistoryQueueEntry,
     now: Date,
@@ -191,10 +253,7 @@ export class HistoryEnrichmentService {
         this.logger.warn(
           `History enrichment abandoned for MR !${entry.mrIid} (project ${entry.projectId}) after ${attempts} attempts: ${reason}`,
         );
-        await this.queue.delete({
-          id: entry.id,
-          requestedAt: entry.requestedAt,
-        });
+        await this.abandon(entry, now);
         return;
       }
       this.logger.warn(

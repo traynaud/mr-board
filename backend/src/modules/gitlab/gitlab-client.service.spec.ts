@@ -564,4 +564,60 @@ describe('GitlabClientService', () => {
       ).rejects.toBeInstanceOf(ForgeAuthException);
     });
   });
+  describe('fetchMergeRequestState (US-035)', () => {
+    const options = () => ({ deadlineAt: Date.now() + 60_000 });
+
+    it('should_get_the_merge_request_and_map_its_terminal_state', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(200, {
+          state: 'merged',
+          merged_at: '2026-11-10T07:03:00Z',
+          merge_user: { username: 'bob', name: 'Bob' },
+        }),
+      );
+
+      const state = await service.fetchMergeRequestState(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE}/api/v4/projects/42/merge_requests/12`);
+      expect((init.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe(
+        TOKEN,
+      );
+      expect(state).toMatchObject({
+        state: 'merged',
+        occurredAt: '2026-11-10T07:03:00Z',
+        actor: { username: 'bob' },
+      });
+    });
+
+    it('should_return_null_when_the_merge_request_is_not_found', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(404, {}));
+
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).resolves.toBeNull();
+    });
+
+    it('should_throw_an_auth_error_when_the_token_is_rejected', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(401, {}));
+
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+    });
+
+    it('should_throw_a_timeout_when_the_deadline_is_already_reached', async () => {
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, {
+          deadlineAt: Date.now() - 1,
+        }),
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
+    });
+  });
 });

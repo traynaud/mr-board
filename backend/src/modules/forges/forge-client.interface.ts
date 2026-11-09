@@ -1,5 +1,9 @@
 import { ForgeMergeRequest } from './types/forge-merge-request.js';
 import {
+  FetchMergeRequestStateOptions,
+  ForgeMergeRequestState,
+} from './types/forge-merge-request-state.js';
+import {
   FetchMergeRequestEventsOptions,
   ForgeMergeRequestEvent,
 } from './types/forge-merge-request-event.js';
@@ -82,4 +86,20 @@ export interface ForgeClient {
     iid: number,
     options: FetchMergeRequestEventsOptions,
   ): Promise<ForgeMergeRequestEvent[]>;
+
+  /**
+   * Current state of one merge/pull request, looked up by `iid` — used for
+   * merge requests that disappeared from the open list (US-035).
+   * @returns `null` when the merge request is not found (404).
+   * @throws ForgeAuthException on 401/403.
+   * @throws ForgeTimeoutException when `options.deadlineAt` is exceeded.
+   * @throws ForgeUnavailableException on network error, rate limit or 5xx.
+   */
+  fetchMergeRequestState(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestStateOptions,
+  ): Promise<ForgeMergeRequestState | null>;
 }

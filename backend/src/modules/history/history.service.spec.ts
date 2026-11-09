@@ -65,6 +65,7 @@ function snapshot(
 describe('HistoryService', () => {
   let service: HistoryService;
   const baselines = { existsBy: jest.fn(), insert: jest.fn() };
+  const eventsRepo = { find: jest.fn() };
   const manager = {
     insert: jest.fn(),
     upsert: jest.fn(),
@@ -80,10 +81,15 @@ describe('HistoryService', () => {
     jest.clearAllMocks();
     baselines.existsBy.mockResolvedValue(true);
     manager.find.mockResolvedValue([]);
+    eventsRepo.find.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         HistoryService,
         { provide: getRepositoryToken(HistoryBaseline), useValue: baselines },
+        {
+          provide: getRepositoryToken(MergeRequestEvent),
+          useValue: eventsRepo,
+        },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -155,6 +161,7 @@ describe('HistoryService', () => {
           mrIid: 1,
           mrTitle: 'New',
           mrWebUrl: 'https://gitlab.example.com/-/merge_requests/1',
+          kind: 'update',
           requestedAt: NOW,
           since: '2026-11-09T09:55:00.000Z',
           attempts: 0,
@@ -261,6 +268,119 @@ describe('HistoryService', () => {
       { since: string }[],
     ];
     expect(entries[0]?.since).toBe('2026-11-09T08:00:00.000Z');
+  });
+
+  it('should_queue_a_disappeared_entry_for_a_stored_mr_absent_from_the_response', async () => {
+    await service.recordProjectChanges({
+      project: PROJECT,
+      previous: [
+        snapshot(1),
+        snapshot(2, { title: 'Gone', syncedAt: '2026-11-09T09:30:00.000Z' }),
+      ],
+      incoming: [forgeMr(1)],
+      detectedAt: NOW,
+    });
+
+    expect(manager.insert).not.toHaveBeenCalled();
+    expect(manager.upsert).toHaveBeenCalledWith(
+      HistoryQueueEntry,
+      [
+        {
+          projectId: 7,
+          mrIid: 2,
+          mrTitle: 'Gone',
+          mrWebUrl: 'https://gitlab.example.com/-/merge_requests/2',
+          kind: 'disappeared',
+          requestedAt: NOW,
+          since: '2026-11-09T09:25:00.000Z',
+          attempts: 0,
+          nextAttemptAt: null,
+        },
+      ],
+      ['projectId', 'mrIid'],
+    );
+  });
+
+  it('should_not_downgrade_a_waiting_disappeared_entry_when_the_mr_changes_again', async () => {
+    manager.find.mockResolvedValue([
+      {
+        mrIid: 1,
+        kind: 'disappeared',
+        since: '2026-11-09T09:00:00.000Z',
+        requestedAt: NOW,
+      },
+    ]);
+
+    await service.recordProjectChanges({
+      project: PROJECT,
+      previous: [snapshot(1, { title: 'Old' })],
+      incoming: [forgeMr(1, { title: 'New' })],
+      detectedAt: NOW,
+    });
+
+    const [, entries] = manager.upsert.mock.calls[0] as [
+      unknown,
+      { kind: string; since: string }[],
+    ];
+    expect(entries[0]).toMatchObject({
+      kind: 'disappeared',
+      since: '2026-11-09T09:00:00.000Z',
+    });
+  });
+
+  it.each(['merged', 'closed'])(
+    'should_emit_reopened_instead_of_created_when_the_last_event_is_%s',
+    async (lastType) => {
+      eventsRepo.find.mockResolvedValue([
+        { mrIid: 9, type: lastType, occurredAt: '2026-11-08T12:00:00Z' },
+        { mrIid: 9, type: 'created', occurredAt: '2026-09-01T10:00:00Z' },
+      ]);
+
+      await service.recordProjectChanges({
+        project: PROJECT,
+        previous: [],
+        incoming: [forgeMr(9)],
+        detectedAt: NOW,
+      });
+
+      const [, rows] = manager.insert.mock.calls[0] as [
+        unknown,
+        Partial<MergeRequestEvent>[],
+      ];
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        type: 'reopened',
+        status: 'provisional',
+        occurredAt: NOW,
+        actorUsername: null,
+        oldValue: JSON.stringify(lastType),
+        newValue: '"opened"',
+      });
+      const [, entries] = manager.upsert.mock.calls[0] as [
+        unknown,
+        { since: string }[],
+      ];
+      expect(entries[0]?.since).toBe('2026-11-08T12:00:00Z');
+    },
+  );
+
+  it('should_emit_created_when_the_last_known_event_is_not_a_closure', async () => {
+    eventsRepo.find.mockResolvedValue([
+      { mrIid: 9, type: 'label_added', occurredAt: '2026-11-08T12:00:00Z' },
+    ]);
+
+    await service.recordProjectChanges({
+      project: PROJECT,
+      previous: [],
+      incoming: [forgeMr(9)],
+      detectedAt: NOW,
+    });
+
+    const [, rows] = manager.insert.mock.calls[0] as [
+      unknown,
+      Partial<MergeRequestEvent>[],
+    ];
+    expect(rows[0]?.type).toBe('created');
   });
 
   it('should_propagate_the_error_when_the_transaction_fails', async () => {

@@ -1,5 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
+/** `update`: changes to enrich; `disappeared`: left the open list, look up its final state (US-035). */
+export type HistoryQueueKind = 'update' | 'disappeared';
+
 /**
  * A merge request waiting for forge-side enrichment (RG-034-02): at most
  * one row per (`project_id`, `mr_iid`), refreshed in place by every new
@@ -21,6 +24,9 @@ export class HistoryQueueEntry {
 
   @Column({ name: 'mr_web_url', type: 'text' })
   mrWebUrl!: string;
+
+  @Column({ type: 'text', default: 'update' })
+  kind!: HistoryQueueKind;
 
   @Column({ name: 'requested_at', type: 'text' })
   requestedAt!: string;

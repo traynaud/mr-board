@@ -24,6 +24,7 @@ function entry(overrides: Partial<HistoryQueueEntry> = {}): HistoryQueueEntry {
     mrTitle: 'Fix login',
     mrWebUrl: 'https://gitlab.example.com/-/merge_requests/12',
     requestedAt: '2026-11-09T09:58:00.000Z',
+    kind: 'update',
     since: '2026-11-09T09:30:00.000Z',
     attempts: 0,
     nextAttemptAt: null,
@@ -63,7 +64,10 @@ describe('HistoryEnrichmentService', () => {
   };
   const projects = { findById: jest.fn() };
   const connections = { findOrThrow: jest.fn(), getToken: jest.fn() };
-  const forge = { fetchMergeRequestEvents: jest.fn() };
+  const forge = {
+    fetchMergeRequestEvents: jest.fn(),
+    fetchMergeRequestState: jest.fn(),
+  };
   const forges = { forType: jest.fn(() => forge) };
 
   beforeEach(async () => {
@@ -260,7 +264,7 @@ describe('HistoryEnrichmentService', () => {
     });
   });
 
-  it('should_abandon_the_entry_after_the_last_attempt', async () => {
+  it('should_abandon_an_update_entry_after_the_last_attempt_without_any_event', async () => {
     queue.find
       .mockReset()
       .mockResolvedValueOnce([entry({ attempts: 4 })])
@@ -269,11 +273,126 @@ describe('HistoryEnrichmentService', () => {
 
     await service.processDue(NOW);
 
-    expect(queue.delete).toHaveBeenCalledWith({
+    expect(manager.delete).toHaveBeenCalledWith(HistoryQueueEntry, {
       id: 1,
       requestedAt: '2026-11-09T09:58:00.000Z',
     });
+    expect(insertBuilder.execute).not.toHaveBeenCalled();
     expect(queue.update).not.toHaveBeenCalled();
+  });
+
+  it('should_leave_a_disappeared_event_when_a_vanished_mr_is_abandoned', async () => {
+    queue.find
+      .mockReset()
+      .mockResolvedValueOnce([entry({ attempts: 4, kind: 'disappeared' })])
+      .mockResolvedValue([]);
+    forge.fetchMergeRequestEvents.mockRejectedValue(new Error('boom'));
+
+    await service.processDue(NOW);
+
+    expect(insertBuilder.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'disappeared',
+        status: 'provisional',
+        sourceEventId: 'disappeared:12:2026-11-09T09:58:00.000Z',
+        occurredAt: '2026-11-09T09:58:00.000Z',
+        mrTitle: 'Fix login',
+        projectAlias: 'api',
+        actorUsername: null,
+      }),
+    );
+    expect(manager.delete).toHaveBeenCalledWith(HistoryQueueEntry, {
+      id: 1,
+      requestedAt: '2026-11-09T09:58:00.000Z',
+    });
+  });
+
+  describe('disappeared entries (US-035)', () => {
+    beforeEach(() => {
+      queue.find
+        .mockReset()
+        .mockResolvedValueOnce([entry({ kind: 'disappeared' })])
+        .mockResolvedValue([]);
+      forge.fetchMergeRequestEvents.mockResolvedValue([]);
+    });
+
+    it('should_create_a_merged_event_with_the_forge_actor_and_date', async () => {
+      forge.fetchMergeRequestState.mockResolvedValue({
+        state: 'merged',
+        occurredAt: '2026-11-10T07:03:00Z',
+        actor: { username: 'bob', name: 'Bob', avatarUrl: null },
+      });
+
+      await service.processDue(NOW);
+
+      expect(forge.fetchMergeRequestState).toHaveBeenCalledWith(
+        'https://gitlab.example.com',
+        'glpat-secret',
+        expect.objectContaining({ remoteProjectId: '42' }),
+        12,
+        { deadlineAt: expect.any(Number) as number },
+      );
+      expect(insertBuilder.values).toHaveBeenCalledWith([
+        expect.objectContaining({
+          type: 'merged',
+          status: 'confirmed',
+          sourceEventId: 'state:merged:2026-11-10T07:03:00Z',
+          occurredAt: '2026-11-10T07:03:00Z',
+          actorUsername: 'bob',
+          oldValue: '"opened"',
+          newValue: '"merged"',
+          mrTitle: 'Fix login',
+        }),
+      ]);
+      expect(manager.delete).toHaveBeenCalled();
+    });
+
+    it('should_create_a_deleted_event_when_the_forge_does_not_know_the_mr', async () => {
+      forge.fetchMergeRequestState.mockResolvedValue(null);
+
+      await service.processDue(NOW);
+
+      expect(insertBuilder.values).toHaveBeenCalledWith([
+        expect.objectContaining({
+          type: 'deleted',
+          actorUsername: null,
+          occurredAt: '2026-11-09T09:58:00.000Z',
+        }),
+      ]);
+    });
+
+    it('should_create_no_event_when_the_mr_is_still_opened_but_still_leave_the_queue', async () => {
+      forge.fetchMergeRequestState.mockResolvedValue({
+        state: 'opened',
+        occurredAt: null,
+        actor: null,
+      });
+
+      await service.processDue(NOW);
+
+      expect(insertBuilder.execute).not.toHaveBeenCalled();
+      expect(manager.delete).toHaveBeenCalled();
+    });
+
+    it('should_retry_the_whole_entry_when_the_state_lookup_fails', async () => {
+      forge.fetchMergeRequestState.mockRejectedValue(
+        new ForgeUnavailableException(),
+      );
+
+      await service.processDue(NOW);
+
+      expect(queue.update).toHaveBeenCalledWith(expect.anything(), {
+        attempts: 1,
+        nextAttemptAt: '2026-11-09T10:01:00.000Z',
+      });
+      expect(manager.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should_not_look_up_the_state_of_a_plain_update_entry', async () => {
+    await service.processDue(NOW);
+
+    expect(forge.fetchMergeRequestState).not.toHaveBeenCalled();
   });
 
   it('should_never_throw_when_the_failure_bookkeeping_itself_fails', async () => {

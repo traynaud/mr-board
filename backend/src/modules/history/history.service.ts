@@ -2,14 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
-import { detectMergeRequestChanges } from './domain/detect-merge-request-changes.js';
+import {
+  DetectedChange,
+  detectMergeRequestChanges,
+} from './domain/detect-merge-request-changes.js';
 import {
   MergeRequestSnapshot,
   snapshotFromForge,
 } from './domain/merge-request-snapshot.js';
 import { HistoryBaseline } from './entities/history-baseline.entity.js';
 import { HistoryQueueEntry } from './entities/history-queue-entry.entity.js';
-import { MergeRequestEvent } from './entities/merge-request-event.entity.js';
+import {
+  HistoryEventType,
+  MergeRequestEvent,
+} from './entities/merge-request-event.entity.js';
 
 /** Safety margin applied before the previous synchronisation (clock drift, RG-034-04). */
 export const ENRICHMENT_WINDOW_MARGIN_MS = 5 * 60_000;
@@ -31,25 +37,36 @@ export interface RecordProjectChangesInput {
   detectedAt: string;
 }
 
+/** The last journal entry known for a merge request. */
+interface LastEvent {
+  type: HistoryEventType;
+  occurredAt: string;
+}
+
 /**
  * Journals the differences between two synchronisations of a project
- * (US-033). Events are provisional (unknown actor, date = synchronisation,
- * RG-033-07); every changed merge request is queued once for forge
- * enrichment (RG-034-02, consumed by US-034).
+ * (US-033, US-035). Events are provisional (unknown actor, date =
+ * synchronisation, RG-033-07) except `created`, which the payload makes
+ * exact. Every changed or vanished merge request is queued once for forge
+ * enrichment (RG-034-02).
  */
 @Injectable()
 export class HistoryService {
   constructor(
     @InjectRepository(HistoryBaseline)
     private readonly baselines: Repository<HistoryBaseline>,
+    @InjectRepository(MergeRequestEvent)
+    private readonly events: Repository<MergeRequestEvent>,
     private readonly dataSource: DataSource,
   ) {}
 
   /**
    * Detects and persists the changes of a project's merge requests
-   * (RG-033-01 to RG-033-08). The first synchronisation of a project only
-   * records its baseline and journals nothing (RG-033-05). Events and queue
-   * entries are written in a single transaction (RG-033-06).
+   * (RG-033-01 to RG-033-08, RG-035-01, RG-035-05). The first synchronisation
+   * of a project only records its baseline and journals nothing (RG-033-05).
+   * Events and queue entries are written in a single transaction (RG-033-06).
+   * Only call this for a project whose synchronisation succeeded: an absent
+   * merge request is then a genuine disappearance (RG-035-01/04).
    */
   async recordProjectChanges(input: RecordProjectChangesInput): Promise<void> {
     const { project, previous, incoming, detectedAt } = input;
@@ -63,16 +80,38 @@ export class HistoryService {
     }
 
     const previousByIid = new Map(previous.map((mr) => [mr.iid, mr]));
+    const incomingIids = new Set(incoming.map((mr) => mr.iid));
+    const newIids = incoming
+      .filter((mr) => !previousByIid.has(mr.iid))
+      .map((mr) => mr.iid);
+    const lastEvents = await this.lastEventsOf(project.id, newIids);
+
     const events: Partial<MergeRequestEvent>[] = [];
     const queue: Partial<HistoryQueueEntry>[] = [];
 
     for (const mergeRequest of incoming) {
       const snapshot = snapshotFromForge(mergeRequest);
+      const before = previousByIid.get(snapshot.iid);
+      const lastEvent = lastEvents.get(snapshot.iid);
       const { changes, needsEnrichment } = detectMergeRequestChanges(
-        previousByIid.get(snapshot.iid) ?? null,
+        before ?? null,
         snapshot,
       );
-      for (const change of changes) {
+      let since = windowStart(before, mergeRequest.createdAt, detectedAt);
+      for (const detected of changes) {
+        const reopened =
+          detected.type === 'created' &&
+          (lastEvent?.type === 'merged' || lastEvent?.type === 'closed');
+        const change: DetectedChange = reopened
+          ? {
+              type: 'reopened',
+              oldValue: JSON.stringify(lastEvent?.type),
+              newValue: JSON.stringify('opened'),
+            }
+          : detected;
+        if (reopened && lastEvent) {
+          since = lastEvent.occurredAt;
+        }
         // `created` is exact without any forge call: the author and the
         // creation date are part of the payload (US-034, archi.md).
         const exact = change.type === 'created';
@@ -101,16 +140,31 @@ export class HistoryService {
           mrIid: snapshot.iid,
           mrTitle: snapshot.title,
           mrWebUrl: snapshot.webUrl,
+          kind: 'update',
           requestedAt: detectedAt,
-          since: windowStart(
-            previousByIid.get(snapshot.iid),
-            mergeRequest,
-            detectedAt,
-          ),
+          since,
           attempts: 0,
           nextAttemptAt: null,
         });
       }
+    }
+
+    // RG-035-01: stored merge requests absent from a successful response.
+    for (const gone of previous) {
+      if (incomingIids.has(gone.iid)) {
+        continue;
+      }
+      queue.push({
+        projectId: project.id,
+        mrIid: gone.iid,
+        mrTitle: gone.title,
+        mrWebUrl: gone.webUrl,
+        kind: 'disappeared',
+        requestedAt: detectedAt,
+        since: windowStart(gone, detectedAt, detectedAt),
+        attempts: 0,
+        nextAttemptAt: null,
+      });
     }
 
     if (events.length === 0 && queue.length === 0) {
@@ -121,42 +175,69 @@ export class HistoryService {
         await manager.insert(MergeRequestEvent, events);
       }
       if (queue.length > 0) {
-        // A MR already waiting keeps its oldest window start (RG-034-02).
+        // A MR already waiting keeps its oldest window start (RG-034-02) and
+        // a `disappeared` entry is never downgraded to `update` (US-035).
         const waiting = await manager.find(HistoryQueueEntry, {
           where: {
             projectId: project.id,
             mrIid: In(queue.map((entry) => entry.mrIid as number)),
           },
         });
-        const waitingSince = new Map(
-          waiting.map((entry) => [
-            entry.mrIid,
-            entry.since ?? entry.requestedAt,
-          ]),
+        const waitingByIid = new Map(
+          waiting.map((entry) => [entry.mrIid, entry]),
         );
         for (const entry of queue) {
-          const existing = waitingSince.get(entry.mrIid as number);
-          if (existing !== undefined && existing < (entry.since as string)) {
-            entry.since = existing;
+          const existing = waitingByIid.get(entry.mrIid as number);
+          if (!existing) {
+            continue;
+          }
+          const existingSince = existing.since ?? existing.requestedAt;
+          if (existingSince < (entry.since as string)) {
+            entry.since = existingSince;
+          }
+          if (existing.kind === 'disappeared') {
+            entry.kind = 'disappeared';
           }
         }
         await manager.upsert(HistoryQueueEntry, queue, ['projectId', 'mrIid']);
       }
     });
   }
+
+  /** The most recent journal entry of each given merge request (RG-035-05). */
+  private async lastEventsOf(
+    projectId: number,
+    iids: number[],
+  ): Promise<Map<number, LastEvent>> {
+    const last = new Map<number, LastEvent>();
+    if (iids.length === 0) {
+      return last;
+    }
+    const rows = await this.events.find({
+      select: { mrIid: true, type: true, occurredAt: true },
+      where: { projectId, mrIid: In(iids) },
+      order: { occurredAt: 'DESC', id: 'DESC' },
+    });
+    for (const row of rows) {
+      if (!last.has(row.mrIid)) {
+        last.set(row.mrIid, { type: row.type, occurredAt: row.occurredAt });
+      }
+    }
+    return last;
+  }
 }
 
 /**
  * Start of the forge window to re-read for a merge request: the previous
- * synchronisation minus a margin; for a new one, its creation date.
+ * synchronisation minus a margin; for a new one, `fallback` (its creation date).
  */
 function windowStart(
   previous: MergeRequestSnapshot | undefined,
-  mergeRequest: ForgeMergeRequest,
+  fallback: string,
   detectedAt: string,
 ): string {
   if (!previous) {
-    return mergeRequest.createdAt;
+    return fallback;
   }
   const reference = previous.syncedAt ?? detectedAt;
   return new Date(

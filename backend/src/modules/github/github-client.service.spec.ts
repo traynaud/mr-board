@@ -665,4 +665,102 @@ describe('GithubClientService', () => {
       ).rejects.toBeInstanceOf(ForgeTimeoutException);
     });
   });
+  describe('fetchMergeRequestState (US-035)', () => {
+    const options = () => ({ deadlineAt: Date.now() + 60_000 });
+
+    it('should_map_a_merged_pull_request_with_a_single_call', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(200, {
+          state: 'closed',
+          merged: true,
+          merged_at: '2026-11-10T07:03:00Z',
+          merged_by: { login: 'bob' },
+        }),
+      );
+
+      const state = await service.fetchMergeRequestState(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]?.[0]).toBe(
+        'https://api.github.com/repos/equipe/api/pulls/12',
+      );
+      expect(state).toMatchObject({
+        state: 'merged',
+        actor: { username: 'bob' },
+      });
+    });
+
+    it('should_read_the_issue_for_closed_by_when_closed_without_merge', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            state: 'closed',
+            merged: false,
+            closed_at: '2026-11-10T07:10:00Z',
+          }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(200, { closed_by: { login: 'carol' } }),
+        );
+
+      const state = await service.fetchMergeRequestState(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      expect(fetchSpy.mock.calls[1]?.[0]).toBe(
+        'https://api.github.com/repos/equipe/api/issues/12',
+      );
+      expect(state).toMatchObject({
+        state: 'closed',
+        occurredAt: '2026-11-10T07:10:00Z',
+        actor: { username: 'carol' },
+      });
+    });
+
+    it('should_return_null_when_the_pull_request_is_not_found', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(404, {}));
+
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).resolves.toBeNull();
+    });
+
+    it('should_fail_when_the_issue_lookup_fails_so_that_the_entry_is_retried', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(200, { state: 'closed' }))
+        .mockResolvedValueOnce(jsonResponse(500, {}));
+
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
+    });
+
+    it('should_throw_auth_unavailable_and_timeout_errors', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(401, {}));
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+
+      fetchSpy.mockResolvedValueOnce(new Response('nope', { status: 200 }));
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
+
+      await expect(
+        service.fetchMergeRequestState(BASE, TOKEN, PROJECT, 12, {
+          deadlineAt: Date.now() - 1,
+        }),
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
+    });
+  });
 });

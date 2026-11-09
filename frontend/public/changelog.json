@@ -2,6 +2,12 @@
   {
     "date": "2026-11-09",
     "type": "feat",
+    "user-story": "US-035",
+    "title": "Historique : une MR fusionnée, fermée ou introuvable laisse une trace (qui, quand, nouvel état) ; une MR rouverte est signalée comme telle."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
     "user-story": "US-034",
     "title": "Historique : un traitement en arrière-plan retrouve sur GitLab / GitHub qui a fait quoi et quand (acteur, date exacte, commentaires) pour chaque MR modifiée."
   },

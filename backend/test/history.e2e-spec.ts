@@ -58,6 +58,7 @@ describe('History detection (e2e, US-033)', () => {
     resolveProject: jest.fn(),
     fetchOpenMergeRequests: jest.fn(),
     fetchMergeRequestEvents: jest.fn(),
+    fetchMergeRequestState: jest.fn(),
   };
   let projectId: number;
   let enrichment: HistoryEnrichmentService;
@@ -368,6 +369,67 @@ describe('History detection (e2e, US-033)', () => {
       `SELECT COUNT(*) AS n FROM merge_request_events WHERE mr_iid = 1`,
     );
     expect(rows[0]?.n).toBeGreaterThan(0);
+  });
+
+  it('should_queue_the_vanished_mrs_as_disappeared_entries', async () => {
+    const entries = await dataSource.query<{ mr_iid: number; kind: string }[]>(
+      `SELECT mr_iid, kind FROM history_queue ORDER BY mr_iid`,
+    );
+
+    expect(entries.map((e) => [e.mr_iid, e.kind])).toEqual([
+      [1, 'disappeared'],
+      [3, 'disappeared'],
+    ]);
+  });
+
+  it('should_journal_merged_and_deleted_events_with_the_forge_state_of_the_vanished_mrs', async () => {
+    gitlab.fetchMergeRequestEvents.mockResolvedValue([]);
+    gitlab.fetchMergeRequestState.mockImplementation(
+      (_u: string, _t: string, _p: unknown, iid: number) =>
+        Promise.resolve(
+          iid === 1
+            ? {
+                state: 'merged',
+                occurredAt: '2026-11-10T07:03:00Z',
+                actor: actor('bob'),
+              }
+            : null,
+        ),
+    );
+
+    await enrichment.processDue();
+
+    expect(await queue()).toEqual([]);
+    const all = await events();
+    expect(
+      all.find((e) => e.mr_iid === 1 && e.type === 'merged'),
+    ).toMatchObject({
+      status: 'confirmed',
+      actor_username: 'bob',
+      occurred_at: '2026-11-10T07:03:00Z',
+      old_value: '"opened"',
+      new_value: '"merged"',
+      mr_title: 'MR 1 renamed twice',
+      project_alias: 'api',
+    });
+    expect(
+      all.find((e) => e.mr_iid === 3 && e.type === 'deleted'),
+    ).toMatchObject({ status: 'confirmed', actor_username: null });
+  });
+
+  it('should_journal_a_reopened_event_instead_of_created_when_a_merged_mr_comes_back', async () => {
+    await sync([
+      forgeMergeRequest(1),
+      forgeMergeRequest(2, { commentsCount: 4 }),
+    ]);
+
+    const mr1 = (await events()).filter((e) => e.mr_iid === 1);
+    expect(mr1.filter((e) => e.type === 'created')).toEqual([]);
+    expect(mr1.find((e) => e.type === 'reopened')).toMatchObject({
+      status: 'provisional',
+      old_value: '"merged"',
+      new_value: '"opened"',
+    });
   });
 
   it('should_delete_the_history_and_the_queue_with_the_project', async () => {
