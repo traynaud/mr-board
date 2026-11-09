@@ -16,17 +16,15 @@ Tests automatisés uniquement (pas de recette navigateur dans cet environnement)
 
 ## Résultats
 
-- Backend unitaires : 643/643 ✔ ; couverture globale 98,8 % (seuil 80 % respecté), `is-to-review.ts` 100 %.
+- Backend unitaires : 642/642 ✔ ; couverture globale 98,8 % (seuil 80 % respecté), `is-to-review.ts` 100 %.
 - Frontend : `tsc` ✔, `ng test` 825/825 ✔.
-- Lint et build backend ✔.
+- Lint et build backend ✔ ; e2e backend 162/162 ✔.
 - Aucune mention des commentaires dans les libellés/tooltips du chip (fr/en).
 
 ## Réserves
 
-- **E2E backend inexécutables ici** (`TypeError: this.sqlite is not a constructor`, identique sans les changements de
-  cette révision). Les attentes e2e modifiées (`[330, 331]`, `[330, 331, 333]`) sont à valider dans un environnement où
-  les e2e tournent.
 - Pas de recette UI/API manuelle : aucun changement frontend ni de contrat API (seule la sémantique du filtre évolue).
+- E2E backend : 162/162 ✔ (7 suites) via `npm run test:e2e`, désormais lancé suite par suite (voir `dev-report.md`).
 
 ## Anomalies
 

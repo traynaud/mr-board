@@ -36,6 +36,11 @@
 - `test/merge-requests.e2e-spec.ts` : test renommé, attentes `[330, 331]` / `[330, 331, 333]`.
 - Aucun changement frontend ni schéma.
 
-Vérifications : `lint` OK, `npm test` 643/643, `build` OK. `test:e2e` ne démarre pas dans cet environnement
-(`TypeError: this.sqlite is not a constructor`, identique sans mes modifications — problème d'environnement
-`better-sqlite3`/Jest, non lié à l'US) : les attentes e2e modifiées n'ont donc pas pu être exécutées.
+Vérifications : `lint` OK, `npm test` 642/642, `build` OK, `test:e2e` 162/162.
+
+Corrections annexes :
+- Test e2e `toReview=1` (hérité de l'US-032 d'origine) : le mock GitLab renvoyait les mêmes MRs pour chaque projet, d'où
+  des doublons dès que deux projets existent ; il ne répond désormais que pour `equipe/api`.
+- `test:e2e` lançait toutes les suites dans un même processus Jest, où l'addon natif `better-sqlite3` ne peut pas être
+  chargé deux fois (`this.sqlite is not a constructor`). Le script passe par `test/run-e2e.mjs`, qui lance chaque suite dans
+  son propre processus.
