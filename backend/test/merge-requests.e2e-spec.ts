@@ -950,7 +950,7 @@ describe('MergeRequests (e2e)', () => {
   });
 
   it('GET /merge-requests?toReview=1 should_only_return_merge_requests_without_reviewer_rg_032_01', async () => {
-    gitlab.fetchOpenMergeRequests.mockResolvedValue([
+    const apiMergeRequests = [
       mergeRequest(330, { commentsCount: 0 }),
       mergeRequest(331, { commentsCount: 2 }),
       mergeRequest(332, {
@@ -958,7 +958,13 @@ describe('MergeRequests (e2e)', () => {
         reviewers: [forgeUser(2, 'tgirard', { name: 'Thomas Girard' })],
       }),
       mergeRequest(333, { commentsCount: 0, draft: true }),
-    ]);
+    ];
+    gitlab.fetchOpenMergeRequests.mockImplementation(
+      (_url: string, _token: string, project: { pathWithNamespace: string }) =>
+        Promise.resolve(
+          project.pathWithNamespace === 'equipe/api' ? apiMergeRequests : [],
+        ),
+    );
     await api().post('/api/v1/sync');
     await waitUntilIdle();
 
