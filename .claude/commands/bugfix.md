@@ -2,6 +2,10 @@
 
 # Workflow Correction de Bug
 
+Tu appliques le **Protocole d'autonomie** de `CLAUDE.md` : les 3 phases s'enchaînent
+sans validation intermédiaire. Un bugfix est par nature un travail d'exécution —
+la décision (« il faut corriger ça ») a déjà été prise en te lançant la commande.
+
 ## Phase 1 : Reproduction & Diagnostic
 
 1. Comprends le bug décrit par l'utilisateur
@@ -18,7 +22,18 @@ it('should_fail_when_bug_reproduced', () => {
 
 Adapte selon le contexte : test unitaire (`*.spec.ts`), test e2e backend (`backend/test/*.e2e-spec.ts`) ou test de composant Angular.
 
-**STOP** → Montre le diagnostic et le test rouge. Demande validation.
+▶️ Affiche le diagnostic et le test rouge, puis **enchaîne sur la Phase 2**.
+
+🛑 STOP uniquement si :
+- **Tu n'arrives pas à reproduire** le bug → expose tes hypothèses et demande des
+  précisions (étapes, données, environnement)
+- **Le comportement « bugué » est peut-être le comportement attendu** → question de
+  spec (**D1**) : présente les deux lectures et demande l'arbitrage
+- **La cause racine exige un changement structurant** (modèle de données, contrat
+  d'API, dépendance) → **D3** : propose 2 options, correction de surface vs correction
+  de fond, avec les coûts respectifs
+- **La correction implique un changement graphique majeur** (nouvel écran/section,
+  refonte, nouveau menu/tableau, écart vis-à-vis de `docs/design/`) → **D9**
 
 ## Phase 2 : Correction
 
@@ -26,7 +41,8 @@ Adapte selon le contexte : test unitaire (`*.spec.ts`), test e2e backend (`backe
 2. Le test rouge doit passer au VERT
 3. Lance tous les tests → 0 régression
 
-**STOP** → Montre le diff de la correction.
+▶️ Affiche le diff, puis **enchaîne sur la Phase 3**.
+Si les tests ne passent toujours pas après 2 tentatives → **D7** → STOP.
 
 ## Phase 3 : Vérification
 
@@ -38,6 +54,9 @@ Adapte selon le contexte : test unitaire (`*.spec.ts`), test e2e backend (`backe
 2. Si le bug est lié à une API, teste avec curl (`rtk curl http://localhost:3000/api/v1/...`)
 3. Si le bug est visuel, compare avec les maquettes de `docs/design/`
 4. Vérifie qu'il n'y a pas d'autres occurrences du même pattern bugué
+   - Occurrences **identiques et triviales** → corrige-les dans le même commit
+   - Occurrences **nombreuses ou risquées** → ne les touche pas, signale-les
+     comme dette et propose un `/project:refacto`
 
 Résumé :
 
@@ -45,6 +64,9 @@ Résumé :
 - Correction : [ce qui a été changé]
 - Tests ajoutés : [nombre]
 - Régression : aucune
+- Occurrences similaires : [corrigées / signalées]
+- ✅ Décisions autonomes : [...]
+- 🛑 Décisions humaines : [...]
 
 **Mets à jour `frontend/public/changelog.json`** : ajoute une entrée `{ "date": "<YYYY-MM-DD>", "type": "fix", "user-story": "<US concernée ou vide>", "title": "<description courte en une phrase>" }` en tête du tableau (ordre décroissant).
 

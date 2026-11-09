@@ -16,6 +16,95 @@ systématiquement lors de la conception et de l'implémentation (voir `docs/tech
 
 ---
 
+## Protocole d'autonomie — RÈGLE TRANSVERSE PRIORITAIRE
+
+Tous les workflows (`feature.md`, `bugfix.md`, `refacto.md`, `puretech.md`) et tous les
+agents (`po.md`, `architect.md`, `dev.md`, `qa.md`, `review.md`) obéissent à ce
+protocole. Il **prime sur toute autre instruction de séquencement**.
+
+### Principe
+
+> **Par défaut, tu enchaînes.** Tu ne demandes JAMAIS de validation de courtoisie,
+> de confirmation de fin de phase, ni de « je continue ? ».
+> Tu t'arrêtes **uniquement** quand une décision appartient à l'humain.
+
+Les phases s'enchaînent sans interruption. Tu affiches un en-tête de phase
+(`━━━ PHASE 3/6 — Développeur ━━━`) pour rester lisible, puis tu continues.
+
+### Quand t'arrêter — critères de DÉCISION HUMAINE
+
+Tu STOP si, et seulement si, l'un de ces critères est rempli :
+
+| # | Critère | Typiquement en phase |
+|---|---------|----------------------|
+| D1 | **Périmètre ou règle métier ambigu** : plusieurs interprétations mènent à des comportements utilisateur différents | PO |
+| D2 | **Règle de gestion manquante ou contradictoire** dont dépend l'implémentation (valeur par défaut, règle de difficulté/Ready, droits d'accès…) | PO |
+| D3 | **Choix structurant et coûteux à défaire** : modèle de données, contrat d'API public, nouvelle dépendance, changement de pattern | Architect |
+| D4 | **Breaking change ou migration destructive** (suppression/renommage de colonne, perte de données possible) | Architect / PureTech |
+| D5 | **Impact sécurité** (jeton GitLab, authentification, CORS) ou données sensibles | Toutes |
+| D6 | **Écart nécessaire** par rapport à des specs ou une archi déjà validées | Dev |
+| D7 | **Blocage technique persistant** après 2 tentatives de correction autonomes | Dev / QA |
+| D8 | **Action irréversible ou hors périmètre** : suppression de fichiers non prévus, `git reset --hard`, `push --force`, suppression/reset de la base SQLite, modification de secrets | Toutes |
+| D9 | **Changement graphique majeur** : nouvel écran, nouvelle section, refonte graphique, nouveau menu/navigation, nouveau tableau ou composant de données, ou tout écart vis-à-vis des maquettes de `docs/design/` — *catégorique* (se déclenche systématiquement pour cette catégorie, pas seulement en cas d'ambiguïté). Un changement « simple » (bouton, label, espacement, couleur isolée, pattern déjà présent dans les maquettes) reste autonome. En cas de doute → majeur | Architect / Dev |
+
+### Quand NE PAS t'arrêter — tu décides seul et tu documentes
+
+Nommage, découpage de fichiers, emplacement dans l'arborescence conventionnelle, clés i18n,
+choix des cas de test, messages d'erreur, refactos locaux sans impact de comportement,
+formatage, choix entre deux écritures équivalentes d'une requête, structure interne d'un composant,
+ordre d'implémentation, mise à jour du changelog et de la roadmap, commit, correction des
+remarques de revue 🔴/🟡, plan d'implémentation.
+
+Pour ces cas : tu appliques la convention du projet, tu notes une ligne
+`✅ Hypothèse retenue : …` dans ton rapport, et tu continues.
+
+### Format obligatoire d'une demande de décision
+
+```
+🛑 DÉCISION REQUISE — [D3] Contrat d'API pour l'export
+
+CONTEXTE
+  Les specs ne tranchent pas entre export synchrone et asynchrone.
+
+OPTIONS
+  A) GET /api/v1/exports/{id} synchrone
+     → simple, mais timeout probable au-delà de ~5 000 lignes
+  B) POST /api/v1/exports + polling du statut
+     → robuste, mais +1 entité, +1 endpoint, ~1 j de dev
+
+RECOMMANDATION
+  B — le volume cible dépasse le seuil de A.
+
+RÉVERSIBILITÉ
+  Faible : le contrat est consommé par le frontend.
+
+CE QUI EST DÉJÀ FAIT / CE QUI ATTEND
+  Fait : specs, archi backend. En attente : entités + endpoints.
+```
+
+Règles : **une seule demande groupée** par phase (jamais de questions au compte-gouttes),
+toujours 2 ou 3 options concrètes, toujours une recommandation argumentée.
+Si l'humain répond « à toi de voir », tu appliques ta recommandation et tu continues.
+
+### Journal de décisions
+
+Chaque rapport produit (`specs.md`, `archi.md`, `dev-report.md`, `qa-report.md`) se termine par :
+
+```markdown
+## Décisions
+### Prises en autonomie
+- [sujet] → [choix] — [justification] — réversible : oui/non
+### Arbitrées par l'humain
+- [sujet] → [choix retenu]
+```
+
+### Mode strict (optionnel)
+
+Si `$ARGUMENTS` contient `[strict]`, tu reviens au comportement pas-à-pas :
+STOP et validation explicite à la fin de chaque phase.
+
+---
+
 ## Structure du projet
 
 ```
@@ -72,6 +161,10 @@ Les workflows (`feature.md`, `bugfix.md`, `refacto.md`) incluent cette étape en
 | `/project:refacto`  | Refactoring technique   | `/project:refacto Extraire le calcul de difficulté dans un service dédié`  |
 | `/project:bugfix`   | Correction de bug       | `/project:bugfix Le tri par Ready ignore les MRs sans reviewer`            |
 | `/project:puretech` | Tâche technique pure    | `/project:puretech Initialise le projet backend NestJS`                    |
+
+> Tous les workflows tournent en **mode autonome** (voir « Protocole d'autonomie »).
+> Ajoute `[strict]` à ta commande pour retrouver une validation à chaque phase :
+> `/project:feature [strict] US-010`
 
 ### Agents individuels (utilisables seuls)
 

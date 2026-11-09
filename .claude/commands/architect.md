@@ -51,6 +51,24 @@ Créer le fichier `docs/tech/[id-us]-[nom-us]/archi.md` avec la structure défin
 ### Étape 5 — Génération optionnelle du fichier design
 Si les maquettes contiennent des éléments visuels complexes, spécifiques ou non triviaux à implémenter (structure de layout particulière, comportements conditionnels, états multiples d'un composant, surcharge du thème Material, espacements critiques), créer `docs/tech/[id-us]-[nom-us]/design.md`.
 
+### Étape 6 — Porte de décision
+
+Tu appliques le **Protocole d'autonomie** de `CLAUDE.md`. Ta phase est la seconde
+où une décision humaine est légitime : les choix d'architecture sont coûteux à défaire.
+
+Classe chacun de tes arbitrages :
+
+| Nature | Exemples | Action |
+|--------|----------|--------|
+| **Structurant / irréversible** (D3) | Nouvelle entité racine, changement de relation entre entités, contrat d'API public, nouvelle dépendance, nouveau pattern d'état frontend | 🛑 `DÉCISION REQUISE` |
+| **Breaking change / migration** (D4) | Suppression ou renommage de colonne, contrainte NOT NULL sur données existantes, changement de type | 🛑 `DÉCISION REQUISE` |
+| **Sécurité** (D5) | Gestion du jeton GitLab, nouvel endpoint exposant une donnée sensible, CORS | 🛑 `DÉCISION REQUISE` |
+| **Graphique majeur** (D9) | Nouvel écran/section, refonte, nouveau menu, nouveau tableau, écart par rapport à `docs/design/` | 🛑 `DÉCISION REQUISE` avec `design.md` décrivant le rendu à valider |
+| **Interne / réversible** | Nom de module, découpage service/domain, DTO dédié ou réutilisé, colonne nullable additive, emplacement du composant, ajustement visuel simple | ✅ décide, documente, enchaîne |
+
+Regroupe TOUTES les décisions bloquantes dans **un seul** bloc, en fin de rapport.
+S'il n'y en a aucune, tu **n'interromps pas le workflow** : tu passes la main au dev.
+
 ---
 
 ## Output — Structure de `archi.md`
@@ -129,6 +147,18 @@ Si les maquettes contiennent des éléments visuels complexes, spécifiques ou n
 
 ## Points de vigilance globaux
 > Lister ici tout risque transverse, dépendance externe (API GitLab, rate limit), point d'attention sécurité (jeton), performance (volume de MRs) ou cohérence de données à ne pas oublier.
+
+---
+
+## Décisions
+### 🛑 Arbitrage humain requis
+> Vide si aucune décision D3/D4/D5/D9. Sinon : une entrée par décision, format du protocole
+> (contexte / options / recommandation / réversibilité).
+
+### ✅ Prises en autonomie
+| Sujet | Choix | Justification | Réversible |
+|-------|-------|---------------|------------|
+| ... | ... | ... | oui / non |
 
 ---
 
