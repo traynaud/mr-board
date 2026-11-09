@@ -3,6 +3,12 @@
     "date": "2026-11-09",
     "type": "feat",
     "user-story": "US-037",
+    "title": "Historique : les événements provisoires sont distingués (heure « ~ », marqueur creux en pointillé, texte atténué, tooltip explicatif)."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
+    "user-story": "US-037",
     "title": "Historique : nouvelle page « Historique » (icône dans la barre du tableau) affichant la timeline des modifications de MRs, groupée par jour, avec chargement par 50."
   },
   {

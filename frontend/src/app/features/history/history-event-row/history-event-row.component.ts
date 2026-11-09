@@ -35,6 +35,13 @@ export class HistoryEventRowComponent {
   protected readonly exactDate = computed(() =>
     formatDateTime(this.event().occurredAt, this.i18n.language()),
   );
+  /** Événement déduit d'une comparaison, pas encore confirmé par la forge (US-034). */
+  protected readonly provisional = computed(() => this.event().status === 'provisional');
+  protected readonly timeTooltip = computed(() =>
+    this.provisional()
+      ? `${this.exactDate()} — ${this.i18n.translate('history.provisional')}`
+      : this.exactDate(),
+  );
   protected readonly actorName = computed(() => {
     const actor = this.event().actor;
     return actor?.name || actor?.username || null;

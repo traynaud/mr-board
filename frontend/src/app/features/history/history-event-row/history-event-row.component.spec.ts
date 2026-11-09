@@ -56,6 +56,18 @@ describe('HistoryEventRowComponent', () => {
     expect(link.textContent).toContain('#12 Corriger le tri');
   });
 
+  it('should_mark_a_provisional_event_with_a_tilde_and_the_provisional_class', async () => {
+    const { el } = await setup(event({ status: 'provisional' }));
+    expect(el.querySelector('.row')?.classList.contains('provisional')).toBe(true);
+    expect(el.querySelector('.time')?.textContent?.trim().startsWith('~')).toBe(true);
+  });
+
+  it('should_not_mark_a_confirmed_event_as_provisional', async () => {
+    const { el } = await setup();
+    expect(el.querySelector('.row')?.classList.contains('provisional')).toBe(false);
+    expect(el.querySelector('.time')?.textContent?.includes('~')).toBe(false);
+  });
+
   it('should_use_the_success_tone_for_an_approval', async () => {
     const { el } = await setup();
     expect(el.querySelector('.marker')?.classList).toContain('success');

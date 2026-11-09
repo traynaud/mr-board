@@ -1,5 +1,5 @@
-<div class="row">
-  <span class="time" [matTooltip]="exactDate()">{{ time() }}</span>
+<div class="row" [class.provisional]="provisional()">
+  <span class="time" [matTooltip]="timeTooltip()">{{ provisional() ? '~' : '' }}{{ time() }}</span>
   @if (actorName(); as name) {
     <app-avatar [name]="name" [avatarUrl]="event().actor?.avatarUrl ?? null" />
   } @else {

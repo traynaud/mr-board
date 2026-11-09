@@ -111,3 +111,17 @@
   border-left: 2px solid var(--color-divider);
   font-style: italic;
 }
+
+/* Événement provisoire (RG-033-07) : marqueur creux en pointillé, texte atténué. */
+.provisional {
+  .marker {
+    background: transparent;
+    border: 1px dashed var(--color-neutral-600);
+    box-sizing: border-box;
+  }
+
+  .body,
+  .time {
+    color: var(--color-neutral-600);
+  }
+}

@@ -356,6 +356,7 @@
     "empty": "Aucun événement pour le moment. Les modifications des MRs apparaîtront ici après la prochaine synchronisation.",
     "error": "Impossible de charger l'historique.",
     "unknownActor": "Inconnu",
+    "provisional": "Détecté à la synchro, en attente de confirmation par la forge",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
     "actions": {

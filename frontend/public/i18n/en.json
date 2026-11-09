@@ -356,6 +356,7 @@
     "empty": "No events yet. Merge request changes will appear here after the next synchronisation.",
     "error": "Unable to load the history.",
     "unknownActor": "Unknown",
+    "provisional": "Detected at sync time, awaiting confirmation from the forge",
     "today": "Today",
     "yesterday": "Yesterday",
     "actions": {
