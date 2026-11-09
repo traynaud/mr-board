@@ -53,7 +53,7 @@ Format :
   > ~15 fichiers non anticipés) → **D3/D4** → 🛑 `DÉCISION REQUISE` avec une option
   « périmètre réduit » et une option « périmètre complet », chiffrées.
 - Le refacto change significativement le **rendu visuel** (refonte d'écrans, nouveau pattern
-  de composant, écart vis-à-vis de `docs/design/`) → **D9**. Un simple retint de tokens
+  de composant, écart vis-à-vis de `docs/design/`) → **D9**, cf. `ux-ui.md` : maquette validée avant exécution. Un simple retint de tokens
   sans changement de structure reste autonome.
 
 ---

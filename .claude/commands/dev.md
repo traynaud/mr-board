@@ -25,8 +25,8 @@ Tu ne demandes donc **aucune validation de plan ni de fin d'étape**. Tu enchaî
    contrat d'API, dépendance) → **D6** → 🛑 `DÉCISION REQUISE`
 10. **Blocage technique** : deux tentatives de correction autonomes maximum.
     À la troisième, tu t'arrêtes (**D7**) en exposant ce que tu as essayé
-11. **Écart visuel** : tout changement graphique majeur non couvert par `design.md` /
-    `docs/design/` → **D9** → STOP
+11. **Écart visuel** : tout changement graphique majeur non couvert par un `design.md` validé
+    ou par `docs/design/` → **D9** → STOP (la maquette est produite par `ux-ui.md`, pas par le dev)
 
 ## Phase 0 — Chargement du contexte
 
@@ -154,6 +154,7 @@ Enchaîne dès que le backend **compile et que ses tests passent au vert**. C'es
 - Utilise les composants Angular Material listés dans `design.md` / `docs/tech/design-system.md`
 - Intègre la feature aux points d'entrée identifiés dans la navigation/routing existante
 - Si `design.md` existe : respecte scrupuleusement les états, comportements et spécificités visuelles documentés
+  (il référence souvent une maquette déjà validée par l'humain — ne t'en écarte pas sans D9, cf. `ux-ui.md`)
 - Traite chaque risque signalé avec la solution proposée
 
 ### Standards Angular à respecter

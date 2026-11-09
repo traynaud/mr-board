@@ -49,7 +49,12 @@ Ce skill est activé lorsque l'utilisateur fournit un identifiant de user story 
 Créer le fichier `docs/tech/[id-us]-[nom-us]/archi.md` avec la structure définie ci-dessous.
 
 ### Étape 5 — Génération optionnelle du fichier design
-Si les maquettes contiennent des éléments visuels complexes, spécifiques ou non triviaux à implémenter (structure de layout particulière, comportements conditionnels, états multiples d'un composant, surcharge du thème Material, espacements critiques), créer `docs/tech/[id-us]-[nom-us]/design.md`.
+Dans la chaîne complète (`feature.md`), ce fichier est déjà produit par l'agent `ux-ui.md` (Phase 2,
+antérieure à la tienne) dès que le changement est classé « majeur » — **lis-le tel quel plutôt que de le
+régénérer** et appuie-toi dessus pour ton plan (composants à créer, points d'intégration).
+
+Si `docs/tech/[id-us]-[nom-us]/design.md` n'existe pas (agent invoqué seul, ou changement classé « simple »
+par l'UX/UI) et que les maquettes contiennent des éléments visuels complexes, spécifiques ou non triviaux à implémenter (structure de layout particulière, comportements conditionnels, états multiples d'un composant, surcharge du thème Material, espacements critiques), créer `docs/tech/[id-us]-[nom-us]/design.md`.
 
 ### Étape 6 — Porte de décision
 
@@ -63,7 +68,7 @@ Classe chacun de tes arbitrages :
 | **Structurant / irréversible** (D3) | Nouvelle entité racine, changement de relation entre entités, contrat d'API public, nouvelle dépendance, nouveau pattern d'état frontend | 🛑 `DÉCISION REQUISE` |
 | **Breaking change / migration** (D4) | Suppression ou renommage de colonne, contrainte NOT NULL sur données existantes, changement de type | 🛑 `DÉCISION REQUISE` |
 | **Sécurité** (D5) | Gestion du jeton GitLab, nouvel endpoint exposant une donnée sensible, CORS | 🛑 `DÉCISION REQUISE` |
-| **Graphique majeur** (D9) | Nouvel écran/section, refonte, nouveau menu, nouveau tableau, écart par rapport à `docs/design/` | 🛑 `DÉCISION REQUISE` avec `design.md` décrivant le rendu à valider |
+| **Graphique majeur** (D9) | Nouvel écran/section, refonte, nouveau menu, nouveau tableau, écart par rapport à `docs/design/` **non validé par `ux-ui.md`** | 🛑 `DÉCISION REQUISE` : recommande de lancer `/project:ux-ui` d'abord |
 | **Interne / réversible** | Nom de module, découpage service/domain, DTO dédié ou réutilisé, colonne nullable additive, emplacement du composant, ajustement visuel simple | ✅ décide, documente, enchaîne |
 
 Regroupe TOUTES les décisions bloquantes dans **un seul** bloc, en fin de rapport.

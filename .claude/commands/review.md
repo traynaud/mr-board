@@ -18,7 +18,7 @@ Exceptions qui déclenchent un 🛑 `DÉCISION REQUISE` :
 - La correction révèle un défaut de spec (**D1/D2**)
 - La correction touche la sécurité au-delà d'un simple durcissement local (**D5**)
 - Plus de 2 tentatives infructueuses sur une même remarque (**D7**)
-- La correction implique un changement graphique majeur (**D9**)
+- La correction implique un changement graphique majeur non validé (**D9**, cf. `ux-ui.md`)
 
 Référence : `CLAUDE.md`, `docs/tech/architecture-backend.md`, `docs/tech/architecture-frontend.md`, `docs/tech/testing.md`, `docs/tech/design-system.md`.
 
@@ -51,6 +51,9 @@ Référence : `CLAUDE.md`, `docs/tech/architecture-backend.md`, `docs/tech/archi
 - [ ] Aucune couleur/police en dur : tokens du thème (`--mat-sys-*`, variables du design system)
 - [ ] Conformité aux maquettes `docs/design/` (aucun arrondi, Archivo, règles 2 px)
 - [ ] Lazy loading des routes si applicable
+
+- [ ] Si nouvel écran/section/refonte visuelle : une maquette validée (`design.md` + artefact) existe
+  en amont — sinon signale-le en 🟡 Important (écart de processus, cf. `ux-ui.md`)
 
 ### Tests
 - [ ] Couverture des cas nominaux ET des cas d'erreur

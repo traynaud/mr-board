@@ -2,16 +2,17 @@
 
 # Workflow Feature — Orchestrateur autonome
 
-Tu exécutes les 6 phases **d'une seule traite**, sans demander de validation
+Tu exécutes les 7 phases **d'une seule traite**, sans demander de validation
 entre les phases.
 
 Tu appliques le **Protocole d'autonomie** de `CLAUDE.md` : la seule raison valable
 de t'arrêter est un critère D1→D9. Les phases où une décision humaine est
-*probable* sont la Phase 1 (PO) et la Phase 2 (Architecte, y compris D9 pour un
-changement graphique majeur) — mais même là, tu ne t'arrêtes que s'il y a
-réellement quelque chose à arbitrer.
+*probable* sont la Phase 1 (PO), la Phase 2 (UX/UI) et la Phase 3 (Architecte) —
+mais même là, tu ne t'arrêtes que s'il y a
+réellement quelque chose à arbitrer (sauf D9, qui se déclenche systématiquement pour tout
+changement graphique majeur, cf. `ux-ui.md`).
 
-Annonce chaque phase par un en-tête `━━━ PHASE n/6 — Rôle ━━━`, puis continue.
+Annonce chaque phase par un en-tête `━━━ PHASE n/7 — Rôle ━━━`, puis continue.
 
 La feature demandée : $ARGUMENTS
 
@@ -22,7 +23,7 @@ La feature demandée : $ARGUMENTS
 
 ---
 
-## Phase 1/6 : Product Owner
+## Phase 1/7 : Product Owner
 
 Adopte le rôle décrit dans `.claude/commands/po.md`.
 Lis ce fichier et applique ses instructions avec le besoin ci-dessus, en cohérence
@@ -37,26 +38,39 @@ avec `docs/features/README.md` (règles de gestion transverses, glossaire, roadm
 - Question **non bloquante** → tranche toi-même, inscris-la comme
   `✅ Hypothèse retenue` dans `specs.md`, et **enchaîne sans t'arrêter**.
 
-## Phase 2/6 : Architecte
+## Phase 2/7 : UX/UI
+
+Adopte le rôle décrit dans `.claude/commands/ux-ui.md`, en te basant sur
+`docs/features/<id-us>-<slug-feature>/specs.md` produit en Phase 1 et sur `docs/design/`.
+
+Écris, si le changement est classé « majeur » (cf. ux-ui.md) :
+- `docs/tech/<id-us>-<slug-feature>/design.md`
+
+**Porte de décision visuelle** — STOP systématiquement en cas de changement « majeur »
+(**D9** : nouvel écran, nouvelle section, refonte, nouveau menu, nouveau tableau, écart par
+rapport à `docs/design/`) avec l'artefact de maquette à valider. Pour un changement « simple »
+(bouton, label, micro-ajustement de style) : documente en `✅ Hypothèse retenue` et
+**enchaîne sans t'arrêter**. Si l'US n'a pas de composante UI, passe directement à la Phase 3.
+
+## Phase 3/7 : Architecte
 
 Adopte le rôle décrit dans `.claude/commands/architect.md`.
 Lis ce fichier et applique ses instructions en te basant sur les specs produites par le PO :
 - `docs/features/<id-us>-<slug-feature>/specs.md`
+- `docs/tech/<id-us>-<slug-feature>/design.md` s'il a été produit en Phase 2
 - `docs/design/` (prototype, wireframes, design system)
 
 Écris le résultat dans :
 - `docs/tech/<id-us>-<slug-feature>/archi.md`
-- `docs/tech/<id-us>-<slug-feature>/design.md` (si UI non triviale)
+- `docs/tech/<id-us>-<slug-feature>/design.md` (uniquement si absent de la Phase 2 et utile, cf. architect.md)
 
-**Porte de décision technique et visuelle** — STOP uniquement en cas de D3, D4, D5 ou D9
-(choix structurant irréversible, breaking change, impact sécurité, changement graphique
-majeur ou écart par rapport à `docs/design/`). Pour D9, `design.md` doit décrire précisément
-le rendu attendu (layout, composants Material, états) pour que l'humain puisse valider.
+**Porte de décision technique** — STOP uniquement en cas de D3, D4 ou D5
+(choix structurant irréversible, breaking change, impact sécurité).
 Sinon : documente les arbitrages en `✅ Hypothèse retenue` et **enchaîne**.
 
 ---
 
-## Phase 3/6 : Développeur
+## Phase 4/7 : Développeur
 
 Adopte le rôle décrit dans `.claude/commands/dev.md`.
 Lis ce fichier et implémente en te basant sur :
@@ -69,7 +83,7 @@ tu enchaînes. Rapport dans `docs/tech/<id-us>-<slug-feature>/dev-report.md`.
 
 ---
 
-## Phase 4/6 : QA
+## Phase 5/7 : QA
 
 Adopte le rôle décrit dans `.claude/commands/qa.md`.
 Lis ce fichier et teste l'implémentation de la Phase 3.
@@ -88,7 +102,7 @@ Tant que les bugs sont de simples défauts d'implémentation, tu corriges et tu 
 
 ---
 
-## Phase 5/6 : Revue de code
+## Phase 6/7 : Revue de code
 
 Adopte le rôle décrit dans `.claude/commands/review.md`.
 Lis ce fichier et fais la revue de tout le code produit en Phase 3.
@@ -101,7 +115,7 @@ Lis ce fichier et fais la revue de tout le code produit en Phase 3.
 
 ---
 
-## Phase 6/6 : Finalisation
+## Phase 7/7 : Finalisation
 
 1. Lance les tests complets → tout doit être vert :
    ```bash
@@ -116,9 +130,10 @@ Lis ce fichier et fais la revue de tout le code produit en Phase 3.
 ```
 🏁 FEATURE LIVRÉE — [id-us] [nom-us]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phases       : 6/6 ✅
+Phases       : 7/7 ✅
 Tests        : back [X unit + Y e2e ✅] / front [Z ✅]
 Fichiers     : [n créés, m modifiés]
+Maquette      : [lien artefact, si Phase 2 majeure] — validée
 Commit       : [hash] feat: ...
 
 🛑 DÉCISIONS ARBITRÉES PAR L'HUMAIN

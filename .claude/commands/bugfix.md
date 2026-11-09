@@ -33,7 +33,7 @@ Adapte selon le contexte : test unitaire (`*.spec.ts`), test e2e backend (`backe
   d'API, dépendance) → **D3** : propose 2 options, correction de surface vs correction
   de fond, avec les coûts respectifs
 - **La correction implique un changement graphique majeur** (nouvel écran/section,
-  refonte, nouveau menu/tableau, écart vis-à-vis de `docs/design/`) → **D9**
+  refonte, nouveau menu/tableau, écart vis-à-vis de `docs/design/`) → **D9**, cf. `ux-ui.md` : produis une maquette et fais-la valider avant d'implémenter
 
 ## Phase 2 : Correction
 

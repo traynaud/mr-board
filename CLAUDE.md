@@ -19,7 +19,7 @@ systématiquement lors de la conception et de l'implémentation (voir `docs/tech
 ## Protocole d'autonomie — RÈGLE TRANSVERSE PRIORITAIRE
 
 Tous les workflows (`feature.md`, `bugfix.md`, `refacto.md`, `puretech.md`) et tous les
-agents (`po.md`, `architect.md`, `dev.md`, `qa.md`, `review.md`) obéissent à ce
+agents (`po.md`, `ux-ui.md`, `architect.md`, `dev.md`, `qa.md`, `review.md`) obéissent à ce
 protocole. Il **prime sur toute autre instruction de séquencement**.
 
 ### Principe
@@ -29,7 +29,7 @@ protocole. Il **prime sur toute autre instruction de séquencement**.
 > Tu t'arrêtes **uniquement** quand une décision appartient à l'humain.
 
 Les phases s'enchaînent sans interruption. Tu affiches un en-tête de phase
-(`━━━ PHASE 3/6 — Développeur ━━━`) pour rester lisible, puis tu continues.
+(`━━━ PHASE 4/7 — Développeur ━━━`) pour rester lisible, puis tu continues.
 
 ### Quand t'arrêter — critères de DÉCISION HUMAINE
 
@@ -45,7 +45,7 @@ Tu STOP si, et seulement si, l'un de ces critères est rempli :
 | D6 | **Écart nécessaire** par rapport à des specs ou une archi déjà validées | Dev |
 | D7 | **Blocage technique persistant** après 2 tentatives de correction autonomes | Dev / QA |
 | D8 | **Action irréversible ou hors périmètre** : suppression de fichiers non prévus, `git reset --hard`, `push --force`, suppression/reset de la base SQLite, modification de secrets | Toutes |
-| D9 | **Changement graphique majeur** : nouvel écran, nouvelle section, refonte graphique, nouveau menu/navigation, nouveau tableau ou composant de données, ou tout écart vis-à-vis des maquettes de `docs/design/` — *catégorique* (se déclenche systématiquement pour cette catégorie, pas seulement en cas d'ambiguïté). Un changement « simple » (bouton, label, espacement, couleur isolée, pattern déjà présent dans les maquettes) reste autonome. En cas de doute → majeur | Architect / Dev |
+| D9 | **Changement graphique majeur** : nouvel écran, nouvelle section, refonte graphique, nouveau menu/navigation, nouveau tableau ou composant de données, ou tout écart vis-à-vis des maquettes de `docs/design/` — *catégorique* (se déclenche systématiquement pour cette catégorie, pas seulement en cas d'ambiguïté). Un changement « simple » (bouton, label, espacement, couleur isolée, pattern déjà présent dans les maquettes) reste autonome. En cas de doute → majeur | UX/UI |
 
 ### Quand NE PAS t'arrêter — tu décides seul et tu documentes
 
@@ -132,6 +132,7 @@ mr-board/
         ├── puretech.md         # /project:puretech   → Tâche purement technique (init, montée de version…)
         │── # AGENTS (spécialistes, appelés par les workflows)
         ├── po.md               # /project:po         → Analyse fonctionnelle
+        ├── ux-ui.md            # /project:ux-ui      → Maquettes et specs visuelles (design system)
         ├── architect.md        # /project:architect  → Analyse technique préalable
         ├── dev.md              # /project:dev        → Implémentation
         ├── qa.md               # /project:qa         → Tests
@@ -171,6 +172,7 @@ Les workflows (`feature.md`, `bugfix.md`, `refacto.md`) incluent cette étape en
 | Commande             | Usage                        |
 |----------------------|------------------------------|
 | `/project:po`        | Analyse fonctionnelle seule  |
+| `/project:ux-ui`     | Maquette / spec visuelle seule |
 | `/project:architect` | Analyse d'architecture seule |
 | `/project:dev`       | Implémentation seule         |
 | `/project:qa`        | Tests seuls                  |
@@ -361,7 +363,7 @@ Système de traduction custom sans dépendance externe, décrit dans `docs/tech/
 
 - Ne jamais committer `.env`, `*.sqlite`, ou tout fichier contenant un jeton GitLab
 - Toujours tester avant de proposer un commit (backend `npm test` + frontend `ng test`)
-- Respecter les maquettes de `docs/design/` : Archivo, accent `#ec3013`, aucun arrondi, règles 2 px, vert `#2f8f4e`, orange `#d98a1f`
+- Respecter les maquettes de `docs/design/` (tout nouvel écran/section/refonte : maquette validée via `/project:ux-ui`, pas initiative du dev) : Archivo, accent `#ec3013`, aucun arrondi, règles 2 px, vert `#2f8f4e`, orange `#d98a1f`
 - Respecter les conventions de nommage existantes dans chaque module
 - Commits en français, format conventionnel (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`)
 - Branches : `feature/`, `fix/`, `refactor/`

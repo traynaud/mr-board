@@ -81,8 +81,11 @@ Deux listes distinctes, pas une seule :
 ```
 
 Si la première liste est vide, **tu ne t'arrêtes pas** : le workflow continue.
-Si le besoin s'écarte des maquettes `docs/design/` par un changement graphique majeur,
-signale-le dans la liste bloquante (**D9**).
+Si le besoin s'écarte des maquettes `docs/design/`, signale-le simplement dans les hypothèses :
+la validation visuelle (**D9**) est du ressort de l'agent `ux-ui.md`, qui intervient juste après toi.
+
+**Périmètre** : tu spécifies le *quoi* (comportement, règles métier, données) — jamais le *comment
+visuel* (layout, navigation, composants).
 
 ### 7. Hors périmètre
 
