@@ -44,6 +44,25 @@ export class ConnectionsService {
   }
 
   /**
+   * My resolved username on each connection that has one (RG-031-02). Reads
+   * two columns only — no repo count, no token decryption — for callers that
+   * poll (notifications, US-041).
+   */
+  async listIdentities(): Promise<
+    { connectionId: number; username: string }[]
+  > {
+    const rows = await this.repository.find({
+      select: { id: true, resolvedUsername: true },
+      order: { id: 'ASC' },
+    });
+    return rows.flatMap((row) =>
+      row.resolvedUsername === null
+        ? []
+        : [{ connectionId: row.id, username: row.resolvedUsername }],
+    );
+  }
+
+  /**
    * Adds a connection (RG-019-01 to RG-019-03).
    * @throws BusinessValidationException when the URL cannot be normalised (400).
    * @throws ConnectionNameDuplicateException when the name is already used (400).

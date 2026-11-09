@@ -32,7 +32,7 @@ function builder(result: Record<string, unknown> = {}) {
 describe('NotificationsService', () => {
   const events = { createQueryBuilder: jest.fn(), existsBy: jest.fn() };
   const settings = { getNotificationPreferences: jest.fn() };
-  const connections = { list: jest.fn() };
+  const connections = { listIdentities: jest.fn() };
   const service = new NotificationsService(
     events as never,
     settings as never,
@@ -52,9 +52,8 @@ describe('NotificationsService', () => {
       notifOnlyMine: false,
       notifExcludeOwn: false,
     });
-    connections.list.mockResolvedValue([
-      { id: 1, identity: { username: 'Me' } },
-      { id: 2, identity: null },
+    connections.listIdentities.mockResolvedValue([
+      { connectionId: 1, username: 'Me' },
     ]);
   });
 
@@ -115,7 +114,7 @@ describe('NotificationsService', () => {
       notifOnlyMine: true,
       notifExcludeOwn: false,
     });
-    connections.list.mockResolvedValue([{ id: 1, identity: null }]);
+    connections.listIdentities.mockResolvedValue([]);
     const { proxy, calls } = builder({
       raw: { maxId: null, total: 0, provisional: 0 },
     });

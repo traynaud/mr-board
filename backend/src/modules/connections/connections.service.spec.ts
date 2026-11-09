@@ -149,6 +149,26 @@ describe('ConnectionsService', () => {
     });
   });
 
+  describe('listIdentities', () => {
+    it('should_return_only_the_connections_with_a_resolved_username_without_counting_repos', async () => {
+      repository.find.mockResolvedValue([
+        row({ id: 1, resolvedUsername: 'mdupont' }),
+        row({ id: 2, resolvedUsername: null }),
+        row({ id: 3, resolvedUsername: 'alice' }),
+      ]);
+
+      await expect(service.listIdentities()).resolves.toEqual([
+        { connectionId: 1, username: 'mdupont' },
+        { connectionId: 3, username: 'alice' },
+      ]);
+      expect(repository.find).toHaveBeenCalledWith({
+        select: { id: true, resolvedUsername: true },
+        order: { id: 'ASC' },
+      });
+      expect(projects.count).not.toHaveBeenCalled();
+    });
+  });
+
   describe('add', () => {
     it('should_store_a_gitlab_connection_with_an_encrypted_token', async () => {
       const result = await service.add({

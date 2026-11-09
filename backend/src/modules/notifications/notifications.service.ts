@@ -119,18 +119,12 @@ export class NotificationsService {
   private async eligible(): Promise<SelectQueryBuilder<MergeRequestEvent>> {
     const [prefs, connections] = await Promise.all([
       this.settings.getNotificationPreferences(),
-      this.connections.list(),
+      this.connections.listIdentities(),
     ]);
-    const identities: Identity[] = connections.flatMap((connection) =>
-      connection.identity
-        ? [
-            {
-              connectionId: connection.id,
-              username: connection.identity.username.toLowerCase(),
-            },
-          ]
-        : [],
-    );
+    const identities: Identity[] = connections.map((identity) => ({
+      connectionId: identity.connectionId,
+      username: identity.username.toLowerCase(),
+    }));
     return applyEligibility(this.events.createQueryBuilder('e'), identities, {
       disabledTypes: prefs.notifDisabledTypes,
       onlyMine: prefs.notifOnlyMine,
