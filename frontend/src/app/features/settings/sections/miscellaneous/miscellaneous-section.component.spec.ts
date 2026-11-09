@@ -46,6 +46,8 @@ const FULL_SETTINGS = {
   theme: 'system',
   highlightMe: true,
   language: 'fr',
+  historyRetentionDays: 60,
+  historyMaxEvents: 5000,
 };
 
 describe('MiscellaneousSectionComponent', () => {

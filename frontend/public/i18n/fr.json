@@ -297,8 +297,22 @@
         "mustExceedReadyGreen": "Doit être supérieur à Vert"
       }
     },
-    "misc": {
+    "history": {
       "number": "05",
+      "title": "Historique",
+      "description": "Durée et volume de conservation du journal des modifications.",
+      "retentionDays": "Conserver au plus",
+      "maxEvents": "Conserver au plus",
+      "daysSuffix": "jours",
+      "eventsSuffix": "événements",
+      "hint": "Les deux limites s'appliquent ensemble : un événement est supprimé dès qu'il est trop ancien ou au-delà des plus récents.",
+      "errors": {
+        "integer": "Doit être un nombre entier.",
+        "range": "Doit être un entier entre {{min}} et {{max}}."
+      }
+    },
+    "misc": {
+      "number": "06",
       "title": "Divers",
       "description": "Options de confort et sauvegarde de la configuration.",
       "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)",

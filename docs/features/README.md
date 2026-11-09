@@ -86,7 +86,8 @@ contenu à droite), sections :
 - `02 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
 - `03 · Difficulté` — Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes (US-030 : scindée de l'ex-« 04 · Seuils »)
 - `04 · Temps depuis Ready` — vert ≤ N j, orange ≤ N j, jours ouvrés (US-030 : scindée de l'ex-« 04 · Seuils »)
-- `05 · Divers` — case « Surligner mes MRs dans le tableau » en tête (US-023, activée par défaut, déplacée depuis l'ex-« 01 · Moi » par US-031), thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
+- `05 · Historique` — rétention du journal des modifications : jours (1–365, défaut 60) et nombre d'événements (100–100 000, défaut 5 000), limites cumulatives (US-036)
+- `06 · Divers` — case « Surligner mes MRs dans le tableau » en tête (US-023, activée par défaut, déplacée depuis l'ex-« 01 · Moi » par US-031), thème (système / clair / sombre, US-018), langue (français / anglais, US-022, sous le thème), notification navigateur, badge d'onglet, ouvrir dans un nouvel onglet, ignorer les labels `wip` / `on-hold`, exporter / importer / réinitialiser la config
 
 ---
 
@@ -194,7 +195,7 @@ une fois ses dépendances réalisées.
 | US-033 | Historique — détection et journal des modifications (événements provisoires, file par MR) | Must | L | US-004, US-019, US-020 | ✅ |
 | US-034 | Historique — file asynchrone et enrichissement forge (acteur, date, commentaires) | Must | L | US-033 | ✅ |
 | US-035 | Historique — clôtures, fusions et MRs introuvables | Must | M | US-034 | ✅ |
-| US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ☐ |
+| US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ✅ |
 | US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ☐ |
 | US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ☐ |
 

@@ -27,6 +27,8 @@ export interface MergeableSettingsFields {
   theme?: ThemePreference;
   highlightMe?: boolean;
   language?: Language;
+  historyRetentionDays?: number;
+  historyMaxEvents?: number;
 }
 
 /** Every global preference, as exported/imported by US-015 (RG-019-23). */
@@ -47,12 +49,15 @@ export interface ExportableSettings {
   theme: ThemePreference;
   highlightMe: boolean;
   language: Language;
+  historyRetentionDays: number;
+  historyMaxEvents: number;
 }
 
 /** Manages the global application preferences singleton (RG-019-23). */
 @Injectable()
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
+  private readonly changeListeners: (() => Promise<void>)[] = [];
 
   constructor(
     @InjectRepository(Settings)
@@ -74,7 +79,17 @@ export class SettingsService {
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
     const saved = await this.repository.save(settings);
+    await this.notifyChanged();
     return this.toResponse(saved);
+  }
+
+  /**
+   * Registers a callback run after every successful save of the settings
+   * (update or import). Lets another module react (e.g. purge the history
+   * when the retention changes, RG-036-04) without this module depending on it.
+   */
+  onChange(listener: () => Promise<void>): void {
+    this.changeListeners.push(listener);
   }
 
   /**
@@ -89,7 +104,9 @@ export class SettingsService {
     this.mergeCommonFields(settings, dto);
     this.requireCoherentThresholds(settings);
     settings.updatedAt = new Date().toISOString();
-    return this.toResponse(await this.repository.save(settings));
+    const saved = await this.repository.save(settings);
+    await this.notifyChanged();
+    return this.toResponse(saved);
   }
 
   /**
@@ -125,6 +142,12 @@ export class SettingsService {
     };
   }
 
+  /** History retention (RG-036-01), read fresh on every call. */
+  async getHistoryRetention(): Promise<{ days: number; maxEvents: number }> {
+    const { historyRetentionDays, historyMaxEvents } = await this.load();
+    return { days: historyRetentionDays, maxEvents: historyMaxEvents };
+  }
+
   /**
    * Labels that hide a merge request (RG-015-02), read fresh on every call
    * (same pattern as `getThresholds()`).
@@ -154,6 +177,8 @@ export class SettingsService {
       theme: settings.theme,
       highlightMe: settings.highlightMe,
       language: settings.language,
+      historyRetentionDays: settings.historyRetentionDays,
+      historyMaxEvents: settings.historyMaxEvents,
     };
   }
 
@@ -212,6 +237,25 @@ export class SettingsService {
     if (dto.language !== undefined) {
       settings.language = dto.language;
     }
+    if (dto.historyRetentionDays !== undefined) {
+      settings.historyRetentionDays = dto.historyRetentionDays;
+    }
+    if (dto.historyMaxEvents !== undefined) {
+      settings.historyMaxEvents = dto.historyMaxEvents;
+    }
+  }
+
+  /** Runs the change listeners; a failing one is logged, never propagated. */
+  private async notifyChanged(): Promise<void> {
+    for (const listener of this.changeListeners) {
+      try {
+        await listener();
+      } catch (error) {
+        this.logger.warn(
+          `Settings change listener failed: ${error instanceof Error ? error.name : String(error)}`,
+        );
+      }
+    }
   }
 
   private async load(): Promise<Settings> {
@@ -239,6 +283,8 @@ export class SettingsService {
         theme: 'system',
         highlightMe: true,
         language: 'fr',
+        historyRetentionDays: 60,
+        historyMaxEvents: 5000,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -289,6 +335,8 @@ export class SettingsService {
       theme: settings.theme,
       highlightMe: settings.highlightMe,
       language: settings.language,
+      historyRetentionDays: settings.historyRetentionDays,
+      historyMaxEvents: settings.historyMaxEvents,
     };
   }
 }

@@ -100,6 +100,8 @@ describe('SettingsTransfer (e2e)', () => {
         theme: 'system',
         highlightMe: true,
         language: 'fr',
+        historyRetentionDays: 60,
+        historyMaxEvents: 5000,
       }),
     );
     expect(body(res).connections).toEqual([

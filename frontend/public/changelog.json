@@ -2,6 +2,12 @@
   {
     "date": "2026-11-09",
     "type": "feat",
+    "user-story": "US-036",
+    "title": "Historique : nouvelle section « Historique » dans les Paramètres pour régler la rétention (jours et nombre maximal d'événements), appliquée après chaque synchronisation."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
     "user-story": "US-035",
     "title": "Historique : une MR fusionnée, fermée ou introuvable laisse une trace (qui, quand, nouvel état) ; une MR rouverte est signalée comme telle."
   },

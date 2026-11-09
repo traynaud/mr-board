@@ -80,6 +80,14 @@ export class Settings {
   @Column({ name: 'language', type: 'text', default: 'fr' })
   language!: Language;
 
+  /** History retention: events older than this many days are purged (RG-036-01/02). */
+  @Column({ name: 'history_retention_days', type: 'integer', default: 60 })
+  historyRetentionDays!: number;
+
+  /** History retention: only the N most recent events are kept (RG-036-01/02). */
+  @Column({ name: 'history_max_events', type: 'integer', default: 5000 })
+  historyMaxEvents!: number;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

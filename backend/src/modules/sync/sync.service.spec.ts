@@ -11,6 +11,7 @@ import { ForgeClientFactory } from '../forges/forge-client.factory.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { ProjectsService } from '../projects/projects.service.js';
+import { HistoryRetentionService } from '../history/history-retention.service.js';
 import { HistoryService } from '../history/history.service.js';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -95,6 +96,9 @@ interface MergeRequestsServiceMock {
   deleteMissing: jest.Mock;
   getSnapshots: jest.Mock;
 }
+interface RetentionServiceMock {
+  purge: jest.Mock;
+}
 interface HistoryServiceMock {
   recordProjectChanges: jest.Mock;
 }
@@ -108,6 +112,7 @@ describe('SyncService', () => {
   let gitlabForge: { fetchOpenMergeRequests: jest.Mock };
   let mergeRequests: MergeRequestsServiceMock;
   let history: HistoryServiceMock;
+  let retention: RetentionServiceMock;
 
   beforeEach(async () => {
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -162,6 +167,10 @@ describe('SyncService', () => {
           },
         },
         {
+          provide: HistoryRetentionService,
+          useValue: { purge: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
           provide: HistoryService,
           useValue: {
             recordProjectChanges: jest.fn().mockResolvedValue(undefined),
@@ -177,6 +186,7 @@ describe('SyncService', () => {
     projects = module.get(ProjectsService);
     mergeRequests = module.get(MergeRequestsService);
     history = module.get(HistoryService);
+    retention = module.get(HistoryRetentionService);
   });
 
   afterEach(() => {
@@ -314,6 +324,28 @@ describe('SyncService', () => {
         incoming: [expect.objectContaining({ iid: 1 })],
         detectedAt: expect.any(String) as string,
       });
+    });
+
+    it('should_apply_the_history_retention_at_the_end_of_each_synchronisation_rg_036_04', async () => {
+      projects.listActiveByConnection.mockResolvedValue([project()]);
+      gitlabForge.fetchOpenMergeRequests.mockResolvedValue([mergeRequest(1)]);
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(retention.purge).toHaveBeenCalledTimes(1);
+      expect(syncRunsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'success' }),
+      );
+    });
+
+    it('should_still_apply_the_history_retention_when_the_synchronisation_fails_unexpectedly', async () => {
+      connections.findAll.mockRejectedValue(new Error('db down'));
+
+      await service.trigger('manual');
+      await flush();
+
+      expect(retention.purge).toHaveBeenCalledTimes(1);
     });
 
     it('should_keep_the_sync_successful_when_recording_the_history_fails', async () => {

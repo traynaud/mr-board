@@ -45,7 +45,46 @@ describe('Settings (e2e)', () => {
       theme: 'system',
       highlightMe: true,
       language: 'fr',
+      historyRetentionDays: 60,
+      historyMaxEvents: 5000,
     });
+  });
+
+  it.each([
+    ['historyRetentionDays', 0],
+    ['historyRetentionDays', 366],
+    ['historyRetentionDays', 1.5],
+    ['historyMaxEvents', 99],
+    ['historyMaxEvents', 100_001],
+  ])(
+    'PUT /settings should_reject_%s_%s_out_of_bounds_rg_036_03',
+    async (field, value) => {
+      const before = await api().get('/api/v1/settings');
+
+      const res = await api()
+        .put('/api/v1/settings')
+        .send({ [field]: value });
+
+      expect(res.status).toBe(400);
+      expect((await api().get('/api/v1/settings')).body).toEqual(before.body);
+    },
+  );
+
+  it('PUT /settings should_save_the_history_retention_rg_036_01', async () => {
+    const res = await api()
+      .put('/api/v1/settings')
+      .send({ historyRetentionDays: 365, historyMaxEvents: 100_000 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        historyRetentionDays: 365,
+        historyMaxEvents: 100_000,
+      }),
+    );
+    await api()
+      .put('/api/v1/settings')
+      .send({ historyRetentionDays: 60, historyMaxEvents: 5000 });
   });
 
   it('PUT /settings should_reject_unknown_fields', async () => {

@@ -66,6 +66,13 @@
         <app-ready-delay-section [form]="form" />
       </app-settings-section>
       <app-settings-section
+        [number]="'settings.history.number' | translate"
+        titleKey="settings.history.title"
+        descriptionKey="settings.history.description"
+      >
+        <app-history-section [form]="form" />
+      </app-settings-section>
+      <app-settings-section
         [number]="'settings.misc.number' | translate"
         titleKey="settings.misc.title"
         descriptionKey="settings.misc.description"

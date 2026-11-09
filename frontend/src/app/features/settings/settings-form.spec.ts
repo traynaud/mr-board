@@ -38,6 +38,8 @@ describe('settings form helpers', () => {
     theme: 'dark' as const,
     highlightMe: false,
     language: 'en' as const,
+    historyRetentionDays: 30,
+    historyMaxEvents: 2000,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -64,6 +66,8 @@ describe('settings form helpers', () => {
       theme: 'dark',
       highlightMe: false,
       language: 'en',
+      historyRetentionDays: 30,
+      historyMaxEvents: 2000,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -92,6 +96,8 @@ describe('settings form helpers', () => {
       theme: 'system',
       highlightMe: true,
       language: 'fr',
+      historyRetentionDays: 60,
+      historyMaxEvents: 5000,
     });
   });
 
@@ -235,6 +241,8 @@ describe('resetSettingsFormToDefaults', () => {
       theme: 'dark',
       highlightMe: false,
       language: 'en',
+      historyRetentionDays: 10,
+      historyMaxEvents: 300,
     });
 
     resetSettingsFormToDefaults(form);
@@ -251,6 +259,8 @@ describe('resetSettingsFormToDefaults', () => {
         theme: 'system',
         highlightMe: true,
         language: 'fr',
+        historyRetentionDays: 60,
+        historyMaxEvents: 5000,
       }),
     );
   });
@@ -375,5 +385,50 @@ describe('threshold controls', () => {
         workdaysOnly: true,
       }),
     );
+  });
+  describe('history retention (RG-036-01/03)', () => {
+    it('should_default_to_60_days_and_5000_events', () => {
+      const form = buildSettingsForm();
+
+      expect(form.controls.historyRetentionDays.value).toBe(60);
+      expect(form.controls.historyMaxEvents.value).toBe(5000);
+      expect(form.valid).toBe(true);
+    });
+
+    it.each([
+      ['historyRetentionDays', 0, false],
+      ['historyRetentionDays', 1, true],
+      ['historyRetentionDays', 365, true],
+      ['historyRetentionDays', 366, false],
+      ['historyRetentionDays', 1.5, false],
+      ['historyMaxEvents', 99, false],
+      ['historyMaxEvents', 100, true],
+      ['historyMaxEvents', 100000, true],
+      ['historyMaxEvents', 100001, false],
+      ['historyMaxEvents', 150.5, false],
+    ] as const)('should_validate_%s_%s_as_%s', (name, value, valid) => {
+      const form = buildSettingsForm();
+
+      form.controls[name].setValue(value);
+
+      expect(form.controls[name].valid).toBe(valid);
+    });
+
+    it('should_reject_an_empty_value', () => {
+      const form = buildSettingsForm();
+
+      form.controls.historyMaxEvents.setValue(null as unknown as number);
+
+      expect(form.controls.historyMaxEvents.hasError('required')).toBe(true);
+    });
+
+    it('should_send_the_retention_in_the_update_request', () => {
+      const form = buildSettingsForm();
+      form.patchValue({ historyRetentionDays: 14, historyMaxEvents: 800 });
+
+      expect(toUpdateRequest(form)).toEqual(
+        expect.objectContaining({ historyRetentionDays: 14, historyMaxEvents: 800 }),
+      );
+    });
   });
 });

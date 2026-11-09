@@ -25,8 +25,9 @@ function forgeMergeRequest(
     title: `MR ${iid}`,
     webUrl: `https://gitlab.com/-/merge_requests/${iid}`,
     draft: false,
-    createdAt: '2026-09-01T10:00:00Z',
-    updatedAt: '2026-09-01T10:00:00Z',
+    // Recent: events older than the retention are purged (US-036).
+    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+    updatedAt: new Date(Date.now() - 86_400_000).toISOString(),
     commentsCount: 0,
     approved: false,
     labels: [],
@@ -430,6 +431,76 @@ describe('History detection (e2e, US-033)', () => {
       old_value: '"merged"',
       new_value: '"opened"',
     });
+  });
+
+  async function insertEvents(
+    count: number,
+    occurredAt: (i: number) => string,
+  ) {
+    for (let i = 0; i < count; i += 1) {
+      await dataSource.query(
+        `INSERT INTO merge_request_events (occurred_at, detected_at, type, status, connection_id, project_id, mr_iid, mr_title, mr_web_url, project_alias)
+         VALUES (?, ?, 'label_added', 'confirmed', 1, ?, 2, 'MR 2', 'https://gitlab.com/-/merge_requests/2', 'api')`,
+        [occurredAt(i), occurredAt(i), projectId],
+      );
+    }
+  }
+  const count = async () =>
+    (
+      await dataSource.query<{ n: number }[]>(
+        `SELECT COUNT(*) AS n FROM merge_request_events`,
+      )
+    )[0]?.n ?? 0;
+
+  it('should_purge_events_older_than_the_retention_when_the_settings_are_saved_rg_036_04', async () => {
+    const old = new Date(Date.now() - 45 * 86_400_000).toISOString();
+    await insertEvents(1, () => old);
+    const before = await count();
+
+    await request(app.getHttpServer())
+      .put('/api/v1/settings')
+      .send({ historyRetentionDays: 30 })
+      .expect(200);
+
+    expect(await count()).toBe(before - 1);
+    const remaining = await dataSource.query<{ n: number }[]>(
+      `SELECT COUNT(*) AS n FROM merge_request_events WHERE occurred_at = ?`,
+      [old],
+    );
+    expect(remaining[0]?.n).toBe(0);
+  });
+
+  it('should_keep_only_the_most_recent_events_when_the_maximum_is_lowered_rg_036_02', async () => {
+    const base = Date.now() - 3_600_000;
+    await insertEvents(150, (i) => new Date(base + i * 1000).toISOString());
+
+    await request(app.getHttpServer())
+      .put('/api/v1/settings')
+      .send({ historyMaxEvents: 100 })
+      .expect(200);
+
+    expect(await count()).toBe(100);
+    const kept = await dataSource.query<{ occurred_at: string }[]>(
+      `SELECT occurred_at FROM merge_request_events WHERE occurred_at IN (?, ?)`,
+      [new Date(base).toISOString(), new Date(base + 149 * 1000).toISOString()],
+    );
+    expect(kept.map((row) => row.occurred_at)).toEqual([
+      new Date(base + 149 * 1000).toISOString(),
+    ]);
+  });
+
+  it('should_apply_the_retention_at_the_end_of_a_synchronisation_rg_036_04', async () => {
+    await insertEvents(5, (i) =>
+      new Date(Date.now() + 60_000 + i).toISOString(),
+    );
+    expect(await count()).toBeGreaterThan(100);
+
+    await sync([
+      forgeMergeRequest(1),
+      forgeMergeRequest(2, { commentsCount: 4 }),
+    ]);
+
+    expect(await count()).toBeLessThanOrEqual(100);
   });
 
   it('should_delete_the_history_and_the_queue_with_the_project', async () => {

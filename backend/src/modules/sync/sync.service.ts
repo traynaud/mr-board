@@ -8,6 +8,7 @@ import {
 import { ConnectionsService } from '../connections/connections.service.js';
 import { Connection } from '../connections/entities/connection.entity.js';
 import { ForgeClientFactory } from '../forges/forge-client.factory.js';
+import { HistoryRetentionService } from '../history/history-retention.service.js';
 import { HistoryService } from '../history/history.service.js';
 import { MergeRequestsService } from '../merge-requests/merge-requests.service.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
@@ -47,6 +48,7 @@ export class SyncService {
     private readonly forges: ForgeClientFactory,
     private readonly mergeRequests: MergeRequestsService,
     private readonly history: HistoryService,
+    private readonly retention: HistoryRetentionService,
   ) {}
 
   /**
@@ -108,6 +110,9 @@ export class SyncService {
         errorMessage: describe(error),
       });
     }
+    // RG-036-04: retention applied at the end of every synchronisation
+    // (never throws — a failed purge is only logged).
+    await this.retention.purge();
   }
 
   /**

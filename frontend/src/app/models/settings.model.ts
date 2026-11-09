@@ -40,6 +40,10 @@ export interface Settings {
   highlightMe: boolean;
   /** Langue de l'interface (RG-022-01). */
   language: Language;
+  /** Rétention de l'historique en jours (RG-036-01). */
+  historyRetentionDays: number;
+  /** Rétention de l'historique en nombre d'événements (RG-036-01). */
+  historyMaxEvents: number;
 }
 
 /**
@@ -64,6 +68,8 @@ export interface UpdateSettingsRequest {
   theme?: ThemePreference;
   highlightMe?: boolean;
   language?: Language;
+  historyRetentionDays?: number;
+  historyMaxEvents?: number;
 }
 
 /** Une connexion telle qu'exportée/importée (RG-019-18/19). Ne contient jamais le jeton. */

@@ -32,6 +32,7 @@ import { SyncStore } from '../../stores/sync.store';
 import { collectDirtyRepoChanges, syncReposFormArray } from './repos-form';
 import { ConnectionsSectionComponent } from './sections/connections/connections-section.component';
 import { DifficultySectionComponent } from './sections/difficulty/difficulty-section.component';
+import { HistorySectionComponent } from './sections/history/history-section.component';
 import { ReadyDelaySectionComponent } from './sections/ready-delay/ready-delay-section.component';
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import { RepoRow } from './sections/repositories/repositories-section.component';
@@ -66,6 +67,7 @@ export const TOAST_DURATION_MS = 3500;
     ConnectionsSectionComponent,
     RefreshSectionComponent,
     DifficultySectionComponent,
+    HistorySectionComponent,
     ReadyDelaySectionComponent,
     MiscellaneousSectionComponent,
   ],

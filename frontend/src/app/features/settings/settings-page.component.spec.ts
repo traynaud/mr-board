@@ -35,6 +35,8 @@ describe('SettingsPageComponent', () => {
     theme: 'system',
     highlightMe: true,
     language: 'fr',
+    historyRetentionDays: 60,
+    historyMaxEvents: 5000,
   };
   const connection: Connection = {
     id: 1,
@@ -157,6 +159,8 @@ describe('SettingsPageComponent', () => {
     theme: 'system',
     highlightMe: true,
     language: 'fr',
+    historyRetentionDays: 60,
+    historyMaxEvents: 5000,
   };
 
   it('should_show_progress_then_form_once_loaded', async () => {
@@ -252,9 +256,9 @@ describe('SettingsPageComponent', () => {
     );
   });
 
-  it('should_number_the_sections_01_to_05_after_the_us_031_removal_of_moi', async () => {
-    // US-031 : la section « Moi » disparaît, les suivantes se renumérotent
-    // 02→01, 03→02, 04→03, 05→04, 06→05.
+  it('should_number_the_sections_01_to_06_with_the_history_section_us_036', async () => {
+    // US-031 : la section « Moi » disparaît (renumérotation 01→05) ;
+    // US-036 : la section « Historique » s'insère en 05, « Divers » passe en 06.
     await loadSettings();
 
     const headings = Array.from(el.querySelectorAll('.heading h6')).map((h) =>
@@ -265,8 +269,18 @@ describe('SettingsPageComponent', () => {
       `02 · ${t('settings.refresh.title')}`,
       `03 · ${t('settings.difficulty.title')}`,
       `04 · ${t('settings.readyDelay.title')}`,
-      `05 · ${t('settings.misc.title')}`,
+      `05 · ${t('settings.history.title')}`,
+      `06 · ${t('settings.misc.title')}`,
     ]);
+  });
+
+  it('should_render_the_history_retention_section_with_the_loaded_values_us_036', async () => {
+    await loadSettings();
+
+    expect(el.querySelector('app-history-section')).not.toBeNull();
+    expect(
+      el.querySelector<HTMLInputElement>('input[formControlName="historyMaxEvents"]')!.value,
+    ).toBe('5000');
   });
 
   it('should_navigate_home_on_cancel', async () => {

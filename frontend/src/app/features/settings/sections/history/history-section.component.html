@@ -1,0 +1,35 @@
+<div [formGroup]="form()">
+  <div class="rows history-rows">
+    <span class="row-label">{{ 'settings.history.retentionDays' | translate }}</span>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <span matTextPrefix>&le;&nbsp;</span>
+      <input matInput type="number" formControlName="historyRetentionDays" />
+      <span matTextSuffix>&nbsp;{{ 'settings.history.daysSuffix' | translate }}</span>
+      @if (form().controls.historyRetentionDays.hasError('integer')) {
+        <mat-error>{{ 'settings.history.errors.integer' | translate }}</mat-error>
+      } @else if (form().controls.historyRetentionDays.invalid) {
+        <mat-error>{{
+          'settings.history.errors.range'
+            | translate: { min: bounds.daysMin, max: bounds.daysMax }
+        }}</mat-error>
+      }
+    </mat-form-field>
+
+    <span class="row-label">{{ 'settings.history.maxEvents' | translate }}</span>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <span matTextPrefix>&le;&nbsp;</span>
+      <input matInput type="number" formControlName="historyMaxEvents" />
+      <span matTextSuffix>&nbsp;{{ 'settings.history.eventsSuffix' | translate }}</span>
+      @if (form().controls.historyMaxEvents.hasError('integer')) {
+        <mat-error>{{ 'settings.history.errors.integer' | translate }}</mat-error>
+      } @else if (form().controls.historyMaxEvents.invalid) {
+        <mat-error>{{
+          'settings.history.errors.range'
+            | translate: { min: bounds.maxEventsMin, max: bounds.maxEventsMax }
+        }}</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <p class="hint">{{ 'settings.history.hint' | translate }}</p>
+</div>

@@ -6,9 +6,16 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import type { Language, ThemePreference } from '../entities/settings.entity.js';
+
+/** RG-036-03 : bounds of the history retention settings. */
+export const HISTORY_RETENTION_DAYS_MIN = 1;
+export const HISTORY_RETENTION_DAYS_MAX = 365;
+export const HISTORY_MAX_EVENTS_MIN = 100;
+export const HISTORY_MAX_EVENTS_MAX = 100_000;
 
 /** RG-013-01 : `0` = manual, no other value is accepted. */
 export const REFRESH_INTERVAL_OPTIONS = [0, 1, 5, 15, 30] as const;
@@ -128,4 +135,18 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsIn(LANGUAGE_OPTIONS)
   language?: Language;
+
+  /** History retention in days (RG-036-01/03). */
+  @IsOptional()
+  @IsInt()
+  @Min(HISTORY_RETENTION_DAYS_MIN)
+  @Max(HISTORY_RETENTION_DAYS_MAX)
+  historyRetentionDays?: number;
+
+  /** History retention in number of events (RG-036-01/03). */
+  @IsOptional()
+  @IsInt()
+  @Min(HISTORY_MAX_EVENTS_MIN)
+  @Max(HISTORY_MAX_EVENTS_MAX)
+  historyMaxEvents?: number;
 }

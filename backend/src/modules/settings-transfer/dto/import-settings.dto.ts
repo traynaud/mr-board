@@ -6,10 +6,15 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateIf,
 } from 'class-validator';
 import {
+  HISTORY_MAX_EVENTS_MAX,
+  HISTORY_MAX_EVENTS_MIN,
+  HISTORY_RETENTION_DAYS_MAX,
+  HISTORY_RETENTION_DAYS_MIN,
   LANGUAGE_OPTIONS,
   REFRESH_INTERVAL_OPTIONS,
   THEME_OPTIONS,
@@ -109,4 +114,16 @@ export class ImportSettingsDto {
   @IsOptional()
   @IsIn(LANGUAGE_OPTIONS)
   language?: Language;
+
+  @IsOptional()
+  @IsInt()
+  @Min(HISTORY_RETENTION_DAYS_MIN)
+  @Max(HISTORY_RETENTION_DAYS_MAX)
+  historyRetentionDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(HISTORY_MAX_EVENTS_MIN)
+  @Max(HISTORY_MAX_EVENTS_MAX)
+  historyMaxEvents?: number;
 }

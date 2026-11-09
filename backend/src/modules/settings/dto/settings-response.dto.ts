@@ -34,4 +34,8 @@ export class SettingsResponseDto {
   highlightMe!: boolean;
   /** UI language preference (RG-022-01). */
   language!: Language;
+  /** History retention in days (RG-036-01). */
+  historyRetentionDays!: number;
+  /** History retention in number of events (RG-036-01). */
+  historyMaxEvents!: number;
 }

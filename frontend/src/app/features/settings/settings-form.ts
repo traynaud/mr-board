@@ -21,6 +21,18 @@ export const DEFAULT_THRESHOLDS = {
   workdaysOnly: false,
 } as const;
 
+/** Valeurs par défaut et bornes de la rétention de l'historique (RG-036-01/03). */
+export const DEFAULT_HISTORY_RETENTION = {
+  days: 60,
+  maxEvents: 5000,
+} as const;
+export const HISTORY_RETENTION_BOUNDS = {
+  daysMin: 1,
+  daysMax: 365,
+  maxEventsMin: 100,
+  maxEventsMax: 100_000,
+} as const;
+
 /** Labels positionnés par la case « Ignorer les MRs avec le label wip / on-hold » (RG-015-02). */
 export const DEFAULT_IGNORED_LABELS = ['wip', 'on-hold'] as const;
 
@@ -53,6 +65,10 @@ export interface SettingsFormControls {
   highlightMe: FormControl<boolean>;
   /** Langue de l'interface (RG-022-01/02). */
   language: FormControl<Language>;
+  /** Rétention de l'historique : âge maximal en jours (RG-036-01/03). */
+  historyRetentionDays: FormControl<number>;
+  /** Rétention de l'historique : nombre maximal d'événements (RG-036-01/03). */
+  historyMaxEvents: FormControl<number>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -139,6 +155,24 @@ export function buildSettingsForm(): SettingsForm {
       theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
       highlightMe: new FormControl(true, { nonNullable: true }),
       language: new FormControl<Language>('fr', { nonNullable: true }),
+      historyRetentionDays: new FormControl(DEFAULT_HISTORY_RETENTION.days, {
+        nonNullable: true,
+        validators: [
+          Validators.required,
+          Validators.min(HISTORY_RETENTION_BOUNDS.daysMin),
+          Validators.max(HISTORY_RETENTION_BOUNDS.daysMax),
+          integerValidator,
+        ],
+      }),
+      historyMaxEvents: new FormControl(DEFAULT_HISTORY_RETENTION.maxEvents, {
+        nonNullable: true,
+        validators: [
+          Validators.required,
+          Validators.min(HISTORY_RETENTION_BOUNDS.maxEventsMin),
+          Validators.max(HISTORY_RETENTION_BOUNDS.maxEventsMax),
+          integerValidator,
+        ],
+      }),
       // Peuplé par un effect de la page à partir de ProjectsStore ;
       // jamais touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -171,6 +205,8 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.theme.reset(settings.theme);
   form.controls.highlightMe.reset(settings.highlightMe);
   form.controls.language.reset(settings.language);
+  form.controls.historyRetentionDays.reset(settings.historyRetentionDays);
+  form.controls.historyMaxEvents.reset(settings.historyMaxEvents);
 }
 
 /**
@@ -197,6 +233,8 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.theme.setValue('system');
   controls.highlightMe.setValue(true);
   controls.language.setValue('fr');
+  controls.historyRetentionDays.setValue(DEFAULT_HISTORY_RETENTION.days);
+  controls.historyMaxEvents.setValue(DEFAULT_HISTORY_RETENTION.maxEvents);
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'repos') {
       controls[name].markAsDirty();
@@ -228,6 +266,8 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     theme,
     highlightMe,
     language,
+    historyRetentionDays,
+    historyMaxEvents,
   } = form.getRawValue();
   return {
     refreshIntervalMin,
@@ -246,5 +286,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     theme,
     highlightMe,
     language,
+    historyRetentionDays,
+    historyMaxEvents,
   };
 }

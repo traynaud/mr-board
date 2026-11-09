@@ -297,8 +297,22 @@
         "mustExceedReadyGreen": "Must be greater than Green"
       }
     },
-    "misc": {
+    "history": {
       "number": "05",
+      "title": "History",
+      "description": "How long and how many entries of the change log are kept.",
+      "retentionDays": "Keep at most",
+      "maxEvents": "Keep at most",
+      "daysSuffix": "days",
+      "eventsSuffix": "events",
+      "hint": "Both limits apply together: an event is removed as soon as it is too old or beyond the most recent ones.",
+      "errors": {
+        "integer": "Must be a whole number.",
+        "range": "Must be a whole number between {{min}} and {{max}}."
+      }
+    },
+    "misc": {
+      "number": "06",
       "title": "Miscellaneous",
       "description": "Convenience options and configuration backup.",
       "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)",
