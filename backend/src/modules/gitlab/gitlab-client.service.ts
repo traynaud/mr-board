@@ -10,12 +10,21 @@ import {
   ForgeClient,
 } from '../forges/forge-client.interface.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import {
+  FetchMergeRequestEventsOptions,
+  ForgeMergeRequestEvent,
+} from '../forges/types/forge-merge-request-event.js';
 import { ForgeProject } from '../forges/types/forge-project.js';
 import { ForgeTestResult } from '../forges/types/forge-test-result.js';
 import { hasRequiredScope } from './domain/check-token-scopes.js';
 import { normalizeGitlabUrl } from './domain/normalize-gitlab-url.js';
 import { normalizeProjectPath } from '../projects/domain/normalize-project-path.js';
 import { mapGraphqlMergeRequest } from './mappers/map-graphql-merge-request.js';
+import {
+  GitlabLabelEvent,
+  GitlabNote,
+  mapGitlabNotesToEvents,
+} from './mappers/map-gitlab-notes-to-events.js';
 import {
   GitlabGraphqlMergeRequestNode,
   GitlabGraphqlMergeRequestsPage,
@@ -30,6 +39,10 @@ export const GITLAB_TIMEOUT_MS = 15_000;
 
 /** Cap applied to a `Retry-After` wait on a 429 response (ms). See RG-004-13. */
 export const MAX_RETRY_AFTER_MS = 30_000;
+
+/** Page size and page cap of the REST notes / label events fetch (RG-034-04). */
+const EVENTS_PAGE_SIZE = 100;
+const EVENTS_MAX_PAGES = 10;
 
 /** Page size used for the GraphQL merge requests query. */
 const MERGE_REQUESTS_PAGE_SIZE = 100;
@@ -297,6 +310,69 @@ export class GitlabClientService implements ForgeClient {
   }
 
   /** Isolated for tests to mock away real waiting. */
+  /**
+   * `GET …/merge_requests/:iid/notes` and `…/resource_label_events` — what
+   * really happened on a merge request since `options.since` (RG-034-04).
+   * Notes are read newest first and the walk stops below `since`.
+   * @returns `[]` when the merge request is not found (404).
+   */
+  async fetchMergeRequestEvents(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestEventsOptions,
+  ): Promise<ForgeMergeRequestEvent[]> {
+    const base = `/api/v4/projects/${encodeURIComponent(project.remoteProjectId)}/merge_requests/${iid}`;
+    const sinceTime = new Date(options.since).getTime();
+    const notes: GitlabNote[] = [];
+    const labelEvents: GitlabLabelEvent[] = [];
+
+    for (let page = 1; page <= EVENTS_MAX_PAGES; page += 1) {
+      this.assertWithinDeadline(options.deadlineAt);
+      const batch = await this.get<GitlabNote[]>(
+        url,
+        `${base}/notes?sort=desc&order_by=created_at&per_page=${EVENTS_PAGE_SIZE}&page=${page}`,
+        token,
+        { allowNotFound: true },
+      );
+      if (batch === null) {
+        return [];
+      }
+      notes.push(...batch);
+      const oldest = batch[batch.length - 1];
+      if (
+        batch.length < EVENTS_PAGE_SIZE ||
+        (oldest && new Date(oldest.created_at).getTime() < sinceTime)
+      ) {
+        break;
+      }
+    }
+    for (let page = 1; page <= EVENTS_MAX_PAGES; page += 1) {
+      this.assertWithinDeadline(options.deadlineAt);
+      const batch = await this.get<GitlabLabelEvent[]>(
+        url,
+        `${base}/resource_label_events?per_page=${EVENTS_PAGE_SIZE}&page=${page}`,
+        token,
+        { allowNotFound: true },
+      );
+      if (batch === null) {
+        break;
+      }
+      labelEvents.push(...batch);
+      if (batch.length < EVENTS_PAGE_SIZE) {
+        break;
+      }
+    }
+    return mapGitlabNotesToEvents(notes, labelEvents, options.since);
+  }
+
+  private assertWithinDeadline(deadlineAt: number): void {
+    if (Date.now() >= deadlineAt) {
+      throw new ForgeTimeoutException();
+    }
+  }
+
   protected sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

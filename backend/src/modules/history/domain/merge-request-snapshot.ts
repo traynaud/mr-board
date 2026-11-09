@@ -18,6 +18,8 @@ export interface MergeRequestSnapshot {
   assignees: SnapshotUser[];
   approvers: SnapshotUser[];
   commentsCount: number;
+  /** When this state was last synchronised (stored snapshots only; US-034 window start). */
+  syncedAt?: string;
 }
 
 /** Projects a forge merge request onto the watched fields. */

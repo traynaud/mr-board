@@ -25,6 +25,10 @@ export class HistoryQueueEntry {
   @Column({ name: 'requested_at', type: 'text' })
   requestedAt!: string;
 
+  /** Start of the window to re-read on the forge; `null` → `requestedAt` (US-033 rows). */
+  @Column({ type: 'text', nullable: true })
+  since!: string | null;
+
   @Column({ type: 'integer', default: 0 })
   attempts!: number;
 

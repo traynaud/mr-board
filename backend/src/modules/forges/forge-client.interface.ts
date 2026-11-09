@@ -1,4 +1,8 @@
 import { ForgeMergeRequest } from './types/forge-merge-request.js';
+import {
+  FetchMergeRequestEventsOptions,
+  ForgeMergeRequestEvent,
+} from './types/forge-merge-request-event.js';
 import { ForgeProject } from './types/forge-project.js';
 import { ForgeTestResult } from './types/forge-test-result.js';
 
@@ -60,4 +64,22 @@ export interface ForgeClient {
     project: ForgeProject,
     options: FetchOpenMergeRequestsOptions,
   ): Promise<ForgeMergeRequest[]>;
+
+  /**
+   * Events that really happened on one merge/pull request since
+   * `options.since` — who did what, when, and comments (RG-034-04). Only
+   * the types of the history catalogue handled by the caller are returned
+   * (merge/close/reopen are US-035).
+   * @returns `[]` when the merge request is not found.
+   * @throws ForgeAuthException on 401/403.
+   * @throws ForgeTimeoutException when `options.deadlineAt` is exceeded.
+   * @throws ForgeUnavailableException on network error, rate limit or 5xx.
+   */
+  fetchMergeRequestEvents(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestEventsOptions,
+  ): Promise<ForgeMergeRequestEvent[]>;
 }

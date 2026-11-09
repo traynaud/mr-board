@@ -121,6 +121,10 @@ logique `(project_id, mr_iid)` + instantané dénormalisé (titre, URL, alias pr
   correspondant (RG-034-06) → le **mettre à jour** (acteur, date exacte, `status = confirmed`,
   `source_event_id`) ; sinon → le **créer** `confirmed` ; l'idempotence est garantie par `source_event_id`. Puis
   avancer le curseur et supprimer l'entrée de la file.
+- **RG-034-04b** *(précisé à l'implémentation)* — Fenêtre : `since` = synchronisation précédente de la MR − 5 min
+  (MR nouvelle : sa date de création), conservée au plus ancien tant que l'entrée attend. `created` est confirmé
+  dès la détection (acteur = auteur de la MR, date = date de création, sans appel forge). Titre côté GitLab : le texte
+  de la forge ne donne pas les valeurs → appariement sur le seul type, valeurs provisoires conservées.
 - **RG-034-05** — Commentaires : un événement `commented` par commentaire utilisateur (hors notes système),
   `new_value` = extrait tronqué à 200 caractères, acteur et date exacts. Les modifications et suppressions de
   commentaires ne sont pas suivies. ✅ hypothèse sur l'extrait (réversible : ne stocker aucun contenu).

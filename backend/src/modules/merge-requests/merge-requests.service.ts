@@ -380,6 +380,7 @@ export class MergeRequestsService {
       assignees: toUsers(assigneeRows, row.id),
       approvers: toUsers(approverRows, row.id),
       commentsCount: row.commentsCount,
+      syncedAt: row.syncedAt,
     }));
   }
 

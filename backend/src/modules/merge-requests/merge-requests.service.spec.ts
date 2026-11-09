@@ -437,6 +437,7 @@ describe('MergeRequestsService', () => {
           draft: true,
           labels: '["bug"]',
           commentsCount: 3,
+          syncedAt: '2026-11-09T09:00:00.000Z',
         },
       ]);
       reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 10, userId: 1 }]);
@@ -458,6 +459,7 @@ describe('MergeRequestsService', () => {
           assignees: [],
           approvers: [{ remoteUserId: 'r2', username: 'bob', name: 'Bob' }],
           commentsCount: 3,
+          syncedAt: '2026-11-09T09:00:00.000Z',
         },
       ]);
     });

@@ -65,7 +65,11 @@ function snapshot(
 describe('HistoryService', () => {
   let service: HistoryService;
   const baselines = { existsBy: jest.fn(), insert: jest.fn() };
-  const manager = { insert: jest.fn(), upsert: jest.fn() };
+  const manager = {
+    insert: jest.fn(),
+    upsert: jest.fn(),
+    find: jest.fn(),
+  };
   const dataSource = {
     transaction: jest.fn((cb: (m: typeof manager) => Promise<void>) =>
       cb(manager),
@@ -75,6 +79,7 @@ describe('HistoryService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     baselines.existsBy.mockResolvedValue(true);
+    manager.find.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         HistoryService,
@@ -151,6 +156,7 @@ describe('HistoryService', () => {
           mrTitle: 'New',
           mrWebUrl: 'https://gitlab.example.com/-/merge_requests/1',
           requestedAt: NOW,
+          since: '2026-11-09T09:55:00.000Z',
           attempts: 0,
           nextAttemptAt: null,
         },
@@ -174,10 +180,19 @@ describe('HistoryService', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       type: 'created',
+      status: 'confirmed',
       mrIid: 9,
+      occurredAt: '2026-09-01T10:00:00Z',
+      actorUsername: 'alice',
+      actorName: 'Alice',
       oldValue: null,
       newValue: '"MR 9"',
     });
+    const [, entries] = manager.upsert.mock.calls[0] as [
+      unknown,
+      { since: string }[],
+    ];
+    expect(entries[0]?.since).toBe('2026-09-01T10:00:00Z');
   });
 
   it('should_queue_without_event_when_only_the_comment_count_grows', async () => {
@@ -210,6 +225,42 @@ describe('HistoryService', () => {
       { mrIid: number }[],
     ];
     expect(entries.map((e) => e.mrIid)).toEqual([1]);
+  });
+
+  it('should_start_the_window_before_the_previous_synchronisation_of_the_mr', async () => {
+    await service.recordProjectChanges({
+      project: PROJECT,
+      previous: [
+        snapshot(1, { title: 'Old', syncedAt: '2026-11-09T09:30:00.000Z' }),
+      ],
+      incoming: [forgeMr(1, { title: 'New' })],
+      detectedAt: NOW,
+    });
+
+    const [, entries] = manager.upsert.mock.calls[0] as [
+      unknown,
+      { since: string }[],
+    ];
+    expect(entries[0]?.since).toBe('2026-11-09T09:25:00.000Z');
+  });
+
+  it('should_keep_the_oldest_window_start_of_an_mr_already_waiting_in_the_queue', async () => {
+    manager.find.mockResolvedValue([
+      { mrIid: 1, since: '2026-11-09T08:00:00.000Z', requestedAt: NOW },
+    ]);
+
+    await service.recordProjectChanges({
+      project: PROJECT,
+      previous: [snapshot(1, { title: 'Old' })],
+      incoming: [forgeMr(1, { title: 'New' })],
+      detectedAt: NOW,
+    });
+
+    const [, entries] = manager.upsert.mock.calls[0] as [
+      unknown,
+      { since: string }[],
+    ];
+    expect(entries[0]?.since).toBe('2026-11-09T08:00:00.000Z');
   });
 
   it('should_propagate_the_error_when_the_transaction_fails', async () => {

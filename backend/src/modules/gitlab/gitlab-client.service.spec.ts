@@ -446,4 +446,122 @@ describe('GitlabClientService', () => {
       ).rejects.toBeInstanceOf(ForgeUnavailableException);
     });
   });
+  describe('fetchMergeRequestEvents (US-034)', () => {
+    const options = () => ({
+      since: '2026-11-09T09:00:00Z',
+      deadlineAt: Date.now() + 60_000,
+    });
+    const note = (id: number, createdAt: string) => ({
+      id,
+      body: 'LGTM',
+      system: false,
+      created_at: createdAt,
+      author: { username: 'alice', name: 'Alice', avatar_url: null },
+    });
+
+    it('should_read_notes_newest_first_then_label_events_with_the_private_token', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(200, [note(1, '2026-11-09T10:00:00Z')]),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(200, [
+            {
+              id: 5,
+              created_at: '2026-11-09T10:05:00Z',
+              user: { username: 'bob', name: 'Bob' },
+              label: { name: 'bug' },
+              action: 'add',
+            },
+          ]),
+        );
+
+      const events = await service.fetchMergeRequestEvents(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      const [notesUrl, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(notesUrl).toBe(
+        `${BASE}/api/v4/projects/42/merge_requests/12/notes?sort=desc&order_by=created_at&per_page=100&page=1`,
+      );
+      expect((init.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe(
+        TOKEN,
+      );
+      expect(fetchSpy.mock.calls[1]?.[0]).toBe(
+        `${BASE}/api/v4/projects/42/merge_requests/12/resource_label_events?per_page=100&page=1`,
+      );
+      expect(events.map((e) => e.sourceEventId)).toEqual(['note:1', 'label:5']);
+    });
+
+    it('should_return_an_empty_list_when_the_merge_request_is_not_found', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(404, {}));
+
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).resolves.toEqual([]);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_stop_paging_once_a_page_reaches_below_since', async () => {
+      const fullPage = Array.from({ length: 100 }, (_, index) =>
+        note(index + 1, '2026-11-09T08:00:00Z'),
+      );
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(200, fullPage))
+        .mockResolvedValueOnce(jsonResponse(200, []));
+
+      await service.fetchMergeRequestEvents(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      // 1 notes page (oldest note is before `since`) + 1 label events page.
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should_page_through_notes_while_they_are_still_recent', async () => {
+      const recentPage = Array.from({ length: 100 }, (_, index) =>
+        note(index + 1, '2026-11-09T10:00:00Z'),
+      );
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(200, recentPage))
+        .mockResolvedValueOnce(jsonResponse(200, []))
+        .mockResolvedValueOnce(jsonResponse(200, []));
+
+      await service.fetchMergeRequestEvents(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      expect(fetchSpy.mock.calls[1]?.[0] as string).toContain('page=2');
+    });
+
+    it('should_throw_a_timeout_when_the_deadline_is_already_reached', async () => {
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, {
+          since: '2026-11-09T09:00:00Z',
+          deadlineAt: Date.now() - 1,
+        }),
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_an_auth_error_when_the_token_is_rejected', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(401, {}));
+
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+    });
+  });
 });

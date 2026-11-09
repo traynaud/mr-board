@@ -12,6 +12,10 @@ import {
   ForgeClient,
 } from '../forges/forge-client.interface.js';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
+import {
+  FetchMergeRequestEventsOptions,
+  ForgeMergeRequestEvent,
+} from '../forges/types/forge-merge-request-event.js';
 import { ForgeProject } from '../forges/types/forge-project.js';
 import { ForgeTestResult } from '../forges/types/forge-test-result.js';
 import { normalizeGitlabUrl } from '../gitlab/domain/normalize-gitlab-url.js';
@@ -20,12 +24,20 @@ import { deriveGithubApiBases } from './domain/derive-github-api-bases.js';
 import { normalizeGithubProjectPath } from './domain/normalize-github-project-path.js';
 import { mapGraphqlPullRequest } from './mappers/map-graphql-pull-request.js';
 import {
+  GithubTimelineItem,
+  mapGithubTimelineEvents,
+} from './mappers/map-github-timeline-events.js';
+import {
   GithubGraphqlPullRequestNode,
   GithubGraphqlPullRequestsPage,
   GithubGraphqlPullRequestsResponse,
 } from './types/github-pull-request.js';
 import { GithubRepo } from './types/github-repo.js';
 import { GithubUser } from './types/github-user.js';
+
+/** Page size and page cap of the REST timeline fetch (RG-034-04). */
+const TIMELINE_PAGE_SIZE = 100;
+const TIMELINE_MAX_PAGES = 10;
 
 /** Request timeout applied to every GitHub call (ms). See RG-020-03. */
 export const GITHUB_TIMEOUT_MS = 15_000;
@@ -279,6 +291,56 @@ export class GithubClientService implements ForgeClient {
       cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
     } while (cursor);
     return nodes.map(mapGraphqlPullRequest);
+  }
+
+  /**
+   * `GET /repos/{owner}/{repo}/issues/{n}/timeline` — what really happened on
+   * a pull request since `options.since` (RG-034-04). The timeline is
+   * chronological (no sort option), so every page is read, up to the cap.
+   * @returns `[]` when the pull request is not found (404).
+   * @throws ForgeRateLimitedException on 429 or an exhausted primary limit.
+   */
+  async fetchMergeRequestEvents(
+    url: string,
+    token: string,
+    project: ForgeProject,
+    iid: number,
+    options: FetchMergeRequestEventsOptions,
+  ): Promise<ForgeMergeRequestEvent[]> {
+    const { rest } = deriveGithubApiBases(url);
+    const items: GithubTimelineItem[] = [];
+    for (let page = 1; page <= TIMELINE_MAX_PAGES; page += 1) {
+      if (Date.now() >= options.deadlineAt) {
+        throw new ForgeTimeoutException();
+      }
+      const endpoint = `${rest}/repos/${project.pathWithNamespace}/issues/${iid}/timeline?per_page=${TIMELINE_PAGE_SIZE}&page=${page}`;
+      const response = await this.fetchRest(endpoint, token);
+      if (response.status === 404) {
+        return [];
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new ForgeAuthException(
+          `GitHub rejected the token (${response.status})`,
+        );
+      }
+      if (!response.ok) {
+        this.logger.warn(`GitHub ${endpoint} responded ${response.status}`);
+        throw new ForgeUnavailableException(
+          `GitHub responded ${response.status}`,
+        );
+      }
+      let batch: GithubTimelineItem[];
+      try {
+        batch = (await response.json()) as GithubTimelineItem[];
+      } catch {
+        throw new ForgeUnavailableException('GitHub returned an invalid body');
+      }
+      items.push(...batch);
+      if (batch.length < TIMELINE_PAGE_SIZE) {
+        break;
+      }
+    }
+    return mapGithubTimelineEvents(items, options.since);
   }
 
   /** Fetches one page, retrying once after a rate-limit wait (RG-020-11). */

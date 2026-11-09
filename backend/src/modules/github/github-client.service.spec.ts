@@ -575,4 +575,94 @@ describe('GithubClientService', () => {
       ).rejects.toBeInstanceOf(ForgeUnavailableException);
     });
   });
+  describe('fetchMergeRequestEvents (US-034)', () => {
+    const options = () => ({
+      since: '2026-11-09T09:00:00Z',
+      deadlineAt: Date.now() + 60_000,
+    });
+    const item = (id: number) => ({
+      id,
+      event: 'convert_to_draft',
+      created_at: '2026-11-09T10:00:00Z',
+      actor: { login: 'alice' },
+    });
+
+    it('should_get_the_timeline_with_a_bearer_token_and_map_it', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(200, [item(1)]));
+
+      const events = await service.fetchMergeRequestEvents(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        'https://api.github.com/repos/equipe/api/issues/12/timeline?per_page=100&page=1',
+      );
+      expect((init.headers as Record<string, string>)['Authorization']).toBe(
+        `Bearer ${TOKEN}`,
+      );
+      expect(events.map((e) => [e.sourceEventId, e.type])).toEqual([
+        ['gh:1', 'marked_draft'],
+      ]);
+    });
+
+    it('should_return_an_empty_list_when_the_pull_request_is_not_found', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(404, {}));
+
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).resolves.toEqual([]);
+    });
+
+    it('should_read_every_page_until_a_short_one', async () => {
+      const full = Array.from({ length: 100 }, (_, index) => item(index + 1));
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(200, full))
+        .mockResolvedValueOnce(jsonResponse(200, [item(101)]));
+
+      const events = await service.fetchMergeRequestEvents(
+        BASE,
+        TOKEN,
+        PROJECT,
+        12,
+        options(),
+      );
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(events).toHaveLength(101);
+    });
+
+    it('should_throw_an_auth_error_on_401_or_403', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(403, {}));
+
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeAuthException);
+    });
+
+    it('should_throw_unavailable_on_a_server_error_or_an_invalid_body', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(500, {}));
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
+
+      fetchSpy.mockResolvedValueOnce(new Response('not json', { status: 200 }));
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, options()),
+      ).rejects.toBeInstanceOf(ForgeUnavailableException);
+    });
+
+    it('should_throw_a_timeout_when_the_deadline_is_already_reached', async () => {
+      await expect(
+        service.fetchMergeRequestEvents(BASE, TOKEN, PROJECT, 12, {
+          since: '2026-11-09T09:00:00Z',
+          deadlineAt: Date.now() - 1,
+        }),
+      ).rejects.toBeInstanceOf(ForgeTimeoutException);
+    });
+  });
 });

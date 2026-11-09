@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
 import { detectMergeRequestChanges } from './domain/detect-merge-request-changes.js';
 import {
@@ -10,6 +10,9 @@ import {
 import { HistoryBaseline } from './entities/history-baseline.entity.js';
 import { HistoryQueueEntry } from './entities/history-queue-entry.entity.js';
 import { MergeRequestEvent } from './entities/merge-request-event.entity.js';
+
+/** Safety margin applied before the previous synchronisation (clock drift, RG-034-04). */
+export const ENRICHMENT_WINDOW_MARGIN_MS = 5 * 60_000;
 
 /** The project fields the history needs (instantané dénormalisé, RG-033-02). */
 export interface HistoryProject {
@@ -70,11 +73,14 @@ export class HistoryService {
         snapshot,
       );
       for (const change of changes) {
+        // `created` is exact without any forge call: the author and the
+        // creation date are part of the payload (US-034, archi.md).
+        const exact = change.type === 'created';
         events.push({
-          occurredAt: detectedAt,
+          occurredAt: exact ? mergeRequest.createdAt : detectedAt,
           detectedAt,
           type: change.type,
-          status: 'provisional',
+          status: exact ? 'confirmed' : 'provisional',
           sourceEventId: null,
           connectionId: project.connectionId,
           projectId: project.id,
@@ -82,9 +88,9 @@ export class HistoryService {
           mrTitle: snapshot.title,
           mrWebUrl: snapshot.webUrl,
           projectAlias: project.alias,
-          actorUsername: null,
-          actorName: null,
-          actorAvatarUrl: null,
+          actorUsername: exact ? mergeRequest.author.username : null,
+          actorName: exact ? mergeRequest.author.name : null,
+          actorAvatarUrl: exact ? mergeRequest.author.avatarUrl : null,
           oldValue: change.oldValue,
           newValue: change.newValue,
         });
@@ -96,6 +102,11 @@ export class HistoryService {
           mrTitle: snapshot.title,
           mrWebUrl: snapshot.webUrl,
           requestedAt: detectedAt,
+          since: windowStart(
+            previousByIid.get(snapshot.iid),
+            mergeRequest,
+            detectedAt,
+          ),
           attempts: 0,
           nextAttemptAt: null,
         });
@@ -110,8 +121,45 @@ export class HistoryService {
         await manager.insert(MergeRequestEvent, events);
       }
       if (queue.length > 0) {
+        // A MR already waiting keeps its oldest window start (RG-034-02).
+        const waiting = await manager.find(HistoryQueueEntry, {
+          where: {
+            projectId: project.id,
+            mrIid: In(queue.map((entry) => entry.mrIid as number)),
+          },
+        });
+        const waitingSince = new Map(
+          waiting.map((entry) => [
+            entry.mrIid,
+            entry.since ?? entry.requestedAt,
+          ]),
+        );
+        for (const entry of queue) {
+          const existing = waitingSince.get(entry.mrIid as number);
+          if (existing !== undefined && existing < (entry.since as string)) {
+            entry.since = existing;
+          }
+        }
         await manager.upsert(HistoryQueueEntry, queue, ['projectId', 'mrIid']);
       }
     });
   }
+}
+
+/**
+ * Start of the forge window to re-read for a merge request: the previous
+ * synchronisation minus a margin; for a new one, its creation date.
+ */
+function windowStart(
+  previous: MergeRequestSnapshot | undefined,
+  mergeRequest: ForgeMergeRequest,
+  detectedAt: string,
+): string {
+  if (!previous) {
+    return mergeRequest.createdAt;
+  }
+  const reference = previous.syncedAt ?? detectedAt;
+  return new Date(
+    new Date(reference).getTime() - ENRICHMENT_WINDOW_MARGIN_MS,
+  ).toISOString();
 }
