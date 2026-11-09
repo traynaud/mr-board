@@ -198,6 +198,10 @@ une fois ses dépendances réalisées.
 | US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ✅ |
 | US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ✅ |
 | US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ☐ |
+| US-039 | Notifications — état « à traiter / fermé » des événements (serveur) | Must | M | US-033, US-034, US-037 | ☐ |
+| US-040 | Notifications — panneau et compteur sur l'accueil (maquette D9 requise) | Must | L | US-039, US-037 | ☐ |
+| US-041 | Notifications — préférences par type d'événement (Paramètres) | Must | M | US-039, US-015 | ☐ |
+| US-042 | Paramètres en onglets (maquette D9 requise) | Should | M | US-015, US-041 | ☐ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.

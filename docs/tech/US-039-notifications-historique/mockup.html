@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MR Board — Notifications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
+<style>
+/* Design system « Modernist » du projet : Archivo, accent #ec3013, aucun arrondi, règles 2 px.
+   Layout : cadres empilés (un par écran / état), chacun annoté. */
+:root{
+  --bg:#f3f2f2; --surface:#eae9e9; --white:#fff; --text:#201e1d;
+  --accent:#ec3013; --a100:#fff2ef; --a300:#f5a597; --a700:#a92410; --a800:#7d1a0b;
+  --n100:#f8f4f4; --n400:#b0acac; --n600:#605d5d; --n800:#3a3838; --n900:#2d2b2b;
+  --divider:color-mix(in srgb,#201e1d 40%,transparent);
+  --success:#2f8f4e; --warning:#d98a1f;
+  --font:"Archivo",system-ui,sans-serif;
+}
+*{box-sizing:border-box;border-radius:0}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.4}
+svg{display:block;flex:none}
+h1{font-size:22px;font-weight:800;margin:0 0 4px}
+h2{font-size:15px;font-weight:800;margin:0 0 4px}
+.page{max-width:1180px;margin:0 auto;padding:32px 16px 64px;display:flex;flex-direction:column;gap:40px}
+.lead{color:var(--n600);max-width:78ch;margin:0}
+.note{font-size:12px;color:var(--n600);max-width:80ch;margin:8px 0 0}
+.note b{color:var(--text)}
+.frame{border:2px solid var(--divider);background:var(--bg);position:relative;overflow:hidden}
+.cap{display:flex;gap:8px;align-items:baseline;margin-bottom:12px}
+.cap .n{font-weight:800;color:var(--accent)}
+.row2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:900px){.row2{grid-template-columns:1fr}}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;padding:0 16px;height:56px;border-bottom:2px solid var(--divider)}
+.brand{font-weight:800;font-size:16px;display:flex;gap:8px;align-items:center}
+.brand svg{color:var(--accent)}
+.sync{font-size:12px;color:var(--n600)}
+.spacer{flex:1}
+.btn{font:600 13px var(--font);display:inline-flex;gap:8px;align-items:center;height:36px;padding:0 16px;border:1px solid var(--text);background:transparent;color:var(--text);cursor:pointer}
+.btn.text{border-color:transparent;color:var(--accent);padding:0 8px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn[disabled]{opacity:.4;cursor:default}
+.iconbtn{position:relative;width:40px;height:40px;display:grid;place-items:center;border:0;background:transparent;color:var(--text);cursor:pointer}
+.iconbtn.on{background:var(--accent);color:#fff}
+.count{position:absolute;top:2px;right:0;min-width:18px;height:18px;padding:0 4px;background:var(--accent);color:#fff;font:800 11px/18px var(--font);text-align:center}
+.iconbtn.on .count{background:var(--text)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* board behind */
+.board{position:relative;min-height:560px}
+.filters{display:flex;gap:8px;padding:16px;align-items:center}
+.chip{border:1px solid var(--divider);padding:6px 14px;border-radius:0;border-radius:99px;color:var(--n600)}
+.chip{border-radius:0;border:1px solid var(--n600);border-radius:16px}
+.th,.tr{display:grid;grid-template-columns:40px 70px 40px 1fr 120px 90px;gap:12px;align-items:center;padding:0 16px}
+.th{height:40px;font-weight:600;color:var(--n600);border-top:2px solid var(--divider);border-bottom:1px solid var(--divider)}
+.tr{height:56px;border-bottom:1px solid var(--divider)}
+.tag{font-size:11px;padding:3px 10px;background:var(--n100);color:var(--n800)}
+.av{width:28px;height:28px;background:var(--n800);color:#fff;font:600 11px/28px var(--font);text-align:center}
+.sq{display:inline-block;width:10px;height:10px;margin-right:6px}
+
+/* panel (MatSidenav end, mode over) */
+.scrim{position:absolute;inset:0;background:rgba(32,30,29,.32)}
+.panel{position:absolute;top:0;right:0;bottom:0;width:440px;max-width:100%;background:var(--bg);border-left:2px solid var(--divider);box-shadow:-8px 0 24px rgba(32,30,29,.18);display:flex;flex-direction:column}
+.panel.static{position:relative;width:100%;height:100%;box-shadow:none;border:2px solid var(--divider)}
+.ph{display:flex;align-items:center;gap:8px;padding:0 8px 0 16px;height:56px;border-bottom:2px solid var(--divider)}
+.ph h3{margin:0;font-size:16px;font-weight:800}
+.ph .badge{font:800 11px/18px var(--font);background:var(--accent);color:#fff;padding:0 6px;min-width:18px;text-align:center}
+.pbar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--divider);font-size:12px;color:var(--n600)}
+.pbar a{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.list{flex:1;overflow:auto}
+.ev{display:grid;grid-template-columns:44px 28px 10px 1fr 32px;column-gap:12px;align-items:start;padding:12px 8px 12px 16px;border-bottom:1px solid var(--divider)}
+.ev:hover{background:var(--n100)}
+.ev .t{font-size:12px;color:var(--n600);padding-top:6px;font-variant-numeric:tabular-nums}
+.ev .m{width:10px;height:10px;margin-top:9px;background:var(--n400)}
+.ev .m.ok{background:var(--success)}.ev .m.bad{background:var(--accent)}
+.ev .b{padding-top:4px;min-width:0}
+.ev .s{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.ev .s a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.ev .d{font-size:12px;color:var(--n600);margin-top:4px}
+.ev .d s{opacity:.8}
+.ev .x{width:32px;height:32px;display:grid;place-items:center;border:0;background:transparent;color:var(--n600);cursor:pointer}
+.ev .x:hover{background:var(--a100);color:var(--a800)}
+.ev.prov .t,.ev.prov .b{color:var(--n600)}
+.ev.prov .m{background:transparent;border:1px dashed var(--n600)}
+.unk{width:28px;height:28px;border:1px dashed var(--n600);color:var(--n600);font-size:12px;display:grid;place-items:center}
+.pf{display:flex;align-items:center;padding:8px 16px;border-top:2px solid var(--divider);gap:8px}
+.state{padding:40px 24px;color:var(--n600);display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.state svg{color:var(--n400)}
+.skel{height:14px;background:var(--surface);margin:6px 0}
+.err{background:var(--a100);border-bottom:2px solid var(--accent);color:var(--a800);padding:12px 16px;display:flex;gap:12px;align-items:center}
+.progress{height:2px;background:var(--accent)}
+
+/* settings */
+.sheet{padding:0 24px 24px;max-width:920px;margin:0 auto}
+.sh{display:flex;align-items:center;gap:8px;height:56px;border-bottom:2px solid var(--divider)}
+.sh h3{margin:0 auto 0 8px;font-size:16px;font-weight:800}
+.tabs{display:flex;border-bottom:2px solid var(--divider)}
+.tab{position:relative;padding:0 16px;height:44px;display:flex;align-items:center;gap:8px;font-weight:600;color:var(--n600);border:0;background:transparent;font-family:var(--font);font-size:13px}
+.tab.act{color:var(--accent)}
+.tab.act::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--accent)}
+.tab .dot{width:8px;height:8px;background:var(--accent)}
+.sec{display:grid;grid-template-columns:200px 1fr;gap:24px;padding:24px 0;border-bottom:2px solid var(--divider)}
+.sec:last-child{border-bottom:0}
+.sec h6{margin:0 0 4px;color:var(--accent);font-size:13px;font-weight:600}
+.sec p{margin:0;font-size:12px;color:var(--n600)}
+@media(max-width:700px){.sec{grid-template-columns:1fr}}
+.grp{margin-bottom:16px}
+.grp .gh{display:flex;align-items:center;gap:12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--n600);border-bottom:1px solid var(--divider);padding-bottom:4px;margin-bottom:4px}
+.grp .gh .lnk{margin-left:auto;text-transform:none;letter-spacing:0;color:var(--accent);font-weight:600;font-size:12px;text-decoration:underline;text-underline-offset:2px}
+.cb{display:flex;align-items:center;gap:12px;height:36px}
+.cb i{width:18px;height:18px;border:2px solid var(--n800);display:grid;place-items:center;color:#fff;font-style:normal}
+.cb i.on{background:var(--accent);border-color:var(--accent)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+@media(max-width:700px){.cols{grid-template-columns:1fr}}
+.tog{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.sw{width:40px;height:22px;border:2px solid var(--n800);position:relative;flex:none;margin-top:1px}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--n800)}
+.sw.on{background:var(--accent);border-color:var(--accent)}
+.sw.on::after{left:20px;background:#fff}
+.tog small{display:block;color:var(--n600);font-size:12px}
+.warn{display:flex;gap:8px;align-items:center;color:var(--a800);background:var(--a100);border-left:2px solid var(--accent);padding:8px 12px;font-size:12px;margin-top:4px}
+.map{width:100%;border-collapse:collapse;font-size:13px}
+.map td,.map th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--divider);vertical-align:top}
+.map th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--n600);border-bottom:2px solid var(--divider)}
+.pad{padding:16px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-checks" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+    <symbol id="i-fork" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v3a3 3 0 0 0 3 3h6"/></symbol>
+  </defs>
+</svg>
+
+<main class="page">
+<header>
+  <h1>Notifications de l'historique</h1>
+  <p class="lead">Maquette US-040 (panneau et compteur), US-041 (préférences) et US-042 (Paramètres en onglets). Design system « Modernist » : Archivo, accent #ec3013, aucun arrondi, règles 2 px. Seul le thème clair est montré ; le sombre suit les tokens existants.</p>
+</header>
+
+<!-- 1 -->
+<section>
+  <div class="cap"><span class="n">1</span><div><h2>Tableau avec panneau ouvert</h2>
+  <p class="note">Une icône <b>cloche</b> avec compteur dans la toolbar, entre « Rafraîchir » et « Historique ». Le panneau est un <b>tiroir à droite</b> (MatSidenav, mode « over », 440 px) : la navigation ne change pas, le tableau reste derrière. Les lignes reprennent le rendu de la page Historique (US-037), avec la croix « Marquer comme vu » à droite.</p></div></div>
+  <div class="frame board">
+    <div class="toolbar">
+      <div class="brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-fork"/></svg>MR Board</div>
+      <span class="sync">Synchronisé il y a 2 min</span>
+      <span class="spacer"></span>
+      <button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-refresh"/></svg>Rafraîchir</button>
+      <button class="iconbtn on" aria-label="Notifications, 7 non vues"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg><span class="count">7</span></button>
+      <button class="iconbtn" aria-label="Historique"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-hist"/></svg></button>
+      <button class="iconbtn" aria-label="Paramètres"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gear"/></svg></button>
+    </div>
+    <div class="filters"><span class="chip">Drafts</span><span class="chip">Mes MRs</span><span class="chip">Favoris</span><span class="chip">À relire</span><span class="spacer"></span><span style="color:var(--n600)">12 MRs · 2 projets</span></div>
+    <div class="th"><span></span><span>Projet</span><span>Aut.</span><span>Titre</span><span>Difficulté</span><span>Depuis Ready</span></div>
+    <div class="tr"><span>☆</span><span class="tag">web</span><span class="av">AM</span><span>Ajout du filtre à relire</span><span><span class="sq" style="background:var(--success)"></span>Easy</span><span style="color:var(--warning);font-weight:600">2 j</span></div>
+    <div class="tr"><span>☆</span><span class="tag">api</span><span class="av">BD</span><span>Fix tri par Ready</span><span><span class="sq" style="background:var(--success)"></span>Easy</span><span style="color:var(--warning);font-weight:600">2 j</span></div>
+    <div class="tr"><span>☆</span><span class="tag">api</span><span class="av">DL</span><span>Migration TypeORM historique</span><span><span class="sq" style="background:var(--warning)"></span>Medium</span><span style="color:var(--warning);font-weight:600">2 j</span></div>
+    <div class="tr"><span>☆</span><span class="tag">web</span><span class="av">AM</span><span>Upgrade Angular 20</span><span><span class="sq" style="background:var(--warning)"></span>Medium</span><span style="color:var(--accent);font-weight:600">6 j</span></div>
+    <div class="scrim"></div>
+    <aside class="panel" aria-label="Notifications">
+      <div class="ph"><h3>Notifications</h3><span class="badge">7</span><span class="spacer"></span>
+        <button class="iconbtn" aria-label="Fermer le panneau"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+      <div class="pbar"><button class="btn text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-checks"/></svg>Tout marquer comme vu</button><span class="spacer"></span><a href="#">Voir tout l'historique</a></div>
+      <div class="list">
+        <div class="ev prov"><span class="t">~21:02</span><span class="unk">?</span><span class="m"></span><div class="b"><div class="s"><strong>Inconnu</strong> a créé la MR <span class="tag">web</span> <a href="#">#100 Ajout du filtre à relire</a></div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+        <div class="ev"><span class="t">20:25</span><span class="av">BD</span><span class="m"></span><div class="b"><div class="s"><strong>Bob Durand</strong> a renommé la MR <span class="tag">api</span> <a href="#">#101 Fix tri par Ready</a></div><div class="d"><s>Ancien titre</s> → Nouveau titre</div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+        <div class="ev"><span class="t">19:48</span><span class="av">CP</span><span class="m ok"></span><div class="b"><div class="s"><strong>Carol Petit</strong> a approuvé la MR <span class="tag">web</span> <a href="#">#102 Refonte page Paramètres</a></div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+        <div class="ev prov"><span class="t">~19:11</span><span class="av">DL</span><span class="m"></span><div class="b"><div class="s"><strong>Dave Leroy</strong> a marqué la MR comme prête <span class="tag">api</span> <a href="#">#103 Migration TypeORM historique</a></div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+        <div class="ev"><span class="t">18:34</span><span class="av">AM</span><span class="m bad"></span><div class="b"><div class="s"><strong>Alice Martin</strong> a fermé la MR <span class="tag">web</span> <a href="#">#104 Upgrade Angular 20</a></div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+        <div class="ev"><span class="t">17:57</span><span class="av">BD</span><span class="m"></span><div class="b"><div class="s"><strong>Bob Durand</strong> a ajouté Carol Petit comme relecteur <span class="tag">api</span> <a href="#">#105 Tooltip approbateurs</a></div></div><button class="x" aria-label="Marquer comme vu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-x"/></svg></button></div>
+      </div>
+      <div class="pf"><span style="color:var(--n600);font-size:12px">6 affichées sur 7 · les plus récentes en premier</span></div>
+    </aside>
+  </div>
+  <p class="note"><b>Comportement :</b> clic sur la croix = l'entrée disparaît et le compteur diminue aussitôt. « Tout marquer comme vu » ferme <b>toutes</b> les entrées éligibles (même au-delà des 50 listées), puis le panneau passe à l'état vide. Clic sur le lien MR : ouvre la MR sans fermer l'entrée. Les événements provisoires gardent le rendu US-037 (« ~ », marqueur creux) et deviennent confirmés sur place.</p>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="cap"><span class="n">2</span><div><h2>États du panneau</h2>
+  <p class="note">Vide, chargement et erreur, dans le même cadre que le panneau.</p></div></div>
+  <div class="row2">
+    <div class="frame" style="height:360px"><div class="panel static">
+      <div class="ph"><h3>Notifications</h3><span class="spacer"></span><button class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-x"/></svg></button></div>
+      <div class="pbar"><button class="btn text" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-checks"/></svg>Tout marquer comme vu</button><span class="spacer"></span><a href="#">Voir tout l'historique</a></div>
+      <div class="state"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-check"/></svg><strong style="color:var(--text)">Rien de nouveau</strong><span>Les prochaines modifications de vos MRs apparaîtront ici après la synchronisation.</span><a href="#" style="color:var(--accent);font-weight:600;text-decoration:underline">Régler les notifications</a></div>
+    </div></div>
+    <div class="frame" style="height:360px"><div class="panel static">
+      <div class="ph"><h3>Notifications</h3><span class="spacer"></span><button class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-x"/></svg></button></div>
+      <div class="progress"></div>
+      <div class="state" style="width:100%"><div class="skel" style="width:90%"></div><div class="skel" style="width:70%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:60%"></div><div class="skel" style="width:80%"></div></div>
+    </div></div>
+    <div class="frame" style="height:360px"><div class="panel static">
+      <div class="ph"><h3>Notifications</h3><span class="spacer"></span><button class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-x"/></svg></button></div>
+      <div class="err"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-alert"/></svg><span>Impossible de charger les notifications.</span><span class="spacer"></span><button class="btn text">Réessayer</button></div>
+      <div class="state"><span>Le compteur de la toolbar affiche le dernier total connu.</span></div>
+    </div></div>
+  </div>
+  <p class="note"><b>Échec d'une fermeture :</b> l'entrée revient à sa place, le compteur est restauré et un toast (bas gauche, fond #2d2b2b) affiche « Impossible de marquer la notification comme vue. ».</p>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="cap"><span class="n">3</span><div><h2>Compteur dans la toolbar</h2>
+  <p class="note">Aucune pastille à 0. De 1 à 99 : le nombre. Au-delà : « 99+ ». Fond accent ; accent remplacé par #201e1d quand le panneau est ouvert (bouton plein accent). Libellé accessible : « Notifications, N non vues ».</p></div></div>
+  <div class="frame pad" style="display:flex;gap:32px;align-items:center;flex-wrap:wrap">
+    <div style="text-align:center"><button class="iconbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg></button><div class="note" style="margin:0">0 : sans pastille</div></div>
+    <div style="text-align:center"><button class="iconbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg><span class="count">7</span></button><div class="note" style="margin:0">7</div></div>
+    <div style="text-align:center"><button class="iconbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg><span class="count">99+</span></button><div class="note" style="margin:0">au-delà de 99</div></div>
+    <div style="text-align:center"><button class="iconbtn on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg><span class="count">7</span></button><div class="note" style="margin:0">panneau ouvert</div></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section>
+  <div class="cap"><span class="n">4</span><div><h2>Paramètres en onglets — onglet « Notifications »</h2>
+  <p class="note">Barre d'onglets sous l'en-tête (MatTabNav / MatTabGroup, indicateur 2 px accent). L'en-tête garde un seul jeu <b>Annuler / Réinitialiser / Enregistrer</b> pour tous les onglets. Un point accent sur un onglet signale une erreur de validation ou, si l'onglet est inactif, une modification non enregistrée.</p></div></div>
+  <div class="frame">
+    <div class="sheet">
+      <div class="sh"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-back"/></svg><h3>Paramètres</h3><button class="btn text" style="color:var(--text)">Annuler</button><button class="btn text" style="color:var(--text)">Réinitialiser</button><button class="btn primary">Enregistrer</button></div>
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab">Connexions</button>
+        <button class="tab" role="tab">Données</button>
+        <button class="tab" role="tab">Affichage</button>
+        <button class="tab act" role="tab" aria-selected="true">Notifications</button>
+      </nav>
+
+      <div class="sec"><div><h6>01 · Périmètre</h6><p>Quels événements alimentent le panneau et le compteur de l'accueil.</p></div>
+        <div>
+          <div class="tog"><span class="sw"></span><div><strong>Seulement mes MRs</strong><small>Retient les événements sur les MRs dont je suis auteur, relecteur ou affecté.</small></div></div>
+          <div class="tog"><span class="sw"></span><div><strong>Exclure mes propres actions</strong><small>Masque ce que j'ai fait moi-même (approbation, commentaire…).</small></div></div>
+          <div class="warn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-alert"/></svg>Aucune identité résolue : « Seulement mes MRs » ne retiendra aucun événement. Configurez un jeton dans Connexions. <i style="opacity:.6">(affiché seulement si l'option est cochée et l'identité absente)</i></div>
+        </div></div>
+
+      <div class="sec"><div><h6>02 · Types d'événements</h6><p>Décocher un type le masque du panneau sans fermer les événements : il réapparaissent si vous le réactivez. La page Historique les montre toujours.</p></div>
+        <div>
+          <div class="grp"><div class="gh">Cycle de vie<span class="lnk">Tout cocher</span><span class="lnk" style="margin-left:0">Tout décocher</span></div>
+            <div class="cols">
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>MR créée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Passée en draft</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Marquée prête</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Fusionnée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Fermée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Rouverte</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Supprimée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Disparue de la liste</div>
+            </div></div>
+          <div class="grp"><div class="gh">Relecture et approbation<span class="lnk">Tout cocher</span><span class="lnk" style="margin-left:0">Tout décocher</span></div>
+            <div class="cols">
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Approuvée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Approbation retirée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Relecteur ajouté</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Relecteur retiré</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Affecté ajouté</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Affecté retiré</div>
+            </div></div>
+          <div class="grp"><div class="gh">Contenu<span class="lnk">Tout cocher</span><span class="lnk" style="margin-left:0">Tout décocher</span></div>
+            <div class="cols">
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Titre modifié</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Commentée</div>
+              <div class="cb"><i class="on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><use href="#i-check"/></svg></i>Label ajouté</div>
+              <div class="cb"><i></i>Label retiré</div>
+            </div></div>
+        </div></div>
+
+      <div class="sec"><div><h6>03 · Autres alertes</h6><p>Réglages existants, déplacés ici depuis « Divers ». Inchangés.</p></div>
+        <div>
+          <div class="cb"><i></i>Notification navigateur quand une MR m'est affectée</div>
+          <div class="cb"><i></i>Badge de compteur sur l'onglet (MRs en rouge)</div>
+        </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="cap"><span class="n">5</span><div><h2>Répartition des sections dans les onglets</h2>
+  <p class="note">Aucun champ ni règle ne change : seules les sections sont regroupées. Les numéros « 01 · » sont repris par onglet.</p></div></div>
+  <div class="frame pad">
+    <table class="map">
+      <tr><th>Onglet</th><th>Contenu</th><th>Origine</th></tr>
+      <tr><td><b>Connexions</b></td><td>Connexions et repos à scanner (identité résolue, tester, modifier)</td><td>ex-01 · Connexions</td></tr>
+      <tr><td><b>Données</b></td><td>Actualisation (fréquence, pause onglet inactif) · Historique (rétention jours / nombre) · Exporter / importer / réinitialiser la config</td><td>ex-02, ex-05, bas de ex-06</td></tr>
+      <tr><td><b>Affichage</b></td><td>Difficulté · Temps depuis Ready · Surligner mes MRs · thème · langue · ouvrir dans un nouvel onglet · ignorer wip / on-hold</td><td>ex-03, ex-04, ex-06</td></tr>
+      <tr><td><b>Notifications</b> (nouveau)</td><td>Périmètre · types d'événements · notification navigateur · badge d'onglet</td><td>nouveau + ex-06</td></tr>
+    </table>
+    <p class="note"><b>Navigation :</b> l'onglet actif vit dans l'URL (<code>/settings?tab=notifications</code>), le premier onglet s'ouvre par défaut ou si la valeur est inconnue. Sur mobile, les onglets défilent horizontalement. Au clavier : flèches gauche / droite entre onglets.</p>
+  </div>
+</section>
+</main>
+</body>
+</html>
