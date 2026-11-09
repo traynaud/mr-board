@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-11-09",
+    "type": "feat",
+    "user-story": "US-032",
+    "title": "Le filtre rapide « À relire » ne tient plus compte des commentaires : il affiche toutes les MRs sans relecteur."
+  },
+  {
     "date": "2026-10-14",
     "type": "feat",
     "user-story": "US-032",

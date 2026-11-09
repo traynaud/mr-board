@@ -1322,11 +1322,13 @@ describe('MergeRequestsService', () => {
   });
 
   describe('listOpen — toReviewOnly (RG-032-*)', () => {
-    it('should_keep_only_merge_requests_without_reviewer_and_without_comment_rg_032_01', async () => {
+    it('should_keep_only_merge_requests_without_reviewer_whatever_the_comments_rg_032_01', async () => {
       mergeRequestsRepo.find.mockResolvedValue([
         persistedMergeRequest({ id: 1, iid: 1, commentsCount: 0 }),
         persistedMergeRequest({ id: 2, iid: 2, commentsCount: 2 }),
+        persistedMergeRequest({ id: 3, iid: 3, commentsCount: 0 }),
       ]);
+      reviewersRepo.find.mockResolvedValue([{ mergeRequestId: 3, userId: 10 }]);
       projectsService.findByIds.mockResolvedValue([projectRow()]);
       usersService.findByIds.mockResolvedValue([
         { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
@@ -1336,7 +1338,7 @@ describe('MergeRequestsService', () => {
         toReviewOnly: true,
       });
 
-      expect(result.map((v) => v.iid)).toEqual([1]);
+      expect(result.map((v) => v.iid).sort()).toEqual([1, 2]);
     });
 
     it('should_return_every_merge_request_when_to_review_only_is_not_requested', async () => {

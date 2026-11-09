@@ -2,14 +2,16 @@
 
 ## 1. Reformulation
 
-Les MRs que personne n'a encore prises en charge (aucun relecteur désigné, aucun commentaire) sont celles qui
-risquent de stagner. On ajoute un chip « À relire » (« To review » en anglais) à la barre de filtres, à côté de
-« Drafts », « Mes MRs » et « Favoris », qui ne garde que ces MRs « orphelines ». Il se cumule librement avec les
+Les MRs que personne n'a encore prises en charge (aucun relecteur désigné) sont celles qui risquent de stagner. On ajoute un chip « À relire » (« To review » en anglais) à la barre de filtres, à côté de
+« Drafts », « Mes MRs » et « Favoris », qui ne garde que ces MRs « orphelines ».
+
+> **Révision 2026-11-09** : la condition « aucun commentaire » est supprimée. La seule condition restante est
+> « aucun relecteur ». Les passages modifiés sont signalés par *(rév.)*. Il se cumule librement avec les
 autres filtres rapides et composables.
 
 ## 2. User Story
 
-- **US-032** : En tant que membre de l'équipe, je veux n'afficher que les MRs qui n'ont ni relecteur ni commentaire,
+- **US-032** : En tant que membre de l'équipe, je veux n'afficher que les MRs qui n'ont aucun relecteur,
   afin de repérer en un clic celles qui attendent encore quelqu'un pour les relire.
     - Priorité : Should
     - Complexité estimée : S
@@ -17,9 +19,9 @@ autres filtres rapides et composables.
 
 ## 3. Règles de Gestion
 
-- **RG-032-01** — Définition : une MR est « à relire » si `reviewers` est vide **ET** `commentsCount = 0`
-  (RG-G08 : notes utilisateur, hors notes système). Les deux conditions sont obligatoires (ET). Les assignees, les
-  approbations, le statut de mergeabilité et le draft n'entrent pas dans la définition.
+- **RG-032-01** *(rév.)* — Définition : une MR est « à relire » si et seulement si `reviewers` est vide. Le nombre de
+  commentaires (`commentsCount`, RG-G08) n'entre plus dans la définition. Les assignees, les approbations, le statut
+  de mergeabilité et le draft n'entrent pas non plus dans la définition.
 - **RG-032-02** — Chip : « À relire » (fr) / « To review » (en), `mat-chip-option` identique à « Drafts »,
   « Mes MRs » et « Favoris » (US-009, RG-027-10), toujours visible, désélectionné par défaut, sans compteur propre.
   Ordre dans la barre : Drafts, Mes MRs, Favoris, À relire (le nouveau chip en dernier).
@@ -27,7 +29,7 @@ autres filtres rapides et composables.
   filtres composables (RG-G14), et alimente les compteurs de facets (RG-G19) et le compteur global (RG-G20) comme
   n'importe quel filtre.
 - **RG-032-04** — Drafts : le filtre ne contourne pas la règle d'affichage des drafts (RG-009-01) ; un draft sans
-  relecteur ni commentaire n'apparaît que si « Drafts » est aussi actif.
+  relecteur n'apparaît que si « Drafts » est aussi actif.
 - **RG-032-05** — Labels ignorés : une MR masquée par un label ignoré (RG-015-02) reste masquée.
 - **RG-032-06** — Paramètre API : `toReview=0|1` sur `GET /merge-requests` et `GET /merge-requests/facets`
   (même validation que `fav`/`mine` : valeur inconnue → 400). Le filtrage est fait côté serveur, comme les autres.
@@ -50,33 +52,38 @@ discrète si cohérent avec « Mes MRs » (à trancher à l'architecture).
 ## 5. Critères d'Acceptation
 
 ```gherkin
-Scenario: Seules les MRs sans relecteur ni commentaire sont retenues
+Scenario: Seules les MRs sans relecteur sont retenues
   Given 4 MRs Ready : A (0 reviewer, 0 commentaire), B (1 reviewer, 0 commentaire), C (0 reviewer, 2 commentaires), D (2 reviewers, 3 commentaires)
   When j'active le chip "À relire"
-  Then seule la MR A est affichée
-  And le compteur indique "1 MR"
+  Then les MRs A et C sont affichées
+  And le compteur indique "2 MRs"
+
+Scenario: Une MR sans relecteur mais commentée est retenue
+  Given une MR avec 0 reviewer et 5 commentaires
+  When j'active le chip "À relire"
+  Then cette MR est affichée
+
+Scenario: Une MR avec un relecteur mais sans commentaire n'est pas retenue
+  Given une MR avec 1 reviewer et 0 commentaire
+  When j'active le chip "À relire"
+  Then cette MR n'est pas affichée
 
 Scenario: Un assignee ne compte pas comme relecteur
   Given une MR avec 1 assignee, 0 reviewer, 0 commentaire
   When j'active le chip "À relire"
   Then cette MR est affichée
 
-Scenario: Une MR approuvée sans relecteur ni commentaire est retenue
-  Given une MR approuvée, 0 reviewer, 0 commentaire
-  When j'active le chip "À relire"
-  Then cette MR est affichée
-
-Scenario: Les notes système ne comptent pas comme commentaires
-  Given une MR avec 0 reviewer et uniquement des notes système (user_notes_count = 0)
+Scenario: Une MR approuvée sans relecteur est retenue
+  Given une MR approuvée, 0 reviewer
   When j'active le chip "À relire"
   Then cette MR est affichée
 
 Scenario: Cumul avec "Mes MRs"
   Given les chips "Mes MRs" et "À relire" sont actifs
-  Then seules les MRs dont je suis auteur ou assignee, sans reviewer ni commentaire, sont affichées
+  Then seules les MRs dont je suis auteur ou assignee, sans reviewer, sont affichées
 
 Scenario: Cumul avec "Drafts"
-  Given un draft sans reviewer ni commentaire
+  Given un draft sans reviewer
   When j'active "À relire" seul
   Then le draft n'apparaît pas
   When j'active aussi "Drafts"
@@ -84,7 +91,7 @@ Scenario: Cumul avec "Drafts"
 
 Scenario: Cumul avec un filtre composable
   Given le chip "À relire" actif et le filtre "Projet : api" actif
-  Then seules les MRs de api sans reviewer ni commentaire sont affichées
+  Then seules les MRs de api sans reviewer sont affichées
   And les compteurs des options du menu "Projet" tiennent compte de "À relire"
 
 Scenario: Propagation dans l'URL
@@ -104,7 +111,7 @@ Scenario: Libellé en anglais
   Then le chip s'intitule "To review"
 
 Scenario: Aucune MR à relire
-  Given toutes les MRs ont au moins un reviewer ou un commentaire
+  Given toutes les MRs ont au moins un reviewer
   When j'active le chip "À relire"
   Then l'état vide "Aucune MR ne correspond aux filtres." est affiché avec "Effacer les filtres"
 
@@ -121,10 +128,11 @@ Scenario: Valeur d'API invalide
   « + Ajouter un filtre » (Oui / Non). À confirmer.
 - **QO-032-02** : « aucun relecteur » = `reviewers` vide uniquement (hypothèse, RG-032-01), ou faut-il aussi exclure
   les MRs ayant un assignee ? *Hypothèse retenue* : l'assignee ne compte pas (sur GitLab c'est souvent l'auteur).
-- **QO-032-03** : une MR **approuvée** sans commentaire ni reviewer doit-elle rester « à relire » ? *Hypothèse
+- **QO-032-03** : une MR **approuvée** sans reviewer doit-elle rester « à relire » ? *Hypothèse
   retenue* : oui (RG-032-01), l'approbation n'entre pas dans la définition.
-- **QO-032-04** : sur GitHub, `commentsCount` inclut-il les commentaires de revue en ligne ? À vérifier à
-  l'architecture ; la règle reste « RG-G08 tel que déjà calculé par MR Board ».
+- **QO-032-04** *(clos, rév.)* : `commentsCount` n'est plus utilisé par ce filtre.
+- **QO-032-05** *(rév.)* : cette évolution est traitée comme une **révision de l'US-032** (pas de nouvelle US, le
+  changelog recevra une entrée `refacto`/`feat` rattachée à US-032). Préférez-vous une nouvelle US-033 ?
 
 ## 7. Hors périmètre
 

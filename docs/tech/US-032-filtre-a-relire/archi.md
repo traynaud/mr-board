@@ -51,3 +51,22 @@ signature, hors périmètre).
 
 1. Backend domain → DTO → service → controller → tests.
 2. Frontend model → store → API service → URL mapper → composants → i18n → tests.
+
+---
+
+# Révision 2026-11-09 — suppression de la condition « aucun commentaire »
+
+Spec : RG-032-01 révisée (`reviewers` vide uniquement). Changement purement backend, aucune migration, aucun impact
+frontend (le filtre `toReview` et son plumbing restent identiques ; seul le prédicat évolue).
+
+| Fichier | Changement |
+|---|---|
+| `backend/src/modules/merge-requests/domain/is-to-review.ts` | `isToReview({ reviewers })` : `reviewers.length === 0` ; JSDoc mise à jour (RG-032-01 révisée) |
+| `domain/is-to-review.spec.ts` | retirer les cas sur `commentsCount` ; ajouter « sans reviewer mais commentée → true » |
+| `dto/merge-request-query.dto.ts:41` | JSDoc : « no reviewer » (sans « and no comment ») |
+| `merge-requests.service.spec.ts`, `merge-requests.controller.spec.ts` | ajuster les jeux de données/attentes qui reposaient sur `commentsCount` |
+| `backend/test/merge-requests.e2e-spec.ts:952` | renommer le test et ajuster les attentes (MR commentée sans reviewer désormais retournée) |
+| `frontend/public/i18n/*.json`, composants | à vérifier par grep qu'aucun libellé/tooltip ne mentionne les commentaires (aucun trouvé pour l'instant) |
+
+Risques : aucun sur les données ; seuls des tests existants encodent l'ancienne règle et doivent être mis à jour
+(le compilateur ne les signalera pas : repasser `npm test` + `test:e2e`).

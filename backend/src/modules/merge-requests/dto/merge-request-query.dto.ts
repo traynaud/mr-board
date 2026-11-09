@@ -38,7 +38,7 @@ export class MergeRequestFilterQueryDto {
   @IsIn(BOOLEAN_PARAMS)
   fav?: BooleanParam;
 
-  /** `1` restricts to merge requests with no reviewer and no comment. Defaults to `0` (RG-032-06). */
+  /** `1` restricts to merge requests with no reviewer. Defaults to `0` (RG-032-06). */
   @IsOptional()
   @IsIn(BOOLEAN_PARAMS)
   toReview?: BooleanParam;

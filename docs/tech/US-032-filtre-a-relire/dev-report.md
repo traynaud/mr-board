@@ -24,3 +24,18 @@
 - **E2E backend non exécutables dans cet environnement** : tous les e2e qui ouvrent une base SQLite échouent avec
   `TypeError: this.sqlite is not a constructor` (TypeORM 1.1.1 + Jest ESM + Node 22.23), y compris sur l'arbre git
   propre (vérifié avec `projects.e2e-spec.ts` après `git stash`). Les 2 nouveaux cas e2e ne sont donc pas validés ici.
+
+---
+
+## Révision 2026-11-09 — suppression de la condition « aucun commentaire »
+
+- `domain/is-to-review.ts` : `isToReview({ reviewers })` → `reviewers.length === 0` (RG-032-01 révisée).
+- `domain/is-to-review.spec.ts` : cas `commentsCount` retirés, cas « commentée sans reviewer → true » ajouté.
+- `dto/merge-request-query.dto.ts` : JSDoc `toReview` corrigée.
+- `merge-requests.service.spec.ts` : le test `toReviewOnly` couvre désormais MR commentée sans reviewer (retenue) et MR avec reviewer (exclue).
+- `test/merge-requests.e2e-spec.ts` : test renommé, attentes `[330, 331]` / `[330, 331, 333]`.
+- Aucun changement frontend ni schéma.
+
+Vérifications : `lint` OK, `npm test` 643/643, `build` OK. `test:e2e` ne démarre pas dans cet environnement
+(`TypeError: this.sqlite is not a constructor`, identique sans mes modifications — problème d'environnement
+`better-sqlite3`/Jest, non lié à l'US) : les attentes e2e modifiées n'ont donc pas pu être exécutées.
