@@ -1,9 +1,12 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By, Title } from '@angular/platform-browser';
+import { Subject } from 'rxjs';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { provideI18nTesting, t } from '../../core/i18n/testing';
 import { apiBaseUrlInterceptor } from '../../core/interceptors/api-base-url.interceptor';
@@ -18,9 +21,11 @@ import { provideIcons } from '../../shared/icons/provide-icons';
 import { ColumnWidthsStore, DEFAULT_COLUMN_WIDTHS } from '../../stores/column-widths.store';
 import { ColumnsStore } from '../../stores/columns.store';
 import { FiltersStore } from '../../stores/filters.store';
+import { NotificationsStore } from '../../stores/notifications.store';
 import { SyncStore } from '../../stores/sync.store';
 import { BoardPageComponent } from './board-page.component';
 import { FilterBarComponent } from './filter-bar/filter-bar.component';
+import { NotificationsPanelComponent } from './notifications-panel/notifications-panel.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
 
 const SETTINGS: Settings = {
@@ -42,6 +47,9 @@ const SETTINGS: Settings = {
   language: 'fr',
   historyRetentionDays: 60,
   historyMaxEvents: 5000,
+  notifDisabledTypes: [],
+  notifOnlyMine: false,
+  notifExcludeOwn: false,
 };
 const CONNECTION: Connection = {
   id: 1,
@@ -157,6 +165,15 @@ describe('BoardPageComponent', () => {
    * `ActivatedRoute` ne peut pas être remplacée après l'instanciation du
    * module (voir les tests de restauration ci-dessous).
    */
+  /** `NotificationsStore` est testé à part : ici seul son câblage dans la page compte (US-040). */
+  const notificationsStore = {
+    count: signal(0),
+    events: signal([]),
+    startPolling: vi.fn(),
+    stopPolling: vi.fn(),
+    refresh: vi.fn().mockResolvedValue(undefined),
+  };
+
   async function configureBoardTestingModule(activatedRoute?: {
     snapshot: { queryParams: Record<string, string> };
   }): Promise<void> {
@@ -170,6 +187,7 @@ describe('BoardPageComponent', () => {
         provideI18nTesting(),
         provideIcons(),
         { provide: MatSnackBar, useValue: snackBar },
+        { provide: NotificationsStore, useValue: notificationsStore },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -177,6 +195,8 @@ describe('BoardPageComponent', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    notificationsStore.count.set(0);
+    notificationsStore.refresh.mockResolvedValue(undefined);
     stubMatchMedia(false);
     await configureBoardTestingModule();
   });
@@ -1178,7 +1198,7 @@ describe('BoardPageComponent', () => {
   it('should_apply_and_persist_the_theme_immediately_when_clicking_the_toolbar_toggle', async () => {
     await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
-    el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
+    el.querySelector<HTMLButtonElement>('app-board-toolbar button.theme-toggle')?.click();
     await settle();
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
@@ -1194,7 +1214,7 @@ describe('BoardPageComponent', () => {
   it('should_toast_an_error_and_keep_the_optimistic_theme_when_the_toggle_save_fails', async () => {
     await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
 
-    el.querySelector<HTMLButtonElement>('app-board-toolbar button[mat-icon-button]')?.click();
+    el.querySelector<HTMLButtonElement>('app-board-toolbar button.theme-toggle')?.click();
     await settle();
 
     http.expectOne('/api/v1/settings').flush('down', { status: 500, statusText: 'KO' });
@@ -1291,6 +1311,65 @@ describe('BoardPageComponent', () => {
 
     fixture.destroy();
     expect(stopSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('notifications (US-040)', () => {
+    it('should_start_the_notifications_polling_on_init_and_stop_it_on_destroy_rg_040_05', async () => {
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+      expect(notificationsStore.startPolling).toHaveBeenCalledTimes(1);
+      expect(notificationsStore.stopPolling).not.toHaveBeenCalled();
+
+      fixture.destroy();
+      expect(notificationsStore.stopPolling).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_pause_and_resume_the_notifications_polling_with_the_sync_polling', async () => {
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+      setHidden(true);
+      expect(notificationsStore.stopPolling).toHaveBeenCalledTimes(1);
+
+      setHidden(false);
+      http.expectOne('/api/v1/sync/status').flush(IDLE_STATUS);
+      await settle();
+      expect(notificationsStore.startPolling).toHaveBeenCalledTimes(2);
+    });
+
+    it('should_show_the_unseen_count_on_the_bell', async () => {
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+
+      notificationsStore.count.set(7);
+      await settle();
+
+      const bell = (fixture.nativeElement as HTMLElement).querySelector('button.notifications-button');
+      expect(bell?.getAttribute('aria-label')).toBe(t('board.toolbar.notifications', { count: 7 }));
+    });
+
+    it('should_open_the_panel_as_a_right_drawer_and_refresh_when_it_closes', async () => {
+      await bootstrap({ settings: SETTINGS, projects: [PROJECT], status: IDLE_STATUS });
+      const afterClosed = new Subject<void>();
+      const open = vi
+        .spyOn(TestBed.inject(MatDialog), 'open')
+        .mockReturnValue({ afterClosed: () => afterClosed } as never);
+      const bell = () =>
+        (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.notifications-button')!;
+
+      bell().click();
+      await settle();
+
+      expect(open).toHaveBeenCalledWith(
+        NotificationsPanelComponent,
+        expect.objectContaining({ position: { top: '0', right: '0' }, width: '440px' }),
+      );
+      expect(bell().getAttribute('aria-expanded')).toBe('true');
+
+      afterClosed.next();
+      await settle();
+
+      expect(bell().getAttribute('aria-expanded')).toBe('false');
+      expect(notificationsStore.refresh).toHaveBeenCalled();
+    });
   });
 
   it('should_pause_polling_when_the_tab_becomes_hidden_and_pauseWhenHidden_is_enabled', async () => {

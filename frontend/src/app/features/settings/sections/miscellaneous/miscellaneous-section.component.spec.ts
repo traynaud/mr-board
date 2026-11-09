@@ -48,6 +48,9 @@ const FULL_SETTINGS = {
   language: 'fr',
   historyRetentionDays: 60,
   historyMaxEvents: 5000,
+  notifDisabledTypes: [],
+  notifOnlyMine: false,
+  notifExcludeOwn: false,
 };
 
 describe('MiscellaneousSectionComponent', () => {
@@ -192,11 +195,11 @@ describe('MiscellaneousSectionComponent', () => {
     el = fixture.nativeElement as HTMLElement;
 
     const boxes = el.querySelectorAll('mat-checkbox');
-    expect(boxes[1].querySelector('input')?.disabled).toBe(true);
+    expect(boxes[3].querySelector('input')?.disabled).toBe(true);
   });
 
   describe('notify assigned checkbox', () => {
-    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[1];
+    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[3];
 
     it('should_request_permission_and_check_the_box_when_granted', async () => {
       notifications.requestPermission.mockResolvedValue('granted');

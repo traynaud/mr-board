@@ -35,6 +35,10 @@ export class HistoryQueueEntry {
   @Column({ type: 'text', nullable: true })
   since!: string | null;
 
+  /** JSON `string[]` of the usernames concerned, carried to the events the entry creates (US-041). */
+  @Column({ name: 'mr_involved_usernames', type: 'text', nullable: true })
+  mrInvolvedUsernames!: string | null;
+
   @Column({ type: 'integer', default: 0 })
   attempts!: number;
 

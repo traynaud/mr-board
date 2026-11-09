@@ -70,7 +70,7 @@ Maquettes : `docs/design/MR Board - Wireframes.dc.html` (1a, 1b, 1c) et `docs/de
 ### 4.1 Tableau (route `/`)
 
 Zones, de haut en bas :
-1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », bascule rapide clair/sombre (US-018), icône « Paramètres »
+1. **Toolbar** : brand « MR Board », statut de synchronisation (« Synchronisé il y a 2 min » / « Synchronisation en cours… »), bouton « Rafraîchir », cloche « Notifications » avec compteur des événements non vus (US-040, ouvre un tiroir à droite), icône « Historique », bascule rapide clair/sombre (US-018), icône « Paramètres »
 2. **Barre de progression** 2 px pendant une synchronisation
 3. **Bandeau** « Aucune connexion configurée » (si aucune connexion, RG-019-17), ou « Aucun jeton configuré pour <connexions> » (si au moins une connexion sans jeton), avec bouton « Configurer » (si applicable)
 4. **Barre de filtres** : chips « Drafts », « Mes MRs », « Favoris » et « À relire » (US-032 : MRs sans relecteur ; toujours visibles, à gauche), séparateur, pastilles de filtres actifs (Projet, Auteur, Affecté à, Approved, Commenté), bouton « + Ajouter un filtre », compteur « 7 MRs · 2 projets », bouton « Effacer »
@@ -80,8 +80,16 @@ Zones, de haut en bas :
 
 ### 4.2 Paramètres (route `/settings`)
 
-En-tête : retour, titre « Paramètres », « Annuler », « Enregistrer ». Corps en deux colonnes (titre de section à gauche,
-contenu à droite), sections :
+En-tête : retour, titre « Paramètres », « Annuler », « Réinitialiser », « Enregistrer » (communs à tous les onglets, US-042).
+Sous l'en-tête, **4 onglets** (`?tab=connections|data|display|notifications`, premier onglet par défaut) ; la numérotation
+« 01 · » repart à 01 dans chaque onglet. Corps en deux colonnes (titre de section à gauche, contenu à droite).
+
+- **Connexions** — `01 · Connexions`
+- **Données** — `01 · Actualisation`, `02 · Historique` (rétention), `03 · Configuration` (exporter / importer)
+- **Affichage** — `01 · Difficulté`, `02 · Temps depuis Ready`, `03 · Interface` (surbrillance, thème, langue, nouvel onglet, labels wip)
+- **Notifications** — `01 · Périmètre` (« Seulement mes MRs », « Exclure mes propres actions »), `02 · Types d'événements` (18 cases en 3 groupes), `03 · Autres alertes` (notification navigateur, badge d'onglet)
+
+Détail des sections (contenu inchangé par US-042) :
 - `01 · Connexions` — liste des connexions (type, nom, URL, état du jeton), chaque ligne repliable, affichant désormais aussi « Connecté en tant que <nom> (@<username>) · <email> » (identité résolue automatiquement depuis le jeton, ou « Identité non résolue » tant qu'aucune résolution n'a réussi — US-031, section « 01 · Moi » supprimée) ; dépliée, elle affiche le formulaire de la connexion (tester/modifier/supprimer) **suivi de son propre tableau de repos** (chemin, alias, supprimer, ligne d'ajout) — les repos sont rattachés à leur connexion dans l'UI, il n'existe pas de section « Repos à scanner » séparée (US-019 corrigée par US-021, voir US-021 §0)
 - `02 · Actualisation` — fréquence (1, 5, 15, 30 min, Manuel), pause quand l'onglet est inactif
 - `03 · Difficulté` — Easy < N fichiers & < N lignes, Hard > N fichiers ou > N lignes (US-030 : scindée de l'ex-« 04 · Seuils »)
@@ -198,10 +206,10 @@ une fois ses dépendances réalisées.
 | US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ✅ |
 | US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ✅ |
 | US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ☐ |
-| US-039 | Notifications — état « à traiter / fermé » des événements (serveur) | Must | M | US-033, US-034, US-037 | ☐ |
-| US-040 | Notifications — panneau et compteur sur l'accueil (maquette D9 requise) | Must | L | US-039, US-037 | ☐ |
-| US-041 | Notifications — préférences par type d'événement (Paramètres) | Must | M | US-039, US-015 | ☐ |
-| US-042 | Paramètres en onglets (maquette D9 requise) | Should | M | US-015, US-041 | ☐ |
+| US-039 | Notifications — état « à traiter / fermé » des événements (serveur) | Must | M | US-033, US-034, US-037 | ✅ |
+| US-040 | Notifications — panneau et compteur sur l'accueil (maquette D9 requise) | Must | L | US-039, US-037 | ✅ |
+| US-041 | Notifications — préférences par type d'événement (Paramètres) | Must | M | US-039, US-015 | ✅ |
+| US-042 | Paramètres en onglets (maquette D9 requise) | Should | M | US-015, US-041 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.

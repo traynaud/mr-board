@@ -8,6 +8,7 @@ import { ConnectionsModule } from './modules/connections/connections.module.js';
 import { ForgesModule } from './modules/forges/forges.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MergeRequestsModule } from './modules/merge-requests/merge-requests.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { SettingsTransferModule } from './modules/settings-transfer/settings-transfer.module.js';
@@ -35,6 +36,7 @@ import { StaticModule } from './static/static.module.js';
     UsersModule,
     MergeRequestsModule,
     SyncModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

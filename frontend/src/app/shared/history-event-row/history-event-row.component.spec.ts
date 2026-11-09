@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideI18nTesting, t } from '../../../core/i18n/testing';
-import { HistoryEvent } from '../../../models/history.model';
-import { ProjectTagStyle } from '../../../shared/project-color/project-tag-style';
+import { provideI18nTesting, t } from '../../core/i18n/testing';
+import { HistoryEvent } from '../../models/history.model';
+import { ProjectTagStyle } from '../../shared/project-color/project-tag-style';
 import { HistoryEventRowComponent } from './history-event-row.component';
 
 function event(overrides: Partial<HistoryEvent> = {}): HistoryEvent {

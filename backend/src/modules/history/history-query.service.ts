@@ -73,7 +73,7 @@ export class HistoryQueryService {
   }
 }
 
-function toEventDto(event: MergeRequestEvent): HistoryEventDto {
+export function toEventDto(event: MergeRequestEvent): HistoryEventDto {
   const hasActor =
     event.actorUsername !== null ||
     event.actorName !== null ||

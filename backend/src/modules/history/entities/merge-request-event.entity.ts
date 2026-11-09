@@ -1,25 +1,28 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 /** Kinds of journal events (RG-033-03). */
-export type HistoryEventType =
-  | 'created'
-  | 'title_changed'
-  | 'marked_draft'
-  | 'marked_ready'
-  | 'approved'
-  | 'approval_removed'
-  | 'reviewer_added'
-  | 'reviewer_removed'
-  | 'assignee_added'
-  | 'assignee_removed'
-  | 'label_added'
-  | 'label_removed'
-  | 'commented'
-  | 'merged'
-  | 'closed'
-  | 'reopened'
-  | 'deleted'
-  | 'disappeared';
+export const HISTORY_EVENT_TYPES = [
+  'created',
+  'title_changed',
+  'marked_draft',
+  'marked_ready',
+  'approved',
+  'approval_removed',
+  'reviewer_added',
+  'reviewer_removed',
+  'assignee_added',
+  'assignee_removed',
+  'label_added',
+  'label_removed',
+  'commented',
+  'merged',
+  'closed',
+  'reopened',
+  'deleted',
+  'disappeared',
+] as const;
+
+export type HistoryEventType = (typeof HISTORY_EVENT_TYPES)[number];
 
 /** `provisional`: inferred from a state comparison; `confirmed`: matched with the forge (US-034). */
 export type HistoryEventStatus = 'provisional' | 'confirmed';
@@ -31,6 +34,7 @@ export type HistoryEventStatus = 'provisional' | 'confirmed';
  * deletion of the merge request (RG-G01).
  */
 @Entity({ name: 'merge_request_events' })
+@Index('IDX_merge_request_events_dismissed', ['dismissedAt', 'occurredAt'])
 export class MergeRequestEvent {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -77,6 +81,17 @@ export class MergeRequestEvent {
 
   @Column({ name: 'actor_avatar_url', type: 'text', nullable: true })
   actorAvatarUrl!: string | null;
+
+  /** When the event was marked as seen (US-039); `null` = still to handle. */
+  @Column({ name: 'dismissed_at', type: 'text', nullable: true })
+  dismissedAt!: string | null;
+
+  /**
+   * JSON `string[]` of the usernames the merge request concerned (author,
+   * reviewers, assignees) when the event was detected (US-041 « Seulement mes MRs »).
+   */
+  @Column({ name: 'mr_involved_usernames', type: 'text', nullable: true })
+  mrInvolvedUsernames!: string | null;
 
   /** JSON-serialised previous value. */
   @Column({ name: 'old_value', type: 'text', nullable: true })

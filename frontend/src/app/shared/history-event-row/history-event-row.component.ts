@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { TranslateService } from '../../../core/i18n/translate.service';
-import { HistoryEvent } from '../../../models/history.model';
-import { AvatarComponent } from '../../../shared/avatar/avatar.component';
-import { formatDateTime, formatTime } from '../../../shared/format/format-date';
-import { ProjectTagStyle } from '../../../shared/project-color/project-tag-style';
-import { describeEvent, toneOf } from '../describe-event';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { TranslateService } from '../../core/i18n/translate.service';
+import { HistoryEvent } from '../../models/history.model';
+import { AvatarComponent } from '../../shared/avatar/avatar.component';
+import { formatDateTime, formatTime } from '../../shared/format/format-date';
+import { ProjectTagStyle } from '../../shared/project-color/project-tag-style';
+import { describeEvent, toneOf } from './describe-event';
 
 /**
  * Une ligne de la timeline (RG-037-02) : heure, acteur (avatar ou carré

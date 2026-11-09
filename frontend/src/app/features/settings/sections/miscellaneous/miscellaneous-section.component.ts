@@ -34,11 +34,17 @@ export const LANGUAGE_OPTIONS: readonly { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
 ];
 
+/**
+ * Blocs de ce composant, répartis par l'écran Paramètres entre ses onglets
+ * (US-042) : `display` (Affichage), `alerts` (Notifications), `transfer` (Données).
+ */
+export type MiscellaneousGroup = 'display' | 'alerts' | 'transfer';
+
 /** Durée d'affichage des toasts (ms), identique au reste de l'écran Paramètres. */
 const TOAST_DURATION_MS = 3500;
 
 /**
- * Section « 06 · Divers » : options de confort (RG-015-01/02) et
+ * Section « Divers » (découpée en blocs par US-042) : options de confort (RG-015-01/02) et
  * export/import/reset de la configuration (RG-015-03/04/05). Composant
  * hybride comme `RepositoriesSectionComponent` : les 2 cases actives font
  * partie du formulaire partagé de la page ; export/import sont des actions
@@ -69,10 +75,16 @@ export class MiscellaneousSectionComponent {
   protected readonly notifications = inject(BrowserNotificationService);
 
   readonly form = input.required<SettingsForm>();
+  /** Blocs affichés ; tous par défaut. */
+  readonly groups = input<readonly MiscellaneousGroup[]>(['display', 'alerts', 'transfer']);
 
   protected readonly importing = signal(false);
   /** Vrai quand l'utilisateur vient de refuser la permission de notification (RG-016-02). */
   protected readonly permissionBlocked = signal(false);
+
+  protected shows(group: MiscellaneousGroup): boolean {
+    return this.groups().includes(group);
+  }
 
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly languageOptions = LANGUAGE_OPTIONS;

@@ -47,6 +47,9 @@ describe('Settings (e2e)', () => {
       language: 'fr',
       historyRetentionDays: 60,
       historyMaxEvents: 5000,
+      notifDisabledTypes: [],
+      notifOnlyMine: false,
+      notifExcludeOwn: false,
     });
   });
 

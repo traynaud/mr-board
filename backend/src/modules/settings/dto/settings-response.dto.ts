@@ -1,3 +1,4 @@
+import type { HistoryEventType } from '../../history/entities/merge-request-event.entity.js';
 import { Language, ThemePreference } from '../entities/settings.entity.js';
 
 /**
@@ -38,4 +39,10 @@ export class SettingsResponseDto {
   historyRetentionDays!: number;
   /** History retention in number of events (RG-036-01). */
   historyMaxEvents!: number;
+  /** Event types hidden from the notifications panel (RG-041-01/02). */
+  notifDisabledTypes!: HistoryEventType[];
+  /** Notifications limited to the merge requests that concern me (RG-041-06). */
+  notifOnlyMine!: boolean;
+  /** Notifications hide the events I caused myself (RG-041-06). */
+  notifExcludeOwn!: boolean;
 }

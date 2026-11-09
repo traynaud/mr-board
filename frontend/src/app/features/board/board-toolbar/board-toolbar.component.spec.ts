@@ -31,6 +31,9 @@ function run(overrides: Partial<SyncRun> = {}): SyncRun {
       [refreshDisabled]="refreshDisabled()"
       [themeIcon]="themeIcon()"
       [themeToggleLabel]="themeToggleLabel()"
+      [notificationCount]="notificationCount()"
+      [notificationsOpen]="notificationsOpen()"
+      (notificationsToggle)="notificationsToggleCount.set(notificationsToggleCount() + 1)"
       (refresh)="refreshCount.set(refreshCount() + 1)"
       (themeToggle)="themeToggleCount.set(themeToggleCount() + 1)"
     />
@@ -41,6 +44,9 @@ class HostComponent {
   readonly running = signal(false);
   readonly lastRun = signal<SyncRun | null>(null);
   readonly nextRunAt = signal<string | null>(null);
+  readonly notificationCount = signal(0);
+  readonly notificationsOpen = signal(false);
+  readonly notificationsToggleCount = signal(0);
   readonly failureDetail = signal<string | null>(null);
   readonly refreshDisabled = signal(false);
   readonly refreshCount = signal(0);
@@ -156,13 +162,13 @@ describe('BoardToolbarComponent', () => {
     const buttons = Array.from(el.querySelectorAll('[mat-icon-button]'));
     const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button][href="/history"]');
     expect(link?.getAttribute('aria-label')).toBe(t('board.toolbar.history'));
-    expect(buttons.indexOf(link!)).toBeLessThan(buttons.findIndex((b) => b.tagName === 'BUTTON'));
+    expect(buttons.indexOf(link!)).toBeLessThan(buttons.findIndex((b) => b.classList.contains('theme-toggle')));
   });
 
   it('should_show_the_theme_toggle_icon_and_label_from_inputs', async () => {
     const { fixture, el } = await setup();
 
-    const button = el.querySelector<HTMLButtonElement>('button[mat-icon-button]');
+    const button = el.querySelector<HTMLButtonElement>('button.theme-toggle');
     expect(button?.getAttribute('aria-label')).toBe('Passer en thème sombre');
     expect(button?.querySelector('mat-icon')?.getAttribute('data-mat-icon-name')).toBe('moon');
 
@@ -177,9 +183,64 @@ describe('BoardToolbarComponent', () => {
   it('should_emit_theme_toggle_on_button_click', async () => {
     const { fixture, el } = await setup();
 
-    el.querySelector<HTMLButtonElement>('button[mat-icon-button]')?.click();
+    el.querySelector<HTMLButtonElement>('button.theme-toggle')?.click();
     await fixture.whenStable();
 
     expect(fixture.componentInstance.themeToggleCount()).toBe(1);
+  });
+
+  describe('cloche de notifications (US-040)', () => {
+    const bell = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('button.notifications-button')!;
+    const badge = (el: HTMLElement) => el.querySelector('.notifications-button .count');
+
+    it('should_place_the_bell_between_refresh_and_history_rg_040_04', async () => {
+      const { el } = await setup();
+
+      const order = Array.from(el.querySelectorAll('button, a')).filter(
+        (node) => node.matches('.notifications-button, a[href="/history"]') || node.textContent?.includes(t('board.toolbar.refresh')),
+      );
+      expect(order[0].textContent).toContain(t('board.toolbar.refresh'));
+      expect(order[1]).toBe(bell(el));
+      expect(order[2].getAttribute('href')).toBe('/history');
+    });
+
+    it('should_hide_the_badge_at_zero', async () => {
+      const { el } = await setup();
+
+      expect(badge(el)).toBeNull();
+    });
+
+    it('should_show_the_count_and_name_it_for_screen_readers', async () => {
+      const { fixture, el } = await setup();
+
+      fixture.componentInstance.notificationCount.set(7);
+      await fixture.whenStable();
+
+      expect(badge(el)?.textContent?.trim()).toBe('7');
+      expect(bell(el).getAttribute('aria-label')).toBe(t('board.toolbar.notifications', { count: 7 }));
+    });
+
+    it('should_cap_the_badge_at_99_plus_rg_040_03', async () => {
+      const { fixture, el } = await setup();
+
+      fixture.componentInstance.notificationCount.set(100);
+      await fixture.whenStable();
+
+      expect(badge(el)?.textContent?.trim()).toBe('99+');
+    });
+
+    it('should_reflect_the_open_state_and_emit_the_toggle', async () => {
+      const { fixture, el } = await setup();
+      expect(bell(el).getAttribute('aria-expanded')).toBe('false');
+      expect(bell(el).classList.contains('open')).toBe(false);
+
+      fixture.componentInstance.notificationsOpen.set(true);
+      await fixture.whenStable();
+      expect(bell(el).getAttribute('aria-expanded')).toBe('true');
+      expect(bell(el).classList.contains('open')).toBe(true);
+
+      bell(el).click();
+      expect(fixture.componentInstance.notificationsToggleCount()).toBe(1);
+    });
   });
 });

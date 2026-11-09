@@ -351,11 +351,12 @@ export class MergeRequestsService {
       this.approvers.find({ where: { mergeRequestId: In(ids) } }),
     ]);
     const userRows = await this.users.findByIds([
-      ...new Set(
-        [...reviewerRows, ...assigneeRows, ...approverRows].map(
+      ...new Set([
+        ...[...reviewerRows, ...assigneeRows, ...approverRows].map(
           (row) => row.userId,
         ),
-      ),
+        ...rows.map((row) => row.authorId),
+      ]),
     ]);
     const usersById = indexById(userRows);
     const toUsers = (
@@ -380,6 +381,7 @@ export class MergeRequestsService {
       assignees: toUsers(assigneeRows, row.id),
       approvers: toUsers(approverRows, row.id),
       commentsCount: row.commentsCount,
+      authorUsername: mustGet(usersById, row.authorId, 'User').username,
       syncedAt: row.syncedAt,
     }));
   }

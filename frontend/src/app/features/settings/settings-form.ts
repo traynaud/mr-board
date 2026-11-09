@@ -7,6 +7,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { HistoryEventType } from '../../models/history.model';
 import { Language, Settings, ThemePreference, UpdateSettingsRequest } from '../../models/settings.model';
 import { RepoAliasForm } from './repos-form';
 
@@ -69,6 +70,12 @@ export interface SettingsFormControls {
   historyRetentionDays: FormControl<number>;
   /** Rétention de l'historique : nombre maximal d'événements (RG-036-01/03). */
   historyMaxEvents: FormControl<number>;
+  /** Types d'événements masqués du panneau de notifications (RG-041-01/02). */
+  notifDisabledTypes: FormControl<HistoryEventType[]>;
+  /** Notifications limitées aux MRs qui me concernent (RG-041-06). */
+  notifOnlyMine: FormControl<boolean>;
+  /** Notifications masquant mes propres actions (RG-041-06). */
+  notifExcludeOwn: FormControl<boolean>;
   /** Un groupe par repo existant (id + alias) ; reconstruit par `syncReposFormArray` (RG-003-07). */
   repos: FormArray<RepoAliasForm>;
 }
@@ -173,6 +180,9 @@ export function buildSettingsForm(): SettingsForm {
           integerValidator,
         ],
       }),
+      notifDisabledTypes: new FormControl<HistoryEventType[]>([], { nonNullable: true }),
+      notifOnlyMine: new FormControl(false, { nonNullable: true }),
+      notifExcludeOwn: new FormControl(false, { nonNullable: true }),
       // Peuplé par un effect de la page à partir de ProjectsStore ;
       // jamais touché par resetSettingsForm (voir ci-dessous).
       repos: new FormArray<RepoAliasForm>([]),
@@ -207,6 +217,9 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.language.reset(settings.language);
   form.controls.historyRetentionDays.reset(settings.historyRetentionDays);
   form.controls.historyMaxEvents.reset(settings.historyMaxEvents);
+  form.controls.notifDisabledTypes.reset([...settings.notifDisabledTypes]);
+  form.controls.notifOnlyMine.reset(settings.notifOnlyMine);
+  form.controls.notifExcludeOwn.reset(settings.notifExcludeOwn);
 }
 
 /**
@@ -235,6 +248,9 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.language.setValue('fr');
   controls.historyRetentionDays.setValue(DEFAULT_HISTORY_RETENTION.days);
   controls.historyMaxEvents.setValue(DEFAULT_HISTORY_RETENTION.maxEvents);
+  controls.notifDisabledTypes.setValue([]);
+  controls.notifOnlyMine.setValue(false);
+  controls.notifExcludeOwn.setValue(false);
   for (const name of Object.keys(controls) as (keyof SettingsFormControls)[]) {
     if (name !== 'repos') {
       controls[name].markAsDirty();
@@ -268,6 +284,9 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     language,
     historyRetentionDays,
     historyMaxEvents,
+    notifDisabledTypes,
+    notifOnlyMine,
+    notifExcludeOwn,
   } = form.getRawValue();
   return {
     refreshIntervalMin,
@@ -288,5 +307,8 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     language,
     historyRetentionDays,
     historyMaxEvents,
+    notifDisabledTypes,
+    notifOnlyMine,
+    notifExcludeOwn,
   };
 }

@@ -1,4 +1,5 @@
 import { ConnectionType } from './connection.model';
+import { HistoryEventType } from './history.model';
 
 /** Préférence de thème (RG-018-01) : `system` suit l'OS, `light`/`dark` la forcent. */
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -44,6 +45,12 @@ export interface Settings {
   historyRetentionDays: number;
   /** Rétention de l'historique en nombre d'événements (RG-036-01). */
   historyMaxEvents: number;
+  /** Types d'événements masqués du panneau de notifications (RG-041-01/02). */
+  notifDisabledTypes: HistoryEventType[];
+  /** Notifications limitées aux MRs qui me concernent (RG-041-06). */
+  notifOnlyMine: boolean;
+  /** Notifications masquant mes propres actions (RG-041-06). */
+  notifExcludeOwn: boolean;
 }
 
 /**
@@ -70,6 +77,9 @@ export interface UpdateSettingsRequest {
   language?: Language;
   historyRetentionDays?: number;
   historyMaxEvents?: number;
+  notifDisabledTypes?: HistoryEventType[];
+  notifOnlyMine?: boolean;
+  notifExcludeOwn?: boolean;
 }
 
 /** Une connexion telle qu'exportée/importée (RG-019-18/19). Ne contient jamais le jeton. */

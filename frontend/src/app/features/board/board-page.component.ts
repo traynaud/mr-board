@@ -6,8 +6,10 @@ import {
   computed,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -27,9 +29,11 @@ import { ColumnsStore } from '../../stores/columns.store';
 import { ConnectionsStore } from '../../stores/connections.store';
 import { FiltersStore } from '../../stores/filters.store';
 import { MergeRequestsStore, SEARCH_RELOAD_DEBOUNCE_MS } from '../../stores/merge-requests.store';
+import { NotificationsStore } from '../../stores/notifications.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { SettingsStore } from '../../stores/settings.store';
 import { SyncStore } from '../../stores/sync.store';
+import { NotificationsPanelComponent } from './notifications-panel/notifications-panel.component';
 import { BoardToolbarComponent } from './board-toolbar/board-toolbar.component';
 import { FilterBarComponent } from './filter-bar/filter-bar.component';
 import { MrTableComponent } from './mr-table/mr-table.component';
@@ -37,6 +41,9 @@ import { computeSyncFailureDetail } from './sync-status-label';
 
 /** Durée d'affichage des toasts (ms), identique au reste de l'application. */
 const TOAST_DURATION_MS = 3500;
+
+/** Identifiant du tiroir de notifications : une seule instance à la fois (US-040). */
+const NOTIFICATIONS_PANEL_ID = 'notifications-panel';
 
 /** Titre par défaut de l'onglet, restauré à la destruction du composant (RG-016-04). */
 const APP_TITLE = 'MR Board';
@@ -67,6 +74,8 @@ export class BoardPageComponent implements OnInit {
   protected readonly connectionsStore = inject(ConnectionsStore);
   protected readonly projectsStore = inject(ProjectsStore);
   protected readonly syncStore = inject(SyncStore);
+  protected readonly notificationsStore = inject(NotificationsStore);
+  private readonly dialog = inject(MatDialog);
   protected readonly mrStore = inject(MergeRequestsStore);
   protected readonly filtersStore = inject(FiltersStore);
   protected readonly columnsStore = inject(ColumnsStore);
@@ -78,6 +87,9 @@ export class BoardPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly titleService = inject(Title);
+
+  /** Vrai tant que le panneau de notifications est ouvert (US-040). */
+  protected readonly notificationsOpen = signal(false);
 
   /** `false` tant qu'aucun chargement de statut ne s'est encore terminé (pas de toast à l'ouverture, RG-004-12). */
   private initialized = false;
@@ -246,6 +258,8 @@ export class BoardPageComponent implements OnInit {
       // quel que soit son statut (RG-005-06) — même transition que le toast
       // ci-dessus, sans polling dédié aux MRs elles-mêmes.
       void this.loadMergeRequests();
+      // RG-040-05 : les notifications suivent chaque fin de synchronisation.
+      void this.notificationsStore.refresh();
     });
 
     // RG-011-02/03/07 : réécrit l'URL (sans empiler d'historique) à chaque
@@ -280,6 +294,9 @@ export class BoardPageComponent implements OnInit {
     void this.loadMergeRequests();
     this.syncStore.startPolling();
     this.destroyRef.onDestroy(() => this.syncStore.stopPolling());
+    // RG-040-05 : rafraîchi au chargement de la page puis périodiquement (capte aussi la confirmation d'un provisoire).
+    this.notificationsStore.startPolling();
+    this.destroyRef.onDestroy(() => this.notificationsStore.stopPolling());
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.destroyRef.onDestroy(() =>
       document.removeEventListener('visibilitychange', this.onVisibilityChange),
@@ -304,11 +321,36 @@ export class BoardPageComponent implements OnInit {
     if (document.hidden) {
       this.pausedByVisibility = true;
       this.syncStore.stopPolling();
+      this.notificationsStore.stopPolling();
     } else if (this.pausedByVisibility) {
       this.pausedByVisibility = false;
       this.syncStore.startPolling();
+      this.notificationsStore.startPolling();
     }
   };
+
+  /** Ouvre le panneau de notifications en tiroir à droite, ou le ferme s'il est déjà ouvert (US-040). */
+  protected toggleNotifications(): void {
+    if (this.notificationsOpen()) {
+      this.dialog.getDialogById(NOTIFICATIONS_PANEL_ID)?.close();
+      return;
+    }
+    const ref = this.dialog.open(NotificationsPanelComponent, {
+      id: NOTIFICATIONS_PANEL_ID,
+      position: { top: '0', right: '0' },
+      height: '100vh',
+      width: '440px',
+      maxWidth: '100vw',
+      panelClass: 'notifications-drawer',
+      autoFocus: 'first-tabbable',
+    });
+    this.notificationsOpen.set(true);
+    ref.afterClosed().subscribe(() => {
+      this.notificationsOpen.set(false);
+      // Un clic sur « Tout marquer comme vu » ou une croix a pu changer le décompte côté serveur.
+      void this.notificationsStore.refresh();
+    });
+  }
 
   /** Déclenché par le bouton Rafraîchir de la toolbar (RG-004-09). */
   protected refresh(): void {

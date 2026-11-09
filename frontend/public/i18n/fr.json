@@ -17,7 +17,9 @@
       "refresh": "Rafraîchir",
       "themeToLight": "Passer en thème clair",
       "themeToDark": "Passer en thème sombre",
-      "history": "Historique"
+      "history": "Historique",
+      "notifications": "Notifications, {{count}} non vues",
+      "notificationsTooltip": "Notifications"
     },
     "filters": {
       "ariaLabel": "Filtres rapides",
@@ -255,7 +257,7 @@
       }
     },
     "refresh": {
-      "number": "02",
+      "number": "01",
       "title": "Actualisation",
       "description": "Fréquence de synchronisation automatique avec les forges.",
       "frequency": "Fréquence de synchronisation",
@@ -267,7 +269,7 @@
       "hint": "Synchro automatique ; le bouton Rafraîchir force toujours."
     },
     "difficulty": {
-      "number": "03",
+      "number": "01",
       "title": "Difficulté",
       "description": "Règles de calcul de la difficulté d'une MR.",
       "easy": "Easy",
@@ -283,7 +285,7 @@
       }
     },
     "readyDelay": {
-      "number": "04",
+      "number": "02",
       "title": "Temps depuis Ready",
       "description": "Seuils de couleur du délai depuis Ready.",
       "green": "Vert",
@@ -299,7 +301,7 @@
       }
     },
     "history": {
-      "number": "05",
+      "number": "02",
       "title": "Historique",
       "description": "Durée et volume de conservation du journal des modifications.",
       "retentionDays": "Conserver au plus",
@@ -313,9 +315,9 @@
       }
     },
     "misc": {
-      "number": "06",
-      "title": "Divers",
-      "description": "Options de confort et sauvegarde de la configuration.",
+      "number": "03",
+      "title": "Interface",
+      "description": "Surbrillance, thème, langue et ouverture des liens.",
       "highlightMe": "Surligner mes MRs dans le tableau (auteur, reviewer, affecté)",
       "theme": {
         "title": "Thème",
@@ -347,6 +349,69 @@
     "reset": {
       "button": "Réinitialiser",
       "done": "Valeurs par défaut restaurées (non enregistrées)"
+    },
+    "tabs": {
+      "connections": "Connexions",
+      "data": "Données",
+      "display": "Affichage",
+      "notifications": "Notifications",
+      "aria": "Sections des paramètres"
+    },
+    "data": {
+      "transfer": {
+        "number": "03",
+        "title": "Configuration",
+        "description": "Sauvegarder ou restaurer la configuration, jetons exclus."
+      }
+    },
+    "notifications": {
+      "scope": {
+        "number": "01",
+        "title": "Périmètre",
+        "description": "Quels événements alimentent le panneau et le compteur de l'accueil.",
+        "onlyMine": "Seulement mes MRs",
+        "onlyMineHint": "Retient les événements sur les MRs dont je suis auteur, relecteur ou affecté.",
+        "excludeOwn": "Exclure mes propres actions",
+        "excludeOwnHint": "Masque ce que j'ai fait moi-même (approbation, commentaire…).",
+        "identityWarning": "Aucune identité résolue : « Seulement mes MRs » ne retiendra aucun événement. Configurez un jeton dans Connexions."
+      },
+      "types": {
+        "number": "02",
+        "title": "Types d'événements",
+        "description": "Décocher un type le masque du panneau sans fermer ses événements : ils réapparaissent si vous le réactivez. La page Historique les montre toujours.",
+        "checkAll": "Tout cocher",
+        "uncheckAll": "Tout décocher",
+        "groups": {
+          "lifecycle": "Cycle de vie",
+          "review": "Relecture et approbation",
+          "content": "Contenu"
+        },
+        "labels": {
+          "created": "MR créée",
+          "marked_draft": "Passée en brouillon",
+          "marked_ready": "Marquée prête",
+          "merged": "Fusionnée",
+          "closed": "Fermée",
+          "reopened": "Rouverte",
+          "deleted": "Supprimée",
+          "disappeared": "Disparue de la liste",
+          "approved": "Approuvée",
+          "approval_removed": "Approbation retirée",
+          "reviewer_added": "Relecteur ajouté",
+          "reviewer_removed": "Relecteur retiré",
+          "assignee_added": "Affecté ajouté",
+          "assignee_removed": "Affecté retiré",
+          "title_changed": "Titre modifié",
+          "commented": "Commentée",
+          "label_added": "Label ajouté",
+          "label_removed": "Label retiré"
+        }
+      },
+      "alerts": {
+        "number": "03",
+        "title": "Autres alertes",
+        "description": "Alertes navigateur, indépendantes du panneau."
+      }
     }
   },
   "history": {
@@ -379,6 +444,23 @@
       "deleted": "a supprimé la MR",
       "disappeared": "La MR a disparu de la liste"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "close": "Fermer le panneau",
+    "markAllSeen": "Tout marquer comme vu",
+    "markSeen": "Marquer comme vu",
+    "viewHistory": "Voir tout l'historique",
+    "empty": {
+      "title": "Rien de nouveau",
+      "hint": "Les prochaines modifications de vos MRs apparaîtront ici après la synchronisation.",
+      "configure": "Régler les notifications"
+    },
+    "error": {
+      "load": "Impossible de charger les notifications.",
+      "markSeen": "Impossible de marquer la notification comme vue."
+    },
+    "footer": "{{shown}} affichées sur {{total}} · les plus récentes en premier"
   },
   "errors": {
     "network": "Le serveur est injoignable.",

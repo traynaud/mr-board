@@ -37,6 +37,9 @@ describe('SettingsPageComponent', () => {
     language: 'fr',
     historyRetentionDays: 60,
     historyMaxEvents: 5000,
+    notifDisabledTypes: [],
+    notifOnlyMine: false,
+    notifExcludeOwn: false,
   };
   const connection: Connection = {
     id: 1,
@@ -161,6 +164,9 @@ describe('SettingsPageComponent', () => {
     language: 'fr',
     historyRetentionDays: 60,
     historyMaxEvents: 5000,
+    notifDisabledTypes: [],
+    notifOnlyMine: false,
+    notifExcludeOwn: false,
   };
 
   it('should_show_progress_then_form_once_loaded', async () => {
@@ -256,22 +262,106 @@ describe('SettingsPageComponent', () => {
     );
   });
 
-  it('should_number_the_sections_01_to_06_with_the_history_section_us_036', async () => {
-    // US-031 : la section « Moi » disparaît (renumérotation 01→05) ;
-    // US-036 : la section « Historique » s'insère en 05, « Divers » passe en 06.
-    await loadSettings();
+  describe('onglets (US-042)', () => {
+    const headingsOf = (panelIndex: number) =>
+      Array.from(el.querySelectorAll('.settings-grid')[panelIndex].querySelectorAll('.heading h6')).map((h) =>
+        h.textContent?.trim(),
+      );
+    const panels = () => Array.from(el.querySelectorAll<HTMLElement>('.settings-grid'));
+    const visibleIndexes = () =>
+      panels()
+        .map((panel, index) => (panel.hidden ? -1 : index))
+        .filter((index) => index >= 0);
+    const openTab = async (tab: string | null) => {
+      await router.navigateByUrl(tab === null ? '/' : `/?tab=${tab}`);
+      await settle();
+    };
 
-    const headings = Array.from(el.querySelectorAll('.heading h6')).map((h) =>
-      h.textContent?.trim(),
-    );
-    expect(headings).toEqual([
-      `01 · ${t('settings.connections.title')}`,
-      `02 · ${t('settings.refresh.title')}`,
-      `03 · ${t('settings.difficulty.title')}`,
-      `04 · ${t('settings.readyDelay.title')}`,
-      `05 · ${t('settings.history.title')}`,
-      `06 · ${t('settings.misc.title')}`,
-    ]);
+    it('should_group_the_sections_in_four_tabs_and_renumber_each_tab_from_01_rg_042_01', async () => {
+      await loadSettings();
+
+      expect(headingsOf(0)).toEqual([`01 · ${t('settings.connections.title')}`]);
+      expect(headingsOf(1)).toEqual([
+        `01 · ${t('settings.refresh.title')}`,
+        `02 · ${t('settings.history.title')}`,
+        `03 · ${t('settings.data.transfer.title')}`,
+      ]);
+      expect(headingsOf(2)).toEqual([
+        `01 · ${t('settings.difficulty.title')}`,
+        `02 · ${t('settings.readyDelay.title')}`,
+        `03 · ${t('settings.misc.title')}`,
+      ]);
+      expect(headingsOf(3)).toEqual([
+        `01 · ${t('settings.notifications.scope.title')}`,
+        `02 · ${t('settings.notifications.types.title')}`,
+        `03 · ${t('settings.notifications.alerts.title')}`,
+      ]);
+    });
+
+    it('should_open_the_first_tab_by_default_and_when_the_tab_is_unknown_rg_042_03', async () => {
+      await loadSettings();
+      expect(visibleIndexes()).toEqual([0]);
+
+      await openTab('xyz');
+
+      expect(visibleIndexes()).toEqual([0]);
+    });
+
+    it.each([
+      ['data', 1],
+      ['display', 2],
+      ['notifications', 3],
+    ])('should_open_the_%s_tab_from_the_url_rg_042_03', async (tab, index) => {
+      await loadSettings();
+
+      await openTab(tab);
+
+      expect(visibleIndexes()).toEqual([index]);
+    });
+
+    it('should_keep_every_tab_mounted_so_no_edit_is_lost_when_switching_rg_042_02', async () => {
+      await loadSettings();
+
+      await type(easyFilesInput(), '4');
+      await openTab('notifications');
+      await openTab('display');
+
+      expect(easyFilesInput().value).toBe('4');
+      expect(saveButton().disabled).toBe(false);
+    });
+
+    it('should_flag_an_inactive_tab_holding_an_unsaved_edit_or_a_validation_error_rg_042_03', async () => {
+      await loadSettings();
+      const mark = (tab: string) => el.querySelector(`.tab-${tab} .tab-mark`);
+      expect(mark('display')).toBeNull();
+
+      await openTab('notifications');
+      await type(easyFilesInput(), '4');
+      expect(mark('display')).not.toBeNull();
+      expect(mark('display')?.classList.contains('error')).toBe(false);
+
+      await type(easyFilesInput(), '0');
+      expect(mark('display')?.classList.contains('error')).toBe(true);
+    });
+
+    it('should_save_the_edits_of_two_tabs_with_a_single_request_rg_042_02', async () => {
+      await loadSettings();
+      await type(easyFilesInput(), '4');
+      await openTab('notifications');
+      const section = fixture.debugElement.nativeElement.querySelector('app-notification-types-section');
+      section.querySelector('mat-checkbox input').click();
+      await settle();
+
+      saveButton().click();
+      await settle();
+
+      const request = http.expectOne((r) => r.method === 'PUT' && r.url === '/api/v1/settings');
+      expect(request.request.body.easyFiles).toBe(4);
+      expect(request.request.body.notifDisabledTypes).toEqual(['created']);
+      request.flush({ ...settings, easyFiles: 4, notifDisabledTypes: ['created'] });
+      await settle();
+      await flushSync();
+    });
   });
 
   it('should_render_the_history_retention_section_with_the_loaded_values_us_036', async () => {

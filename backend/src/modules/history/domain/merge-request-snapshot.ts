@@ -18,6 +18,8 @@ export interface MergeRequestSnapshot {
   assignees: SnapshotUser[];
   approvers: SnapshotUser[];
   commentsCount: number;
+  /** Author username (stored snapshots and forge payloads; needed for `involvedUsernames`). */
+  authorUsername?: string;
   /** When this state was last synchronised (stored snapshots only; US-034 window start). */
   syncedAt?: string;
 }
@@ -45,5 +47,26 @@ export function snapshotFromForge(
     assignees: mergeRequest.assignees.map(toUser),
     approvers: mergeRequest.approvedBy.map(toUser),
     commentsCount: mergeRequest.commentsCount,
+    authorUsername: mergeRequest.author.username,
   };
+}
+
+/**
+ * JSON `string[]` of the people a merge request concerns: author, reviewers
+ * and assignees, without duplicates (US-041). Frozen on every journal event.
+ */
+export function involvedUsernamesJson(
+  snapshot: Pick<
+    MergeRequestSnapshot,
+    'authorUsername' | 'reviewers' | 'assignees'
+  >,
+): string {
+  const usernames = new Set<string>();
+  if (snapshot.authorUsername) {
+    usernames.add(snapshot.authorUsername);
+  }
+  for (const user of [...snapshot.reviewers, ...snapshot.assignees]) {
+    usernames.add(user.username);
+  }
+  return JSON.stringify([...usernames]);
 }

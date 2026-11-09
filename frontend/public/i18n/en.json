@@ -17,7 +17,9 @@
       "refresh": "Refresh",
       "themeToLight": "Switch to light theme",
       "themeToDark": "Switch to dark theme",
-      "history": "History"
+      "history": "History",
+      "notifications": "Notifications, {{count}} unseen",
+      "notificationsTooltip": "Notifications"
     },
     "filters": {
       "ariaLabel": "Quick filters",
@@ -255,7 +257,7 @@
       }
     },
     "refresh": {
-      "number": "02",
+      "number": "01",
       "title": "Refresh",
       "description": "Automatic sync frequency with the configured forges.",
       "frequency": "Sync frequency",
@@ -267,7 +269,7 @@
       "hint": "Automatic sync ; the Refresh button always forces one."
     },
     "difficulty": {
-      "number": "03",
+      "number": "01",
       "title": "Difficulty",
       "description": "Rules for computing an MR's difficulty.",
       "easy": "Easy",
@@ -283,7 +285,7 @@
       }
     },
     "readyDelay": {
-      "number": "04",
+      "number": "02",
       "title": "Time since Ready",
       "description": "Color thresholds for the Ready delay.",
       "green": "Green",
@@ -299,7 +301,7 @@
       }
     },
     "history": {
-      "number": "05",
+      "number": "02",
       "title": "History",
       "description": "How long and how many entries of the change log are kept.",
       "retentionDays": "Keep at most",
@@ -313,9 +315,9 @@
       }
     },
     "misc": {
-      "number": "06",
-      "title": "Miscellaneous",
-      "description": "Convenience options and configuration backup.",
+      "number": "03",
+      "title": "Interface",
+      "description": "Highlighting, theme, language and how links open.",
       "highlightMe": "Highlight my MRs in the table (author, reviewer, assignee)",
       "theme": {
         "title": "Theme",
@@ -347,6 +349,69 @@
     "reset": {
       "button": "Reset",
       "done": "Defaults restored (not saved)"
+    },
+    "tabs": {
+      "connections": "Connections",
+      "data": "Data",
+      "display": "Display",
+      "notifications": "Notifications",
+      "aria": "Settings sections"
+    },
+    "data": {
+      "transfer": {
+        "number": "03",
+        "title": "Configuration",
+        "description": "Back up or restore the configuration, tokens excluded."
+      }
+    },
+    "notifications": {
+      "scope": {
+        "number": "01",
+        "title": "Scope",
+        "description": "Which events feed the panel and the counter on the home screen.",
+        "onlyMine": "Only my MRs",
+        "onlyMineHint": "Keeps the events on the MRs I authored, review or am assigned to.",
+        "excludeOwn": "Exclude my own actions",
+        "excludeOwnHint": "Hides what I did myself (approval, comment…).",
+        "identityWarning": "No resolved identity: “Only my MRs” will keep no event. Set up a token in Connections."
+      },
+      "types": {
+        "number": "02",
+        "title": "Event types",
+        "description": "Unticking a type hides it from the panel without marking its events as seen: they come back if you tick it again. The History page always shows them.",
+        "checkAll": "Tick all",
+        "uncheckAll": "Untick all",
+        "groups": {
+          "lifecycle": "Lifecycle",
+          "review": "Review and approval",
+          "content": "Content"
+        },
+        "labels": {
+          "created": "MR created",
+          "marked_draft": "Marked as draft",
+          "marked_ready": "Marked as ready",
+          "merged": "Merged",
+          "closed": "Closed",
+          "reopened": "Reopened",
+          "deleted": "Deleted",
+          "disappeared": "Left the list",
+          "approved": "Approved",
+          "approval_removed": "Approval removed",
+          "reviewer_added": "Reviewer added",
+          "reviewer_removed": "Reviewer removed",
+          "assignee_added": "Assignee added",
+          "assignee_removed": "Assignee removed",
+          "title_changed": "Title changed",
+          "commented": "Commented",
+          "label_added": "Label added",
+          "label_removed": "Label removed"
+        }
+      },
+      "alerts": {
+        "number": "03",
+        "title": "Other alerts",
+        "description": "Browser alerts, independent from the panel."
+      }
     }
   },
   "history": {
@@ -379,6 +444,23 @@
       "deleted": "deleted the MR",
       "disappeared": "The MR disappeared from the list"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "close": "Close the panel",
+    "markAllSeen": "Mark all as seen",
+    "markSeen": "Mark as seen",
+    "viewHistory": "See the full history",
+    "empty": {
+      "title": "Nothing new",
+      "hint": "The next changes to your MRs will show up here after the synchronisation.",
+      "configure": "Set up notifications"
+    },
+    "error": {
+      "load": "Unable to load the notifications.",
+      "markSeen": "Unable to mark the notification as seen."
+    },
+    "footer": "{{shown}} shown out of {{total}} · most recent first"
   },
   "errors": {
     "network": "The server is unreachable.",

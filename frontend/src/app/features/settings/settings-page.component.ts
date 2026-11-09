@@ -13,10 +13,11 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { TranslateService } from '../../core/i18n/translate.service';
 import { LanguageService } from '../../core/language/language.service';
@@ -37,12 +38,15 @@ import { ReadyDelaySectionComponent } from './sections/ready-delay/ready-delay-s
 import { RefreshSectionComponent } from './sections/refresh/refresh-section.component';
 import { RepoRow } from './sections/repositories/repositories-section.component';
 import { MiscellaneousSectionComponent } from './sections/miscellaneous/miscellaneous-section.component';
+import { NotificationScopeSectionComponent } from './sections/notification-scope/notification-scope-section.component';
+import { NotificationTypesSectionComponent } from './sections/notification-types/notification-types-section.component';
 import {
   buildSettingsForm,
   resetSettingsForm,
   resetSettingsFormToDefaults,
   toUpdateRequest,
 } from './settings-form';
+import { SETTINGS_TABS, SettingsTab, parseSettingsTab, tabMark } from './settings-tabs';
 import { HasUnsavedChanges } from './unsaved-changes.guard';
 
 /** Durée d'affichage des toasts (ms). */
@@ -61,6 +65,7 @@ export const TOAST_DURATION_MS = 3500;
     MatIconModule,
     MatTooltipModule,
     MatProgressBarModule,
+    MatTabsModule,
     RouterLink,
     TranslatePipe,
     SettingsSectionComponent,
@@ -70,6 +75,8 @@ export const TOAST_DURATION_MS = 3500;
     HistorySectionComponent,
     ReadyDelaySectionComponent,
     MiscellaneousSectionComponent,
+    NotificationScopeSectionComponent,
+    NotificationTypesSectionComponent,
   ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
@@ -83,6 +90,7 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
   private readonly mrStore = inject(MergeRequestsStore);
   private readonly columnsStore = inject(ColumnsStore);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly snackBar = inject(MatSnackBar);
   private readonly i18n = inject(TranslateService);
   private readonly themeService = inject(ThemeService);
@@ -100,6 +108,23 @@ export class SettingsPageComponent implements OnInit, HasUnsavedChanges {
    * en phase, sans dépendre de l'ordre d'exécution entre effects et computed.
    */
   protected readonly repoRows = signal<RepoRow[]>([]);
+
+  protected readonly tabs = SETTINGS_TABS;
+
+  private readonly queryParams = toSignal(this.route.queryParamMap);
+
+  /** Onglet actif, lu dans `?tab=` ; inconnu ou absent → premier onglet (RG-042-03). */
+  protected readonly activeTab = computed<SettingsTab>(() =>
+    parseSettingsTab(this.queryParams()?.get('tab') ?? null),
+  );
+
+  /** Pastille de chaque onglet : erreur de validation ou modification non enregistrée (RG-042-03). */
+  protected readonly marks = computed(() => {
+    this.formEvents();
+    return Object.fromEntries(
+      SETTINGS_TABS.map((tab) => [tab, tabMark(this.form, tab)]),
+    ) as Record<SettingsTab, ReturnType<typeof tabMark>>;
+  });
 
   protected readonly canSave = computed(() => {
     this.formEvents();

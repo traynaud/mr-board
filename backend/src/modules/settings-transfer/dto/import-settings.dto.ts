@@ -19,6 +19,10 @@ import {
   REFRESH_INTERVAL_OPTIONS,
   THEME_OPTIONS,
 } from '../../settings/dto/update-settings.dto.js';
+import {
+  HISTORY_EVENT_TYPES,
+  type HistoryEventType,
+} from '../../history/entities/merge-request-event.entity.js';
 import type {
   Language,
   ThemePreference,
@@ -126,4 +130,17 @@ export class ImportSettingsDto {
   @Min(HISTORY_MAX_EVENTS_MIN)
   @Max(HISTORY_MAX_EVENTS_MAX)
   historyMaxEvents?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsIn(HISTORY_EVENT_TYPES, { each: true })
+  notifDisabledTypes?: HistoryEventType[];
+
+  @IsOptional()
+  @IsBoolean()
+  notifOnlyMine?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifExcludeOwn?: boolean;
 }

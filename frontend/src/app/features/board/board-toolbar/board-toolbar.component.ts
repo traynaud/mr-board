@@ -17,6 +17,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../core/i18n/translate.service';
 import { SyncRun } from '../../../models/sync-status.model';
+import { formatCounter } from '../../../shared/format/format-counter';
 import { AppLogoComponent } from '../../../shared/app-logo/app-logo.component';
 import { computeNextRunTooltip, computeSyncStatusLabel } from '../sync-status-label';
 
@@ -62,6 +63,15 @@ export class BoardToolbarComponent implements OnDestroy {
   readonly themeIcon = input.required<'sun' | 'moon'>();
   readonly themeToggleLabel = input.required<string>();
   readonly themeToggle = output<void>();
+
+  /** Nombre d'événements non vus (RG-040-03) ; `0` masque la pastille. */
+  readonly notificationCount = input<number>(0);
+  /** Vrai quand le panneau de notifications est ouvert (bouton plein accent). */
+  readonly notificationsOpen = input<boolean>(false);
+  readonly notificationsToggle = output<void>();
+
+  /** Pastille plafonnée à « 99+ » (RG-040-03). */
+  protected readonly notificationBadge = computed(() => formatCounter(this.notificationCount()));
 
   private readonly nowTick = signal(Date.now());
   private readonly tickHandle = setInterval(

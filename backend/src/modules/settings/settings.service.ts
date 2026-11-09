@@ -8,6 +8,7 @@ import { SettingsResponseDto } from './dto/settings-response.dto.js';
 import { UpdateSettingsDto } from './dto/update-settings.dto.js';
 import { SETTINGS_ID, Settings } from './entities/settings.entity.js';
 import type { Language, ThemePreference } from './entities/settings.entity.js';
+import type { HistoryEventType } from '../history/entities/merge-request-event.entity.js';
 
 /** Fields shared by a full update (`UpdateSettingsDto`) and a config import. */
 export interface MergeableSettingsFields {
@@ -29,6 +30,16 @@ export interface MergeableSettingsFields {
   language?: Language;
   historyRetentionDays?: number;
   historyMaxEvents?: number;
+  notifDisabledTypes?: HistoryEventType[];
+  notifOnlyMine?: boolean;
+  notifExcludeOwn?: boolean;
+}
+
+/** What feeds the notifications panel (RG-041-01/06). */
+export interface NotificationPreferences {
+  notifDisabledTypes: HistoryEventType[];
+  notifOnlyMine: boolean;
+  notifExcludeOwn: boolean;
 }
 
 /** Every global preference, as exported/imported by US-015 (RG-019-23). */
@@ -51,6 +62,9 @@ export interface ExportableSettings {
   language: Language;
   historyRetentionDays: number;
   historyMaxEvents: number;
+  notifDisabledTypes: HistoryEventType[];
+  notifOnlyMine: boolean;
+  notifExcludeOwn: boolean;
 }
 
 /** Manages the global application preferences singleton (RG-019-23). */
@@ -142,6 +156,11 @@ export class SettingsService {
     };
   }
 
+  /** Notification preferences (RG-041-*), read fresh on every call. */
+  async getNotificationPreferences(): Promise<NotificationPreferences> {
+    return toNotificationPreferences(await this.load());
+  }
+
   /** History retention (RG-036-01), read fresh on every call. */
   async getHistoryRetention(): Promise<{ days: number; maxEvents: number }> {
     const { historyRetentionDays, historyMaxEvents } = await this.load();
@@ -179,6 +198,7 @@ export class SettingsService {
       language: settings.language,
       historyRetentionDays: settings.historyRetentionDays,
       historyMaxEvents: settings.historyMaxEvents,
+      ...toNotificationPreferences(settings),
     };
   }
 
@@ -243,6 +263,17 @@ export class SettingsService {
     if (dto.historyMaxEvents !== undefined) {
       settings.historyMaxEvents = dto.historyMaxEvents;
     }
+    if (dto.notifDisabledTypes !== undefined) {
+      settings.notifDisabledTypes = JSON.stringify([
+        ...new Set(dto.notifDisabledTypes),
+      ]);
+    }
+    if (dto.notifOnlyMine !== undefined) {
+      settings.notifOnlyMine = dto.notifOnlyMine;
+    }
+    if (dto.notifExcludeOwn !== undefined) {
+      settings.notifExcludeOwn = dto.notifExcludeOwn;
+    }
   }
 
   /** Runs the change listeners; a failing one is logged, never propagated. */
@@ -285,6 +316,9 @@ export class SettingsService {
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
+        notifDisabledTypes: '[]',
+        notifOnlyMine: false,
+        notifExcludeOwn: false,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -337,6 +371,20 @@ export class SettingsService {
       language: settings.language,
       historyRetentionDays: settings.historyRetentionDays,
       historyMaxEvents: settings.historyMaxEvents,
+      ...toNotificationPreferences(settings),
     };
   }
+}
+
+/** The notification preferences of a settings row, decoded (US-041). */
+function toNotificationPreferences(
+  settings: Settings,
+): NotificationPreferences {
+  return {
+    notifDisabledTypes: JSON.parse(
+      settings.notifDisabledTypes,
+    ) as HistoryEventType[],
+    notifOnlyMine: settings.notifOnlyMine,
+    notifExcludeOwn: settings.notifExcludeOwn,
+  };
 }

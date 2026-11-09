@@ -245,3 +245,16 @@ a {
   max-width: 280px;
   text-align: left;
 }
+
+/* Tiroir de notifications (US-040) : MatDialog collé à droite, pleine hauteur, bordure gauche 2 px. */
+.notifications-drawer {
+  --mat-dialog-container-max-width: 100vw;
+  --mat-dialog-container-small-max-width: 100vw;
+  --mat-dialog-container-min-width: 0;
+
+  .mat-mdc-dialog-surface {
+    border-left: 2px solid var(--color-divider);
+    box-shadow: var(--shadow-lg, -8px 0 24px rgba(32, 30, 29, 0.18));
+    overflow: hidden;
+  }
+}

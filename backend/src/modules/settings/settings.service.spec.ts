@@ -26,6 +26,9 @@ describe('SettingsService', () => {
     language: 'fr',
     historyRetentionDays: 60,
     historyMaxEvents: 5000,
+    notifDisabledTypes: '[]',
+    notifOnlyMine: false,
+    notifExcludeOwn: false,
     updatedAt: '2026-09-01T00:00:00.000Z',
   });
   const repository = {
@@ -70,6 +73,9 @@ describe('SettingsService', () => {
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
+        notifDisabledTypes: [],
+        notifOnlyMine: false,
+        notifExcludeOwn: false,
       });
     });
 
@@ -307,6 +313,9 @@ describe('SettingsService', () => {
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
+        notifDisabledTypes: [],
+        notifOnlyMine: false,
+        notifExcludeOwn: false,
       });
     });
   });

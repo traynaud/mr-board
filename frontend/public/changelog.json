@@ -2,6 +2,12 @@
   {
     "date": "2026-11-09",
     "type": "feat",
+    "user-story": "US-039",
+    "title": "Notifications : panneau et compteur (cloche de la toolbar) des événements d'historique non vus, réglables par type et par périmètre, et Paramètres réorganisés en 4 onglets."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
     "user-story": "US-037",
     "title": "Historique : les événements provisoires sont distingués (heure « ~ », marqueur creux en pointillé, texte atténué, tooltip explicatif)."
   },

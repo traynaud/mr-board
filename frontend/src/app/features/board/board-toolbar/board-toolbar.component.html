@@ -16,6 +16,21 @@
     <mat-icon svgIcon="refresh-cw" />
     {{ 'board.toolbar.refresh' | translate }}
   </button>
+  <button
+    mat-icon-button
+    type="button"
+    class="notifications-button"
+    [class.open]="notificationsOpen()"
+    [attr.aria-label]="'board.toolbar.notifications' | translate: { count: notificationCount() }"
+    [attr.aria-expanded]="notificationsOpen()"
+    [matTooltip]="'board.toolbar.notificationsTooltip' | translate"
+    (click)="notificationsToggle.emit()"
+  >
+    <mat-icon svgIcon="bell" />
+    @if (notificationCount() > 0) {
+      <span class="count">{{ notificationBadge() }}</span>
+    }
+  </button>
   <a
     mat-icon-button
     routerLink="/history"
@@ -27,6 +42,7 @@
   <button
     mat-icon-button
     type="button"
+    class="theme-toggle"
     [matTooltip]="themeToggleLabel()"
     [attr.aria-label]="themeToggleLabel()"
     (click)="themeToggle.emit()"

@@ -1,74 +1,81 @@
 <div class="fields" [formGroup]="form()">
-  <mat-checkbox formControlName="highlightMe">
-    {{ 'settings.misc.highlightMe' | translate }}
-  </mat-checkbox>
+  @if (shows('display')) {
+    <mat-checkbox formControlName="highlightMe">
+      {{ 'settings.misc.highlightMe' | translate }}
+    </mat-checkbox>
 
-  <div class="theme-field">
-    <div class="block-title">{{ 'settings.misc.theme.title' | translate }}</div>
-    <mat-radio-group
-      formControlName="theme"
-      [attr.aria-label]="'settings.misc.theme.title' | translate"
-      (change)="onThemeChange($event.value)"
-    >
-      @for (option of themeOptions; track option) {
-        <mat-radio-button [value]="option">
-          {{ 'settings.misc.theme.' + option | translate }}
-        </mat-radio-button>
-      }
-    </mat-radio-group>
-  </div>
+    <div class="theme-field">
+      <div class="block-title">{{ 'settings.misc.theme.title' | translate }}</div>
+      <mat-radio-group
+        formControlName="theme"
+        [attr.aria-label]="'settings.misc.theme.title' | translate"
+        (change)="onThemeChange($event.value)"
+      >
+        @for (option of themeOptions; track option) {
+          <mat-radio-button [value]="option">
+            {{ 'settings.misc.theme.' + option | translate }}
+          </mat-radio-button>
+        }
+      </mat-radio-group>
+    </div>
 
-  <div class="language-field">
-    <div class="block-title">{{ 'settings.misc.language.title' | translate }}</div>
-    <mat-radio-group
-      formControlName="language"
-      [attr.aria-label]="'settings.misc.language.title' | translate"
-      (change)="onLanguageChange($event.value)"
-    >
-      @for (option of languageOptions; track option.value) {
-        <mat-radio-button [value]="option.value">{{ option.label }}</mat-radio-button>
-      }
-    </mat-radio-group>
-  </div>
+    <div class="language-field">
+      <div class="block-title">{{ 'settings.misc.language.title' | translate }}</div>
+      <mat-radio-group
+        formControlName="language"
+        [attr.aria-label]="'settings.misc.language.title' | translate"
+        (change)="onLanguageChange($event.value)"
+      >
+        @for (option of languageOptions; track option.value) {
+          <mat-radio-button [value]="option.value">{{ option.label }}</mat-radio-button>
+        }
+      </mat-radio-group>
+    </div>
 
-  <mat-checkbox
-    [checked]="form().controls.notifyAssigned.value"
-    [disabled]="!notifications.isSupported()"
-    (change)="onNotifyAssignedChange($event.checked)"
-  >
-    {{ 'settings.misc.notifyAssigned' | translate }}
-  </mat-checkbox>
-  @if (permissionBlocked()) {
-    <p class="notifications-blocked">{{ 'settings.misc.notificationsBlocked' | translate }}</p>
+    <mat-checkbox formControlName="openInNewTab">
+      {{ 'settings.misc.openInNewTab' | translate }}
+    </mat-checkbox>
+    <mat-checkbox formControlName="ignoreWip">
+      {{ 'settings.misc.ignoreWip' | translate }}
+    </mat-checkbox>
   }
-  <mat-checkbox formControlName="tabBadge">
-    {{ 'settings.misc.tabBadge' | translate }}
-  </mat-checkbox>
-  <mat-checkbox formControlName="openInNewTab">
-    {{ 'settings.misc.openInNewTab' | translate }}
-  </mat-checkbox>
-  <mat-checkbox formControlName="ignoreWip">
-    {{ 'settings.misc.ignoreWip' | translate }}
-  </mat-checkbox>
 
-  <div class="actions">
-    <button mat-stroked-button type="button" (click)="exportConfig()">
-      {{ 'settings.misc.export' | translate }}
-    </button>
-    <input
-      #fileInput
-      type="file"
-      accept=".json,application/json"
-      hidden
-      (change)="onFileSelected(fileInput.files); fileInput.value = ''"
-    />
-    <button
-      mat-stroked-button
-      type="button"
-      [disabled]="importing()"
-      (click)="fileInput.click()"
+  @if (shows('alerts')) {
+    <mat-checkbox
+      [checked]="form().controls.notifyAssigned.value"
+      [disabled]="!notifications.isSupported()"
+      (change)="onNotifyAssignedChange($event.checked)"
     >
-      {{ 'settings.misc.import' | translate }}
-    </button>
-  </div>
+      {{ 'settings.misc.notifyAssigned' | translate }}
+    </mat-checkbox>
+    @if (permissionBlocked()) {
+      <p class="notifications-blocked">{{ 'settings.misc.notificationsBlocked' | translate }}</p>
+    }
+    <mat-checkbox formControlName="tabBadge">
+      {{ 'settings.misc.tabBadge' | translate }}
+    </mat-checkbox>
+  }
+
+  @if (shows('transfer')) {
+    <div class="actions">
+      <button mat-stroked-button type="button" (click)="exportConfig()">
+        {{ 'settings.misc.export' | translate }}
+      </button>
+      <input
+        #fileInput
+        type="file"
+        accept=".json,application/json"
+        hidden
+        (change)="onFileSelected(fileInput.files); fileInput.value = ''"
+      />
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="importing()"
+        (click)="fileInput.click()"
+      >
+        {{ 'settings.misc.import' | translate }}
+      </button>
+    </div>
+  }
 </div>

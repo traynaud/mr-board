@@ -1,0 +1,20 @@
+@for (group of groups; track group.key) {
+  <section class="group">
+    <div class="group-head">
+      <h3 class="group-title">{{ 'settings.notifications.types.groups.' + group.key | translate }}</h3>
+      <button type="button" class="link check-all" (click)="setGroup(group.types, true)">
+        {{ 'settings.notifications.types.checkAll' | translate }}
+      </button>
+      <button type="button" class="link uncheck-all" (click)="setGroup(group.types, false)">
+        {{ 'settings.notifications.types.uncheckAll' | translate }}
+      </button>
+    </div>
+    <div class="grid">
+      @for (type of group.types; track type) {
+        <mat-checkbox [checked]="!disabled().has(type)" (change)="toggle(type, $event.checked)">
+          {{ 'settings.notifications.types.labels.' + type | translate }}
+        </mat-checkbox>
+      }
+    </div>
+  </section>
+}

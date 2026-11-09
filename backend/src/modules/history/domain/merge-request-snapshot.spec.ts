@@ -1,5 +1,8 @@
 import { ForgeMergeRequest } from '../../forges/types/forge-merge-request.js';
-import { snapshotFromForge } from './merge-request-snapshot.js';
+import {
+  involvedUsernamesJson,
+  snapshotFromForge,
+} from './merge-request-snapshot.js';
 
 describe('snapshotFromForge', () => {
   it('should_project_only_the_watched_fields', () => {
@@ -33,6 +36,31 @@ describe('snapshotFromForge', () => {
       assignees: [{ remoteUserId: '1', username: 'alice', name: 'Alice' }],
       approvers: [{ remoteUserId: '1', username: 'alice', name: 'Alice' }],
       commentsCount: 4,
+      authorUsername: 'alice',
     });
+  });
+});
+
+describe('involvedUsernamesJson', () => {
+  const user = (username: string) => ({
+    remoteUserId: username,
+    username,
+    name: username,
+  });
+
+  it('should_list_author_reviewers_and_assignees_without_duplicates', () => {
+    expect(
+      involvedUsernamesJson({
+        authorUsername: 'alice',
+        reviewers: [user('bob'), user('alice')],
+        assignees: [user('carol'), user('bob')],
+      }),
+    ).toBe('["alice","bob","carol"]');
+  });
+
+  it('should_skip_an_unknown_author', () => {
+    expect(
+      involvedUsernamesJson({ reviewers: [], assignees: [user('bob')] }),
+    ).toBe('["bob"]');
   });
 });

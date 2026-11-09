@@ -4,7 +4,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 48px 28px 10px minmax(0, 1fr);
+  grid-template-columns: 48px 28px 10px minmax(0, 1fr) auto;
   align-items: start;
   column-gap: var(--space-3);
   padding: var(--space-2) 0;

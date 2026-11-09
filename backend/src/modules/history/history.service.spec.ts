@@ -151,6 +151,7 @@ describe('HistoryService', () => {
         actorAvatarUrl: null,
         oldValue: '"Old"',
         newValue: '"New"',
+        mrInvolvedUsernames: '["alice"]',
       },
     ]);
     expect(manager.upsert).toHaveBeenCalledWith(
@@ -162,6 +163,7 @@ describe('HistoryService', () => {
           mrTitle: 'New',
           mrWebUrl: 'https://gitlab.example.com/-/merge_requests/1',
           kind: 'update',
+          mrInvolvedUsernames: '["alice"]',
           requestedAt: NOW,
           since: '2026-11-09T09:55:00.000Z',
           attempts: 0,
@@ -291,6 +293,7 @@ describe('HistoryService', () => {
           mrTitle: 'Gone',
           mrWebUrl: 'https://gitlab.example.com/-/merge_requests/2',
           kind: 'disappeared',
+          mrInvolvedUsernames: '[]',
           requestedAt: NOW,
           since: '2026-11-09T09:25:00.000Z',
           attempts: 0,

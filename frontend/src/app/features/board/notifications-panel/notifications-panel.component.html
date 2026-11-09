@@ -1,0 +1,81 @@
+<aside class="panel" [attr.aria-label]="'notifications.title' | translate">
+  <header class="panel-header">
+    <h2 class="title">{{ 'notifications.title' | translate }}</h2>
+    @if (store.count() > 0) {
+      <span class="badge">{{ badge() }}</span>
+    }
+    <span class="spacer"></span>
+    <button
+      mat-icon-button
+      type="button"
+      class="close"
+      [attr.aria-label]="'notifications.close' | translate"
+      [matTooltip]="'notifications.close' | translate"
+      (click)="close()"
+    >
+      <mat-icon svgIcon="x" />
+    </button>
+  </header>
+
+  <div class="panel-bar">
+    <button
+      mat-button
+      type="button"
+      class="mark-all"
+      [disabled]="store.count() === 0"
+      (click)="markAllSeen()"
+    >
+      <mat-icon svgIcon="check-check" />
+      {{ 'notifications.markAllSeen' | translate }}
+    </button>
+    <span class="spacer"></span>
+    <a class="history-link" routerLink="/history" (click)="close()">{{
+      'notifications.viewHistory' | translate
+    }}</a>
+  </div>
+
+  @if (store.loading()) {
+    <mat-progress-bar mode="indeterminate" class="loading" />
+  } @else if (store.error() && store.events().length === 0) {
+    <div class="state error" role="alert">
+      <mat-icon svgIcon="alert-circle" />
+      <span>{{ 'notifications.error.load' | translate }}</span>
+      <span class="spacer"></span>
+      <button mat-button type="button" class="retry" (click)="retry()">
+        {{ 'common.retry' | translate }}
+      </button>
+    </div>
+  } @else if (store.events().length === 0) {
+    <div class="state empty">
+      <mat-icon svgIcon="check" />
+      <strong>{{ 'notifications.empty.title' | translate }}</strong>
+      <span>{{ 'notifications.empty.hint' | translate }}</span>
+      <a routerLink="/settings" [queryParams]="{ tab: 'notifications' }" (click)="close()">{{
+        'notifications.empty.configure' | translate
+      }}</a>
+    </div>
+  } @else {
+    <div class="list" role="list">
+      @for (event of store.events(); track event.id) {
+        <app-history-event-row [event]="event" [tagStyle]="tagStyleOf(event.projectId)">
+          <button
+            rowAction
+            mat-icon-button
+            type="button"
+            class="dismiss"
+            [attr.aria-label]="'notifications.markSeen' | translate"
+            [matTooltip]="'notifications.markSeen' | translate"
+            (click)="markSeen(event.id)"
+          >
+            <mat-icon svgIcon="x" />
+          </button>
+        </app-history-event-row>
+      }
+    </div>
+    @if (hasHidden()) {
+      <footer class="panel-footer">
+        {{ 'notifications.footer' | translate: { shown: store.events().length, total: store.count() } }}
+      </footer>
+    }
+  }
+</aside>

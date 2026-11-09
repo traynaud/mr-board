@@ -48,3 +48,32 @@
     border-color: var(--color-accent);
   }
 }
+
+.notifications-button {
+  position: relative;
+
+  .count {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    background: var(--color-accent);
+    color: var(--mat-sys-on-primary);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  &.open {
+    background: var(--color-accent);
+    color: var(--mat-sys-on-primary);
+
+    .count {
+      background: var(--color-text);
+    }
+  }
+}

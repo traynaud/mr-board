@@ -7,6 +7,7 @@ import {
   detectMergeRequestChanges,
 } from './domain/detect-merge-request-changes.js';
 import {
+  involvedUsernamesJson,
   MergeRequestSnapshot,
   snapshotFromForge,
 } from './domain/merge-request-snapshot.js';
@@ -91,6 +92,7 @@ export class HistoryService {
 
     for (const mergeRequest of incoming) {
       const snapshot = snapshotFromForge(mergeRequest);
+      const involved = involvedUsernamesJson(snapshot);
       const before = previousByIid.get(snapshot.iid);
       const lastEvent = lastEvents.get(snapshot.iid);
       const { changes, needsEnrichment } = detectMergeRequestChanges(
@@ -132,6 +134,7 @@ export class HistoryService {
           actorAvatarUrl: exact ? mergeRequest.author.avatarUrl : null,
           oldValue: change.oldValue,
           newValue: change.newValue,
+          mrInvolvedUsernames: involved,
         });
       }
       if (needsEnrichment) {
@@ -141,6 +144,7 @@ export class HistoryService {
           mrTitle: snapshot.title,
           mrWebUrl: snapshot.webUrl,
           kind: 'update',
+          mrInvolvedUsernames: involved,
           requestedAt: detectedAt,
           since,
           attempts: 0,
@@ -160,6 +164,7 @@ export class HistoryService {
         mrTitle: gone.title,
         mrWebUrl: gone.webUrl,
         kind: 'disappeared',
+        mrInvolvedUsernames: involvedUsernamesJson(gone),
         requestedAt: detectedAt,
         since: windowStart(gone, detectedAt, detectedAt),
         attempts: 0,

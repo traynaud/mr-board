@@ -1,0 +1,22 @@
+<div class="fields" [formGroup]="form()">
+  <div class="option">
+    <mat-slide-toggle formControlName="notifOnlyMine">
+      {{ 'settings.notifications.scope.onlyMine' | translate }}
+    </mat-slide-toggle>
+    <p class="hint">{{ 'settings.notifications.scope.onlyMineHint' | translate }}</p>
+  </div>
+
+  <div class="option">
+    <mat-slide-toggle formControlName="notifExcludeOwn">
+      {{ 'settings.notifications.scope.excludeOwn' | translate }}
+    </mat-slide-toggle>
+    <p class="hint">{{ 'settings.notifications.scope.excludeOwnHint' | translate }}</p>
+  </div>
+
+  @if (showIdentityWarning()) {
+    <p class="warning" role="status">
+      <mat-icon svgIcon="alert-circle" />
+      {{ 'settings.notifications.scope.identityWarning' | translate }}
+    </p>
+  }
+</div>

@@ -9,6 +9,10 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import {
+  HISTORY_EVENT_TYPES,
+  type HistoryEventType,
+} from '../../history/entities/merge-request-event.entity.js';
 import type { Language, ThemePreference } from '../entities/settings.entity.js';
 
 /** RG-036-03 : bounds of the history retention settings. */
@@ -149,4 +153,22 @@ export class UpdateSettingsDto {
   @Min(HISTORY_MAX_EVENTS_MIN)
   @Max(HISTORY_MAX_EVENTS_MAX)
   historyMaxEvents?: number;
+
+  /** Event types hidden from the notifications panel (RG-041-01/02). */
+  @IsOptional()
+  @IsArray()
+  @IsIn(HISTORY_EVENT_TYPES, { each: true })
+  notifDisabledTypes?: HistoryEventType[];
+
+  /** Notifications limited to the merge requests that concern me (RG-041-06). */
+  @Transform(rawBoolean)
+  @IsOptional()
+  @IsBoolean()
+  notifOnlyMine?: boolean;
+
+  /** Notifications hide the events I caused myself (RG-041-06). */
+  @Transform(rawBoolean)
+  @IsOptional()
+  @IsBoolean()
+  notifExcludeOwn?: boolean;
 }

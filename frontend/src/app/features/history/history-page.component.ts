@@ -12,7 +12,7 @@ import { projectTagStyle } from '../../shared/project-color/project-tag-style';
 import { HistoryStore } from '../../stores/history.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { groupByDay, localDayOf } from './group-by-day';
-import { HistoryEventRowComponent } from './history-event-row/history-event-row.component';
+import { HistoryEventRowComponent } from '../../shared/history-event-row/history-event-row.component';
 
 /** Page « Historique » (US-037) : timeline des modifications de MRs, du plus récent au plus ancien. */
 @Component({

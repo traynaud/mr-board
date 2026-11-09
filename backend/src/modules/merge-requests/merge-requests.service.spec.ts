@@ -436,6 +436,7 @@ describe('MergeRequestsService', () => {
           webUrl: 'https://x/5',
           draft: true,
           labels: '["bug"]',
+          authorId: 1,
           commentsCount: 3,
           syncedAt: '2026-11-09T09:00:00.000Z',
         },
@@ -459,6 +460,7 @@ describe('MergeRequestsService', () => {
           assignees: [],
           approvers: [{ remoteUserId: 'r2', username: 'bob', name: 'Bob' }],
           commentsCount: 3,
+          authorUsername: 'alice',
           syncedAt: '2026-11-09T09:00:00.000Z',
         },
       ]);

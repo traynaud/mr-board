@@ -88,6 +88,18 @@ export class Settings {
   @Column({ name: 'history_max_events', type: 'integer', default: 5000 })
   historyMaxEvents!: number;
 
+  /** JSON `HistoryEventType[]` of the types hidden from the notifications panel (RG-041-01/02). */
+  @Column({ name: 'notif_disabled_types', type: 'text', default: '[]' })
+  notifDisabledTypes!: string;
+
+  /** Notifications limited to merge requests that concern me (RG-041-06). */
+  @Column({ name: 'notif_only_mine', type: 'boolean', default: false })
+  notifOnlyMine!: boolean;
+
+  /** Notifications hide the events I caused myself (RG-041-06). */
+  @Column({ name: 'notif_exclude_own', type: 'boolean', default: false })
+  notifExcludeOwn!: boolean;
+
   @Column({ name: 'updated_at', type: 'text' })
   updatedAt!: string;
 }

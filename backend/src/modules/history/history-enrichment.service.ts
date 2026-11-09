@@ -183,6 +183,7 @@ export class HistoryEnrichmentService {
               actorAvatarUrl: event.actor?.avatarUrl ?? null,
               oldValue: event.oldValue,
               newValue: event.newValue,
+              mrInvolvedUsernames: entry.mrInvolvedUsernames,
             })),
           )
           .orIgnore()
@@ -229,6 +230,7 @@ export class HistoryEnrichmentService {
             actorAvatarUrl: null,
             oldValue: JSON.stringify('opened'),
             newValue: null,
+            mrInvolvedUsernames: entry.mrInvolvedUsernames,
           })
           .orIgnore()
           .execute();

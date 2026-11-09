@@ -26,6 +26,7 @@ function entry(overrides: Partial<HistoryQueueEntry> = {}): HistoryQueueEntry {
     requestedAt: '2026-11-09T09:58:00.000Z',
     kind: 'update',
     since: '2026-11-09T09:30:00.000Z',
+    mrInvolvedUsernames: '["alice","bob"]',
     attempts: 0,
     nextAttemptAt: null,
     ...overrides,

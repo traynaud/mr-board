@@ -1,4 +1,6 @@
 import { FormControl } from '@angular/forms';
+import { HistoryEventType } from '../../models/history.model';
+import { Settings } from '../../models/settings.model';
 import { buildRepoAliasGroup } from './repos-form';
 import {
   DEFAULT_IGNORED_LABELS,
@@ -40,6 +42,9 @@ describe('settings form helpers', () => {
     language: 'en' as const,
     historyRetentionDays: 30,
     historyMaxEvents: 2000,
+    notifDisabledTypes: ['commented'] as HistoryEventType[],
+    notifOnlyMine: true,
+    notifExcludeOwn: true,
   };
 
   it('should_build_form_reset_from_settings_and_stay_pristine', () => {
@@ -68,6 +73,9 @@ describe('settings form helpers', () => {
       language: 'en',
       historyRetentionDays: 30,
       historyMaxEvents: 2000,
+      notifDisabledTypes: ['commented'],
+      notifOnlyMine: true,
+      notifExcludeOwn: true,
       repos: [],
     });
     expect(form.pristine).toBe(true);
@@ -98,6 +106,9 @@ describe('settings form helpers', () => {
       language: 'fr',
       historyRetentionDays: 60,
       historyMaxEvents: 5000,
+      notifDisabledTypes: [],
+      notifOnlyMine: false,
+      notifExcludeOwn: false,
     });
   });
 
@@ -227,6 +238,62 @@ describe('settings form helpers', () => {
   });
 });
 
+describe('notification preferences (US-041)', () => {
+  const baseSettings = (): Settings => ({
+    refreshIntervalMin: 5,
+    pauseWhenHidden: true,
+    ...DEFAULT_THRESHOLDS,
+    openInNewTab: false,
+    ignoredLabels: [],
+    notifyAssigned: false,
+    tabBadge: false,
+    theme: 'system',
+    highlightMe: true,
+    language: 'fr',
+    historyRetentionDays: 60,
+    historyMaxEvents: 5000,
+    notifDisabledTypes: [],
+    notifOnlyMine: false,
+    notifExcludeOwn: false,
+  });
+
+  it('should_default_to_every_type_enabled_and_no_scope_restriction', () => {
+    const form = buildSettingsForm();
+
+    expect(form.controls.notifDisabledTypes.value).toEqual([]);
+    expect(form.controls.notifOnlyMine.value).toBe(false);
+    expect(form.controls.notifExcludeOwn.value).toBe(false);
+  });
+
+  it('should_send_the_notification_preferences_in_the_update_request', () => {
+    const form = buildSettingsForm();
+    form.patchValue({
+      notifDisabledTypes: ['commented', 'label_added'],
+      notifOnlyMine: true,
+      notifExcludeOwn: true,
+    });
+
+    expect(toUpdateRequest(form)).toEqual(
+      expect.objectContaining({
+        notifDisabledTypes: ['commented', 'label_added'],
+        notifOnlyMine: true,
+        notifExcludeOwn: true,
+      }),
+    );
+  });
+
+  it('should_copy_the_disabled_types_so_the_loaded_settings_are_never_mutated', () => {
+    const form = buildSettingsForm();
+    const disabled: HistoryEventType[] = ['commented'];
+
+    resetSettingsForm(form, { ...baseSettings(), notifDisabledTypes: disabled });
+    form.controls.notifDisabledTypes.setValue(['merged']);
+
+    expect(disabled).toEqual(['commented']);
+    expect(form.pristine).toBe(true);
+  });
+});
+
 describe('resetSettingsFormToDefaults', () => {
   it('should_reset_every_section_to_its_default_value', () => {
     const form = buildSettingsForm();
@@ -243,6 +310,9 @@ describe('resetSettingsFormToDefaults', () => {
       language: 'en',
       historyRetentionDays: 10,
       historyMaxEvents: 300,
+      notifDisabledTypes: ['merged'],
+      notifOnlyMine: true,
+      notifExcludeOwn: true,
     });
 
     resetSettingsFormToDefaults(form);
@@ -261,6 +331,9 @@ describe('resetSettingsFormToDefaults', () => {
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
+        notifDisabledTypes: [],
+        notifOnlyMine: false,
+        notifExcludeOwn: false,
       }),
     );
   });

@@ -35,51 +35,122 @@
       </button>
     </div>
   } @else if (store.settings(); as settings) {
-    <form class="settings-grid" [formGroup]="form">
-      <app-settings-section
-        id="connections"
-        [number]="'settings.connections.number' | translate"
-        titleKey="settings.connections.title"
-        descriptionKey="settings.connections.description"
-      >
-        <app-connections-section [rows]="repoRows()" />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.refresh.number' | translate"
-        titleKey="settings.refresh.title"
-        descriptionKey="settings.refresh.description"
-      >
-        <app-refresh-section [form]="form" />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.difficulty.number' | translate"
-        titleKey="settings.difficulty.title"
-        descriptionKey="settings.difficulty.description"
-      >
-        <app-difficulty-section [form]="form" />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.readyDelay.number' | translate"
-        titleKey="settings.readyDelay.title"
-        descriptionKey="settings.readyDelay.description"
-      >
-        <app-ready-delay-section [form]="form" />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.history.number' | translate"
-        titleKey="settings.history.title"
-        descriptionKey="settings.history.description"
-      >
-        <app-history-section [form]="form" />
-      </app-settings-section>
-      <app-settings-section
-        [number]="'settings.misc.number' | translate"
-        titleKey="settings.misc.title"
-        descriptionKey="settings.misc.description"
-        [last]="true"
-      >
-        <app-miscellaneous-section [form]="form" />
-      </app-settings-section>
-    </form>
+    <nav
+      mat-tab-nav-bar
+      mat-stretch-tabs="false"
+      mat-align-tabs="start"
+      class="settings-tabs"
+      [tabPanel]="tabPanel"
+      [attr.aria-label]="'settings.tabs.aria' | translate"
+    >
+      @for (tab of tabs; track tab) {
+        <a
+          mat-tab-link
+          [routerLink]="[]"
+          [queryParams]="{ tab: tab }"
+          queryParamsHandling="merge"
+          replaceUrl
+          [active]="activeTab() === tab"
+          [class]="'tab-' + tab"
+        >
+          {{ 'settings.tabs.' + tab | translate }}
+          @if (marks()[tab]; as mark) {
+            <span class="tab-mark" [class.error]="mark === 'error'" aria-hidden="true"></span>
+          }
+        </a>
+      }
+    </nav>
+
+    <mat-tab-nav-panel #tabPanel>
+      <form [formGroup]="form">
+        <!-- Tous les onglets restent montés (masqués) : un seul formulaire, aucune saisie perdue (RG-042-02). -->
+        <div class="settings-grid" [hidden]="activeTab() !== 'connections'">
+          <app-settings-section
+            id="connections"
+            [number]="'settings.connections.number' | translate"
+            titleKey="settings.connections.title"
+            descriptionKey="settings.connections.description"
+            [last]="true"
+          >
+            <app-connections-section [rows]="repoRows()" />
+          </app-settings-section>
+        </div>
+
+        <div class="settings-grid" [hidden]="activeTab() !== 'data'">
+          <app-settings-section
+            [number]="'settings.refresh.number' | translate"
+            titleKey="settings.refresh.title"
+            descriptionKey="settings.refresh.description"
+          >
+            <app-refresh-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.history.number' | translate"
+            titleKey="settings.history.title"
+            descriptionKey="settings.history.description"
+          >
+            <app-history-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.data.transfer.number' | translate"
+            titleKey="settings.data.transfer.title"
+            descriptionKey="settings.data.transfer.description"
+            [last]="true"
+          >
+            <app-miscellaneous-section [form]="form" [groups]="['transfer']" />
+          </app-settings-section>
+        </div>
+
+        <div class="settings-grid" [hidden]="activeTab() !== 'display'">
+          <app-settings-section
+            [number]="'settings.difficulty.number' | translate"
+            titleKey="settings.difficulty.title"
+            descriptionKey="settings.difficulty.description"
+          >
+            <app-difficulty-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.readyDelay.number' | translate"
+            titleKey="settings.readyDelay.title"
+            descriptionKey="settings.readyDelay.description"
+          >
+            <app-ready-delay-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.misc.number' | translate"
+            titleKey="settings.misc.title"
+            descriptionKey="settings.misc.description"
+            [last]="true"
+          >
+            <app-miscellaneous-section [form]="form" [groups]="['display']" />
+          </app-settings-section>
+        </div>
+
+        <div class="settings-grid" [hidden]="activeTab() !== 'notifications'">
+          <app-settings-section
+            [number]="'settings.notifications.scope.number' | translate"
+            titleKey="settings.notifications.scope.title"
+            descriptionKey="settings.notifications.scope.description"
+          >
+            <app-notification-scope-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.notifications.types.number' | translate"
+            titleKey="settings.notifications.types.title"
+            descriptionKey="settings.notifications.types.description"
+          >
+            <app-notification-types-section [form]="form" />
+          </app-settings-section>
+          <app-settings-section
+            [number]="'settings.notifications.alerts.number' | translate"
+            titleKey="settings.notifications.alerts.title"
+            descriptionKey="settings.notifications.alerts.description"
+            [last]="true"
+          >
+            <app-miscellaneous-section [form]="form" [groups]="['alerts']" />
+          </app-settings-section>
+        </div>
+      </form>
+    </mat-tab-nav-panel>
   }
 </div>
