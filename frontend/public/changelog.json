@@ -2,6 +2,12 @@
   {
     "date": "2026-11-09",
     "type": "feat",
+    "user-story": "US-037",
+    "title": "Historique : nouvelle page « Historique » (icône dans la barre du tableau) affichant la timeline des modifications de MRs, groupée par jour, avec chargement par 50."
+  },
+  {
+    "date": "2026-11-09",
+    "type": "feat",
     "user-story": "US-036",
     "title": "Historique : nouvelle section « Historique » dans les Paramètres pour régler la rétention (jours et nombre maximal d'événements), appliquée après chaque synchronisation."
   },

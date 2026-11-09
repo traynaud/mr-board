@@ -146,9 +146,17 @@ describe('BoardToolbarComponent', () => {
   it('should_link_the_settings_button_to_settings', async () => {
     const { el } = await setup();
 
-    const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button]');
-    expect(link?.getAttribute('href')).toBe('/settings');
+    const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button][href="/settings"]');
     expect(link?.getAttribute('aria-label')).toBe(t('board.toolbar.settings'));
+  });
+
+  it('should_link_the_history_button_to_history_before_the_theme_toggle', async () => {
+    const { el } = await setup();
+
+    const buttons = Array.from(el.querySelectorAll('[mat-icon-button]'));
+    const link = el.querySelector<HTMLAnchorElement>('a[mat-icon-button][href="/history"]');
+    expect(link?.getAttribute('aria-label')).toBe(t('board.toolbar.history'));
+    expect(buttons.indexOf(link!)).toBeLessThan(buttons.findIndex((b) => b.tagName === 'BUTTON'));
   });
 
   it('should_show_the_theme_toggle_icon_and_label_from_inputs', async () => {

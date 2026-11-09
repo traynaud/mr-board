@@ -1,0 +1,38 @@
+<div class="row">
+  <span class="time" [matTooltip]="exactDate()">{{ time() }}</span>
+  @if (actorName(); as name) {
+    <app-avatar [name]="name" [avatarUrl]="event().actor?.avatarUrl ?? null" />
+  } @else {
+    <span class="unknown-avatar" [matTooltip]="'history.unknownActor' | translate">?</span>
+  }
+  <span class="marker" [class]="tone()" aria-hidden="true"></span>
+  <div class="body">
+    <div class="sentence">
+      @if (event().type !== 'disappeared') {
+        <strong class="actor">{{ actorName() ?? ('history.unknownActor' | translate) }}</strong>
+      }
+      {{ description().actionKey | translate: description().params }}
+      <span
+        class="tag"
+        [class.tag-neutral]="!tagStyle()"
+        [style.background-color]="tagStyle()?.background"
+        [style.color]="tagStyle()?.color"
+        >{{ event().projectAlias }}</span
+      >
+      <a class="mr-link" [href]="event().mrWebUrl" target="_blank" rel="noopener noreferrer"
+        >#{{ event().mrIid }} {{ event().mrTitle }}</a
+      >
+    </div>
+    @if (description().detail; as detail) {
+      @if (detail.kind === 'change') {
+        <div class="detail">
+          <span class="old">{{ detail.oldValue }}</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span class="new">{{ detail.newValue }}</span>
+        </div>
+      } @else {
+        <blockquote class="detail quote">{{ detail.text }}</blockquote>
+      }
+    }
+  </div>
+</div>

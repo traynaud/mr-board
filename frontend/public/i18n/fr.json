@@ -16,7 +16,8 @@
       "settings": "Paramètres",
       "refresh": "Rafraîchir",
       "themeToLight": "Passer en thème clair",
-      "themeToDark": "Passer en thème sombre"
+      "themeToDark": "Passer en thème sombre",
+      "history": "Historique"
     },
     "filters": {
       "ariaLabel": "Filtres rapides",
@@ -346,6 +347,36 @@
     "reset": {
       "button": "Réinitialiser",
       "done": "Valeurs par défaut restaurées (non enregistrées)"
+    }
+  },
+  "history": {
+    "title": "Historique",
+    "count": "{{count}} événement(s)",
+    "loadMore": "Charger plus",
+    "empty": "Aucun événement pour le moment. Les modifications des MRs apparaîtront ici après la prochaine synchronisation.",
+    "error": "Impossible de charger l'historique.",
+    "unknownActor": "Inconnu",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "actions": {
+      "created": "a créé la MR",
+      "title_changed": "a renommé la MR",
+      "marked_draft": "a passé la MR en brouillon",
+      "marked_ready": "a marqué la MR comme prête",
+      "approved": "a approuvé la MR",
+      "approval_removed": "a retiré son approbation de la MR",
+      "reviewer_added": "a ajouté {{value}} comme relecteur de la MR",
+      "reviewer_removed": "a retiré {{value}} des relecteurs de la MR",
+      "assignee_added": "a affecté {{value}} à la MR",
+      "assignee_removed": "a retiré {{value}} des affectés de la MR",
+      "label_added": "a ajouté le label « {{value}} » à la MR",
+      "label_removed": "a retiré le label « {{value}} » de la MR",
+      "commented": "a commenté la MR",
+      "merged": "a fusionné la MR",
+      "closed": "a fermé la MR",
+      "reopened": "a rouvert la MR",
+      "deleted": "a supprimé la MR",
+      "disappeared": "La MR a disparu de la liste"
     }
   },
   "errors": {

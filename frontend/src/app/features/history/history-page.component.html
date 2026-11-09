@@ -1,0 +1,62 @@
+<mat-toolbar class="history-toolbar">
+  <a
+    mat-icon-button
+    routerLink="/"
+    [attr.aria-label]="'common.back' | translate"
+    [matTooltip]="'common.back' | translate"
+  >
+    <mat-icon svgIcon="arrow-left" />
+  </a>
+  <span class="nav-brand">{{ 'history.title' | translate }}</span>
+  <span class="spacer"></span>
+  @if (!store.loading() && !store.error()) {
+    <span class="count">{{ 'history.count' | translate: { count: store.total() } }}</span>
+  }
+</mat-toolbar>
+
+<main class="history-content">
+  @if (store.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (store.error() && store.events().length === 0) {
+    <div class="state error" role="alert">
+      <mat-icon svgIcon="alert-circle" />
+      <span>{{ 'history.error' | translate }} {{ store.error() ?? '' | translate }}</span>
+      <button mat-stroked-button type="button" (click)="retry()">
+        {{ 'common.retry' | translate }}
+      </button>
+    </div>
+  } @else if (store.events().length === 0) {
+    <div class="state empty">
+      <p>{{ 'history.empty' | translate }}</p>
+    </div>
+  } @else {
+    @for (group of groups(); track group.day) {
+      <section class="day">
+        <h2 class="day-title">{{ group.label }}</h2>
+        <div class="events" role="list">
+          @for (event of group.events; track event.id) {
+            <app-history-event-row [event]="event" [tagStyle]="tagStyleOf(event.projectId)" />
+          }
+        </div>
+      </section>
+    }
+    @if (store.error(); as errorKey) {
+      <div class="state error" role="alert">
+        <mat-icon svgIcon="alert-circle" />
+        <span>{{ 'history.error' | translate }} {{ errorKey | translate }}</span>
+      </div>
+    }
+    @if (store.nextCursor()) {
+      <div class="load-more">
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="store.loadingMore()"
+          (click)="loadMore()"
+        >
+          {{ 'history.loadMore' | translate }}
+        </button>
+      </div>
+    }
+  }
+</main>

@@ -16,6 +16,14 @@
     <mat-icon svgIcon="refresh-cw" />
     {{ 'board.toolbar.refresh' | translate }}
   </button>
+  <a
+    mat-icon-button
+    routerLink="/history"
+    [attr.aria-label]="'board.toolbar.history' | translate"
+    [matTooltip]="'board.toolbar.history' | translate"
+  >
+    <mat-icon svgIcon="history" />
+  </a>
   <button
     mat-icon-button
     type="button"

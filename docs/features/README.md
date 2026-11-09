@@ -196,7 +196,7 @@ une fois ses dépendances réalisées.
 | US-034 | Historique — file asynchrone et enrichissement forge (acteur, date, commentaires) | Must | L | US-033 | ✅ |
 | US-035 | Historique — clôtures, fusions et MRs introuvables | Must | M | US-034 | ✅ |
 | US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ✅ |
-| US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ☐ |
+| US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ✅ |
 | US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ☐ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,

@@ -16,7 +16,8 @@
       "settings": "Settings",
       "refresh": "Refresh",
       "themeToLight": "Switch to light theme",
-      "themeToDark": "Switch to dark theme"
+      "themeToDark": "Switch to dark theme",
+      "history": "History"
     },
     "filters": {
       "ariaLabel": "Quick filters",
@@ -346,6 +347,36 @@
     "reset": {
       "button": "Reset",
       "done": "Defaults restored (not saved)"
+    }
+  },
+  "history": {
+    "title": "History",
+    "count": "{{count}} event(s)",
+    "loadMore": "Load more",
+    "empty": "No events yet. Merge request changes will appear here after the next synchronisation.",
+    "error": "Unable to load the history.",
+    "unknownActor": "Unknown",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "actions": {
+      "created": "created the MR",
+      "title_changed": "renamed the MR",
+      "marked_draft": "marked the MR as draft",
+      "marked_ready": "marked the MR as ready",
+      "approved": "approved the MR",
+      "approval_removed": "removed their approval of the MR",
+      "reviewer_added": "added {{value}} as reviewer of the MR",
+      "reviewer_removed": "removed {{value}} from the reviewers of the MR",
+      "assignee_added": "assigned {{value}} to the MR",
+      "assignee_removed": "unassigned {{value}} from the MR",
+      "label_added": "added the label “{{value}}” to the MR",
+      "label_removed": "removed the label “{{value}}” from the MR",
+      "commented": "commented on the MR",
+      "merged": "merged the MR",
+      "closed": "closed the MR",
+      "reopened": "reopened the MR",
+      "deleted": "deleted the MR",
+      "disappeared": "The MR disappeared from the list"
     }
   },
   "errors": {

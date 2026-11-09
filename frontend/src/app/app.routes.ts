@@ -13,5 +13,10 @@ export const routes: Routes = [
       import('./features/settings/settings-page.component').then((m) => m.SettingsPageComponent),
     canDeactivate: [unsavedChangesGuard],
   },
+  {
+    path: 'history',
+    loadComponent: () =>
+      import('./features/history/history-page.component').then((m) => m.HistoryPageComponent),
+  },
   { path: '**', redirectTo: '' },
 ];
