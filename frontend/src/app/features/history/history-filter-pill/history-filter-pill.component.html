@@ -1,0 +1,60 @@
+<span class="pill" [class.open]="menuOpen()">
+  <button
+    type="button"
+    class="pill-body"
+    [matMenuTriggerFor]="menu"
+    (menuOpened)="menuOpen.set(true)"
+    (menuClosed)="menuOpen.set(false); query.set('')"
+  >
+    {{ pillLabel() }}
+    <mat-icon svgIcon="chevron-down" class="chevron" />
+  </button>
+  <span class="pill-separator"></span>
+  <button type="button" class="pill-remove" [attr.aria-label]="removeAriaLabel()" (click)="remove.emit()">
+    <mat-icon svgIcon="x" />
+  </button>
+</span>
+
+<mat-menu #menu="matMenu" class="filter-pill-menu">
+  <div class="menu-title">{{ name() }}</div>
+  @if (searchable()) {
+    <div class="menu-search" (click)="$event.stopPropagation()" (keydown)="$event.key !== 'Escape' && $event.stopPropagation()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <input
+          matInput
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          [placeholder]="'history.filters.optionSearch' | translate"
+          [attr.aria-label]="'history.filters.optionSearch' | translate"
+        />
+      </mat-form-field>
+    </div>
+  }
+  <div class="menu-options">
+    @for (option of filteredOptions(); track option.value) {
+      <div
+        class="menu-option"
+        role="checkbox"
+        tabindex="0"
+        [attr.aria-checked]="isSelected(option.value)"
+        (click)="$event.stopPropagation(); toggleValue.emit(option.value)"
+        (keydown.enter)="toggleValue.emit(option.value)"
+        (keydown.space)="$event.preventDefault(); toggleValue.emit(option.value)"
+      >
+        <mat-checkbox
+          [checked]="isSelected(option.value)"
+          [disableRipple]="true"
+          tabindex="-1"
+          (click)="$event.preventDefault()"
+        />
+        @if (option.swatch; as swatch) {
+          <span class="option-swatch" [style.background-color]="swatch.background"></span>
+        }
+        <span class="option-label">{{ option.label }}</span>
+        @if (option.sublabel) {
+          <span class="option-sublabel">{{ option.sublabel }}</span>
+        }
+      </div>
+    }
+  </div>
+</mat-menu>

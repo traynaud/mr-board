@@ -14,32 +14,40 @@
   }
 </mat-toolbar>
 
+<app-history-filter-bar
+  [filters]="store.filters()"
+  [activeKeys]="store.activeKeys()"
+  [actors]="store.actorOptions()"
+  [projects]="projectList()"
+  [hasFilter]="hasFilter()"
+  (searchChange)="onSearch($event)"
+  (toggleType)="onToggleType($event)"
+  (toggleActor)="onToggleActor($event)"
+  (toggleProject)="onToggleProject($event)"
+  (periodChange)="onPeriod($event)"
+  (filterAdd)="onFilterAdd($event)"
+  (filterRemove)="onFilterRemove($event)"
+  (clearFilters)="clearFilters()"
+/>
+
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
 <main class="history-content">
-  @if (store.loading()) {
-    <mat-progress-bar mode="indeterminate" />
-  } @else if (store.error() && store.events().length === 0) {
-    <div class="state error" role="alert">
-      <mat-icon svgIcon="alert-circle" />
-      <span>{{ 'history.error' | translate }} {{ store.error() ?? '' | translate }}</span>
-      <button mat-stroked-button type="button" (click)="retry()">
-        {{ 'common.retry' | translate }}
-      </button>
+  @if (store.events().length > 0) {
+    <div class="timeline" [class.reloading]="store.loading()">
+      @for (group of groups(); track group.day) {
+        <section class="day">
+          <h2 class="day-title">{{ group.label }}</h2>
+          <div class="events" role="list">
+            @for (event of group.events; track event.id) {
+              <app-history-event-row [event]="event" [tagStyle]="tagStyleOf(event.projectId)" />
+            }
+          </div>
+        </section>
+      }
     </div>
-  } @else if (store.events().length === 0) {
-    <div class="state empty">
-      <p>{{ 'history.empty' | translate }}</p>
-    </div>
-  } @else {
-    @for (group of groups(); track group.day) {
-      <section class="day">
-        <h2 class="day-title">{{ group.label }}</h2>
-        <div class="events" role="list">
-          @for (event of group.events; track event.id) {
-            <app-history-event-row [event]="event" [tagStyle]="tagStyleOf(event.projectId)" />
-          }
-        </div>
-      </section>
-    }
     @if (store.error(); as errorKey) {
       <div class="state error" role="alert">
         <mat-icon svgIcon="alert-circle" />
@@ -51,11 +59,37 @@
         <button
           mat-stroked-button
           type="button"
-          [disabled]="store.loadingMore()"
+          [disabled]="store.loadingMore() || store.loading()"
           (click)="loadMore()"
         >
           {{ 'history.loadMore' | translate }}
         </button>
+      </div>
+    }
+  } @else if (!store.loading()) {
+    @if (store.error(); as errorKey) {
+      <div class="state error" role="alert">
+        <mat-icon svgIcon="alert-circle" />
+        <span>{{ 'history.error' | translate }} {{ errorKey | translate }}</span>
+        <button mat-stroked-button type="button" (click)="retry()">
+          {{ 'common.retry' | translate }}
+        </button>
+        @if (hasFilter()) {
+          <button mat-button type="button" (click)="clearFilters()">
+            {{ 'history.filters.clearAll' | translate }}
+          </button>
+        }
+      </div>
+    } @else if (hasFilter()) {
+      <div class="state empty">
+        <p>{{ 'history.filters.noMatch' | translate }}</p>
+        <button mat-button type="button" (click)="clearFilters()">
+          {{ 'history.filters.clearAll' | translate }}
+        </button>
+      </div>
+    } @else {
+      <div class="state empty">
+        <p>{{ 'history.empty' | translate }}</p>
       </div>
     }
   }

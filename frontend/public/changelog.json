@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-11-10",
+    "type": "feat",
+    "user-story": "US-038",
+    "title": "Historique : filtres de la timeline (recherche, type, acteur, projet, période), appliqués côté serveur et conservés dans l'URL."
+  },
+  {
     "date": "2026-11-09",
     "type": "feat",
     "user-story": "US-039",

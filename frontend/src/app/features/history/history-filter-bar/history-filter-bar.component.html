@@ -1,0 +1,81 @@
+<mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
+  <input
+    matInput
+    type="search"
+    [ngModel]="draft()"
+    (ngModelChange)="onSearchInput($event)"
+    [placeholder]="'history.filters.searchPlaceholder' | translate"
+    [attr.aria-label]="'history.filters.searchPlaceholder' | translate"
+    [attr.maxlength]="searchMaxLength"
+  />
+</mat-form-field>
+
+<span class="filter-pills">
+  @for (key of activeKeys(); track key) {
+    @switch (key) {
+      @case ('type') {
+        <app-history-filter-pill
+          [name]="nameFor('type')"
+          [options]="typeOptions()"
+          [selected]="filters().types"
+          (toggleValue)="onTypeToggled($event)"
+          (remove)="filterRemove.emit('type')"
+        />
+      }
+      @case ('actor') {
+        <app-history-filter-pill
+          [name]="nameFor('actor')"
+          [options]="actorOptions()"
+          [selected]="filters().actors"
+          [searchable]="true"
+          (toggleValue)="toggleActor.emit($event)"
+          (remove)="filterRemove.emit('actor')"
+        />
+      }
+      @case ('project') {
+        <app-history-filter-pill
+          [name]="nameFor('project')"
+          [options]="projectOptions()"
+          [selected]="selectedProjects()"
+          [searchable]="projectsSearchable()"
+          (toggleValue)="onProjectToggled($event)"
+          (remove)="filterRemove.emit('project')"
+        />
+      }
+      @case ('period') {
+        <app-history-period-pill
+          [from]="filters().from"
+          [to]="filters().to"
+          (periodChange)="periodChange.emit($event)"
+          (remove)="filterRemove.emit('period')"
+        />
+      }
+    }
+  }
+
+  <button
+    mat-button
+    type="button"
+    class="add-filter"
+    [matMenuTriggerFor]="addMenu"
+    [disabled]="activeKeys().length === filterKeys.length"
+  >
+    <mat-icon svgIcon="plus" />
+    {{ 'history.filters.add' | translate }}
+  </button>
+  <mat-menu #addMenu="matMenu">
+    @for (key of filterKeys; track key) {
+      <button mat-menu-item type="button" [disabled]="isActive(key)" (click)="filterAdd.emit(key)">
+        {{ nameFor(key) }}
+      </button>
+    }
+  </mat-menu>
+</span>
+
+<span class="spacer"></span>
+
+@if (hasFilter()) {
+  <button mat-button type="button" class="clear" (click)="clearFilters.emit()">
+    {{ 'history.filters.clear' | translate }}
+  </button>
+}

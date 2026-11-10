@@ -18,7 +18,7 @@ export interface CompiledSearch {
 }
 
 /** Strips diacritics after Unicode NFD decomposition and lowercases (RG-026-04). */
-function normalize(value: string): string {
+export function normalizeSearchText(value: string): string {
   return value
     .normalize('NFD')
     .replace(COMBINING_DIACRITICS_PATTERN, '')
@@ -31,7 +31,7 @@ function normalize(value: string): string {
  * terms.
  */
 function splitTerms(query: string): string[] {
-  return normalize(query).trim().split(/\s+/).filter(Boolean);
+  return normalizeSearchText(query).trim().split(/\s+/).filter(Boolean);
 }
 
 /**
@@ -61,7 +61,7 @@ export function matchesCompiledSearch(
   const titleMatches =
     compiled.terms.length === 0 ||
     (() => {
-      const title = normalize(mr.title);
+      const title = normalizeSearchText(mr.title);
       return compiled.terms.every((term) => title.includes(term));
     })();
   const iidMatches = compiled.iidQuery !== null && mr.iid === compiled.iidQuery;

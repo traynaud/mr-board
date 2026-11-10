@@ -38,3 +38,10 @@ export class HistoryResponseDto {
   /** Number of events matching the query, all pages included. */
   total!: number;
 }
+
+/** One selectable actor of the « Acteur » filter (RG-038-07). */
+export class HistoryActorOptionDto {
+  username!: string;
+  name!: string | null;
+  avatarUrl!: string | null;
+}

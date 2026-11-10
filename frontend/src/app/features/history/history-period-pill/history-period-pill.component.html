@@ -1,0 +1,49 @@
+<span class="pill" [class.open]="menuOpen()">
+  <button
+    type="button"
+    class="pill-body"
+    [matMenuTriggerFor]="menu"
+    (menuOpened)="menuOpen.set(true)"
+    (menuClosed)="menuOpen.set(false)"
+  >
+    {{ pillLabel() }}
+    <mat-icon svgIcon="chevron-down" class="chevron" />
+  </button>
+  <span class="pill-separator"></span>
+  <button type="button" class="pill-remove" [attr.aria-label]="removeAriaLabel()" (click)="remove.emit()">
+    <mat-icon svgIcon="x" />
+  </button>
+</span>
+
+<mat-menu #menu="matMenu" class="filter-pill-menu">
+  <div class="menu-title">{{ 'history.filters.names.period' | translate }}</div>
+  <div class="menu-period" (click)="$event.stopPropagation()" (keydown)="$event.key !== 'Escape' && $event.stopPropagation()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ 'history.filters.period.from' | translate }}</mat-label>
+      <input
+        matInput
+        [matDatepicker]="fromPicker"
+        [value]="fromDate()"
+        [max]="toDate()"
+        (dateChange)="onFrom($event)"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+      <mat-datepicker #fromPicker />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ 'history.filters.period.to' | translate }}</mat-label>
+      <input
+        matInput
+        [matDatepicker]="toPicker"
+        [value]="toDate()"
+        [min]="fromDate()"
+        (dateChange)="onTo($event)"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+      <mat-datepicker #toPicker />
+    </mat-form-field>
+    <button mat-button type="button" (click)="clearPeriod()">
+      {{ 'history.filters.period.clear' | translate }}
+    </button>
+  </div>
+</mat-menu>
