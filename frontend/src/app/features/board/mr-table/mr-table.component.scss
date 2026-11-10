@@ -35,7 +35,11 @@
   tr.mat-mdc-row {
     --change-color: transparent;
 
-    transition: box-shadow 400ms ease;
+    td.mat-mdc-cell {
+      transition:
+        box-shadow 400ms ease,
+        border-color 400ms ease;
+    }
 
     &.row-new {
       --change-color: var(--color-success);
@@ -47,16 +51,21 @@
 
     &.row-new,
     &.row-modified {
-      box-shadow: inset 2px 0 0 var(--change-color);
-
       td.mat-mdc-cell {
         border-bottom-style: dashed;
         border-bottom-color: var(--change-color);
       }
+
+      // Le filet est posé sur la 1re cellule : un `box-shadow` sur <tr> n'est pas rendu (tableau en `border-collapse`).
+      td.mat-mdc-cell:first-child {
+        box-shadow: inset 2px 0 0 var(--change-color);
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      transition: none;
+      td.mat-mdc-cell {
+        transition: none;
+      }
     }
   }
 
