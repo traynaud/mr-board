@@ -1,0 +1,80 @@
+:host {
+  display: inline-flex;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-neutral-400);
+  padding: 4px 4px 4px 10px;
+  font-size: 12px;
+
+  &.open {
+    border-color: var(--color-accent);
+  }
+}
+
+.pill-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chevron {
+  width: 14px;
+  height: 14px;
+}
+
+.pill-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--color-divider);
+}
+
+.pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-neutral-600);
+
+  mat-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--color-accent);
+  }
+}
+
+.menu-title {
+  padding: 8px 14px 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.menu-period {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+
+  mat-form-field {
+    width: 220px;
+  }
+}

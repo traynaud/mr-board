@@ -443,6 +443,27 @@
       "reopened": "a rouvert la MR",
       "deleted": "a supprimé la MR",
       "disappeared": "La MR a disparu de la liste"
+    },
+    "filters": {
+      "searchPlaceholder": "Rechercher une MR…",
+      "add": "Ajouter un filtre",
+      "clear": "Effacer",
+      "clearAll": "Effacer les filtres",
+      "noMatch": "Aucun événement ne correspond aux filtres.",
+      "all": "tous",
+      "remove": "Retirer le filtre {{name}}",
+      "optionSearch": "Rechercher…",
+      "names": {
+        "type": "Type",
+        "actor": "Acteur",
+        "project": "Projet",
+        "period": "Période"
+      },
+      "period": {
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer la période"
+      }
     }
   },
   "notifications": {

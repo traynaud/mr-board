@@ -443,6 +443,27 @@
       "reopened": "reopened the MR",
       "deleted": "deleted the MR",
       "disappeared": "The MR disappeared from the list"
+    },
+    "filters": {
+      "searchPlaceholder": "Search a MR…",
+      "add": "Add a filter",
+      "clear": "Clear",
+      "clearAll": "Clear filters",
+      "noMatch": "No event matches the filters.",
+      "all": "all",
+      "remove": "Remove the {{name}} filter",
+      "optionSearch": "Search…",
+      "names": {
+        "type": "Type",
+        "actor": "Actor",
+        "project": "Project",
+        "period": "Period"
+      },
+      "period": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear period"
+      }
     }
   },
   "notifications": {

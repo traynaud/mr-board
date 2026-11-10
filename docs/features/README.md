@@ -205,7 +205,7 @@ une fois ses dépendances réalisées.
 | US-035 | Historique — clôtures, fusions et MRs introuvables | Must | M | US-034 | ✅ |
 | US-036 | Historique — rétention (jours / nombre max, Paramètres) | Must | S | US-033, US-015 | ✅ |
 | US-037 | Historique — page timeline (maquette D9 requise) | Must | L | US-033 | ✅ |
-| US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ☐ |
+| US-038 | Historique — filtres de la timeline | Should | M | US-037, US-011 | ✅ |
 | US-039 | Notifications — état « à traiter / fermé » des événements (serveur) | Must | M | US-033, US-034, US-037 | ✅ |
 | US-040 | Notifications — panneau et compteur sur l'accueil (maquette D9 requise) | Must | L | US-039, US-037 | ✅ |
 | US-041 | Notifications — préférences par type d'événement (Paramètres) | Must | M | US-039, US-015 | ✅ |
