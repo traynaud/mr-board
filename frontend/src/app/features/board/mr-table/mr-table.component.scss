@@ -28,6 +28,43 @@
   tr.mat-mdc-row:hover {
     background: var(--color-neutral-100);
   }
+
+  // US-043 : MRs nouvelles (vert) ou modifiées (ambre) = événements non vus ; filet gauche 2 px.
+  // Plus spécifique que le survol : la teinte reste pendant les 500 ms de survol, puis s'efface en fondu.
+  tr.mat-mdc-row {
+    transition:
+      background-color 400ms ease,
+      box-shadow 400ms ease;
+
+    &.row-new,
+    &.row-new:hover {
+      background: color-mix(in srgb, var(--color-success) 13%, transparent);
+      box-shadow: inset 2px 0 0 var(--color-success);
+    }
+
+    &.row-modified,
+    &.row-modified:hover {
+      background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+      box-shadow: inset 2px 0 0 var(--color-warning);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  // Libellé « Nouvelle » / « Modifiée » lu par les lecteurs d'écran, invisible à l'écran (RG-043-08).
+  .change-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 .tag {

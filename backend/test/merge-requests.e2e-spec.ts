@@ -306,6 +306,7 @@ describe('MergeRequests (e2e)', () => {
         openedDays: 9,
         isMine: false,
         isFavorite: false,
+        change: null,
         mergeStatus: { state: 'mergeable', reasons: [] },
         connection: {
           id: expect.any(Number) as number,
@@ -327,6 +328,7 @@ describe('MergeRequests (e2e)', () => {
           'assignees',
           'approved',
           'approvedBy',
+          'change',
           'commentsCount',
           'difficulty',
           'changedFiles',

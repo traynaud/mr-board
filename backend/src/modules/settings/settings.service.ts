@@ -27,6 +27,7 @@ export interface MergeableSettingsFields {
   tabBadge?: boolean;
   theme?: ThemePreference;
   highlightMe?: boolean;
+  highlightChanges?: boolean;
   language?: Language;
   historyRetentionDays?: number;
   historyMaxEvents?: number;
@@ -59,6 +60,7 @@ export interface ExportableSettings {
   tabBadge: boolean;
   theme: ThemePreference;
   highlightMe: boolean;
+  highlightChanges: boolean;
   language: Language;
   historyRetentionDays: number;
   historyMaxEvents: number;
@@ -195,6 +197,7 @@ export class SettingsService {
       tabBadge: settings.tabBadge,
       theme: settings.theme,
       highlightMe: settings.highlightMe,
+      highlightChanges: settings.highlightChanges,
       language: settings.language,
       historyRetentionDays: settings.historyRetentionDays,
       historyMaxEvents: settings.historyMaxEvents,
@@ -253,6 +256,9 @@ export class SettingsService {
     }
     if (dto.highlightMe !== undefined) {
       settings.highlightMe = dto.highlightMe;
+    }
+    if (dto.highlightChanges !== undefined) {
+      settings.highlightChanges = dto.highlightChanges;
     }
     if (dto.language !== undefined) {
       settings.language = dto.language;
@@ -313,6 +319,7 @@ export class SettingsService {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        highlightChanges: true,
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
@@ -368,6 +375,7 @@ export class SettingsService {
       tabBadge: settings.tabBadge,
       theme: settings.theme,
       highlightMe: settings.highlightMe,
+      highlightChanges: settings.highlightChanges,
       language: settings.language,
       historyRetentionDays: settings.historyRetentionDays,
       historyMaxEvents: settings.historyMaxEvents,

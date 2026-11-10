@@ -126,6 +126,10 @@
           "policy": "Project rule not satisfied",
           "other": "Not mergeable (unknown reason)"
         }
+      },
+      "change": {
+        "new": "New",
+        "modified": "Modified"
       }
     },
     "footer": {
@@ -344,7 +348,8 @@
       },
       "importSuccess": "Configuration imported.",
       "importSkipped": "Skipped repos: {{paths}}",
-      "importTokensReminder": "Remember to configure the token of {{names}}."
+      "importTokensReminder": "Remember to configure the token of {{names}}.",
+      "highlightChanges": "Highlight new or modified MRs in the table"
     },
     "reset": {
       "button": "Reset",

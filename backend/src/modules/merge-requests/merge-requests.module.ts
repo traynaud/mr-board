@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConnectionsModule } from '../connections/connections.module.js';
 import { FavoritesModule } from '../favorites/favorites.module.js';
+import { MergeRequestEvent } from '../history/entities/merge-request-event.entity.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -19,6 +20,7 @@ import { MergeRequestsService } from './merge-requests.service.js';
       MergeRequestReviewer,
       MergeRequestAssignee,
       MergeRequestApprover,
+      MergeRequestEvent,
     ]),
     UsersModule,
     ProjectsModule,

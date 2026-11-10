@@ -210,6 +210,7 @@ une fois ses dépendances réalisées.
 | US-040 | Notifications — panneau et compteur sur l'accueil (maquette D9 requise) | Must | L | US-039, US-037 | ✅ |
 | US-041 | Notifications — préférences par type d'événement (Paramètres) | Must | M | US-039, US-015 | ✅ |
 | US-042 | Paramètres en onglets (maquette D9 requise) | Should | M | US-015, US-041 | ✅ |
+| US-043 | Surbrillance des MRs nouvelles ou modifiées dans le tableau (activable dans les Paramètres) | Should | M | US-004, US-033, US-039, US-015 | ✅ |
 
 \* Priorité **au sein de l'épique** `EPIC-001-multi-forges` (`docs/features/EPIC-001-multi-forges/README.md`,
 inventaire complet des impacts sur le code) ; l'épique elle-même est une évolution post-MVP.

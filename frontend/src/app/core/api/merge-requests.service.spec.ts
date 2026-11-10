@@ -270,6 +270,16 @@ describe('MergeRequestsService', () => {
     });
   });
 
+  describe('markSeen (US-043)', () => {
+    it('should_post_the_seen_marker_of_the_merge_request_rg_043_04', () => {
+      service.markSeen(7).subscribe();
+
+      const req = ctrl.expectOne('/api/v1/merge-requests/7/seen');
+      expect(req.request.method).toBe('POST');
+      req.flush(null);
+    });
+  });
+
   describe('setFavorite', () => {
     it('should_put_when_marking_favorite_rg_027_08', () => {
       service.setFavorite(7, true).subscribe();

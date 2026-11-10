@@ -34,6 +34,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     openedDays: 1,
     isMine: false,
     isFavorite: false,
+    change: null,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: CONNECTION,
     ...overrides,

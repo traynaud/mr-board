@@ -23,6 +23,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
+    highlightChanges: true,
     language: 'fr',
     historyRetentionDays: 60,
     historyMaxEvents: 5000,

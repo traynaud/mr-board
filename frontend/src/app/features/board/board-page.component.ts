@@ -397,6 +397,18 @@ export class BoardPageComponent implements OnInit {
     }
   }
 
+  /**
+   * US-043 (RG-043-04/10) : la ligne d'une MR surlignée a été survolée assez longtemps → vue. La surbrillance
+   * est effacée localement, puis le compteur de notifications est rafraîchi (leurs événements partagent l'état
+   * « vu »). Un échec restaure la surbrillance, sans message bloquant.
+   */
+  protected async onRowSeen(row: MergeRequestView): Promise<void> {
+    const errorKey = await this.mrStore.markSeen(row);
+    if (errorKey === null) {
+      void this.notificationsStore.refresh();
+    }
+  }
+
   /** RG-009-05/07, RG-010-11 : réinitialise « Mes MRs » et les 5 filtres composables. */
   protected onClearFilters(): void {
     this.filtersStore.clear();

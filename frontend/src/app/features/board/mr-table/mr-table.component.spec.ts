@@ -9,6 +9,7 @@ import { provideI18nTesting, t } from '../../../core/i18n/testing';
 import { MergeRequestSort, MergeRequestView, SortKey } from '../../../models/merge-request.model';
 import { Project } from '../../../models/project.model';
 import { formatDateTime } from '../../../shared/format/format-date';
+import { SEEN_HOVER_DELAY_MS } from '../../../shared/seen-on-hover/seen-on-hover.directive';
 import { provideIcons } from '../../../shared/icons/provide-icons';
 import { DEFAULT_COLUMN_WIDTHS, ResizableColumnKey } from '../../../stores/column-widths.store';
 import { MrTableComponent } from './mr-table.component';
@@ -40,6 +41,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     openedDays: 6,
     isMine: false,
     isFavorite: false,
+    change: null,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: { id: 1, name: 'GitLab', type: 'gitlab' },
     ...overrides,
@@ -61,6 +63,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       [columnWidths]="columnWidths()"
       [openInNewTab]="openInNewTab()"
       [highlightMe]="highlightMe()"
+      [highlightChanges]="highlightChanges()"
       (sortChange)="lastSortChange = $event"
       (toggleStatusColumn)="toggleStatusColumnCount = toggleStatusColumnCount + 1"
       (toggleOpenedColumn)="toggleOpenedColumnCount = toggleOpenedColumnCount + 1"
@@ -69,6 +72,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
       (resetColumnWidth)="lastResetColumn = $event"
       (resetAllWidths)="resetAllWidthsCount = resetAllWidthsCount + 1"
       (favoriteToggle)="lastFavoriteToggle = $event"
+      (rowSeen)="seenRows.push($event)"
     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -94,6 +98,8 @@ class HostComponent {
   readonly columnWidths = signal<Record<ResizableColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   readonly openInNewTab = signal(false);
   readonly highlightMe = signal(true);
+  readonly highlightChanges = signal(true);
+  seenRows: MergeRequestView[] = [];
   lastSortChange: SortKey | null = null;
   toggleStatusColumnCount = 0;
   toggleOpenedColumnCount = 0;
@@ -1041,6 +1047,80 @@ describe('MrTableComponent', () => {
       await items[0].click();
 
       expect(fixture.componentInstance.resetAllWidthsCount).toBe(1);
+    });
+  });
+  describe('change highlight (US-043)', () => {
+    const rows = () => [
+      mergeRequest({ id: 1, title: 'Nouvelle MR', change: 'new' }),
+      mergeRequest({ id: 2, title: 'MR modifiée', change: 'modified' }),
+      mergeRequest({ id: 3, title: 'MR calme', change: null }),
+    ];
+    const rowEls = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement>('tr.mat-mdc-row'));
+
+    it('should_mark_new_and_modified_rows_with_distinct_classes_and_leave_others_plain_rg_043_01', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set(rows());
+      await fixture.whenStable();
+
+      const [created, modified, plain] = rowEls(el);
+      expect(created.classList.contains('row-new')).toBe(true);
+      expect(created.classList.contains('row-modified')).toBe(false);
+      expect(modified.classList.contains('row-modified')).toBe(true);
+      expect(modified.classList.contains('row-new')).toBe(false);
+      expect(plain.classList.contains('row-new') || plain.classList.contains('row-modified')).toBe(false);
+    });
+
+    it('should_expose_a_screen_reader_label_on_highlighted_rows_only_rg_043_08', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set(rows());
+      await fixture.whenStable();
+
+      const labels = rowEls(el).map((row) => row.querySelector('.change-label')?.textContent?.trim() ?? null);
+      expect(labels).toEqual([t('board.mergeRequests.change.new'), t('board.mergeRequests.change.modified'), null]);
+    });
+
+    it('should_render_no_highlight_and_no_label_when_the_setting_is_off_rg_043_07', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set(rows());
+      fixture.componentInstance.highlightChanges.set(false);
+      await fixture.whenStable();
+
+      expect(el.querySelectorAll('.row-new, .row-modified, .change-label')).toHaveLength(0);
+    });
+
+    it('should_emit_row_seen_after_a_sustained_hover_of_a_highlighted_row_rg_043_04', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set(rows());
+      await fixture.whenStable();
+      vi.useFakeTimers();
+      try {
+        rowEls(el)[0].dispatchEvent(new MouseEvent('mouseenter'));
+        vi.advanceTimersByTime(SEEN_HOVER_DELAY_MS);
+        expect(fixture.componentInstance.seenRows.map((row) => row.id)).toEqual([1]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should_not_emit_for_a_plain_row_nor_for_a_brief_pass_nor_when_the_setting_is_off', async () => {
+      const { fixture, el } = await setup();
+      fixture.componentInstance.rows.set(rows());
+      await fixture.whenStable();
+      vi.useFakeTimers();
+      try {
+        rowEls(el)[2].dispatchEvent(new MouseEvent('mouseenter'));
+        rowEls(el)[0].dispatchEvent(new MouseEvent('mouseenter'));
+        vi.advanceTimersByTime(SEEN_HOVER_DELAY_MS - 100);
+        rowEls(el)[0].dispatchEvent(new MouseEvent('mouseleave'));
+        vi.advanceTimersByTime(5_000);
+        fixture.componentInstance.highlightChanges.set(false);
+        fixture.detectChanges();
+        rowEls(el)[1].dispatchEvent(new MouseEvent('mouseenter'));
+        vi.advanceTimersByTime(5_000);
+        expect(fixture.componentInstance.seenRows).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

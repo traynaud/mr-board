@@ -204,6 +204,32 @@ export const MergeRequestsStore = signalStore(
             return errorKeyOf(error);
           }
         },
+
+        /**
+         * US-043 (RG-043-04/10) : efface la surbrillance de la MR puis marque ses événements comme vus
+         * côté serveur. Mise à jour optimiste ; en cas d'échec, la surbrillance est restaurée.
+         * @returns la clé i18n de l'erreur, ou `null` en cas de succès (ou si la MR n'était pas surlignée).
+         */
+        async markSeen(row: MergeRequestView): Promise<string | null> {
+          const change = row.change;
+          if (change === null) {
+            return null;
+          }
+          const setChange = (value: MergeRequestView['change']) =>
+            patchState(store, {
+              mergeRequests: store
+                .mergeRequests()
+                .map((mr) => (mr.id === row.id ? { ...mr, change: value } : mr)),
+            });
+          setChange(null);
+          try {
+            await firstValueFrom(api.markSeen(row.id));
+            return null;
+          } catch (error) {
+            setChange(change);
+            return errorKeyOf(error);
+          }
+        },
       };
     },
   ),

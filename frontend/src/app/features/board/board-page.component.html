@@ -83,6 +83,7 @@
         [columnWidths]="columnWidthsStore.widths()"
         [openInNewTab]="settingsStore.settings()?.openInNewTab ?? false"
         [highlightMe]="settingsStore.settings()?.highlightMe ?? true"
+        [highlightChanges]="settingsStore.settings()?.highlightChanges ?? true"
         [showForgeIcon]="hasMultipleForgeTypes()"
         [showConnectionInTooltip]="hasMultipleConnections()"
         (sortChange)="mrStore.setSort($event)"
@@ -93,6 +94,7 @@
         (resetColumnWidth)="onResetColumnWidth($event)"
         (resetAllWidths)="onResetAllWidths()"
         (favoriteToggle)="onFavoriteStarToggle($event)"
+        (rowSeen)="onRowSeen($event)"
       />
     }
     @if (showFooter()) {

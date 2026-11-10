@@ -2,6 +2,12 @@
   {
     "date": "2026-11-10",
     "type": "feat",
+    "user-story": "US-043",
+    "title": "Tableau : les MRs nouvelles (vert) ou modifiées (ambre) sont surlignées jusqu'à leur survol, désactivable dans les Paramètres."
+  },
+  {
+    "date": "2026-11-10",
+    "type": "feat",
     "user-story": "US-038",
     "title": "Historique : filtres de la timeline (recherche, type, acteur, projet, période), appliqués côté serveur et conservés dans l'URL."
   },

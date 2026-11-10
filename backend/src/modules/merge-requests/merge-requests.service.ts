@@ -9,6 +9,7 @@ import { ForgeMergeRequest } from '../forges/types/forge-merge-request.js';
 import { MergeStatusResult } from '../forges/types/merge-status.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { MergeRequestSnapshot } from '../history/domain/merge-request-snapshot.js';
+import { MergeRequestEvent } from '../history/entities/merge-request-event.entity.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { User } from '../users/entities/user.entity.js';
@@ -40,6 +41,7 @@ import {
   compileSearch,
   matchesCompiledSearch,
 } from './domain/search-merge-requests.js';
+import { resolveChangeKind } from './domain/resolve-change-kind.js';
 import { resolveReadyAt } from './domain/resolve-ready-at.js';
 import {
   DEFAULT_SORT,
@@ -106,6 +108,8 @@ export class MergeRequestsService {
     private readonly settings: SettingsService,
     private readonly connections: ConnectionsService,
     private readonly favorites: FavoritesService,
+    @InjectRepository(MergeRequestEvent)
+    private readonly events: Repository<MergeRequestEvent>,
   ) {}
 
   /**
@@ -197,6 +201,53 @@ export class MergeRequestsService {
   }
 
   /**
+   * Marks every unseen journal event of a merge request as seen (US-043,
+   * RG-043-04/05). Idempotent: a merge request without unseen event is a no-op.
+   * @throws EntityNotFoundException if `id` does not match a merge request (404).
+   */
+  async markSeen(id: number): Promise<void> {
+    const mergeRequest = await this.mergeRequests.findOneBy({ id });
+    if (!mergeRequest) {
+      throw new EntityNotFoundException('MergeRequest', id);
+    }
+    await this.events
+      .createQueryBuilder()
+      .update(MergeRequestEvent)
+      .set({ dismissedAt: new Date().toISOString() })
+      .where(
+        'project_id = :projectId AND mr_iid = :iid AND dismissed_at IS NULL',
+        { projectId: mergeRequest.projectId, iid: mergeRequest.iid },
+      )
+      .execute();
+  }
+
+  /**
+   * Types of the unseen journal events of the given merge requests, indexed by
+   * `<projectId>:<iid>` (US-043, RG-043-01/02). Notification preferences are
+   * deliberately not applied (RG-043-02).
+   */
+  private async loadUnseenEventTypes(
+    mergeRequests: MergeRequest[],
+  ): Promise<Map<string, string[]>> {
+    const projectIds = [...new Set(mergeRequests.map((mr) => mr.projectId))];
+    const rows = await this.events
+      .createQueryBuilder('e')
+      .select('e.project_id', 'projectId')
+      .addSelect('e.mr_iid', 'iid')
+      .addSelect('e.type', 'type')
+      .distinct(true)
+      .where('e.dismissed_at IS NULL')
+      .andWhere('e.project_id IN (:...projectIds)', { projectIds })
+      .getRawMany<{ projectId: number; iid: number; type: string }>();
+    const byMergeRequest = new Map<string, string[]>();
+    for (const row of rows) {
+      const key = `${row.projectId}:${row.iid}`;
+      byMergeRequest.set(key, [...(byMergeRequest.get(key) ?? []), row.type]);
+    }
+    return byMergeRequest;
+  }
+
+  /**
    * Assembles the `drafts`/`mine`-scoped merge request views (RG-009),
    * shared by `listOpen` and `getFacets` before the 7 composable filters
    * (RG-010) diverge their outcome (rows vs. facet counts). The
@@ -251,6 +302,7 @@ export class MergeRequestsService {
     const thresholds = await this.settings.getThresholds();
 
     const mergeRequestIds = mergeRequests.map((mr) => mr.id);
+    const unseenEventTypes = await this.loadUnseenEventTypes(mergeRequests);
     const [reviewerRows, assigneeRows, approverRows] = await Promise.all([
       this.reviewers.find({
         where: { mergeRequestId: In(mergeRequestIds) },
@@ -297,6 +349,7 @@ export class MergeRequestsService {
         now,
         thresholds,
         favoriteKeys,
+        unseenEventTypes,
       ),
     );
     if (mineOnly && !identityMissing) {
@@ -567,6 +620,7 @@ function toMergeRequestView(
     workdaysOnly: boolean;
   },
   favoriteKeys: Set<string>,
+  unseenEventTypes: Map<string, string[]>,
 ): MergeRequestViewDto {
   const project = mustGet(projectsById, mergeRequest.projectId, 'Project');
   const connection = mustGet(
@@ -615,6 +669,10 @@ function toMergeRequestView(
       identity,
     ),
     isFavorite: isFavorite(mergeRequest, favoriteKeys),
+    change: resolveChangeKind(
+      unseenEventTypes.get(`${mergeRequest.projectId}:${mergeRequest.iid}`) ??
+        [],
+    ),
     mergeStatus: toMergeStatusField(mergeRequest),
     connection: toConnectionSummary(connection),
   };

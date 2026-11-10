@@ -16,6 +16,9 @@ export interface MergeRequestUser {
   isMe: boolean;
 }
 
+/** US-043 : MR nouvelle (événement `created` non vu) ou modifiée (autre événement non vu). */
+export type ChangeKind = 'new' | 'modified';
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type ReadyLevel = 'green' | 'orange' | 'red';
@@ -100,6 +103,8 @@ export interface MergeRequestView {
   isMine: boolean;
   /** Annotation locale (RG-027-01/04). */
   isFavorite: boolean;
+  /** US-043 : `new` / `modified` si la MR a des événements non vus du journal (RG-043-01), sinon `null`. */
+  change: ChangeKind | null;
   /** Mergeabilité GitLab (RG-017-06). `unknown` si la MR a été synchronisée avant l'US-017 (RG-017-11). */
   mergeStatus: MergeStatus;
   /** Connexion à laquelle appartient le projet de cette MR (RG-019-22). */

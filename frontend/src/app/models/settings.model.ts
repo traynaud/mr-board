@@ -39,6 +39,8 @@ export interface Settings {
   theme: ThemePreference;
   /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01). */
   highlightMe: boolean;
+  /** US-043, RG-043-07 : surligne les MRs nouvelles ou modifiées dans le tableau. */
+  highlightChanges: boolean;
   /** Langue de l'interface (RG-022-01). */
   language: Language;
   /** Rétention de l'historique en jours (RG-036-01). */
@@ -74,6 +76,7 @@ export interface UpdateSettingsRequest {
   tabBadge?: boolean;
   theme?: ThemePreference;
   highlightMe?: boolean;
+  highlightChanges?: boolean;
   language?: Language;
   historyRetentionDays?: number;
   historyMaxEvents?: number;

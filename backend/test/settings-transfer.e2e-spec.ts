@@ -99,6 +99,7 @@ describe('SettingsTransfer (e2e)', () => {
       expect.objectContaining({
         theme: 'system',
         highlightMe: true,
+        highlightChanges: true,
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,
@@ -314,6 +315,35 @@ describe('SettingsTransfer (e2e)', () => {
     expect(body(res).settings).toEqual(
       expect.objectContaining({ highlightMe: false }),
     );
+  });
+
+  it('POST /settings/import should_import_highlight_changes_then_keep_it_when_absent_rg_043_07', async () => {
+    const imported = await api()
+      .post('/api/v1/settings/import')
+      .send({
+        version: 2,
+        settings: { highlightChanges: false },
+        projects: [],
+      });
+    expect(imported.status).toBe(200);
+    expect(body(imported).settings).toEqual(
+      expect.objectContaining({ highlightChanges: false }),
+    );
+
+    const untouched = await api()
+      .post('/api/v1/settings/import')
+      .send({ version: 2, settings: {}, projects: [] });
+    expect(body(untouched).settings).toEqual(
+      expect.objectContaining({ highlightChanges: false }),
+    );
+
+    const exported = await api().get('/api/v1/settings/export');
+    expect(body(exported).settings).toEqual(
+      expect.objectContaining({ highlightChanges: false }),
+    );
+    await api()
+      .post('/api/v1/settings/import')
+      .send({ version: 2, settings: { highlightChanges: true }, projects: [] });
   });
 
   it('POST /settings/import should_import_the_language_when_provided', async () => {

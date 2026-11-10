@@ -17,6 +17,7 @@ import { MergeStatusIconComponent } from '../../../shared/merge-status-icon/merg
 import { ProjectTagStyle, projectTagStyle } from '../../../shared/project-color/project-tag-style';
 import { ReadyDelayComponent } from '../../../shared/ready-delay/ready-delay.component';
 import { ResizableColumnDirective } from '../../../shared/resizable-column/resizable-column.directive';
+import { SeenOnHoverDirective } from '../../../shared/seen-on-hover/seen-on-hover.directive';
 import type { ResizableColumnKey } from '../../../stores/column-widths.store';
 import { summarizeLabels } from './summarize-labels';
 import { summarizeUsers } from './summarize-users';
@@ -56,6 +57,7 @@ const COLUMNS_AFTER_STATUS = ['ready'];
     MergeStatusIconComponent,
     ReadyDelayComponent,
     ResizableColumnDirective,
+    SeenOnHoverDirective,
     TranslatePipe,
   ],
   templateUrl: './mr-table.component.html',
@@ -87,6 +89,8 @@ export class MrTableComponent {
   readonly openInNewTab = input(false);
   /** RG-023-01/06 : surligne mon avatar et le promeut en position affichée. */
   readonly highlightMe = input(true);
+  /** US-043, RG-043-07 : surligne les MRs nouvelles ou modifiées (événements non vus). */
+  readonly highlightChanges = input(true);
 
   readonly sortChange = output<SortKey>();
   /** RG-017-09 : bascule la visibilité de la colonne « Statut ». */
@@ -103,6 +107,8 @@ export class MrTableComponent {
   readonly resetAllWidths = output<void>();
   /** RG-027-08 : bascule le favori de la ligne cliquée. */
   readonly favoriteToggle = output<MergeRequestView>();
+  /** US-043, RG-043-04 : la ligne d'une MR surlignée a été survolée assez longtemps. */
+  readonly rowSeen = output<MergeRequestView>();
 
   protected readonly displayedColumns = computed(() => [
     'favorite',

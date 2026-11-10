@@ -39,6 +39,11 @@ export class MergeRequestsService {
     return this.http.get<MergeRequestsFacets>('api://merge-requests/facets', { params });
   }
 
+  /** `POST /api/v1/merge-requests/:id/seen` : marque les événements de la MR comme vus (US-043, RG-043-04). */
+  markSeen(id: number): Observable<void> {
+    return this.http.post<void>(`api://merge-requests/${id}/seen`, {});
+  }
+
   /** `PUT`/`DELETE /api/v1/merge-requests/:id/favorite` (RG-027-08). */
   setFavorite(id: number, favorite: boolean): Observable<void> {
     return favorite
