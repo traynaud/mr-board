@@ -68,17 +68,21 @@
   <ng-container matColumnDef="title">
     <th mat-header-cell *matHeaderCellDef>{{ 'board.mergeRequests.columns.title' | translate }}</th>
     <td mat-cell *matCellDef="let row" class="title-cell">
-      @if (highlightChanges() && row.change) {
-        <span class="change-label">{{ 'board.mergeRequests.change.' + row.change | translate }}</span>
-      }
-      <a
-        [href]="row.webUrl"
-        [target]="openInNewTab() ? '_blank' : '_self'"
-        rel="noopener"
-        [matTooltip]="row.title"
-        class="title-link"
-        >{{ row.title }}</a
-      >
+      <div class="title-line">
+        @if (highlightChanges() && row.change) {
+          <span class="change-label" [class.change-new]="row.change === 'new'">{{
+            'board.mergeRequests.change.' + row.change | translate
+          }}</span>
+        }
+        <a
+          [href]="row.webUrl"
+          [target]="openInNewTab() ? '_blank' : '_self'"
+          rel="noopener"
+          [matTooltip]="row.title"
+          class="title-link"
+          >{{ row.title }}</a
+        >
+      </div>
     </td>
   </ng-container>
 

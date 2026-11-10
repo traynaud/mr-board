@@ -1070,13 +1070,15 @@ describe('MrTableComponent', () => {
       expect(plain.classList.contains('row-new') || plain.classList.contains('row-modified')).toBe(false);
     });
 
-    it('should_expose_a_screen_reader_label_on_highlighted_rows_only_rg_043_08', async () => {
+    it('should_show_a_visible_tag_on_highlighted_rows_only_rg_043_08', async () => {
       const { fixture, el } = await setup();
       fixture.componentInstance.rows.set(rows());
       await fixture.whenStable();
 
       const labels = rowEls(el).map((row) => row.querySelector('.change-label')?.textContent?.trim() ?? null);
       expect(labels).toEqual([t('board.mergeRequests.change.new'), t('board.mergeRequests.change.modified'), null]);
+      const tags = rowEls(el).map((row) => row.querySelector('.change-label')?.classList.contains('change-new') ?? null);
+      expect(tags).toEqual([true, false, null]);
     });
 
     it('should_render_no_highlight_and_no_label_when_the_setting_is_off_rg_043_07', async () => {
