@@ -17,6 +17,7 @@ import { formatShortDate } from '../../shared/format/format-date';
 import { projectTagStyle } from '../../shared/project-color/project-tag-style';
 import { HistoryStore } from '../../stores/history.store';
 import { ProjectsStore } from '../../stores/projects.store';
+import { SettingsStore } from '../../stores/settings.store';
 import { groupByDay, localDayOf } from './group-by-day';
 import { HistoryEventRowComponent } from '../../shared/history-event-row/history-event-row.component';
 import { HistoryFilterBarComponent } from './history-filter-bar/history-filter-bar.component';
@@ -46,6 +47,7 @@ import { HistoryPeriod } from './history-period-pill/history-period-pill.compone
 export class HistoryPageComponent implements OnInit {
   protected readonly store = inject(HistoryStore);
   private readonly projects = inject(ProjectsStore);
+  private readonly settings = inject(SettingsStore);
   private readonly i18n = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -92,6 +94,11 @@ export class HistoryPageComponent implements OnInit {
     this.store.restoreFilters(decodeHistoryQuery(this.route.snapshot.queryParams));
     void this.store.load();
     void this.store.loadActors();
+    // Le thème (ThemeService) se déduit des paramètres : sans ce chargement, un accès direct à l'historique
+    // sans cache local (RG-018-05) s'afficherait en thème clair malgré une préférence sombre.
+    if (this.settings.settings() === null) {
+      void this.settings.load();
+    }
     if (this.projects.projects().length === 0) {
       void this.projects.load();
     }

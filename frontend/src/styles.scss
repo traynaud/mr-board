@@ -175,6 +175,22 @@ html {
   --mat-sys-outline: #9b9797;
   --mat-sys-outline-variant: #605d5d;
   --mat-sys-error: #ff563c;
+  // Le thème Material est généré en clair (`theme-type: light`) : sans surcharge, le primaire reste le rouge
+  // sombre (#bb1800, contraste 2,8:1 sur fond sombre) pour les boutons texte, cases à cocher, onglets…
+  --mat-sys-primary: #ff563c;
+  --mat-sys-on-primary: #161514;
+  // Rôles « conteneur » également restés clairs (piste du slide-toggle désactivé rose pâle, puces, etc.).
+  --mat-sys-surface-variant: #383535;
+  --mat-sys-primary-container: #4d170e;
+  --mat-sys-on-primary-container: #ffc4b8;
+  --mat-sys-secondary: #bab6b6;
+  --mat-sys-secondary-container: #383535;
+  --mat-sys-on-secondary-container: #eae7e7;
+  --mat-sys-tertiary: #e9a03a;
+  --mat-sys-tertiary-container: #4a3510;
+  --mat-sys-on-tertiary-container: #ffdeac;
+  --mat-sys-error-container: #4d170e;
+  --mat-sys-on-error-container: #ffc4b8;
 }
 
 @media (prefers-color-scheme: dark) {

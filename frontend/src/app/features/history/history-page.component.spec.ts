@@ -12,6 +12,7 @@ import {
 import { Project } from '../../models/project.model';
 import { provideIcons } from '../../shared/icons/provide-icons';
 import { HistoryStore } from '../../stores/history.store';
+import { SettingsStore } from '../../stores/settings.store';
 import { ProjectsStore } from '../../stores/projects.store';
 import { HistoryPageComponent } from './history-page.component';
 
@@ -60,6 +61,7 @@ describe('HistoryPageComponent', () => {
     projects: signal<Project[]>([]),
     load: vi.fn(),
   };
+  const settings = { settings: signal<unknown>(null), load: vi.fn() };
 
   async function setup(queryParams: Record<string, string> = {}) {
     await TestBed.configureTestingModule({
@@ -71,6 +73,7 @@ describe('HistoryPageComponent', () => {
         provideIcons(),
         { provide: HistoryStore, useValue: state },
         { provide: ProjectsStore, useValue: projects },
+{ provide: SettingsStore, useValue: settings },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(HistoryPageComponent);
@@ -106,6 +109,8 @@ describe('HistoryPageComponent', () => {
     }
     projects.projects.set([]);
     projects.load.mockReset();
+    settings.load.mockReset();
+    settings.settings.set(null);
     TestBed.resetTestingModule();
   });
 
@@ -113,6 +118,17 @@ describe('HistoryPageComponent', () => {
     await setup();
     expect(state.load).toHaveBeenCalledOnce();
     expect(projects.load).toHaveBeenCalledOnce();
+  });
+
+  it('should_load_the_settings_when_absent_so_that_the_saved_theme_applies', async () => {
+    await setup();
+    expect(settings.load).toHaveBeenCalledOnce();
+  });
+
+  it('should_not_reload_the_settings_when_already_loaded', async () => {
+    settings.settings.set({ theme: 'dark' });
+    await setup();
+    expect(settings.load).not.toHaveBeenCalled();
   });
 
   it('should_show_the_empty_state', async () => {

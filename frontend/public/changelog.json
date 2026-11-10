@@ -1,6 +1,12 @@
 [
   {
     "date": "2026-11-10",
+    "type": "fix",
+    "user-story": "US-018",
+    "title": "Thème sombre : historique affiché dans le bon thème en accès direct, boutons et interrupteurs Material aux couleurs sombres."
+  },
+  {
+    "date": "2026-11-10",
     "type": "feat",
     "user-story": "US-043",
     "title": "Tableau : surbrillance des MRs nouvelles ou modifiées allégée (tag, filet et pointillé à la place du fond coloré)."
