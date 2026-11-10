@@ -9,7 +9,7 @@ Validation visuelle : la recette navigateur demandée par l'utilisateur, **avant
 Maquette : https://claude.ai/artifact/LCryNaVS78m4MMdLbvuLu9 (variante « Tag contour + filet + pointillé »).
 Le fond coloré initial a été jugé trop flashy (retour utilisateur) ; il est remplacé par :
 
-| État | Filet gauche (2 px, `box-shadow: inset` sur la 1re cellule : sur `<tr>` il n'est pas rendu) | Ligne du bas | Tag devant le titre |
+| État | Filet gauche (2 px, `linear-gradient` en `background-image` sur la 1re cellule : `box-shadow` ne s'affichait pas sous Brave) | Ligne du bas | Tag devant le titre |
 |------|------|------|------|
 | Nouvelle | `var(--color-success)` | pointillé 1 px `var(--color-success)` | « Nouvelle », contour + texte `--color-success` |
 | Modifiée | `var(--color-warning)` | pointillé 1 px `var(--color-warning)` | « Modifiée », contour `--color-warning`, texte ambre assombri (`color-mix` avec `--color-text`) |

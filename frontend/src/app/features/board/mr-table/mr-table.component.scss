@@ -36,9 +36,7 @@
     --change-color: transparent;
 
     td.mat-mdc-cell {
-      transition:
-        box-shadow 400ms ease,
-        border-color 400ms ease;
+      transition: border-color 400ms ease;
     }
 
     &.row-new {
@@ -56,9 +54,13 @@
         border-bottom-color: var(--change-color);
       }
 
-      // Le filet est posé sur la 1re cellule : un `box-shadow` sur <tr> n'est pas rendu (tableau en `border-collapse`).
+      // Filet 2 px sur la 1re cellule en `background-image` : rendu fiable partout (un `box-shadow` sur <tr> n'est pas
+      // rendu en `border-collapse`, et l'inset sur <td> ne s'affichait pas sous Brave).
       td.mat-mdc-cell:first-child {
-        box-shadow: inset 2px 0 0 var(--change-color);
+        background-image: linear-gradient(var(--change-color), var(--change-color));
+        background-repeat: no-repeat;
+        background-size: 2px 100%;
+        background-position: left top;
       }
     }
 
