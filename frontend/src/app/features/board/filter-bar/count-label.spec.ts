@@ -28,6 +28,7 @@ function mr(overrides: Partial<MergeRequestView> = {}): MergeRequestView {
     openedDays: 1,
     isMine: false,
     isFavorite: false,
+    change: null,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: { id: 1, name: 'GitLab', type: 'gitlab' },
     ...overrides,

@@ -116,6 +116,10 @@ export class ImportSettingsDto {
   highlightMe?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  highlightChanges?: boolean;
+
+  @IsOptional()
   @IsIn(LANGUAGE_OPTIONS)
   language?: Language;
 

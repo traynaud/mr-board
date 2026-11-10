@@ -135,6 +135,12 @@ export class UpdateSettingsDto {
   @IsBoolean()
   highlightMe?: boolean;
 
+  /** Highlight new / modified merge requests in the table (US-043, RG-043-07). */
+  @Transform(rawBoolean)
+  @IsOptional()
+  @IsBoolean()
+  highlightChanges?: boolean;
+
   /** UI language preference (RG-022-01). */
   @IsOptional()
   @IsIn(LANGUAGE_OPTIONS)

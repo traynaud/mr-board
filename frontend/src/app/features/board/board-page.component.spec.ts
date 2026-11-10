@@ -44,6 +44,7 @@ const SETTINGS: Settings = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  highlightChanges: true,
   language: 'fr',
   historyRetentionDays: 60,
   historyMaxEvents: 5000,
@@ -146,6 +147,7 @@ function mergeRequest(overrides: Partial<MergeRequestView> = {}): MergeRequestVi
     openedDays: 6,
     isMine: false,
     isFavorite: false,
+    change: null,
     mergeStatus: { state: 'mergeable', reasons: [] },
     connection: MR_CONNECTION,
     ...overrides,
@@ -519,6 +521,61 @@ describe('BoardPageComponent', () => {
     expect(el.querySelector<HTMLElement>('.favorite-icon')?.classList.contains('active')).toBe(
       true,
     );
+  });
+
+  describe('change highlight (US-043)', () => {
+    const emitRowSeen = (row: MergeRequestView) =>
+      (fixture.debugElement.query(By.directive(MrTableComponent)).componentInstance as MrTableComponent).rowSeen.emit(row);
+
+    it('should_clear_the_highlight_post_the_seen_marker_and_refresh_the_notifications_rg_043_04', async () => {
+      await bootstrap({
+        settings: SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ id: 5, change: 'new' })],
+      });
+      expect(el.querySelector('tr.row-new')).not.toBeNull();
+      notificationsStore.refresh.mockClear();
+
+      emitRowSeen(mergeRequest({ id: 5, change: 'new' }));
+      await settle();
+      expect(el.querySelector('tr.row-new')).toBeNull();
+      const req = http.expectOne('/api/v1/merge-requests/5/seen');
+      expect(req.request.method).toBe('POST');
+      req.flush(null);
+      await settle();
+
+      expect(notificationsStore.refresh).toHaveBeenCalledOnce();
+    });
+
+    it('should_restore_the_highlight_silently_when_the_marker_fails_rg_043_10', async () => {
+      await bootstrap({
+        settings: SETTINGS,
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ id: 5, change: 'modified' })],
+      });
+      notificationsStore.refresh.mockClear();
+
+      emitRowSeen(mergeRequest({ id: 5, change: 'modified' }));
+      await settle();
+      http.expectOne('/api/v1/merge-requests/5/seen').flush('down', { status: 500, statusText: 'KO' });
+      await settle();
+
+      expect(el.querySelector('tr.row-modified')).not.toBeNull();
+      expect(notificationsStore.refresh).not.toHaveBeenCalled();
+    });
+
+    it('should_show_no_highlight_when_the_setting_is_disabled_rg_043_07', async () => {
+      await bootstrap({
+        settings: { ...SETTINGS, highlightChanges: false },
+        projects: [PROJECT],
+        status: IDLE_STATUS,
+        mergeRequests: [mergeRequest({ id: 5, change: 'new' })],
+      });
+
+      expect(el.querySelector('.row-new, .row-modified')).toBeNull();
+    });
   });
 
   it('should_toast_an_error_and_roll_back_the_star_when_the_toggle_fails_rg_027_09', async () => {

@@ -45,6 +45,7 @@ const FULL_SETTINGS = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  highlightChanges: true,
   language: 'fr',
   historyRetentionDays: 60,
   historyMaxEvents: 5000,
@@ -113,14 +114,20 @@ describe('MiscellaneousSectionComponent', () => {
     await settle();
   };
 
-  it('should_render_the_five_checkboxes', () => {
+  it('should_render_the_six_checkboxes', () => {
     const boxes = el.querySelectorAll('mat-checkbox');
-    expect(boxes.length).toBe(5);
-    expect(boxes[0].querySelector('input')?.disabled).toBe(false);
-    expect(boxes[1].querySelector('input')?.disabled).toBe(false);
-    expect(boxes[2].querySelector('input')?.disabled).toBe(false);
-    expect(boxes[3].querySelector('input')?.disabled).toBe(false);
-    expect(boxes[4].querySelector('input')?.disabled).toBe(false);
+    expect(boxes.length).toBe(6);
+    boxes.forEach((box) => expect(box.querySelector('input')?.disabled).toBe(false));
+  });
+
+  it('should_render_the_highlight_changes_checkbox_second_bound_to_the_shared_form_rg_043_07', () => {
+    const box = el.querySelectorAll('mat-checkbox')[1];
+
+    expect(box.textContent?.trim()).toBe(t('settings.misc.highlightChanges'));
+    expect(box.querySelector('input')?.checked).toBe(true);
+    host.form.controls.highlightChanges.setValue(false);
+    fixture.detectChanges();
+    expect(box.querySelector('input')?.checked).toBe(false);
   });
 
   it('should_render_the_highlight_me_checkbox_first_bound_to_the_shared_form_rg_031_07', () => {
@@ -195,11 +202,11 @@ describe('MiscellaneousSectionComponent', () => {
     el = fixture.nativeElement as HTMLElement;
 
     const boxes = el.querySelectorAll('mat-checkbox');
-    expect(boxes[3].querySelector('input')?.disabled).toBe(true);
+    expect(boxes[4].querySelector('input')?.disabled).toBe(true);
   });
 
   describe('notify assigned checkbox', () => {
-    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[3];
+    const notifyCheckbox = () => el.querySelectorAll('mat-checkbox')[4];
 
     it('should_request_permission_and_check_the_box_when_granted', async () => {
       notifications.requestPermission.mockResolvedValue('granted');

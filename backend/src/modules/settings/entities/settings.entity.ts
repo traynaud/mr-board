@@ -76,6 +76,10 @@ export class Settings {
   @Column({ name: 'highlight_me', type: 'boolean', default: true })
   highlightMe!: boolean;
 
+  /** Highlight new / modified merge requests in the table (US-043, RG-043-07). */
+  @Column({ name: 'highlight_changes', type: 'boolean', default: true })
+  highlightChanges!: boolean;
+
   /** UI language preference (RG-022-01). */
   @Column({ name: 'language', type: 'text', default: 'fr' })
   language!: Language;

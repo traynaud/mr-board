@@ -64,6 +64,7 @@ export interface SettingsFormControls {
   theme: FormControl<ThemePreference>;
   /** Surligne mon avatar (auteur, reviewer, affecté) dans le tableau (RG-023-01/02). */
   highlightMe: FormControl<boolean>;
+  highlightChanges: FormControl<boolean>;
   /** Langue de l'interface (RG-022-01/02). */
   language: FormControl<Language>;
   /** Rétention de l'historique : âge maximal en jours (RG-036-01/03). */
@@ -161,6 +162,7 @@ export function buildSettingsForm(): SettingsForm {
       tabBadge: new FormControl(false, { nonNullable: true }),
       theme: new FormControl<ThemePreference>('system', { nonNullable: true }),
       highlightMe: new FormControl(true, { nonNullable: true }),
+      highlightChanges: new FormControl(true, { nonNullable: true }),
       language: new FormControl<Language>('fr', { nonNullable: true }),
       historyRetentionDays: new FormControl(DEFAULT_HISTORY_RETENTION.days, {
         nonNullable: true,
@@ -214,6 +216,7 @@ export function resetSettingsForm(form: SettingsForm, settings: Settings): void 
   form.controls.tabBadge.reset(settings.tabBadge);
   form.controls.theme.reset(settings.theme);
   form.controls.highlightMe.reset(settings.highlightMe);
+  form.controls.highlightChanges.reset(settings.highlightChanges);
   form.controls.language.reset(settings.language);
   form.controls.historyRetentionDays.reset(settings.historyRetentionDays);
   form.controls.historyMaxEvents.reset(settings.historyMaxEvents);
@@ -245,6 +248,7 @@ export function resetSettingsFormToDefaults(form: SettingsForm): void {
   controls.tabBadge.setValue(false);
   controls.theme.setValue('system');
   controls.highlightMe.setValue(true);
+  controls.highlightChanges.setValue(true);
   controls.language.setValue('fr');
   controls.historyRetentionDays.setValue(DEFAULT_HISTORY_RETENTION.days);
   controls.historyMaxEvents.setValue(DEFAULT_HISTORY_RETENTION.maxEvents);
@@ -281,6 +285,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     tabBadge,
     theme,
     highlightMe,
+    highlightChanges,
     language,
     historyRetentionDays,
     historyMaxEvents,
@@ -304,6 +309,7 @@ export function toUpdateRequest(form: SettingsForm): UpdateSettingsRequest {
     tabBadge,
     theme,
     highlightMe,
+    highlightChanges,
     language,
     historyRetentionDays,
     historyMaxEvents,

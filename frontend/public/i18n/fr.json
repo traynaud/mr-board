@@ -126,6 +126,10 @@
           "policy": "Règle du projet non satisfaite",
           "other": "Non fusionnable (raison inconnue)"
         }
+      },
+      "change": {
+        "new": "Nouvelle",
+        "modified": "Modifiée"
       }
     },
     "footer": {
@@ -344,7 +348,8 @@
       },
       "importSuccess": "Configuration importée.",
       "importSkipped": "Repos ignorés : {{paths}}",
-      "importTokensReminder": "Pensez à renseigner le jeton de {{names}}."
+      "importTokensReminder": "Pensez à renseigner le jeton de {{names}}.",
+      "highlightChanges": "Surligner les MRs nouvelles ou modifiées dans le tableau"
     },
     "reset": {
       "button": "Réinitialiser",

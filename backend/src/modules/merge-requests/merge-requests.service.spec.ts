@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { MergeRequestEvent } from '../history/entities/merge-request-event.entity.js';
 import { EntityNotFoundException } from '../../common/exceptions/index.js';
 import { ConnectionsService } from '../connections/connections.service.js';
 import { FavoritesService } from '../favorites/favorites.service.js';
@@ -83,6 +84,8 @@ describe('MergeRequestsService', () => {
   };
   let connectionsService: { findAll: jest.Mock };
   let favoritesService: { list: jest.Mock; add: jest.Mock; remove: jest.Mock };
+  let eventsRepo: { createQueryBuilder: jest.Mock };
+  let eventsQb: Record<string, jest.Mock>;
   let queryBuilder: {
     delete: jest.Mock;
     where: jest.Mock;
@@ -91,6 +94,18 @@ describe('MergeRequestsService', () => {
   };
 
   beforeEach(async () => {
+    eventsQb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(undefined),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    eventsRepo = { createQueryBuilder: jest.fn(() => eventsQb) };
     queryBuilder = {
       delete: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -134,6 +149,10 @@ describe('MergeRequestsService', () => {
             delete: jest.fn(),
             insert: jest.fn(),
           },
+        },
+        {
+          provide: getRepositoryToken(MergeRequestEvent),
+          useValue: eventsRepo,
         },
         {
           provide: getRepositoryToken(MergeRequestApprover),
@@ -575,6 +594,7 @@ describe('MergeRequestsService', () => {
             openedDays: 9,
             isMine: false,
             isFavorite: false,
+            change: null,
             mergeStatus: { state: 'mergeable', reasons: [] },
             connection: { id: 1, name: 'GitLab', type: 'gitlab' },
           },
@@ -1575,6 +1595,84 @@ describe('MergeRequestsService', () => {
         EntityNotFoundException,
       );
       expect(favoritesService.add).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('change highlight (US-043)', () => {
+    async function listWith(
+      rows: { projectId: number; iid: number; type: string }[],
+    ) {
+      mergeRequestsRepo.find.mockResolvedValue([
+        persistedMergeRequest({ id: 1, projectId: 1, iid: 42 }),
+        persistedMergeRequest({ id: 2, projectId: 1, iid: 43 }),
+        persistedMergeRequest({ id: 3, projectId: 1, iid: 44 }),
+      ]);
+      projectsService.findByIds.mockResolvedValue([projectRow()]);
+      usersService.findByIds.mockResolvedValue([
+        { id: 10, username: 'mdupont', name: 'Marie Dupont', avatarUrl: null },
+      ]);
+      eventsQb.getRawMany.mockResolvedValue(rows);
+      const { mergeRequests } = await service.listOpen({});
+      return Object.fromEntries(mergeRequests.map((mr) => [mr.iid, mr.change]));
+    }
+
+    it('should_flag_new_and_modified_merge_requests_from_their_unseen_events', async () => {
+      const changes = await listWith([
+        { projectId: 1, iid: 42, type: 'created' },
+        { projectId: 1, iid: 43, type: 'approved' },
+        { projectId: 1, iid: 43, type: 'commented' },
+      ]);
+
+      expect(changes).toEqual({ 42: 'new', 43: 'modified', 44: null });
+    });
+
+    it('should_prefer_new_when_a_created_event_is_unseen_with_other_events', async () => {
+      const changes = await listWith([
+        { projectId: 1, iid: 42, type: 'approved' },
+        { projectId: 1, iid: 42, type: 'created' },
+      ]);
+
+      expect(changes[42]).toBe('new');
+    });
+
+    it('should_only_read_unseen_events_of_the_listed_projects_without_notification_preferences', async () => {
+      await listWith([]);
+
+      expect(eventsQb.where).toHaveBeenCalledWith('e.dismissed_at IS NULL');
+      expect(eventsQb.andWhere).toHaveBeenCalledWith(
+        'e.project_id IN (:...projectIds)',
+        { projectIds: [1] },
+      );
+      expect(settingsService).not.toHaveProperty('getNotificationPreferences');
+    });
+  });
+
+  describe('markSeen (US-043)', () => {
+    it('should_mark_the_unseen_events_of_the_merge_request_as_seen_rg_043_04', async () => {
+      mergeRequestsRepo.findOneBy.mockResolvedValue(
+        persistedMergeRequest({ id: 1, projectId: 3, iid: 42 }),
+      );
+
+      await service.markSeen(1);
+
+      expect(eventsQb.update).toHaveBeenCalledWith(MergeRequestEvent);
+      expect(eventsQb.set).toHaveBeenCalledWith({
+        dismissedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) as string,
+      });
+      expect(eventsQb.where).toHaveBeenCalledWith(
+        'project_id = :projectId AND mr_iid = :iid AND dismissed_at IS NULL',
+        { projectId: 3, iid: 42 },
+      );
+      expect(eventsQb.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_throw_entity_not_found_when_the_merge_request_does_not_exist', async () => {
+      mergeRequestsRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(service.markSeen(999)).rejects.toThrow(
+        EntityNotFoundException,
+      );
+      expect(eventsQb.execute).not.toHaveBeenCalled();
     });
   });
 });

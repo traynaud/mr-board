@@ -39,6 +39,7 @@ describe('settings form helpers', () => {
     tabBadge: true,
     theme: 'dark' as const,
     highlightMe: false,
+    highlightChanges: true,
     language: 'en' as const,
     historyRetentionDays: 30,
     historyMaxEvents: 2000,
@@ -70,6 +71,7 @@ describe('settings form helpers', () => {
       tabBadge: true,
       theme: 'dark',
       highlightMe: false,
+      highlightChanges: true,
       language: 'en',
       historyRetentionDays: 30,
       historyMaxEvents: 2000,
@@ -103,6 +105,7 @@ describe('settings form helpers', () => {
       tabBadge: false,
       theme: 'system',
       highlightMe: true,
+      highlightChanges: true,
       language: 'fr',
       historyRetentionDays: 60,
       historyMaxEvents: 5000,
@@ -222,6 +225,23 @@ describe('settings form helpers', () => {
     expect(form.controls.highlightMe.value).toBe(false);
   });
 
+  it('should_include_highlight_changes_in_the_update_request_and_default_to_enabled_rg_043_07', () => {
+    const form = buildSettingsForm();
+    expect(form.controls.highlightChanges.value).toBe(true);
+    form.patchValue({ highlightChanges: false });
+
+    expect(toUpdateRequest(form)).toEqual(expect.objectContaining({ highlightChanges: false }));
+  });
+
+  it('should_reset_highlight_changes_from_settings', () => {
+    const form = buildSettingsForm();
+    form.patchValue({ highlightChanges: false });
+
+    resetSettingsForm(form, settings);
+
+    expect(form.controls.highlightChanges.value).toBe(true);
+  });
+
   it('should_include_the_language_in_the_update_request', () => {
     const form = buildSettingsForm();
     form.patchValue({ language: 'en' });
@@ -249,6 +269,7 @@ describe('notification preferences (US-041)', () => {
     tabBadge: false,
     theme: 'system',
     highlightMe: true,
+    highlightChanges: true,
     language: 'fr',
     historyRetentionDays: 60,
     historyMaxEvents: 5000,
@@ -307,6 +328,7 @@ describe('resetSettingsFormToDefaults', () => {
       tabBadge: true,
       theme: 'dark',
       highlightMe: false,
+      highlightChanges: true,
       language: 'en',
       historyRetentionDays: 10,
       historyMaxEvents: 300,
@@ -328,6 +350,7 @@ describe('resetSettingsFormToDefaults', () => {
         tabBadge: false,
         theme: 'system',
         highlightMe: true,
+        highlightChanges: true,
         language: 'fr',
         historyRetentionDays: 60,
         historyMaxEvents: 5000,

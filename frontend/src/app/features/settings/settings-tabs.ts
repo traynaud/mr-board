@@ -27,6 +27,7 @@ const TAB_CONTROLS: Record<SettingsTab, readonly (keyof SettingsFormControls)[]>
     'readyOrangeDays',
     'workdaysOnly',
     'highlightMe',
+    'highlightChanges',
     'theme',
     'language',
     'openInNewTab',

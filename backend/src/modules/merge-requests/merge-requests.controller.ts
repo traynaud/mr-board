@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
@@ -60,6 +61,13 @@ export class MergeRequestsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   markFavorite(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.mergeRequestsService.setFavorite(id, true);
+  }
+
+  /** `POST /api/v1/merge-requests/:id/seen` — marks the merge request's journal events as seen (US-043, RG-043-04). */
+  @Post(':id/seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  markSeen(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.mergeRequestsService.markSeen(id);
   }
 
   /** `DELETE /api/v1/merge-requests/:id/favorite` — unmarks a merge request as favorite (RG-027-08). */

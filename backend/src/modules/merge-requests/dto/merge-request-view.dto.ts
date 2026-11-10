@@ -1,5 +1,6 @@
 import { Difficulty } from '../domain/calculate-difficulty.js';
 import { ReadyLevel } from '../domain/calculate-ready-delay.js';
+import { ChangeKind } from '../domain/resolve-change-kind.js';
 import { ConnectionSummaryDto } from './connection-summary.dto.js';
 import { MergeRequestUserDto } from './merge-request-user.dto.js';
 import { MergeStatusDto } from './merge-status.dto.js';
@@ -45,6 +46,8 @@ export class MergeRequestViewDto {
   isMine!: boolean;
   /** Annotation locale (RG-027-01/04), toujours calculée qu'elle soit filtrée ou non. */
   isFavorite!: boolean;
+  /** `new` / `modified` when the merge request has unseen journal events, otherwise `null` (US-043, RG-043-01). */
+  change!: ChangeKind | null;
   /** GitLab mergeability (US-017, RG-017-06). `unknown` for a merge request synced before this US (RG-017-11). */
   mergeStatus!: MergeStatusDto;
   /** Connection the merge request's project belongs to (RG-019-22). */

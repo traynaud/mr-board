@@ -40,6 +40,7 @@ const MR: MergeRequestView = {
   openedDays: 6,
   isMine: false,
   isFavorite: false,
+  change: null,
   mergeStatus: { state: 'mergeable', reasons: [] },
   connection: CONNECTION,
 };
@@ -85,6 +86,7 @@ const SETTINGS: Settings = {
   tabBadge: false,
   theme: 'system',
   highlightMe: true,
+  highlightChanges: true,
   language: 'fr',
   historyRetentionDays: 60,
   historyMaxEvents: 5000,
@@ -94,7 +96,7 @@ const SETTINGS: Settings = {
 };
 
 describe('MergeRequestsStore', () => {
-  const api = { getMergeRequests: vi.fn(), getFacets: vi.fn(), setFavorite: vi.fn() };
+  const api = { getMergeRequests: vi.fn(), getFacets: vi.fn(), setFavorite: vi.fn(), markSeen: vi.fn() };
   const settingsApi = {
     getSettings: vi.fn(),
     putSettings: vi.fn(),
@@ -459,6 +461,55 @@ describe('MergeRequestsStore', () => {
       await store.toggleFavorite(MR);
 
       expect(store.mergeRequests().find((mr) => mr.id === 2)?.isFavorite).toBe(false);
+    });
+  });
+
+  describe('markSeen (US-043)', () => {
+    const NEW_MR: MergeRequestView = { ...MR, change: 'new' };
+    const OTHER_MR: MergeRequestView = { ...MR, id: 2, iid: 8, change: 'modified' };
+
+    async function loadRows(): Promise<void> {
+      api.getMergeRequests.mockReturnValue(of({ mergeRequests: [NEW_MR, OTHER_MR], warnings: [] }));
+      await store.load();
+    }
+
+    it('should_clear_the_highlight_before_the_api_resolves_and_call_it_rg_043_04', async () => {
+      await loadRows();
+      api.markSeen.mockReturnValue(of(undefined));
+
+      const pending = store.markSeen(NEW_MR);
+      expect(store.mergeRequests().find((mr) => mr.id === 1)?.change).toBeNull();
+      expect(await pending).toBeNull();
+
+      expect(api.markSeen).toHaveBeenCalledWith(1);
+    });
+
+    it('should_leave_the_other_rows_highlighted', async () => {
+      await loadRows();
+      api.markSeen.mockReturnValue(of(undefined));
+
+      await store.markSeen(NEW_MR);
+
+      expect(store.mergeRequests().find((mr) => mr.id === 2)?.change).toBe('modified');
+    });
+
+    it('should_restore_the_exact_highlight_and_return_the_error_key_when_the_call_fails_rg_043_10', async () => {
+      await loadRows();
+      api.markSeen.mockReturnValue(throwError(() => new ApiError(500, undefined, 'boom')));
+
+      const errorKey = await store.markSeen(OTHER_MR);
+
+      expect(errorKey).toBe('errors.unexpected');
+      expect(store.mergeRequests().find((mr) => mr.id === 2)?.change).toBe('modified');
+    });
+
+    it('should_not_call_the_api_for_a_row_without_highlight', async () => {
+      api.getMergeRequests.mockReturnValue(of(RESPONSE));
+      await store.load();
+
+      expect(await store.markSeen(MR)).toBeNull();
+
+      expect(api.markSeen).not.toHaveBeenCalled();
     });
   });
 

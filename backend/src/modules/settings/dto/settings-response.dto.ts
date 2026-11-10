@@ -33,6 +33,8 @@ export class SettingsResponseDto {
   theme!: ThemePreference;
   /** Highlight my avatar (author/reviewer/assignee) in the merge requests table (RG-023-01). */
   highlightMe!: boolean;
+  /** Highlight new / modified merge requests in the table (US-043, RG-043-07). */
+  highlightChanges!: boolean;
   /** UI language preference (RG-022-01). */
   language!: Language;
   /** History retention in days (RG-036-01). */
